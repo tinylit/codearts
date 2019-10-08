@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "netstandard.library": "1.6.0"
+  },
+  "frameworks": {
+    "netstandard2.0": {
+      "imports": "dnxcore50"
+    },
+    "net40": {}
+  }
+}

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ApplicationIcon>skybuilding.ico</ApplicationIcon>
+    <Authors>Tiny Lit</Authors>
+    <Version>1.0.1</Version>
+	<PackageLicenseUrl>https://github.com/tinylit/SkyBuilding/blob/SkyBuilding/LICENSE.txt</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
+    <ApplicationIcon>skybuilding.ico</ApplicationIcon>
+    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/skybuilding.png</PackageIconUrl>
+    <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SkyBuilding.ORM\SkyBuilding.ORM.csproj" />
+  </ItemGroup>
+
+</Project>

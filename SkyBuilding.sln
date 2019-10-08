@@ -1,0 +1,90 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29215.179
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9964966D-390B-47BC-9B60-CAFFCF1381B3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding", "src\SkyBuilding\SkyBuilding.csproj", "{E12DD9B0-64A0-4BCA-9D4C-151F45FD5678}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding.Tests", "Tests\SkyBuilding.Tests\SkyBuilding.Tests.csproj", "{D043C476-63BE-465C-A1DF-9656B277C767}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding.ORM", "src\SkyBuilding.ORM\SkyBuilding.ORM.csproj", "{1ECBBDC3-672C-495F-AED6-60124EB9FB76}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding.ORM.Tests", "Tests\SkyBuilding.ORM.Tests\SkyBuilding.ORM.Tests.csproj", "{6F7A3885-7F33-41EC-B45F-210A9A0F582C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding.Dapper", "src\SkyBuilding.Dapper\SkyBuilding.Dapper.csproj", "{720FDBC3-50E4-4327-BD2C-A99AA06EA0D6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding.SqlServer", "src\SkyBuilding.SqlServer\SkyBuilding.SqlServer.csproj", "{05A66468-2528-4F7F-BC08-E09E76A2891A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SkyBuilding.MySql", "src\SkyBuilding.MySql\SkyBuilding.MySql.csproj", "{5FA94B22-171D-44BB-8B5C-6CA79F626787}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkyBuilding.Mvc", "src\SkyBuilding.Mvc\SkyBuilding.Mvc.csproj", "{7422FD03-794E-441B-A8F4-5B0DCE166B1A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4034BC0E-2F83-44A1-BEC8-9F83F4193AAD}"
+	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
+		LICENSE.txt = LICENSE.txt
+		project.json = project.json
+		skybuilding.ico = skybuilding.ico
+		skybuilding.png = skybuilding.png
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E12DD9B0-64A0-4BCA-9D4C-151F45FD5678}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E12DD9B0-64A0-4BCA-9D4C-151F45FD5678}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E12DD9B0-64A0-4BCA-9D4C-151F45FD5678}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E12DD9B0-64A0-4BCA-9D4C-151F45FD5678}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D043C476-63BE-465C-A1DF-9656B277C767}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D043C476-63BE-465C-A1DF-9656B277C767}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D043C476-63BE-465C-A1DF-9656B277C767}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D043C476-63BE-465C-A1DF-9656B277C767}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1ECBBDC3-672C-495F-AED6-60124EB9FB76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1ECBBDC3-672C-495F-AED6-60124EB9FB76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1ECBBDC3-672C-495F-AED6-60124EB9FB76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ECBBDC3-672C-495F-AED6-60124EB9FB76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F7A3885-7F33-41EC-B45F-210A9A0F582C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F7A3885-7F33-41EC-B45F-210A9A0F582C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F7A3885-7F33-41EC-B45F-210A9A0F582C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F7A3885-7F33-41EC-B45F-210A9A0F582C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{720FDBC3-50E4-4327-BD2C-A99AA06EA0D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{720FDBC3-50E4-4327-BD2C-A99AA06EA0D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{720FDBC3-50E4-4327-BD2C-A99AA06EA0D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{720FDBC3-50E4-4327-BD2C-A99AA06EA0D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05A66468-2528-4F7F-BC08-E09E76A2891A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05A66468-2528-4F7F-BC08-E09E76A2891A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05A66468-2528-4F7F-BC08-E09E76A2891A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05A66468-2528-4F7F-BC08-E09E76A2891A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FA94B22-171D-44BB-8B5C-6CA79F626787}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FA94B22-171D-44BB-8B5C-6CA79F626787}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FA94B22-171D-44BB-8B5C-6CA79F626787}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FA94B22-171D-44BB-8B5C-6CA79F626787}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7422FD03-794E-441B-A8F4-5B0DCE166B1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7422FD03-794E-441B-A8F4-5B0DCE166B1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7422FD03-794E-441B-A8F4-5B0DCE166B1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7422FD03-794E-441B-A8F4-5B0DCE166B1A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E12DD9B0-64A0-4BCA-9D4C-151F45FD5678} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{D043C476-63BE-465C-A1DF-9656B277C767} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
+		{1ECBBDC3-672C-495F-AED6-60124EB9FB76} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{6F7A3885-7F33-41EC-B45F-210A9A0F582C} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
+		{720FDBC3-50E4-4327-BD2C-A99AA06EA0D6} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{05A66468-2528-4F7F-BC08-E09E76A2891A} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{5FA94B22-171D-44BB-8B5C-6CA79F626787} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{7422FD03-794E-441B-A8F4-5B0DCE166B1A} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D69380D7-DEA5-4884-85A8-1049025CE2EA}
+	EndGlobalSection
+EndGlobal
