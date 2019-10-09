@@ -248,6 +248,6 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 ### Performance comparison.
 Function|Third-party libraries|Performance improvement|Explain
 :--:|---|:--:|---
-MapTo|AutoMapper|25%↑|The framework is designed based on the target type. Only for simple mapping relationship, need to establish a complex mapping relationship, please use AutoMapper.
-ORM|SqlSugar|15%↑|The framework supports native linq queries, dual mode batch processing is supported.
-ORM|Dapper|15%↑|Only for this ORM project customized, if you need to use a particularly complex operation, please use Dapper.
+MapTo|AutoMapper|~20%↑|The framework is designed based on the target type. Only for simple mapping relationship, need to establish a complex mapping relationship, please use AutoMapper.
+ORM|SqlSugar|~15%↑|The framework supports native linq queries, dual mode batch processing is supported.
+ORM|Dapper|~10%↑|Only for this ORM project customized, if you need to use a particularly complex operation, please use Dapper.
