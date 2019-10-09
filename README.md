@@ -157,6 +157,94 @@ First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). 
 PM> Install-Package SkyBuilding
 ```
 
+### How to use ORM?
+* Entities defined.
+``` csharp
+    [Naming(NamingType.UrlCase, Name = "yep_users")] // 指定整个实体的字段格式，指定当前实体映射表名称。
+    public class User : BaseEntity<int> // 必须继承IEntity接口或实现了IEntity接口的类。
+    {
+        [Key] // 指定主键（用户操作更新和删除）
+        [Naming("uid")] // 字段映射，将字段Id和数据库user字段添加映射关系。
+        [ReadOnly(true)] //指定字段只读，字段值由数据库生成，不被插入或更新。
+        public override int Id { get => base.Id; set => base.Id = value; }
+
+        [Required] //设置字段必填
+        [Display(Name = "用户名")] // 遵循 System.ComponentModel.DataAnnotations.ValidationAttribute 约束
+        public string Username { get; set; }
+
+        [Naming(NamingType.CamelCase)] // 如果字段特殊，可单独为字段设置字段命名规则。
+        [DateTimeToken] // 设置Token键（在更新时，将属性数据作为更新条件，并为属性创建新值；在插入时，如若属性值为类型默认值，会自动获取新值）
+        public DateTime PasswordLastChanged { get; set; }
+    }
+```
+* Repositories defined.
+    + Provide query-only Repositories.
+    ``` csharp
+    [SqlServerConnection]
+    public class UserRepository : Repository<User/* 表映射实体 */>
+    {
+        protected override ConnectionConfig GetDbConfig() => base.GetDbConfig();
+    }
+    ```
+
+    + Provide a repository for queries and execution.
+    ``` csharp
+    public class UserRepository : DbRepository<User/* 表映射实体 */>
+    {
+        protected override ConnectionConfig GetDbConfig() => new ConnectionConfig
+        {
+            Name = "yep.v3.invoice",
+            ProviderName = "MySql",
+            ConnectionString = ""
+        };
+    }
+    ```
+* Set up the database adapter.
+``` csharp
+    DbConnectionManager.AddAdapter(new SqlServerAdapter());
+    DbConnectionManager.AddProvider<SkyProvider>();
+```
+
+* For example,
+``` csharp
+    var y1 = 100;
+    var str = "1";
+    Prepare();
+    var user = new UserRepository();
+    var details = new UserDetailsRepository();
+    var userWx = new UserWeChatRepository();
+    var result = from x in user
+                    join y in details on x.Id equals y.Id
+                    join z in userWx on x.Id equals z.Uid
+                    where x.Id > 0 && y.Id < y1 && x.Username.Contains(str)
+                    orderby x.Id, y.Registertime descending
+                    select new { x.Id, OldId = x.Id + 1, z.Openid };
+
+    var list = result.ToList();
+```
+##### The query statement is as follows.
+``` SQL
+SELECT [x].[uid] AS [Id],
+([x].[uid]+@__variable_2) AS [OldId],
+[z].[openid] AS [Openid] 
+FROM [fei_users] [x] 
+LEFT JOIN [fei_userdetails] [y] ON [x].[uid]=[y].[uid] 
+LEFT JOIN [fei_user_wx_account_info] [z] ON [x].[uid]=[z].[uid] 
+WHERE ((([x].[uid]>@__variable_1) AND ([y].[uid]<@y1)) AND [x].[username] LIKE @str) -- @str is '%1%'
+ORDER BY [x].[uid],[y].[registertime] DESC
+```
+
+* Introduce.
+> - Parameter anti-injection.
+> - Because the paging 'take' and 'skip' parameters are special parameters, they are not converted to anti-injection parameters for the convenience of viewing the SQL paging situation.
+> - Support for linq continuations.
+> - More than 200 scenarios are supported, and the singleton test only tests 70 scenarios, most of which can be used in combination.
+> - Support for most common string properties and functions as well as Nullable<T> type support. See unit testing for details.
+
+* Unit testing.
+    [SqlServer](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/SqlServerTest.cs)
+    [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/MySqlTest.cs)
+
 ### Performance comparison.
 Function|Third-party libraries|Performance improvement|Explain
 :--:|---|:--:|---

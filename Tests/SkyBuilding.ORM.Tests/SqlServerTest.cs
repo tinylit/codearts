@@ -806,27 +806,30 @@ namespace UnitTest
         [TestMethod]
         public void JoinTest2()
         {
-            var y = 100;
+            var y1 = 100;
             var str = "1";
             Prepare();
             var user = new UserRepository();
             var details = new UserDetailsRepository();
             var userWx = new UserWeChatRepository();
             var result = from x in user
-                         join d in details on x.Id equals d.Id
-                         join w in userWx on x.Id equals w.Uid
-                         where x.Id > 0 && d.Id < y && x.Username.Contains(str)
-                         orderby x.Id, d.Registertime descending
-                         select new { x.Id, OldId = x.Id + 1, w.Openid, OOID = d.Id, DDD = y };
+                         join y in details on x.Id equals y.Id
+                         join z in userWx on x.Id equals z.Uid
+                         where x.Id > 0 && y.Id < y1 && x.Username.Contains(str)
+                         orderby x.Id, y.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, z.Openid };
 
             var list = result.ToList();
 
             /**
-             * SELECT [x].[uid] AS [Id], ([x].[uid] + @__variable_1) AS [OldId], [d].[uid] AS [OOID], @y AS [DDD] 
+             * SELECT [x].[uid] AS [Id],
+             * ([x].[uid]+@__variable_2) AS [OldId],
+             * [z].[openid] AS [Openid] 
              * FROM [fei_users] [x] 
-             * LEFT JOIN [fei_userdetails] [d] 
-             * ON [x].[uid]=[d].[uid] 
-             * WHERE ((([x].[uid] > @__variable_2) AND ([d].[uid] < @y)) AND [x].[username] LIKE @str) ORDER BY [x].[uid] DESC, [d].[registertime]
+             * LEFT JOIN [fei_userdetails] [y] ON [x].[uid]=[y].[uid] 
+             * LEFT JOIN [fei_user_wx_account_info] [z] ON [x].[uid]=[z].[uid] 
+             * WHERE ((([x].[uid]>@__variable_1) AND ([y].[uid]<@y1)) AND [x].[username] LIKE @str) 
+             * ORDER BY [x].[uid],[y].[registertime] DESC
              */
         }
 

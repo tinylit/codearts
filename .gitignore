@@ -277,6 +277,3 @@ __pycache__/
 *.pyc
 *.pubxml
 *.xml
-/Tests/SkyBuilding.ORM.Tests/Domain/TaxCodeRepository.cs
-/Tests/SkyBuilding.ORM.Tests/Serialize/DefaultDbConfigAttribute.cs
-/Tests/SkyBuilding.ORM.Tests/Serialize/SqlServerConnectionAttribute.cs
