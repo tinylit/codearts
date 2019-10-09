@@ -4,8 +4,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <ApplicationIcon></ApplicationIcon>
     <Authors>Tiny Lit</Authors>
-    <Version>1.0.1</Version>
-	<PackageLicenseUrl>https://github.com/tinylit/SkyBuilding/blob/SkyBuilding/LICENSE.txt</PackageLicenseUrl>
+    <Version>1.0.1.2</Version>
+	<PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
