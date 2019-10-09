@@ -2,14 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <ApplicationIcon>skybuilding.ico</ApplicationIcon>
+    <ApplicationIcon></ApplicationIcon>
     <Authors>Tiny Lit</Authors>
     <Version>1.0.1</Version>
 	<PackageLicenseUrl>https://github.com/tinylit/SkyBuilding/blob/SkyBuilding/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
-    <ApplicationIcon>skybuilding.ico</ApplicationIcon>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/icon.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
   </PropertyGroup>

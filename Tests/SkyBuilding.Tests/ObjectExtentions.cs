@@ -51,7 +51,7 @@ namespace SkyBuilding.Tests
 
                 var listInt = list.CastTo<List<int>>();
 
-                var quene = list.CastTo<Queue<int>>();
+                var quene = list.CastTo<Queue<int>>(); 
 
                 var queneGuid = list.CastTo<Queue<Guid>>();
             }
@@ -110,15 +110,15 @@ namespace SkyBuilding.Tests
             var mapTo = RuntimeServicePools.Singleton<IMapToExpression, MapToExpression>();
 
             //? 为类型“CopyTest”指定代理。
-            //mapTo.Run<CopyToTest, MapToTest>(source =>
-            //{
-            //    return new MapToTest
-            //    {
-            //        Id = source.Id,
-            //        Name = source.Name,
-            //        Date = source.Date
-            //    };
-            //});
+            mapTo.Run<CopyToTest, MapToTest>(source =>
+            {
+                return new MapToTest
+                {
+                    Id = source.Id,
+                    Name = source.Name,
+                    Date = source.Date
+                };
+            });
 
             var value = new CopyToTest
             {

@@ -366,14 +366,14 @@ namespace SkyBuilding
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
         /// <param name="plan">将对象转为目标类型的方案</param>
-        public void Map<TResult>(Type sourceType, Func<object, TResult> plan)
+        public void Absolute<TSource, TResult>(Func<TSource, TResult> plan)
         {
-            if (sourceType is null)
+            if (plan is null)
             {
-                throw new ArgumentNullException(nameof(sourceType));
+                throw new ArgumentNullException(nameof(plan));
             }
 
-            Map(type => type == sourceType, plan);
+            Map(type => type == typeof(TSource), source => plan.Invoke((TSource)source));
         }
 
         /// <summary>
@@ -414,10 +414,7 @@ namespace SkyBuilding
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            Map(sourceType => sourceType == typeof(TSource) || typeof(TSource).IsAssignableFrom(sourceType), source =>
-            {
-                return plan.Invoke((TSource)source);
-            });
+            Map(sourceType => sourceType == typeof(TSource) || typeof(TSource).IsAssignableFrom(sourceType), source => plan.Invoke((TSource)source));
         }
 
         /// <summary>

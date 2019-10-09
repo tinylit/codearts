@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
-    <ApplicationIcon>skybuilding.ico</ApplicationIcon>
+    <ApplicationIcon></ApplicationIcon>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/skybuilding.ico</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
   </PropertyGroup>
