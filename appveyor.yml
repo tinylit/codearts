@@ -22,8 +22,6 @@ configuration:
 - Debug
 - Release
 platform:
-- x86
-- x64
 - Any CPU
 clone_depth: 5
 before_build:
