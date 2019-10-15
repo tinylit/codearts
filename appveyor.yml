@@ -10,8 +10,23 @@ configuration:
 - Debug
 - Release
 platform:
+- x86
+- x64
 - Any CPU
 clone_depth: 5
+environment:
+  DEV-DATABASE-SQLSEVER-DOMAIN:
+    secure: RWjD1YlUrzmeqLaRS1d31w==
+  DEV-DATABASE-MYSQL-DOMAIN:
+    secure: Vgyz+NE+M+ZQc7AYGJBSfw==
+  DEV-DATABASE-SQLSEVER-USER:
+    secure: e0KSlgsDXc0qVKE7Rv5j+A==
+  DEV-DATABASE-SQLSEVER-PASSWORD:
+    secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
+  DEV-DATABASE-MYSQL-USER:
+    secure: e0KSlgsDXc0qVKE7Rv5j+A==
+  DEV-DATABASE-MYSQL-PASSWORD:
+    secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
 before_build:
 - cmd: nuget restore
 build:

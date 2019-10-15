@@ -20,7 +20,7 @@ namespace UnitTest.Serialize
             {
                 Name = "yep.v3.auth",
                 ProviderName = "MySql",
-                ConnectionString = ""//? 数据库链接
+                ConnectionString = "server=%DEV-DATABASE-MYSQL-DOMAIN%;port=%DEV-DATABASE-MYSQL-USER%;user=%DEV-DATABASE-MYSQL-PASSWORD%;password=HUHihihhe78393h372h0; database=yep.v3.admin;"//? 数据库链接
             };
         }
     }

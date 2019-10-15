@@ -15,7 +15,7 @@ namespace UnitTest.Serialize
             {
                 Name = "de",
                 ProviderName = "SqlServer",
-                ConnectionString = ""//? 数据库链接
+                ConnectionString = "Data Source=%DEV-DATABASE-SQLSEVER-DOMAIN%;User ID=%DEV-DATABASE-SQLSEVER-USER%; Password=%DEV-DATABASE-SQLSEVER-PASSWORD%;Initial Catalog=FEI_MALL_FLASH;Pooling=true"//? 数据库链接
             };
         }
     }
