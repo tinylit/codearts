@@ -1213,12 +1213,24 @@ namespace UnitTest
 
             var user = new UserRepository();
 
+            var result = user.Where(x => (x.Userstatus & 1) == 1 && x.Id < 100).Take(10);
+            var list = result.ToList();
+        }
 
-            for (int i = 0; i < 100; i++)
-            {
-                var result = user.Where(x => (x.Userstatus & 1) == 1 && x.Id < 100).Take(10);
-                var list = result.ToList();
-            }
+        [TestMethod]
+        public void CountWithArgumentsTest()
+        {
+            Prepare();
+
+            var user = new UserRepository();
+
+            var count = user.Count(x => x.Mallagid == 2);
+
+            /**
+             * SELECT Count(1) 
+             * FROM [fei_users] 
+             * WHERE ([mallagid]=@__variable_1)
+             */
         }
 
         [TestMethod]

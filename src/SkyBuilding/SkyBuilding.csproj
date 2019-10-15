@@ -4,10 +4,10 @@
 	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Version>1.1.0.6</Version>
+    <Version>1.1.0.7</Version>
     <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
-    <Description>A Linq to SQL ORM framework.</Description>
+    <Description>A lightweight infrastructure.</Description>
     <PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

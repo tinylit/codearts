@@ -317,15 +317,16 @@ namespace SkyBuilding.Mvc.Controllers
 
         private string GetRemoteMacAddress()
         {
-            ManagementClass mc = new ManagementClass("Win32_NetworkAdapterConfiguration");
-
-            ManagementObjectCollection moc2 = mc.GetInstances();
-
-            foreach (ManagementObject mo in moc2)
+            using (ManagementClass mc = new ManagementClass("Win32_NetworkAdapterConfiguration"))
             {
-                if ((bool)mo["IPEnabled"] == true)
+                ManagementObjectCollection moc2 = mc.GetInstances();
+
+                foreach (ManagementObject mo in moc2)
                 {
-                    return mo["MacAddress"].ToString();
+                    if ((bool)mo["IPEnabled"] == true)
+                    {
+                        return mo["MacAddress"].ToString();
+                    }
                 }
             }
 

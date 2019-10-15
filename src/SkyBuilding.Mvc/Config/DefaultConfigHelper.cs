@@ -152,9 +152,10 @@ namespace SkyBuilding.Mvc.Config
             var fileName = Path.GetFileName(filePath);
             var path = filePath.Substring(0, filePath.Length - fileName.Length);
 
-            var watcher = new FileSystemWatcher(path, fileName);
-
-            watcher.Changed += Watcher_Changed;
+            using (var watcher = new FileSystemWatcher(path, fileName))
+            {
+                watcher.Changed += Watcher_Changed;
+            }
         }
 
         private void Watcher_Changed(object sender, FileSystemEventArgs e)

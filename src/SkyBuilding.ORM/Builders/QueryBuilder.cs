@@ -263,13 +263,13 @@ namespace SkyBuilding.ORM.Builders
                 SQLWriter.Write(name);
                 SQLWriter.OpenBrace();
 
-                if (node.Arguments.Count > 1)
+                if (name == MethodCall.Count || node.Arguments.Count == 1)
                 {
-                    base.Visit(node.Arguments[1]);
+                    SQLWriter.Write("1");
                 }
                 else
                 {
-                    SQLWriter.Write("1");
+                    base.Visit(node.Arguments[1]);
                 }
 
                 SQLWriter.CloseBrace();
@@ -280,7 +280,17 @@ namespace SkyBuilding.ORM.Builders
                     SQLWriter.OpenBrace();
                 }
 
-            }, () => base.Visit(node.Arguments[0]));
+            }, () =>
+            {
+                if (name == MethodCall.Count && node.Arguments.Count > 1)
+                {
+                    MakeWhereNode(node);
+                }
+                else
+                {
+                    base.Visit(node.Arguments[0]);
+                }
+            });
 
             if (isUnion)
             {
@@ -325,15 +335,18 @@ namespace SkyBuilding.ORM.Builders
             {
                 SQLWriter.Write(name);
                 SQLWriter.OpenBrace();
-                if (node.Arguments.Count > 1)
-                {
-                    base.Visit(node.Arguments[1]);
-                }
-                else
+
+                if (name == MethodCall.Count || node.Arguments.Count == 1)
                 {
                     SQLWriter.Write("1");
                 }
+                else
+                {
+                    base.Visit(node.Arguments[1]);
+                }
+
                 SQLWriter.CloseBrace();
+
                 return node;
             }
 
@@ -838,8 +851,8 @@ namespace SkyBuilding.ORM.Builders
                 case MethodCall.Max:
                 case MethodCall.Min:
                 case MethodCall.Sum:
-                case MethodCall.Count:
                 case MethodCall.Average:
+                case MethodCall.Count:
                 case MethodCall.LongCount:
                     return SingleFieldMethod(node);
                 case MethodCall.Join:
