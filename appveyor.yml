@@ -1,4 +1,9 @@
 version: 1.0.{build}
+
+environment:
+  my_variable:
+    secure: XhpTK+stym7O1dkZ24bIuHxOJtBbypMurYNX/I7m3OliWVE+4CCeiVr573SD6S+m
+
 configuration:
 - Debug
 - Release
@@ -17,15 +22,8 @@ build:
   verbosity: minimal
 deploy:
 - provider: NuGet
-  server: https://www.myget.org/F/stackoverflow/api/v2
   api_key:
-    secure: 08NAqKgLhpq2dIiMyO5VxRITpfXTGQMc0N2U3UVe5IZX2wU6j2aFy/+DlAGHi8t/CBGiKSPx1XFzabLOmeoLFo1QHFnWeClkIm8q4LN372U=
-  symbol_server: https://www.myget.org/F/stackoverflow/symbols/api/v2/package
-  on:
-    branch: master
-- provider: NuGet
-  api_key:
-    secure: 26UCLCtjeu/oKElgDJn7hIWfzMu0x+U7iIkoVAdQ1xc5XDBjmZzCVa6Eomamq0NK
+    secure: 4BJNmm+fEUPamag0fmQhNePDlkGpJ8F9UcySdsZ/prE=
 notifications:
 - provider: Email
   to:
