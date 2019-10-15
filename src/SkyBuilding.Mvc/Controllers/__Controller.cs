@@ -10,13 +10,15 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Management;
-using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
+#if NET40
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http.Controllers;
+#endif
 
 namespace SkyBuilding.Mvc.Controllers
 {
@@ -165,7 +167,7 @@ namespace SkyBuilding.Mvc.Controllers
             return ipAddress;
         }
 
-    #region Private
+#region Private
         /// <summary>
         /// 生成随机的字符串
         /// </summary>
@@ -234,7 +236,7 @@ namespace SkyBuilding.Mvc.Controllers
             }
         }
 
-    #endregion
+#endregion
     }
 #else
     public sealed class LoginController : ApiController
@@ -428,7 +430,7 @@ namespace SkyBuilding.Mvc.Controllers
             });
         }
 
-        #region Private
+#region Private
         /// <summary>
         /// 生成随机的字符串
         /// </summary>
@@ -497,7 +499,7 @@ namespace SkyBuilding.Mvc.Controllers
             }
         }
 
-        #endregion
+#endregion
     }
 #endif
 }

@@ -1,15 +1,12 @@
 ﻿using SkyBuilding;
 using SkyBuilding.Exceptions;
 using SkyBuilding.Mvc;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 
 namespace Mvc45.Controllers
 {
+    ///<summary></summary>
     public interface IDependency
     {
 
