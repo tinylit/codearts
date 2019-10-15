@@ -651,7 +651,7 @@ namespace SkyBuilding.ORM
         /// 创建路由执行器
         /// </summary>
         /// <returns></returns>
-        protected virtual IRouteExecuteProvider CreateRouteExecuteProvider() => RuntimeServicePools.Singleton<IRouteExecuteProvider, RouteExecuteProvider>();
+        protected virtual IRouteExecuteProvider CreateRouteExecuteProvider() => RuntimeServManager.Singleton<IRouteExecuteProvider, RouteExecuteProvider>();
 
         /// <summary>
         /// 插入路由执行器

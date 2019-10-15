@@ -13,103 +13,103 @@ namespace SkyBuilding.Net
         /// <summary>
         /// GET 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Get(int timeout = 5);
+        T Get(int timeout = 5000);
 
         /// <summary>
         /// GET 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> GetAsync(int timeout = 5);
+        Task<T> GetAsync(int timeout = 5000);
 
         /// <summary>
         /// DELETE 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Delete(int timeout = 5);
+        T Delete(int timeout = 5000);
 
         /// <summary>
         /// DELETE 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> DeleteAsync(int timeout = 5);
+        Task<T> DeleteAsync(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Post(int timeout = 5);
+        T Post(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> PostAsync(int timeout = 5);
+        Task<T> PostAsync(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Put(int timeout = 5);
+        T Put(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> PutAsync(int timeout = 5);
+        Task<T> PutAsync(int timeout = 5000);
 
         /// <summary>
         /// HEAD 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Head(int timeout = 5);
+        T Head(int timeout = 5000);
 
         /// <summary>
         /// HEAD 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> HeadAsync(int timeout = 5);
+        Task<T> HeadAsync(int timeout = 5000);
 
         /// <summary>
         /// PATCH 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Patch(int timeout = 5);
+        T Patch(int timeout = 5000);
 
         /// <summary>
         /// PATCH 请求
         /// </summary>
-        /// <param name="timeout">超时时间</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> PatchAsync(int timeout = 5);
+        Task<T> PatchAsync(int timeout = 5000);
 
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：秒</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Request(string method, int timeout = 5);
+        T Request(string method, int timeout = 5000);
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：秒</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> RequestAsync(string method, int timeout = 5);
+        Task<T> RequestAsync(string method, int timeout = 5000);
     }
 
     /// <summary>
@@ -220,13 +220,12 @@ namespace SkyBuilding.Net
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：秒</param>
         /// <returns></returns>
-        IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.PascalCase);
+        IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.CamelCase);
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：秒</param>
         /// <returns></returns>
         IXmlRequestable<T> ByXml<T>();
 
@@ -236,9 +235,8 @@ namespace SkyBuilding.Net
         /// <typeparam name="T">类型</typeparam>
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：秒</param>
         /// <returns></returns>
-        IJsonRequestable<T> ByJson<T>(T anonymousTypeObject, NamingType namingType = NamingType.PascalCase) where T : class;
+        IJsonRequestable<T> ByJson<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型(匿名对象)
         /// </summary>

@@ -81,7 +81,7 @@ namespace SkyBuilding.Tests
                 return profile.Create<CopyTest>(type);
             });
 
-            RuntimeServicePools.TryAddSingleton<ICopyToExpression>(() => copyTo);
+            RuntimeServManager.TryAddSingleton<ICopyToExpression>(() => copyTo);
 
             var value = new CopyToTest
             {
@@ -107,7 +107,7 @@ namespace SkyBuilding.Tests
         {
             //RuntimeServicePools.TryAdd<IProfileConfiguration, ProfileConfiguration>();
 
-            var mapTo = RuntimeServicePools.Singleton<IMapToExpression, MapToExpression>();
+            var mapTo = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>();
 
             //? 为类型“CopyTest”指定代理。
             mapTo.Run<CopyToTest, MapToTest>(source =>

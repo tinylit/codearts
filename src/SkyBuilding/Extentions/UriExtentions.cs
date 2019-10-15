@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace System
@@ -16,40 +17,41 @@ namespace System
     /// </summary>
     public static class UriExtentions
     {
+        private static readonly Regex UriPattern = new Regex(@"\w+://.+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private abstract class Requestable<T> : IRequestable<T>
         {
-            public T Get(int timeout = 5) => Request("GET", timeout);
+            public T Get(int timeout = 5000) => Request("GET", timeout);
 
-            public Task<T> GetAsync(int timeout = 5) => RequestAsync("GET", timeout);
+            public Task<T> GetAsync(int timeout = 5000) => RequestAsync("GET", timeout);
 
-            public T Delete(int timeout = 5) => Request("DELETE", timeout);
+            public T Delete(int timeout = 5000) => Request("DELETE", timeout);
 
-            public Task<T> DeleteAsync(int timeout = 5) => RequestAsync("DELETE", timeout);
+            public Task<T> DeleteAsync(int timeout = 5000) => RequestAsync("DELETE", timeout);
 
-            public T Post(int timeout = 5) => Request("POST", timeout);
+            public T Post(int timeout = 5000) => Request("POST", timeout);
 
-            public Task<T> PostAsync(int timeout = 5) => RequestAsync("POST", timeout);
+            public Task<T> PostAsync(int timeout = 5000) => RequestAsync("POST", timeout);
 
-            public T Put(int timeout = 5) => Request("PUT", timeout);
+            public T Put(int timeout = 5000) => Request("PUT", timeout);
 
-            public Task<T> PutAsync(int timeout = 5) => RequestAsync("PUT", timeout);
+            public Task<T> PutAsync(int timeout = 5000) => RequestAsync("PUT", timeout);
 
-            public T Head(int timeout = 5) => Request("HEAD", timeout);
+            public T Head(int timeout = 5000) => Request("HEAD", timeout);
 
-            public Task<T> HeadAsync(int timeout) => RequestAsync("HEAD", timeout);
+            public Task<T> HeadAsync(int timeout = 5000) => RequestAsync("HEAD", timeout);
 
-            public T Patch(int timeout = 5) => Request("PATCH", timeout);
+            public T Patch(int timeout = 5000) => Request("PATCH", timeout);
 
-            public Task<T> PatchAsync(int timeout) => RequestAsync("PATCH", timeout);
+            public Task<T> PatchAsync(int timeout = 5000) => RequestAsync("PATCH", timeout);
 
-            public abstract T Request(string method, int timeout = 5);
+            public abstract T Request(string method, int timeout = 5000);
 
 #if NET40
-            public Task<T> RequestAsync(string method, int timeout = 5)
+            public Task<T> RequestAsync(string method, int timeout = 5000)
                 => Task.Factory.StartNew(() => Request(method, timeout));
 #else
 
-            public abstract Task<T> RequestAsync(string method, int timeout = 5);
+            public abstract Task<T> RequestAsync(string method, int timeout = 5000);
 #endif
         }
 
@@ -298,7 +300,7 @@ namespace System
 
             public IRequestable Xml<T>(T param) where T : class => Xml(XmlHelper.XmlSerialize(param));
 
-            public IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.PascalCase) => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.CamelCase) => new JsonRequestable<T>(this, namingType);
 
             public IXmlRequestable<T> ByXml<T>() => new XmlRequestable<T>(this);
 
@@ -310,7 +312,7 @@ namespace System
             /// <param name="method">求取方式</param>
             /// <param name="timeout">超时时间，单位：秒</param>
             /// <returns></returns>
-            public IJsonRequestable<T> ByJson<T>(T _, NamingType namingType = NamingType.PascalCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> ByJson<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
             /// <summary>
             /// 数据返回XML格式的结果，将转为指定类型
             /// </summary>
@@ -334,7 +336,7 @@ namespace System
 
             public NamingType NamingType { get; }
 
-            public override T Request(string method, int timeout = 5)
+            public override T Request(string method, int timeout = 5000)
             {
                 string value = requestable.Request(method, timeout);
 
@@ -352,7 +354,7 @@ namespace System
 
 #if !NET40
 
-            public override async Task<T> RequestAsync(string method, int timeout = 5)
+            public override async Task<T> RequestAsync(string method, int timeout = 5000)
             {
                 string value = await requestable.RequestAsync(method, timeout);
 
@@ -380,7 +382,7 @@ namespace System
                 this.requestable = requestable;
             }
 
-            public override T Request(string method, int timeout = 5)
+            public override T Request(string method, int timeout = 5000)
             {
                 string value = requestable.Request(method, timeout);
 
@@ -397,7 +399,7 @@ namespace System
             }
 
 #if !NET40
-            public override async Task<T> RequestAsync(string method, int timeout = 5)
+            public override async Task<T> RequestAsync(string method, int timeout = 5000)
             {
                 string value = await requestable.RequestAsync(method, timeout);
 
@@ -415,6 +417,13 @@ namespace System
             }
 #endif
         }
+
+        /// <summary>
+        /// 字符串是否为有效链接
+        /// </summary>
+        /// <param name="uriString">链接地址</param>
+        /// <returns></returns>
+        public static bool IsUrl(this string uriString) => UriPattern.IsMatch(uriString);
 
         /// <summary>
         /// 提供远程请求能力

@@ -1,4 +1,5 @@
 ﻿using SkyBuilding;
+using SkyBuilding.Config;
 using System.Collections;
 using System.Linq;
 using System.Linq.Expressions;
@@ -94,6 +95,15 @@ namespace System
         /// <param name="name">名称</param>
         /// <returns></returns>
         public static string ToUrlCase(this string name) => ToNamingCase(name, NamingType.UrlCase);
+
+        /// <summary>
+        /// 配置文件读取
+        /// </summary>
+        /// <typeparam name="T">读取数据类型</typeparam>
+        /// <param name="configName">健</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <returns></returns>
+        public static T Config<T>(this string configName, T defaultValue = default) => ConfigHelper.Instance.Get(configName, defaultValue);
 
         /// <summary>
         /// 内嵌的

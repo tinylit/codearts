@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SkyBuilding.Net
 {
@@ -21,15 +17,15 @@ namespace SkyBuilding.Net
         }
 
         /// <summary>
-        /// 过期时间（单位：秒）
+        /// 过期时间（单位：毫秒）
         /// </summary>
-        public int Timeout { get; set; } = 5;
+        public int Timeout { get; set; } = 5000;
 
         protected override WebRequest GetWebRequest(Uri address)
         {
             var request = base.GetWebRequest(address);
 
-            request.Timeout = 1000 * Timeout;
+            request.Timeout = Timeout;
 
             return request;
         }

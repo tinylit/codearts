@@ -11,7 +11,7 @@ namespace SkyBuilding
     /// <summary>
     /// 服务池
     /// </summary>
-    public static class RuntimeServicePools
+    public static class RuntimeServManager
     {
         /// <summary>
         /// 服务
@@ -55,7 +55,6 @@ namespace SkyBuilding
             where TService : class
             where TImplementation : class, TService
             => Nested<TService>.TryAdd(() => Nested<TService, TImplementation>.Instance);
-
 
         /// <summary>
         /// 获取服务
@@ -189,17 +188,34 @@ namespace SkyBuilding
             {
                 //~ 包含值类型且为非可选参数时，出现异常。
 
-                var typeStore = RuntimeTypeCache.Instance.GetCache<TImplementation>();
+                var conversionType = typeof(TImplementation);
 
-                var invoke = MakeImplement(typeStore.ConstructorStores //! 优先获取已实现指定参数的构造函
-                    .Where(x => x.ParameterStores.All(y => y.IsOptional || ServiceCache.ContainsKey(y.ParameterType)))
-                    .OrderByDescending(x => x.ParameterStores.Count)
-                    .FirstOrDefault() ?? typeStore.ConstructorStores  //? 包含公共无参构造函数，可能实现的构造函数。
-                        .Where(x => x.ParameterStores.Count == 0 || x.ParameterStores.All(y => y.IsOptional || y.ParameterType.IsInterface || y.ParameterType.IsClass))
-                        .OrderBy(x => x.ParameterStores.Count)
-                        .FirstOrDefault() ?? throw new NotSupportedException($"服务“{typeStore.FullName}”不包含任何可用于依赖注入的构造函数!"));
+                var baseType = conversionType.BaseType;
 
-                _lazy = new Lazy<TImplementation>(() => invoke.Invoke());
+                if (baseType is null || !baseType.IsGenericType || baseType.GetGenericTypeDefinition() != typeof(DesignMode.Singleton<>))
+                {
+                    var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
+
+                    var invoke = MakeImplement(typeStore.ConstructorStores //! 优先获取已实现指定参数的构造函
+                        .Where(x => x.ParameterStores.All(y => y.IsOptional || ServiceCache.ContainsKey(y.ParameterType)))
+                        .OrderByDescending(x => x.ParameterStores.Count)
+                        .FirstOrDefault() ?? typeStore.ConstructorStores  //? 包含公共无参构造函数，可能实现的构造函数。
+                            .Where(x => x.ParameterStores.Count == 0 || x.ParameterStores.All(y => y.IsOptional || y.ParameterType.IsInterface || y.ParameterType.IsClass))
+                            .OrderBy(x => x.ParameterStores.Count)
+                            .FirstOrDefault() ?? throw new NotSupportedException($"服务“{typeStore.FullName}”不包含任何可用于依赖注入的构造函数!"));
+
+                    _lazy = new Lazy<TImplementation>(() => invoke.Invoke());
+                }
+                else
+                {
+                    var propertyExp = Property(null, conversionType, "Instance");
+
+                    var lamdaExp = Lambda<Func<TImplementation>>(propertyExp);
+
+                    var invoke = lamdaExp.Compile();
+
+                    _lazy = new Lazy<TImplementation>(() => invoke.Invoke());
+                }
 
                 DefaultCache[typeof(TService)] = typeof(Nested<TService, TImplementation>);
             }

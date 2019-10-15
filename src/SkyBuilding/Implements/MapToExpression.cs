@@ -180,6 +180,19 @@ namespace SkyBuilding.Implements
             return results;
         }
 
+        private static object GetValueByEnumarableKeyValuePair<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> valuePairs, string key, Type conversionType, MapToExpression mapTo)
+        {
+            foreach (var kv in valuePairs.Where(kv => string.Equals(kv.Key.ToString(), key, StringComparison.OrdinalIgnoreCase)))
+            {
+                if (kv.Value == null)
+                    return null;
+
+                return mapTo.UnsafeMapTo(kv.Value, conversionType);
+            }
+
+            return default;
+        }
+
         #endregion
         /// <summary>
         /// 创建表达式
@@ -999,6 +1012,90 @@ namespace SkyBuilding.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
 
             return lamdaExp.Compile();
+        }
+
+        protected override Func<object, TResult> ByEnumarableToCommon<TResult>(Type sourceType, Type conversionType)
+        {
+            var interfaces = sourceType.GetInterfaces();
+
+            foreach (var type in interfaces.Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+            {
+                var typeArguments = type.GetGenericArguments();
+
+                if (typeArguments.Length > 1) continue;
+
+                var typeArgument = typeArguments.First();
+
+                if (!typeArgument.IsValueType || !typeArgument.IsGenericType || typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) continue;
+
+                return ByEnumarableKeyValuePairToCommon<TResult>(sourceType, conversionType, type, typeArgument.GetGenericArguments());
+            }
+
+            return base.ByEnumarableToCommon<TResult>(sourceType, conversionType);
+        }
+
+        protected virtual Func<object, TResult> ByEnumarableKeyValuePairToCommon<TResult>(Type sourceType, Type conversionType, Type interfaceType, Type[] typeArguments)
+        {
+            var methodCtor = ServiceCtor.Method;
+
+            Expression bodyExp = Convert(methodCtor.IsStatic
+                ? Call(null, methodCtor, Constant(conversionType))
+                : Call(Constant(ServiceCtor.Target), methodCtor, Constant(conversionType))
+                , conversionType);
+
+            var parameterExp = Parameter(typeof(object), "source");
+
+            var method = typeof(MapToExpression).GetMethod(nameof(GetValueByEnumarableKeyValuePair), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var methodG = method.MakeGenericMethod(typeArguments);
+
+            var valueExp = Variable(interfaceType, "value");
+
+            var thisExp = Constant(this);
+
+            var nullExp = Constant(null);
+
+            var maptoExp = Variable(typeof(object), "mapto");
+
+            var resultExp = Variable(conversionType, "target");
+
+            var list = new List<Expression>
+            {
+                Assign(valueExp, Convert(parameterExp, interfaceType)),
+
+                Assign(resultExp, bodyExp)
+            };
+
+            var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
+
+            if (Kind == PatternKind.Property || Kind == PatternKind.All)
+            {
+                typeStore.PropertyStores.ForEach(info =>
+                {
+                    Config(info, Property(resultExp, info.Member));
+                });
+            }
+
+            if (Kind == PatternKind.Field || Kind == PatternKind.All)
+            {
+                typeStore.FieldStores.ForEach(info =>
+                {
+                    Config(info, Field(resultExp, info.Member));
+                });
+            }
+
+            list.Add(resultExp);
+
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(new ParameterExpression[] { valueExp, maptoExp, resultExp }, list), parameterExp);
+
+            return lamdaExp.Compile();
+
+            void Config<T>(StoreItem<T> item, Expression node) where T : MemberInfo
+            {
+                list.Add(Assign(maptoExp, Call(null, methodG, valueExp, Constant(item.Name), Constant(item.MemberType), thisExp)));
+
+                list.Add(IfThen(NotEqual(maptoExp, nullExp), Assign(node, Convert(maptoExp, item.MemberType))));
+            }
         }
 
         protected override Func<object, TResult> ByObjectToEnumarable<TResult>(Type sourceType, Type conversionType, Type genericType)

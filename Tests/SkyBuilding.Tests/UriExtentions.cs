@@ -29,7 +29,7 @@ namespace SkyBuilding.Tests
         [TestMethod]
         public void GetJson()
         {
-            RuntimeServicePools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var token = "http://localhost:56324/login".AsRequestable()
                 .Query("?account=ljl&password=liujialin&debug=true")
@@ -52,7 +52,7 @@ namespace SkyBuilding.Tests
         [TestMethod]
         public void PostJson()
         {
-            RuntimeServicePools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var token = "http://localhost:56324/login".AsRequestable()
                 .Query("?account=ljl&password=liujialin&debug=true")

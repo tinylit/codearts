@@ -18,7 +18,7 @@ namespace System
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
         public static T CastTo<T>(this object obj, T def = default) =>
-            RuntimeServicePools.Singleton<ICastToExpression, CastToExpression>()
+            RuntimeServManager.Singleton<ICastToExpression, CastToExpression>()
             .CastTo(obj, def);
 
         /// <summary> 
@@ -28,7 +28,7 @@ namespace System
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
         public static object CastTo(this object obj, Type conversionType) =>
-            RuntimeServicePools.Singleton<ICastToExpression, CastToExpression>()
+            RuntimeServManager.Singleton<ICastToExpression, CastToExpression>()
             .CastTo(obj, conversionType);
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace System
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
         public static T CopyTo<T>(this T obj, T def = default) =>
-            RuntimeServicePools.Singleton<ICopyToExpression, MapToExpression>()
+            RuntimeServManager.Singleton<ICopyToExpression, MapToExpression>()
             .CopyTo(obj, def);
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace System
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
         public static T MapTo<T>(this object obj, T def = default) =>
-            RuntimeServicePools.Singleton<IMapToExpression, MapToExpression>()
+            RuntimeServManager.Singleton<IMapToExpression, MapToExpression>()
             .MapTo(obj, def);
 
         /// <summary> 
@@ -60,7 +60,7 @@ namespace System
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
         public static object MapTo(this object obj, Type conversionType) =>
-            RuntimeServicePools.Singleton<IMapToExpression, MapToExpression>()
+            RuntimeServManager.Singleton<IMapToExpression, MapToExpression>()
             .MapTo(obj, conversionType);
     }
 }

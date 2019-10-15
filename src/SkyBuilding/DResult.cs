@@ -18,28 +18,28 @@ namespace SkyBuilding
             /// </summary>
             /// <param name="errorMsg">错误消息</param>
             /// <param name="statusCode">错误编码</param>
-            public ErrorDresult(string errorMsg, int statusCode) : base(statusCode) => ErrorMsg = errorMsg;
+            public ErrorDresult(string errorMsg, int statusCode) : base(statusCode) => Msg = errorMsg;
 
             /// <summary>
             /// 错误信息
             /// </summary>
-            public string ErrorMsg { get; }
+            public string Msg { get; }
         }
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="statusCode">状态码</param>
-        public DResult(int statusCode = 200) => StatusCode = statusCode;
+        public DResult(int statusCode = StatusCodes.OK) => Code = statusCode;
 
         /// <summary>
         /// 状态码
         /// </summary>
-        public int StatusCode { get; }
+        public int Code { get; }
 
         /// <summary>
         /// 是否成功
         /// </summary>
-        public bool Success => StatusCode == 200;
+        public bool Success => Code == StatusCodes.OK;
 
         /// <summary>
         /// 成功
@@ -57,7 +57,6 @@ namespace SkyBuilding
         /// <summary>
         /// 成功
         /// </summary>
-        /// <param name="total">总数</param>
         /// <param name="data">数据</param>
         /// <returns></returns>
         public static DResults<T> Ok<T>(PagedList<T> data) => new DResults<T>(data);
@@ -76,7 +75,7 @@ namespace SkyBuilding
         /// <param name="errorMsg">错误信息</param>
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
-        public static DResult Error(string errorMsg, int statusCode = 500) => new ErrorDresult(errorMsg, statusCode);
+        public static DResult Error(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorDresult(errorMsg, statusCode);
     }
 
     /// <summary>
