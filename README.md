@@ -1,5 +1,8 @@
 ![SkyBuilding](https://raw.githubusercontent.com/tinylit/skybuilding/master/skybuilding.png '')
 
+![codeSize](https://img.shields.io/github/languages/code-size/tinylit/skybuilding.svg)
+![languages](https://img.shields.io/github/languages/top/tinylit/skybuilding.svg)
+
 ### What is SkyBuilding?
 SkyBuilding is a lightweight, simple, and efficient infrastructure (including type cast, copy, mapping, and ORM support).
 
@@ -260,25 +263,13 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     }
     ```
 * .NET40(Support dependency injection, routing, exception capture, login, and authCode, etc)
-    ``` csharp
-    public class WebApiApplication : HttpApplication
-    {
-        protected void Application_Start()
-        {
-            ApiConfig.Register(GlobalConfiguration.Configuration);
-        }
-    }
-    ```
 * .NET45+(Support dependency injection, SwaggerUi, routing, exception capture, login and authCode,etc)
     ``` csharp
     public class WebApiApplication : HttpApplication
     {
         protected void Application_Start()
         {
-            AreaRegistration.RegisterAllAreas();
             GlobalConfiguration.Configure(ApiConfig.Register); //This is a must.
-            RouteConfig.RegisterRoutes(RouteTable.Routes);
-            BundleConfig.RegisterBundles(BundleTable.Bundles);
         }
     }
     ```
