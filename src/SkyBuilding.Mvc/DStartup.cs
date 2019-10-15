@@ -251,14 +251,7 @@ namespace SkyBuilding.Mvc
                     }
                     catch (Exception exception)
                     {
-                        if (context.Response.StatusCode == 200)
-                        {
-                            await context.Response.WriteJsonAsync(ExceptionHandler.Handler(exception));
-                        }
-                        else
-                        {
-                            await context.Response.WriteJsonAsync(context.Response.StatusCode.CodeResult());
-                        }
+                        await context.Response.WriteJsonAsync(ExceptionHandler.Handler(exception));
                     }
                 };
             });

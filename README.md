@@ -245,6 +245,92 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     [SqlServer](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/SqlServerTest.cs)
     [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/MySqlTest.cs)
 
+### How to use Mvc?
+* .NETCore
+    + Using normal(Support dependency injection, SwaggerUi, exception capture and other features).
+    ``` csharp
+    public class Startup : DStartup {
+
+    }
+    ```
+    + Using JWT(Supports JWT authentication, login and authCode, and includes all normal features).
+    ``` csharp
+    public class Startup : JwtStartup {
+
+    }
+    ```
+* .NET40(Support dependency injection, routing, exception capture, login, and authCode, etc)
+    ``` csharp
+    public class WebApiApplication : HttpApplication
+    {
+        protected void Application_Start()
+        {
+            ApiConfig.Register(GlobalConfiguration.Configuration);
+        }
+    }
+    ```
+* .NET45+(Support dependency injection, SwaggerUi, routing, exception capture, login and authCode,etc)
+    ``` csharp
+    public class WebApiApplication : HttpApplication
+    {
+        protected void Application_Start()
+        {
+            AreaRegistration.RegisterAllAreas();
+            GlobalConfiguration.Configure(ApiConfig.Register); //This is a must.
+            RouteConfig.RegisterRoutes(RouteTable.Routes);
+            BundleConfig.RegisterBundles(BundleTable.Bundles);
+        }
+    }
+    ```
+### How to configure MVC?
+* .NETCore
+    ``` json
+    {
+        "Logging": {
+            "LogLevel": {
+                "Default": "Information",
+                "Microsoft": "Warning",
+                "Microsoft.Hosting.Lifetime": "Information"
+            }
+        },
+        "login": "api/values/login", //登录地址，必填
+        "jwt": { // 可选
+            //"secret": "",  //密钥
+            //"audience":"",  // 添加 identity.AddClaim(new Claim("aud", "jwt:audience".Config("api")));
+            //"issuer":""  // 添加 identity.AddClaim(new Claim("iss", "jwt:issuer".Config("yep")));
+        },
+        "swagger": { // 可选
+            //"title": "mvc.core2.2", // swagger 标题
+            //"version": "v1" // swagger 版本号
+        },
+        "AllowedHosts": "*"
+    }
+
+    ```
+* .NET
+    ``` xml
+    <?xml version="1.0" encoding="utf-8"?>
+
+    <!--
+    有关如何配置 ASP.NET 应用程序的详细信息，请访问
+    https://go.microsoft.com/fwlink/?LinkId=169433
+    -->
+
+    <configuration>
+        <appSettings>
+            <!--jwt 密钥-->
+            <!--<add key="jwt-secret" value="">-->
+            <!-- swagger 标题 -->
+            <!--<add key="swagger-title" value="mvc4" />-->
+            <!-- swagger 版本 -->
+            <!--<add key="swagger-version" value="v1"/>-->
+            <!-- 登录地址：必须的 -->
+            <add key="login" value="api/values/login" />
+        </appSettings>
+    </configuration>
+    ```
+
+
 ### Performance comparison.
 Function|Third-party libraries|Performance improvement|Explain
 :--:|---|:--:|---

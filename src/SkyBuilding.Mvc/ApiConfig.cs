@@ -68,11 +68,11 @@ namespace SkyBuilding.Mvc
         }
 
         /// <summary>
-        /// 注册（天空之城路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务）
+        /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务、依赖注入）
         /// </summary>
 #else
         /// <summary>
-        /// 注册（天空之城路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务、依赖注入、SwaggerUI）
+        /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务、依赖注入、SwaggerUI）
         /// </summary>
 #endif
         /// <param name="config">协议配置</param>
@@ -89,7 +89,7 @@ namespace SkyBuilding.Mvc
 
             //? 注册默认路由
             config.Routes.MapHttpRoute(
-                name: "default",
+                name: "controller",
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
