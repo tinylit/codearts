@@ -5,16 +5,6 @@ branches:
 environment:
   my_variable:
     secure: wNX2iDZ6vz+R7otYxAXPZcJlSURjT1/f9I2/77C0HOOOyKtJ97S09g4Qxun/iQ1m
-image: Visual Studio 2019
-configuration:
-- Debug
-- Release
-platform:
-- x86
-- x64
-- Any CPU
-clone_depth: 5
-environment:
   DEV-DATABASE-SQLSEVER-DOMAIN:
     secure: RWjD1YlUrzmeqLaRS1d31w==
   DEV-DATABASE-MYSQL-DOMAIN:
@@ -27,6 +17,15 @@ environment:
     secure: e0KSlgsDXc0qVKE7Rv5j+A==
   DEV-DATABASE-MYSQL-PASSWORD:
     secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
+image: Visual Studio 2019
+configuration:
+- Debug
+- Release
+platform:
+- x86
+- x64
+- Any CPU
+clone_depth: 5
 before_build:
 - cmd: nuget restore
 build:
