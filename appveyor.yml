@@ -5,7 +5,7 @@ branches:
 environment:
   my_variable:
     secure: wNX2iDZ6vz+R7otYxAXPZcJlSURjT1/f9I2/77C0HOOOyKtJ97S09g4Qxun/iQ1m
-image: Visual Studio 2017
+image: Visual Studio 2019
 configuration:
 - Debug
 - Release
