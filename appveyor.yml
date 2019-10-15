@@ -1,29 +1,19 @@
 version: 1.0.{build}
-
 environment:
   my_variable:
-    secure: XhpTK+stym7O1dkZ24bIuHxOJtBbypMurYNX/I7m3OliWVE+4CCeiVr573SD6S+m
-
+    secure: wNX2iDZ6vz+R7otYxAXPZcJlSURjT1/f9I2/77C0HOOOyKtJ97S09g4Qxun/iQ1m
 configuration:
 - Debug
 - Release
 platform:
-- Any CPU
 - x86
 - x64
-nuget:
-  project_feed: true
+- Any CPU
+clone_depth: 5
+before_build:
+- cmd: nuget restore
 build:
-  publish_nuget: true
-  publish_nuget_symbols: true
-  include_nuget_references: true
-  publish_aspnet_core: true
-  publish_core_console: true
   verbosity: minimal
-deploy:
-- provider: NuGet
-  api_key:
-    secure: sw84tu9xp7g5imw3kveds45b
 notifications:
 - provider: Email
   to:
