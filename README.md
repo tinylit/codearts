@@ -3,7 +3,6 @@
 ![language](https://img.shields.io/github/languages/top/tinylit/skybuilding.svg)
 ![codeSize](https://img.shields.io/github/languages/code-size/tinylit/skybuilding.svg)
 ![appveyor-ci](https://ci.appveyor.com/api/projects/status/hojhf5erylaap05b?svg=true)
-![travis-ci](https://travis-ci.com/tinylit/skybuilding.svg?branch=master)
 
 ### What is SkyBuilding?
 SkyBuilding is a lightweight, simple, and efficient infrastructure (including type cast, copy, mapping, and ORM support).
