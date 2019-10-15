@@ -6,10 +6,16 @@ using Swashbuckle.Application;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Globalization;
+using System.Net;
+using System.Web.Http.Controllers;
+using System.Web.Http.Dispatcher;
 #else
 using System.Collections.Generic;
 using System.Web.Http.Routing;
 using System.Net.Http;
+using System.Web.Routing;
+using System.Web;
 #endif
 using SkyBuilding.Config;
 using SkyBuilding.Log;
@@ -23,13 +29,6 @@ using System.Web.Http;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Mvc.Cache;
 using SkyBuilding.Cache;
-using System.Web.Routing;
-using System.Web;
-using System.Globalization;
-using System.Net;
-using System.Web.Http.Controllers;
-using System.Web.Http.Dispatcher;
-using System.Linq;
 
 namespace SkyBuilding.Mvc
 {
