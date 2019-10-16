@@ -65,7 +65,7 @@ END
 -- ----------------------------
 -- Table structure for fei_user_wx_account_info
 -- ----------------------------
-IF EXISTS (SELECT * FROM sys.all_objects WHERE object_id = OBJECT_ID(N'[dbo].[fei_user_wx_account_info]') AND type IN ('U'))
+IF NOT EXISTS (SELECT * FROM sys.all_objects WHERE object_id = OBJECT_ID(N'[dbo].[fei_user_wx_account_info]') AND type IN ('U'))
 BEGIN
 	CREATE TABLE [dbo].[fei_user_wx_account_info] (
 	  [id] int  IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
