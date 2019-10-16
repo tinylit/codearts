@@ -95,14 +95,11 @@ namespace SkyBuilding.ORM
 
                 try
                 {
-                    lock (conn)
+                    if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
                     {
-                        if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
-                        {
-                            return (TResult)Select<T>(conn, sql, builder.Parameters);
-                        }
-                        return Single<TResult>(conn, sql, builder.Parameters);
+                        return (TResult)Select<T>(conn, sql, builder.Parameters);
                     }
+                    return Single<TResult>(conn, sql, builder.Parameters);
                 }
                 catch (DbException db)
                 {

@@ -87,75 +87,78 @@ namespace SkyBuilding.ORM
         {
             conn.Open();
 
-            var command = conn.CreateCommand();
+            using (var command = conn.CreateCommand())
+            {
+                command.CommandText = sql;
 
-            command.CommandText = sql;
+                AddParameterAuto(command, parameters);
 
-            AddParameterAuto(command, parameters);
-
-            return command.ExecuteNonQuery();
+                return command.ExecuteNonQuery();
+            }
         }
 
         protected override IEnumerable<T> Select<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters)
         {
             conn.Open();
 
-            var command = conn.CreateCommand();
-
-            command.CommandText = sql;
-
-            AddParameterAuto(command, parameters);
-
-            var dr = command.ExecuteReader();
-
-            while (dr.Read())
+            using (var command = conn.CreateCommand())
             {
-                yield return dr.MapTo<T>();
+                command.CommandText = sql;
+
+                AddParameterAuto(command, parameters);
+
+                using (var dr = command.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        yield return dr.MapTo<T>();
+                    }
+
+                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
+
+                    dr.Close();
+                }
             }
-
-            while (dr.NextResult()) { /* ignore subsequent result sets */ }
-
-            dr.Close();
-            dr.Dispose();
         }
 
         protected override T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters)
         {
             conn.Open();
 
-            var command = conn.CreateCommand();
-
-            command.CommandText = sql;
-
-            AddParameterAuto(command, parameters);
-
-            var type = typeof(T);
-
-            var value = default(T);
-
-            if (type.IsValueType || type == typeof(string))
+            using (var command = conn.CreateCommand())
             {
-                var data = command.ExecuteScalar();
+                command.CommandText = sql;
 
-                if (!(data is null))
-                    value = data.CastTo<T>();
+                AddParameterAuto(command, parameters);
 
+                var type = typeof(T);
+
+                var value = default(T);
+
+                if (type.IsValueType || type == typeof(string))
+                {
+                    var data = command.ExecuteScalar();
+
+                    if (!(data is null))
+                        value = data.CastTo<T>();
+
+                    return value;
+                }
+
+                using (var dr = command.ExecuteReader())
+                {
+
+                    if (dr.Read())
+                    {
+                        value = dr.MapTo<T>();
+                    }
+
+                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
+
+                    dr.Close();
+                }
                 return value;
             }
-
-            var dr = command.ExecuteReader();
-
-            if (dr.Read())
-            {
-                value = dr.MapTo<T>();
-            }
-
-            while (dr.NextResult()) { /* ignore subsequent result sets */ }
-
-            dr.Close();
-            dr.Dispose();
-
-            return value;
         }
     }
 }
