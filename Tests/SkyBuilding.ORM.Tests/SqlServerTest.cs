@@ -22,7 +22,7 @@ namespace UnitTest
             DbConnectionManager.AddAdapter(adapter);
             DbConnectionManager.AddProvider<SkyProvider>();
 
-            var connectionString = @"Data Source=(local)\SQL2008R2SP2;User ID=sa; Password=Password12!;Initial Catalog=master;Pooling=true";
+            var connectionString = @"Server=(local)\SQL2008R2SP2;Database=master;User ID=sa;Password=Password12!";
 
             using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
             {

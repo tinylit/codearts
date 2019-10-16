@@ -25,7 +25,12 @@ environment:
     secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
 image: Visual Studio 2019
 services:
-  - mssql2008r2sp2
+  - mssql2014           # start SQL Server 2014 Express
+  - mssql2014rs         # start SQL Server 2014 Express and Reporting Services
+  - mssql2012sp1        # start SQL Server 2012 SP1 Express
+  - mssql2012sp1rs      # start SQL Server 2012 SP1 Express and Reporting Services
+  - mssql2008r2sp2      # start SQL Server 2008 R2 SP2 Express
+  - mssql2008r2sp2rs    # start SQL Server 2008 R2 SP2 Express and Reporting Services
   - mysql
 # scripts that are called at very beginning, before repo cloning
 init:
