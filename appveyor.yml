@@ -10,12 +10,9 @@ clone_depth: 5
 environment:
   DEV-DATABASE-SQLSEVER-DOMAIN:
     secure: gDFNTcGbJURYooTneY4HWA==
-  DEV-DATABASE-SQLSEVER-USER:
-    secure: e0KSlgsDXc0qVKE7Rv5j+A==
-  DEV-DATABASE-SQLSEVER-PASSWORD:
-    secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
-  DEV-DATABASE-SQLSERVER-DATABASE:
-    secure: ODbpu9o1oZ6BmR2jaDYPFg==
+  DEV-DATABASE-SQLSEVER-USER: orm
+  DEV-DATABASE-SQLSEVER-PASSWORD: Password12!
+  DEV-DATABASE-SQLSERVER-DATABASE: yep_sky_orm
 image: Visual Studio 2019
 skip_tags: true
 skip_commits:
