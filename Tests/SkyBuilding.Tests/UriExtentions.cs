@@ -31,22 +31,22 @@ namespace SkyBuilding.Tests
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
-            var token = "http://localhost:56324/login".AsRequestable()
-                .Query("?account=ljl&password=liujialin&debug=true")
-                .ByJson(new
-                {
-                    data = new { type = string.Empty, token = string.Empty },
-                    status = true,
-                    code = 0,
-                    message = string.Empty,
-                    timestamp = DateTime.Now
-                }, NamingType.CamelCase)
-                .Get();
+            //var token = "http://localhost:56324/login".AsRequestable()
+            //    .Query("?account=ljl&password=liujialin&debug=true")
+            //    .ByJson(new
+            //    {
+            //        data = new { type = string.Empty, token = string.Empty },
+            //        status = true,
+            //        code = 0,
+            //        message = string.Empty,
+            //        timestamp = DateTime.Now
+            //    }, NamingType.CamelCase)
+            //    .Get();
 
-            var values = "http://localhost:56324/api/values".AsRequestable()
-                .Header("Authorization", token.data.type + " " + token.data.token)
-                .ByJson<List<string>>()
-                .Get();
+            //var values = "http://localhost:56324/api/values".AsRequestable()
+            //    .Header("Authorization", token.data.type + " " + token.data.token)
+            //    .ByJson<List<string>>()
+            //    .Get();
         }
 
         [TestMethod]
@@ -54,17 +54,17 @@ namespace SkyBuilding.Tests
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
-            var token = "http://localhost:56324/login".AsRequestable()
-                .Query("?account=ljl&password=liujialin&debug=true")
-                .ByJson(new
-                {
-                    data = new { type = string.Empty, token = string.Empty },
-                    status = true,
-                    code = 0,
-                    message = string.Empty,
-                    timestamp = DateTime.Now
-                }, NamingType.CamelCase)
-                .Get();
+            //var token = "http://localhost:56324/login".AsRequestable()
+            //    .Query("?account=ljl&password=liujialin&debug=true")
+            //    .ByJson(new
+            //    {
+            //        data = new { type = string.Empty, token = string.Empty },
+            //        status = true,
+            //        code = 0,
+            //        message = string.Empty,
+            //        timestamp = DateTime.Now
+            //    }, NamingType.CamelCase)
+            //    .Get();
 
             //var json = new
             //{
