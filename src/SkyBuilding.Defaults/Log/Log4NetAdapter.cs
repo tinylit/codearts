@@ -6,7 +6,7 @@ using log4net.Layout;
 using SkyBuilding.Log;
 using System;
 
-namespace SkyBuilding.Mvc.Log
+namespace SkyBuilding.Log
 {
     /// <summary>
     /// log4net日志适配器

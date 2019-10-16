@@ -27,7 +27,7 @@ namespace SkyBuilding.Mvc.Controllers
     /// </summary>
 #if NET45 || NET451 || NET452 || NET461
     [Route]
-    public sealed class __Controller : ApiController
+    public sealed class DefaultController : ApiController
     {
         private readonly char[] CharArray = "0123456789ABCDEabcdefghigklmnopqrFGHIGKLMNOPQRSTUVWXYZstuvwxyz".ToCharArray();
 
@@ -408,7 +408,7 @@ namespace SkyBuilding.Mvc.Controllers
 
         public override Task<HttpResponseMessage> ExecuteAsync(HttpControllerContext controllerContext, CancellationToken cancellationToken)
         {
-            return Task.Run(() =>
+            return Task.Factory.StartNew(() =>
             {
                 string code = CreateRandomCode(4); //验证码的字符为4个
                 byte[] bytes = CreateValidateGraphic(code);

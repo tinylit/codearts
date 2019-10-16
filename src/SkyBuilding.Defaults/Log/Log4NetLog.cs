@@ -3,7 +3,7 @@ using SkyBuilding.Log;
 using SkyBuilding.Serialize.Json;
 using System;
 
-namespace SkyBuilding.Mvc.Log
+namespace SkyBuilding.Log
 {
     /// <summary>
     /// log4net日志系统

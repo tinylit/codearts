@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 
-namespace SkyBuilding.Mvc.Cache
+namespace SkyBuilding.Cache
 {
     /// <summary>
     /// 运行时内存管理
@@ -37,7 +37,7 @@ namespace SkyBuilding.Mvc.Cache
 using System.Collections.Concurrent;
 using System.Runtime.Caching;
 
-namespace SkyBuilding.Mvc.Cache
+namespace SkyBuilding.Cache
 {
     /// <summary>
     /// 运行时内存管理

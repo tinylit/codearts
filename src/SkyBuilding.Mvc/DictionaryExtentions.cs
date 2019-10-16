@@ -1,6 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+#if NET40
+using System.Linq;
+using System.Security.Principal;
+#else
+using System;
 using System.Security.Claims;
+#endif
 
 namespace SkyBuilding.Mvc
 {
@@ -9,6 +14,50 @@ namespace SkyBuilding.Mvc
     /// </summary>
     internal static class DictionaryExtentions
     {
+#if NET40
+        /// <summary>
+        /// 作为身份认证
+        /// </summary>
+        /// <param name="userData">用户数据</param>
+        /// <returns></returns>
+        public static IIdentity AsIdentity(this IDictionary<string, object> userData)
+        {
+            foreach (var kv in userData)
+            {
+                var value = kv.Value;
+
+                if (value is null) continue;
+
+                var key = kv.Key.ToLower();
+
+                if (key == "id" || key == "name" || key == "account")
+                {
+                    return new GenericIdentity(value.ToString(), "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name");
+                }
+            }
+
+            return new GenericIdentity("JwtBearer", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name");
+        }
+
+        /// <summary>
+        /// 作为身份认证
+        /// </summary>
+        /// <param name="userData">用户数据</param>
+        /// <returns></returns>
+        public static IPrincipal AsPrincipal(this IDictionary<string, object> userData)
+        {
+            foreach (var kv in userData)
+            {
+                var value = kv.Value;
+
+                if (value is null) continue;
+
+                var key = kv.Key.ToLower();
+            }
+
+            return new GenericPrincipal(userData.AsIdentity(), userData.Where(x => x.Key.ToLower() == "role").Select(x => x.Value.ToString()).ToArray());
+        }
+#else
         private readonly static Dictionary<string, string> ClaimTypes = new Dictionary<string, string>
         {
             ["id"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
@@ -138,5 +187,6 @@ namespace SkyBuilding.Mvc
 
             return identity;
         }
+#endif
     }
 }

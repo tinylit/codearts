@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace SkyBuilding.Mvc.Config
+namespace SkyBuilding.Config
 {
     /// <summary>
     /// Json 配置助手
@@ -129,7 +129,7 @@ using System.IO;
 using System.Web.Configuration;
 using SkyBuilding.Config;
 
-namespace SkyBuilding.Mvc.Config
+namespace SkyBuilding.Config
 {
     /// <summary>
     /// Json 配置助手

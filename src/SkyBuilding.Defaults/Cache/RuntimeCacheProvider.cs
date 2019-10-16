@@ -1,7 +1,7 @@
 ﻿using SkyBuilding.Cache;
 using System.Collections.Concurrent;
 
-namespace SkyBuilding.Mvc.Cache
+namespace SkyBuilding.Cache
 {
     /// <summary>
     /// 内存缓存服务提供商

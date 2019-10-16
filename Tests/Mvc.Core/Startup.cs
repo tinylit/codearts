@@ -1,30 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using SkyBuilding;
 using SkyBuilding.Cache;
 using SkyBuilding.Config;
 using SkyBuilding.Log;
 using SkyBuilding.Mvc;
-using SkyBuilding.Mvc.Cache;
-using SkyBuilding.Mvc.Config;
 using SkyBuilding.Mvc.Converters;
-using SkyBuilding.Mvc.Log;
-using SkyBuilding.Mvc.Serialize.Json;
 using SkyBuilding.Serialize.Json;
 using Swashbuckle.AspNetCore.Swagger;
+using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace Mvc.Core
 {

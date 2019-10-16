@@ -19,15 +19,11 @@ using System.Web;
 #endif
 using SkyBuilding.Config;
 using SkyBuilding.Log;
-using SkyBuilding.Mvc.Config;
 using SkyBuilding.Mvc.Converters;
-using SkyBuilding.Mvc.Log;
-using SkyBuilding.Mvc.Serialize.Json;
 using SkyBuilding.Serialize.Json;
 using System;
 using System.Web.Http;
 using Newtonsoft.Json.Serialization;
-using SkyBuilding.Mvc.Cache;
 using SkyBuilding.Cache;
 
 namespace SkyBuilding.Mvc

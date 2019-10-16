@@ -3,7 +3,7 @@ using System;
 using System.Text.Json;
 using SkyBuilding.Serialize.Json;
 
-namespace SkyBuilding.Mvc.Serialize.Json
+namespace SkyBuilding.Serialize.Json
 {
     /// <summary>
     /// 牛顿 JSON 序列化帮助类
@@ -81,12 +81,12 @@ namespace SkyBuilding.Mvc.Serialize.Json
     }
 }
 #else
-using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Serialize.Json;
+using System;
 
-namespace SkyBuilding.Mvc.Serialize.Json
+namespace SkyBuilding.Serialize.Json
 {
     /// <summary>
     /// 牛顿 JSON 序列化帮助类

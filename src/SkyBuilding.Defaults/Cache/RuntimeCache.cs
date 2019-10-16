@@ -7,7 +7,7 @@ using SkyBuilding.Cache;
 using System;
 using System.Collections.Generic;
 
-namespace SkyBuilding.Mvc.Cache
+namespace SkyBuilding.Cache
 {
     /// <summary>
     /// 内存缓存

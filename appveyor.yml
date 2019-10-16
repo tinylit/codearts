@@ -21,9 +21,9 @@ skip_tags: true
 skip_commits:
   files:
     - '**/*.md'
-    - '**/.txt'
-    - '**/.png'
-    - '**/.jpg'
+    - '**/*.txt'
+    - '**/*.png'
+    - '**/*.jpg'
 services:
   - mssql2008r2sp2
   - mysql

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 #endif
 using System;
 
-namespace SkyBuilding.Mvc.Cache
+namespace SkyBuilding.Cache
 {
     /// <summary>
     /// 内存扩展方法
