@@ -16,7 +16,7 @@ namespace UnitTest.Serialize
             {
                 Name = "de",
                 ProviderName = "SqlServer",
-                ConnectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}",
+                ConnectionString = string.Format(@"Data Source={0};User ID={2}; Password={3};Initial Catalog={1};Pooling=true",
                 SqlServerConsts.Domain,
                 SqlServerConsts.Database,
                 SqlServerConsts.User,
