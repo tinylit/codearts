@@ -34,8 +34,17 @@ namespace SkyBuilding.ORM
             {
                 Interlocked.Increment(ref _refCount);
             }
-            _lasteUsedTime = DateTime.Now;
             return this;
+        }
+
+        public override void Open()
+        {
+            if (State != ConnectionState.Open)
+            {
+                base.Open();
+            }
+
+            _lasteUsedTime = DateTime.Now;
         }
 
         /// <summary> 是否存活 </summary>

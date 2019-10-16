@@ -26,7 +26,7 @@ namespace SkyBuilding
         /// <summary>
         /// 获取服务实现的函数
         /// </summary>
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Func<object>> MethodCahce =
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Func<object>> MethodCache =
             new System.Collections.Concurrent.ConcurrentDictionary<Type, Func<object>>();
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace SkyBuilding
                     if (DefaultCache.TryGetValue(serviceType, out Type defaultType))
                     {
                         //? 同时存在时以“Nested<TService, TImplementation>”类型存储。
-                        var invoke = MethodCahce.GetOrAdd(defaultType, type =>
+                        var invoke = MethodCache.GetOrAdd(defaultType, type =>
                         {
                             var lamdaExp = Lambda<Func<object>>(Coalesce(Property(null, implementType, "Instance"), Property(null, type, "Instance")));
 
@@ -167,7 +167,7 @@ namespace SkyBuilding
                         return invoke.Invoke();
                     }
 
-                    var invoke2 = MethodCahce.GetOrAdd(implementType, type =>
+                    var invoke2 = MethodCache.GetOrAdd(implementType, type =>
                     {
                         var lamdaExp = Lambda<Func<object>>(Property(null, type, "Instance"));
 

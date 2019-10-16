@@ -24,18 +24,17 @@ namespace SkyBuilding.ORM
             {
                 if (!transactionConnections.TryGetValue(current, out dictionary))
                 {
-                    transactionConnections.Add(current, dictionary = new Dictionary<string, DbConnectionWrapper>());
                     current.TransactionCompleted += OnTransactionCompleted;
+                    transactionConnections.Add(current, dictionary = new Dictionary<string, DbConnectionWrapper>());
                 }
             }
-            DbConnectionWrapper dbconnection = null;
             lock (dictionary)
             {
-                if (!dictionary.TryGetValue(connectionString, out dbconnection))
+                if (!dictionary.TryGetValue(connectionString, out DbConnectionWrapper info))
                 {
-                    dictionary.Add(connectionString, dbconnection = new DbConnectionWrapper(adapter.Create(connectionString)));
+                    dictionary.Add(connectionString, info = new DbConnectionWrapper(adapter.Create(connectionString)));
                 }
-                return dbconnection.GetConnection();
+                return info.GetConnection();
             }
         }
 

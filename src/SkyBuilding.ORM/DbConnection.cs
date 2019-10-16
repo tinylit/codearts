@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 
 namespace SkyBuilding.ORM
 {
@@ -38,40 +39,68 @@ namespace SkyBuilding.ORM
         /// 创建事务
         /// </summary>
         /// <returns></returns>
-        public IDbTransaction BeginTransaction() => _connection.BeginTransaction();
+        public IDbTransaction BeginTransaction()
+        {
+            if (_connection.State == ConnectionState.Closed)
+            {
+                Open();
+            }
+
+            return _connection.BeginTransaction();
+        }
 
         /// <summary>
         /// 创建事务
         /// </summary>
         /// <param name="il">隔离等级</param>
         /// <returns></returns>
-        public IDbTransaction BeginTransaction(IsolationLevel il) => _connection.BeginTransaction(il);
+        public IDbTransaction BeginTransaction(IsolationLevel il)
+        {
+            if (_connection.State == ConnectionState.Closed)
+            {
+                Open();
+            }
+
+            return _connection.BeginTransaction(il);
+        }
 
         /// <summary>
         /// 修改数据库
         /// </summary>
         /// <param name="databaseName">数据库名称</param>
-        public void ChangeDatabase(string databaseName) => _connection.ChangeDatabase(databaseName);
+        public void ChangeDatabase(string databaseName)
+        {
+            if (State == ConnectionState.Closed)
+            {
+                Open();
+            }
+
+            _connection.ChangeDatabase(databaseName);
+        }
 
         /// <summary>
         /// 打开链接
         /// </summary>
-        public void Open()
-        {
-            if (_connection.State != ConnectionState.Open)
-                _connection.Open();
-        }
+        public virtual void Open() => _connection.Open();
 
         /// <summary>
         /// 关闭链接
         /// </summary>
-        public abstract void Close();
+        public virtual void Close() => _connection.Close();
 
         /// <summary>
         /// 创建命令
         /// </summary>
         /// <returns></returns>
-        public IDbCommand CreateCommand() => _connection.CreateCommand();
+        public IDbCommand CreateCommand()
+        {
+            if (_connection.State == ConnectionState.Closed)
+            {
+                Open();
+            }
+
+            return _connection.CreateCommand();
+        }
 
         /// <summary>
         /// 释放内存

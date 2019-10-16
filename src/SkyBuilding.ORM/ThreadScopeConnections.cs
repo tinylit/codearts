@@ -53,11 +53,6 @@ namespace SkyBuilding.ORM
         private void ClearTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             ClearDict();
-            if (ConnectionCache.Count == 0)
-            {
-                _clearTimerRun = false;
-                _clearTimer.Stop();
-            }
         }
 
 
@@ -96,6 +91,12 @@ namespace SkyBuilding.ORM
                 {
                     ConnectionCache.TryRemove(item, out _);
                 }
+
+                if (ConnectionCache.Count == 0)
+                {
+                    _clearTimerRun = false;
+                    _clearTimer.Stop();
+                }
             }
         }
 
@@ -111,25 +112,19 @@ namespace SkyBuilding.ORM
                 if (!threadCache)
                     return TransactionScopeConnections.GetConnection(connectionString, adapter) ?? adapter.Create(connectionString);
 
-                var connectionKey = Thread.CurrentThread;
+                var connDict = ConnectionCache.GetOrAdd(Thread.CurrentThread, thread => new Dictionary<string, DbConnectionWrapper>());
 
-                if (!ConnectionCache.TryGetValue(connectionKey, out Dictionary<string, DbConnectionWrapper> connDict))
+                if (!connDict.TryGetValue(connectionString, out DbConnectionWrapper info))
                 {
-                    connDict = new Dictionary<string, DbConnectionWrapper>();
-                    if (!ConnectionCache.TryAdd(connectionKey, connDict))
+                    if (!_clearTimerRun)
                     {
-                        throw new Exceptions.DException($"{connectionString}数据库连接添加失败!");
+                        _clearTimer.Start();
+                        _clearTimerRun = true;
                     }
+
+                    connDict.Add(connectionString, info = new DbConnectionWrapper(adapter.Create(connectionString), TimeSpan.FromMinutes(Math.Min(60D, Math.Max(5D, adapter.ConnectionHeartbeat)))));
                 }
-                if (connDict.TryGetValue(connectionString, out DbConnectionWrapper info))
-                    return info.GetConnection();
-                info = new DbConnectionWrapper(adapter.Create(connectionString), TimeSpan.FromMinutes(Math.Min(60, Math.Max(5, adapter.ConnectionHeartbeat))));
-                connDict.Add(connectionString, info);
-                if (!_clearTimerRun)
-                {
-                    _clearTimer.Start();
-                    _clearTimerRun = true;
-                }
+
                 return info.GetConnection();
             }
         }
