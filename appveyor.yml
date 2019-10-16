@@ -27,8 +27,10 @@ image: Visual Studio 2019
 services:
   - mssql2016
   - mysql
-build_script:
-  - ps: .\build.ps1
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf input
+
 before_build:
 - cmd: nuget restore
 build:
