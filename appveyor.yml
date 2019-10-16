@@ -2,6 +2,12 @@ version: 1.0.{build}
 branches:
   only:
   - master
+configuration:
+- Debug
+- Release
+platform:
+- Any CPU
+clone_depth: 5
 environment:
   NUGET-SECRET:
     secure: wNX2iDZ6vz+R7otYxAXPZcJlSURjT1/f9I2/77C0HOOOyKtJ97S09g4Qxun/iQ1m
@@ -21,12 +27,21 @@ image: Visual Studio 2019
 services:
   - mssql2016
   - mysql
-configuration:
-- Debug
-- Release
-platform:
-- Any CPU
-clone_depth: 5
+init:
+    <#
+        .SYNOPSIS
+            Set all installed instances of SQL server to dynamic ports
+    #>
+    Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\' |
+    Where-Object {
+        $_.Name -imatch 'MSSQL[_\d]+\.SQL.*'
+    } |
+    ForEach-Object {
+
+        Write-Host "Setting $((Get-ItemProperty $_.PSPath).'(default)') to dynamic ports"
+        Set-ItemProperty (Join-Path $_.PSPath 'mssqlserver\supersocketnetlib\tcp\ipall') -Name TcpDynamicPorts -Value '0'
+        Set-ItemProperty (Join-Path $_.PSPath 'mssqlserver\supersocketnetlib\tcp\ipall') -Name TcpPort -Value ([string]::Empty)
+    }
 before_build:
 - cmd: nuget restore
 build:
