@@ -25,7 +25,7 @@ environment:
     secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
 image: Visual Studio 2019
 services:
-  - mssql2016
+  - mssql2008r2sp2
   - mysql
 # scripts that are called at very beginning, before repo cloning
 init:
