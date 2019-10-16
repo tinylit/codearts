@@ -1,4 +1,5 @@
 ﻿using SkyBuilding.ORM;
+using SkyBuilding.ORM.Tests;
 using System;
 
 namespace UnitTest.Serialize
@@ -15,7 +16,11 @@ namespace UnitTest.Serialize
             {
                 Name = "de",
                 ProviderName = "SqlServer",
-                ConnectionString = @"Server=(local)\SQL2008R2SP2;Database=master;User ID=sa;Password=Password12!"//? 数据库链接
+                ConnectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}",
+                SqlServerConsts.Domain,
+                SqlServerConsts.Database,
+                SqlServerConsts.User,
+                SqlServerConsts.Password)//? 数据库链接
             };
         }
     }

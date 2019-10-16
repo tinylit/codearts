@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SkyBuilding.ORM;
 using SkyBuilding.ORM.Domain;
+using SkyBuilding.ORM.Tests;
 using SkyBuilding.SqlServer;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,11 @@ namespace UnitTest
             DbConnectionManager.AddAdapter(adapter);
             DbConnectionManager.AddProvider<SkyProvider>();
 
-            var connectionString = @"Server=(local)\SQL2008R2SP2;Database=master;User ID=sa;Password=Password12!";
+            var connectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}", 
+                SqlServerConsts.Domain,
+                SqlServerConsts.Database,
+                SqlServerConsts.User,
+                SqlServerConsts.Password);
 
             using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
             {
