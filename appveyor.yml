@@ -30,7 +30,6 @@ services:
 # scripts that are called at very beginning, before repo cloning
 init:
   - git config --global core.autocrlf input
-
 before_build:
 - cmd: nuget restore
 build:
