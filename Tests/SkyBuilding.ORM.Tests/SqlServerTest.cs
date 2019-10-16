@@ -23,39 +23,38 @@ namespace UnitTest
             DbConnectionManager.AddAdapter(adapter);
             DbConnectionManager.AddProvider<SkyProvider>();
 
-            var connectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}", 
-                SqlServerConsts.Domain,
-                SqlServerConsts.Database,
-                SqlServerConsts.User,
-                SqlServerConsts.Password);
+            //var connectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}", 
+            //    SqlServerConsts.Domain,
+            //    SqlServerConsts.Database,
+            //    SqlServerConsts.User,
+            //    SqlServerConsts.Password);
 
-            using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
-            {
-                try
-                {
-                    connection.Open();
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.CommandType = System.Data.CommandType.Text;
+            //using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
+            //{
+            //    try
+            //    {
+            //        connection.Open();
+            //        using (var command = connection.CreateCommand())
+            //        {
+            //            command.CommandType = System.Data.CommandType.Text;
 
-                        var files = Directory.GetFiles("../../../Sql", "*.sql");
+            //            var files = Directory.GetFiles("../../../Sql", "*.sql");
 
-                        foreach (var file in files.Where(x => x.Contains("msssql")))
-                        {
-                            string text = File.ReadAllText(file, Encoding.UTF8);
+            //            foreach (var file in files.Where(x => x.Contains("msssql")))
+            //            {
+            //                string text = File.ReadAllText(file, Encoding.UTF8);
 
-                            command.CommandText = text;
+            //                command.CommandText = text;
 
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                }
-                finally
-                {
-                    connection.Close();
-                }
-            }
-
+            //                command.ExecuteNonQuery();
+            //            }
+            //        }
+            //    }
+            //    finally
+            //    {
+            //        connection.Close();
+            //    }
+            //}
         }
 
         [TestMethod]
