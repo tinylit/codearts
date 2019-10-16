@@ -7,10 +7,12 @@ using SkyBuilding.ORM.Tests.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnitTest.Domain;
 using UnitTest.Dtos;
 using UnitTest.Enums;
 using UnitTest.Visiters;
+using System.Text;
 
 namespace UnitTest
 {
@@ -21,20 +23,49 @@ namespace UnitTest
         private readonly AuthShipRepository authShipSingleton = Singleton<AuthShipRepository>.Instance;
         private readonly AuthTreeRepository authTreesingleton = Singleton<AuthTreeRepository>.Instance;
         private readonly TaxCodeRepository taxCodeSingleton = Singleton<TaxCodeRepository>.Instance;
-        private void Prepare()
+        [TestInitialize]
+        public void Initialize()
         {
-            var adaper = new MySqlAdapter();
+            var adapter = new MySqlAdapter();
 
-            adaper.Settings.Visitters.Add(new ConvertVisitter());
+            adapter.Settings.Visitters.Add(new ConvertVisitter());
 
-            DbConnectionManager.AddAdapter(adaper);
+            DbConnectionManager.AddAdapter(adapter);
             DbConnectionManager.AddProvider<SkyProvider>();
+
+            var connectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;";
+
+            using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
+            {
+                try
+                {
+                    connection.Open();
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandType = System.Data.CommandType.Text;
+
+                        var files = Directory.GetFiles("../../../Sql", "*.sql");
+
+                        foreach (var file in files.Where(x => x.Contains("mysql")))
+                        {
+                            string text = File.ReadAllText(file, Encoding.UTF8);
+
+                            command.CommandText = text;
+
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                }
+                finally
+                {
+                    connection.Close();
+                }
+            }
+
         }
         [TestMethod]
         public void SelectTest()
         {
-            Prepare();
-
             var id = 6518750666955952128uL;
             var rights = new int[] { 1, 2, 3, 4, 5 };
             var userRights = authShipSingleton.Where(x => x.Status != CommonStatusEnum.Deleted && x.Type == AuthShipEnum.Tree || x.Type == AuthShipEnum.Vip && x.OwnerId == id && rights.Contains(x.AuthId));
@@ -58,7 +89,6 @@ namespace UnitTest
         [TestMethod]
         public void SelectNullableTest()
         {
-            Prepare();
             var role = new UserRole?(UserRole.Owner);
             var defautUser = userSingleton.Where(x => x.Role == role.Value).First();
         }
@@ -66,7 +96,6 @@ namespace UnitTest
         [TestMethod]
         public void SelectOrTest()
         {
-            Prepare();
             UserInDto user = new UserInDto
             {
                 OrgId = 6518750666955952000,
@@ -121,8 +150,6 @@ namespace UnitTest
         [TestMethod]
         public void FirstOrDefault()
         {
-            Prepare();
-
             var list = new List<int> { 0 };
 
             var code = authTreesingleton.Where(x => x.ParentId == list[0])
@@ -134,12 +161,11 @@ namespace UnitTest
         [TestMethod]
         public void InsertTest()
         {
-            Prepare();
-
             var modified = DateTime.Now;
 
             var entry = new Domain.Entities.User
             {
+                Id = (ulong)DateTime.Now.Ticks,
                 OrgId = 6518750666955952000,
                 CompanyId = 6518750666955952000,
                 Account = "hyl",
@@ -185,10 +211,6 @@ namespace UnitTest
             userSingleton.AsInsertable(entry)
                 .ExecuteCommand();
 
-            int j = userSingleton
-                .AsInsertable(entry)
-                .ExecuteCommand();
-
             var entity = userSingleton
                 .Where(x => x.Account == "hyl")
                 .FirstOrDefault();
@@ -207,7 +229,6 @@ namespace UnitTest
         [TestMethod]
         public void HasChildTest()
         {
-            Prepare();
             string id = "*";
             bool isLevel = string.IsNullOrEmpty(id) || id == "*";
             var list = taxCodeSingleton.Where(x => isLevel ? x.Level == 1 : x.ParentId == id)
@@ -239,8 +260,6 @@ namespace UnitTest
         [TestMethod]
         public void OrmTest()
         {
-            Prepare();
-
             var ormTest = new OrmTestRepository();
 
             var list = new List<OrmTest>();

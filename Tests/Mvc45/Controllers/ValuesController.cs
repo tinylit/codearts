@@ -6,26 +6,27 @@ using System.Web.Http;
 
 namespace Mvc45.Controllers
 {
-    ///<summary></summary>
+    /// <inheritdoc />
     public interface IDependency
     {
 
     }
-
+    /// <inheritdoc />
     public class Dependency : IDependency
     {
 
     }
 
-
+    /// <inheritdoc />
     public class ValuesController : BaseController
-    {
+    { 
+        /// <inheritdoc />
         public ValuesController(IDependency dependency)
         {
 
         }
 
-        // GET api/values
+        /// <inheritdoc />
         [HttpGet]
         public IEnumerable<string> Get()
         {
@@ -44,26 +45,26 @@ namespace Mvc45.Controllers
             return "value";
         }
 
-        // POST api/values
+        /// <inheritdoc />
         [HttpPost]
         public void Post([FromBody]string value)
         {
         }
 
-        // PUT api/values/5
+        /// <inheritdoc />
         [HttpPut]
         public void Put(int id, [FromBody]string value)
         {
         }
 
-        // DELETE api/values/5
+        /// <inheritdoc />
         [HttpDelete]
         [JwtAuthorize]
         public void Delete(int id)
         {
             throw new BusiException("认证测试成功");
         }
-
+        /// <inheritdoc />
         [HttpGet]
         [ActionName("login")]
         public DResult Login(string account, string password)

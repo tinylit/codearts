@@ -1,9 +1,5 @@
 ﻿using SkyBuilding.ORM;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using UnitTest.Domain.Entities;
-using UnitTest.Serialize;
 
 namespace UnitTest.Domain
 {
@@ -18,7 +14,7 @@ namespace UnitTest.Domain
             {
                 Name = "yep.v3.invoice",
                 ProviderName = "MySql",
-                ConnectionString = "server=%DEV-DATABASE-MYSQL-DOMAIN%;port=%DEV-DATABASE-MYSQL-USER%;user=%DEV-DATABASE-MYSQL-PASSWORD%;password=HUHihihhe78393h372h0; database=yep.v3.invoice;"
+                ConnectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;"
             };
         }
     }
