@@ -66,22 +66,22 @@ namespace SkyBuilding.Tests
                 }, NamingType.CamelCase)
                 .Get();
 
-            var json = new
-            {
-                page = 1,
-                size = 10,
-                shopId = 1000000000000,
-                lsh = string.Empty,
-                gmfmc = "优易票",
-                kpr = "何远利",
-                startTime = DateTime.Now
-            };
+            //var json = new
+            //{
+            //    page = 1,
+            //    size = 10,
+            //    shopId = 1000000000000,
+            //    lsh = string.Empty,
+            //    gmfmc = "优易票",
+            //    kpr = "何远利",
+            //    startTime = DateTime.Now
+            //};
 
-            var value = "http://localhost:56324/api/values/invoice".AsRequestable()
-                .Header("Authorization", token.data.type + " " + token.data.token)
-                .Json(json)
-                .ByJson(json)
-                .Post();
+            //var value = "http://localhost:56324/api/values/invoice".AsRequestable()
+            //    .Header("Authorization", token.data.type + " " + token.data.token)
+            //    .Json(json)
+            //    .ByJson(json)
+            //    .Post();
         }
     }
 }

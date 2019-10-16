@@ -19,7 +19,7 @@ environment:
     secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
 image: Visual Studio 2019
 services:
-  - mssql2008r2sp2
+  - mssql2016
   - mysql
 configuration:
 - Debug
