@@ -9,11 +9,13 @@ platform: Any CPU
 clone_depth: 5
 environment:
   DEV-DATABASE-SQLSEVER-DOMAIN:
-    secure: RWjD1YlUrzmeqLaRS1d31w==
-  DEV-DATABASE-SQLSEVER-USER: fei
+    secure: gDFNTcGbJURYooTneY4HWA==
+  DEV-DATABASE-SQLSEVER-USER:
+    secure: e0KSlgsDXc0qVKE7Rv5j+A==
   DEV-DATABASE-SQLSEVER-PASSWORD:
     secure: nAJtxhAiO3Ra25gV5uGoQ4thvJwf2AHkVymFQes/CMk=
-  DEV-DATABASE-SQLSERVER-DATABASE: FEI_MALL_FLASH
+  DEV-DATABASE-SQLSERVER-DATABASE:
+    secure: ODbpu9o1oZ6BmR2jaDYPFg==
 image: Visual Studio 2019
 services:
   - mssql2008r2sp2
