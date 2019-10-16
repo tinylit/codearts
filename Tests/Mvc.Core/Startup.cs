@@ -62,8 +62,10 @@ namespace Mvc.Core
     //    }
     //}
 
+    /// <inheritdoc />
     public class Startup
     {
+        /// <inheritdoc />
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors(options =>
@@ -113,7 +115,7 @@ namespace Mvc.Core
 
             services.AddAutofac(container => IocRegisters(container));
         }
-
+        /// <inheritdoc />
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

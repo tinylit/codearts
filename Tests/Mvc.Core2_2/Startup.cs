@@ -13,6 +13,7 @@ using SkyBuilding.Mvc;
 
 namespace Mvc.Core2_2
 {
+    /// <inheritdoc />
     public class Startup : JwtStartup
     {
         //public Startup(IConfiguration configuration)

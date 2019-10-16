@@ -10,13 +10,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Mvc.Core
 {
+    /// <inheritdoc />
     public class Program
     {
+        /// <inheritdoc />
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            //? 3.0 相关NuGet包未发布，暂不能使用
+            //CreateHostBuilder(args).Build().Run();
         }
-
+        /// <inheritdoc />
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>

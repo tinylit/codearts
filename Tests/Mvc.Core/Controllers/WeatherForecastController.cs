@@ -10,16 +10,17 @@ using SkyBuilding.Mvc;
 
 namespace Mvc.Core.Controllers
 {
+    /// <inheritdoc />
     public interface IDependency
     {
 
     }
-
+    /// <inheritdoc />
     public class Dependency : IDependency
     {
 
     }
-
+    /// <inheritdoc />
     [Route("[controller]")]
     public class WeatherForecastController : BaseController
     {
@@ -27,12 +28,12 @@ namespace Mvc.Core.Controllers
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
-
+        /// <inheritdoc />
         public WeatherForecastController(IDependency dependency)
         {
 
         }
-
+        /// <inheritdoc />
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
@@ -45,14 +46,14 @@ namespace Mvc.Core.Controllers
             })
             .ToArray();
         }
-
+        /// <inheritdoc />
         [HttpPut]
         [Authorize]
         public DResult<WeatherForecast> Put([FromBody]WeatherForecast weather)
         {
             return weather;
         }
-
+        /// <inheritdoc />
         [HttpGet("login")]
         public DResult Login(string accont, string password)
         {

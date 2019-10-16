@@ -10,11 +10,13 @@ using SkyBuilding.Mvc;
 
 namespace Mvc.Core2_2.Controllers
 {
+    /// <inheritdoc />
     public interface IDependency
     {
 
     }
 
+    /// <inheritdoc />
     public class Dependency : IDependency
     {
 

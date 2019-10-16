@@ -15,7 +15,7 @@ namespace UnitTest.Serialize
             {
                 Name = "de",
                 ProviderName = "SqlServer",
-                ConnectionString = "Server=(local)\\SQL2008R2SP2;Database=master;UID=sa;PWD=Password12!"//? 数据库链接
+                ConnectionString = @"Server=(local)\SQL2008R2SP2;Database=tempdb;User ID=sa;Password=Password12!"//? 数据库链接
             };
         }
     }

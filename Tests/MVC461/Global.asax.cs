@@ -10,8 +10,10 @@ using System.Web.Routing;
 
 namespace MVC461
 {
+    /// <inheritdoc />
     public class WebApiApplication : HttpApplication
     {
+        /// <inheritdoc />
         protected void Application_Start()
         {
             GlobalConfiguration.Configure(ApiConfig.Register);
