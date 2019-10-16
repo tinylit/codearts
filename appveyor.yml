@@ -17,6 +17,13 @@ environment:
   DEV-DATABASE-SQLSERVER-DATABASE:
     secure: ODbpu9o1oZ6BmR2jaDYPFg==
 image: Visual Studio 2019
+skip_tags: true
+skip_commits:
+  files:
+    - '**/*.md'
+    - '**/.txt'
+    - '**/.png'
+    - '**/.jpg'
 services:
   - mssql2008r2sp2
   - mysql
