@@ -20,8 +20,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 -- Table structure for yep_auth_ship
 -- ----------------------------
-DROP TABLE IF EXISTS `yep_auth_ship`;
-CREATE TABLE `yep_auth_ship`  (
+CREATE TABLE IF NOT EXISTS `yep_auth_ship`  (
     `id` bigint(20) NOT NULL,
     `owner_id` bigint(20) UNSIGNED NOT NULL,
     `auth_id` int(11) NOT NULL,
@@ -35,8 +34,7 @@ CREATE TABLE `yep_auth_ship`  (
 -- ----------------------------
 -- Table structure for yep_auth_tree
 -- ----------------------------
-DROP TABLE IF EXISTS `yep_auth_tree`;
-CREATE TABLE `yep_auth_tree`  (
+CREATE TABLE IF NOT EXISTS `yep_auth_tree`  (
     `Id` int(11) NOT NULL AUTO_INCREMENT,
     `parent_id` int(11) NOT NULL,
     `disp_order` int(11) NOT NULL,
@@ -52,48 +50,9 @@ CREATE TABLE `yep_auth_tree`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 125 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for yep_client_users
--- ----------------------------
-DROP TABLE IF EXISTS `yep_client_users`;
-CREATE TABLE `yep_client_users`  (
-    `id` bigint(20) UNSIGNED NOT NULL,
-    `company_id` bigint(20) UNSIGNED NOT NULL,
-    `account` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `salt` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `tel` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `mail` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `wechat_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `alipay_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `status` tinyint(4) UNSIGNED NOT NULL,
-    `registered` timestamp(0) NULL,
-    `modified` timestamp(0) NULL,
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for yep_developers
--- ----------------------------
-DROP TABLE IF EXISTS `yep_developers`;
-CREATE TABLE `yep_developers`  (
-    `id` bigint(20) NOT NULL,
-    `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `company_id` int(10) UNSIGNED NOT NULL,
-    `company_name` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-    `appid` varchar(18) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `appsecret` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `url` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
-    `status` tinyint(4) NOT NULL,
-    `created` timestamp(0) NULL,
-    `modified` timestamp(0) NULL,
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
 -- Table structure for yep_org_tree
 -- ----------------------------
-DROP TABLE IF EXISTS `yep_org_tree`;
-CREATE TABLE `yep_org_tree`  (
+CREATE TABLE IF NOT EXISTS `yep_org_tree`  (
     `Id` bigint(20) UNSIGNED NOT NULL,
     `parent_id` bigint(20) UNSIGNED NOT NULL,
     `disp_order` int(11) NOT NULL,
@@ -110,8 +69,7 @@ CREATE TABLE `yep_org_tree`  (
 -- ----------------------------
 -- Table structure for yep_orm_test
 -- ----------------------------
-DROP TABLE IF EXISTS `yep_orm_test`;
-CREATE TABLE `yep_orm_test`  (
+CREATE TABLE IF NOT EXISTS `yep_orm_test`  (
     `Id` bigint(20) NOT NULL,
     `Name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `Status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -121,23 +79,9 @@ CREATE TABLE `yep_orm_test`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for yep_user_roles
--- ----------------------------
-DROP TABLE IF EXISTS `yep_user_roles`;
-CREATE TABLE `yep_user_roles`  (
-    `id` bigint(20) NOT NULL,
-    `name` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `status` tinyint(4) NOT NULL,
-    `created` timestamp(0) NULL,
-    `modified` timestamp(0) NULL,
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
 -- Table structure for yep_users
 -- ----------------------------
-DROP TABLE IF EXISTS `yep_users`;
-CREATE TABLE `yep_users`  (
+CREATE TABLE IF NOT EXISTS `yep_users`  (
     `Id` bigint(20) UNSIGNED NOT NULL,
     `org_id` bigint(20) UNSIGNED NOT NULL COMMENT '所在机构树节点ID',
     `company_id` bigint(20) UNSIGNED NOT NULL COMMENT '所在单位',
@@ -162,8 +106,7 @@ CREATE TABLE `yep_users`  (
 -- ----------------------------
 -- Table structure for yep_tax_code
 -- ----------------------------
-DROP TABLE IF EXISTS `yep_tax_code`;
-CREATE TABLE `yep_tax_code`  (
+CREATE TABLE IF NOT EXISTS `yep_tax_code`  (
     `id` varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `parent_id` varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `level` int(11) NOT NULL,
