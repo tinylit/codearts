@@ -1,6 +1,5 @@
 ﻿#if NETSTANDARD2_0 ||NETSTANDARD2_1
 using Microsoft.Extensions.Configuration;
-using SkyBuilding.Config;
 using System;
 using System.IO;
 using System.Linq;
@@ -122,7 +121,6 @@ namespace SkyBuilding.Config
     }
 }
 #else
-using SkyBuilding.Config;
 using System;
 using System.Collections.Generic;
 using System.Configuration;

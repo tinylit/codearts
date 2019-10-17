@@ -1,5 +1,4 @@
 ﻿#if NETSTANDARD2_1
-using SkyBuilding.Serialize.Json;
 using System;
 using System.Text.Json;
 
@@ -114,7 +113,6 @@ namespace SkyBuilding.Serialize.Json
 #else
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using SkyBuilding.Serialize.Json;
 using System;
 
 namespace SkyBuilding.Serialize.Json
