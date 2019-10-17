@@ -1,7 +1,7 @@
 ﻿#if NETSTANDARD2_1
+using SkyBuilding.Serialize.Json;
 using System;
 using System.Text.Json;
-using SkyBuilding.Serialize.Json;
 
 namespace SkyBuilding.Serialize.Json
 {
@@ -10,6 +10,21 @@ namespace SkyBuilding.Serialize.Json
     /// </summary>
     public class DefaultJsonHelper : IJsonHelper
     {
+        private readonly JsonSerializerOptions options;
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public DefaultJsonHelper()
+        {
+        }
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="options">配置</param>
+        public DefaultJsonHelper(JsonSerializerOptions options) => this.options = options;
+
         /// <summary>
         /// 天空之城 json 命名
         /// </summary>
@@ -33,14 +48,30 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         private static JsonSerializerOptions LoadSetting(NamingType namingType, bool indented = false)
         {
-            var policy = new SkyJsonNamingPolicy(namingType);
-
             return new JsonSerializerOptions
             {
                 WriteIndented = indented,
-                DictionaryKeyPolicy = policy,
-                PropertyNamingPolicy = policy
+                PropertyNamingPolicy = new SkyJsonNamingPolicy(namingType)
             };
+        }
+
+        /// <summary>
+        /// JSON序列化设置
+        /// </summary>
+        /// <param name="options">配置</param>
+        /// <param name="namingType">命名方式</param>
+        /// <param name="indented">是否缩进</param>
+        /// <returns></returns>
+        private static JsonSerializerOptions LoadSetting(JsonSerializerOptions options, NamingType namingType, bool indented = false)
+        {
+            if (options is null) return LoadSetting(namingType, indented);
+
+            options.WriteIndented = indented;
+            options.PropertyNamingPolicy = new SkyJsonNamingPolicy(namingType);
+
+            var policy = new SkyJsonNamingPolicy(namingType);
+
+            return options;
         }
 
         /// <summary>
@@ -52,7 +83,7 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         public T Json<T>(string json, NamingType namingType = NamingType.CamelCase)
         {
-            return JsonSerializer.Deserialize<T>(json, LoadSetting(namingType));
+            return JsonSerializer.Deserialize<T>(json, LoadSetting(options, namingType));
         }
 
         /// <summary> 将JSON反序列化到匿名对象 </summary>
@@ -63,7 +94,7 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         public T Json<T>(string json, T anonymousTypeObject, NamingType namingType = NamingType.CamelCase)
         {
-            return (T)JsonSerializer.Deserialize(json, typeof(T), LoadSetting(namingType));
+            return (T)JsonSerializer.Deserialize(json, typeof(T), LoadSetting(options, namingType));
         }
 
         /// <summary>
@@ -76,7 +107,7 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         public string ToJson<T>(T jsonObj, NamingType namingType = NamingType.CamelCase, bool indented = false)
         {
-            return JsonSerializer.Serialize(jsonObj, LoadSetting(namingType, indented));
+            return JsonSerializer.Serialize(jsonObj, LoadSetting(options, namingType, indented));
         }
     }
 }
@@ -126,7 +157,20 @@ namespace SkyBuilding.Serialize.Json
         }
 
         private const string DateFormatString = "yyyy-MM-dd HH:mm:ss";
+        private readonly JsonSerializerSettings settings;
 
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public DefaultJsonHelper()
+        {
+        }
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="settings">配置</param>
+        public DefaultJsonHelper(JsonSerializerSettings settings) => this.settings = settings;
 
         /// <summary>
         /// JSON序列化设置
@@ -136,18 +180,37 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         private static JsonSerializerSettings LoadSetting(NamingType namingType, bool indented = false)
         {
-            var setting = new JsonSerializerSettings
+            var settings = new JsonSerializerSettings
             {
                 ContractResolver = new JsonContractResolver(namingType)
             };
             if (indented)
-                setting.Formatting = Formatting.Indented;
-            setting.DateFormatHandling = DateFormatHandling.MicrosoftDateFormat;
-            setting.DateFormatString = DateFormatString;
-            setting.NullValueHandling = NullValueHandling.Ignore;
-            return setting;
+                settings.Formatting = Formatting.Indented;
+
+            settings.DateFormatHandling = DateFormatHandling.MicrosoftDateFormat;
+            settings.DateFormatString = DateFormatString;
+            settings.NullValueHandling = NullValueHandling.Ignore;
+            return settings;
         }
 
+        /// <summary>
+        /// JSON序列化设置
+        /// </summary>
+        /// <param name="settings">配置</param>
+        /// <param name="namingType">命名方式</param>
+        /// <param name="indented">是否缩进</param>
+        /// <returns></returns>
+        private static JsonSerializerSettings LoadSetting(JsonSerializerSettings settings, NamingType namingType, bool indented = false)
+        {
+            if (settings is null) return LoadSetting(namingType, indented);
+
+            settings.ContractResolver = new JsonContractResolver(namingType);
+
+            if (indented)
+                settings.Formatting = Formatting.Indented;
+
+            return settings;
+        }
 
         /// <summary>
         /// 将JSON反序列化为对象
@@ -158,7 +221,7 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         public T Json<T>(string json, NamingType namingType = NamingType.CamelCase)
         {
-            return JsonConvert.DeserializeObject<T>(json, LoadSetting(namingType));
+            return JsonConvert.DeserializeObject<T>(json, LoadSetting(settings, namingType));
         }
 
         /// <summary> 将JSON反序列化到匿名对象 </summary>
@@ -169,7 +232,7 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         public T Json<T>(string json, T anonymousTypeObject, NamingType namingType = NamingType.CamelCase)
         {
-            return JsonConvert.DeserializeAnonymousType(json, anonymousTypeObject, LoadSetting(namingType));
+            return JsonConvert.DeserializeAnonymousType(json, anonymousTypeObject, LoadSetting(settings, namingType));
         }
 
         /// <summary>
@@ -182,7 +245,7 @@ namespace SkyBuilding.Serialize.Json
         /// <returns></returns>
         public string ToJson<T>(T jsonObj, NamingType namingType = NamingType.CamelCase, bool indented = false)
         {
-            return JsonConvert.SerializeObject(jsonObj, LoadSetting(namingType, indented));
+            return JsonConvert.SerializeObject(jsonObj, LoadSetting(settings, namingType, indented));
         }
     }
 }

@@ -144,7 +144,7 @@ namespace System
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Json<T>(T param, NamingType namingType = NamingType.Normal) where T : class
+            public IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
                 => Json(JsonHelper.ToJson(param, namingType));
 
             /// <summary>

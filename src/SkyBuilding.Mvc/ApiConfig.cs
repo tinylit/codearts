@@ -19,12 +19,12 @@ using System.Web;
 #endif
 using SkyBuilding.Config;
 using SkyBuilding.Log;
-using SkyBuilding.Mvc.Converters;
 using SkyBuilding.Serialize.Json;
 using System;
 using System.Web.Http;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
+using SkyBuilding.Converters;
 
 namespace SkyBuilding.Mvc
 {
@@ -61,15 +61,10 @@ namespace SkyBuilding.Mvc
                 return (string.Equals(path, "login", StringComparison.OrdinalIgnoreCase) || string.Equals(path, "authCode", StringComparison.OrdinalIgnoreCase));
             }
         }
-
+#endif
         /// <summary>
         /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务、依赖注入）
         /// </summary>
-#else
-        /// <summary>
-        /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务、依赖注入、SwaggerUI）
-        /// </summary>
-#endif
         /// <param name="config">协议配置</param>
         public static void Register(HttpConfiguration config)
         {
@@ -130,7 +125,21 @@ namespace SkyBuilding.Mvc
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
 
 #if NET45 || NET451 || NET452 || NET461
+            //? 依赖注入
+            config.DependencyResolver = new AutofacWebApiDependencyResolver(IocRegisters(new ContainerBuilder()));
+#else
+            config.DependencyResolver = new SkyDependencyResolver();
+#endif
+        }
 
+#if NET45 || NET451 || NET452 || NET461
+
+        /// <summary>
+        /// 配置SwaggerUI
+        /// </summary>
+        /// <param name="config">配置</param>
+        public static void SwaggerUI(HttpConfiguration config)
+        {
             config.EnableSwagger(c =>
             {
                 c.Schemes(new[] { "http", "https" });
@@ -162,14 +171,8 @@ namespace SkyBuilding.Mvc
             {
                 c.DocExpansion(DocExpansion.List);
             });
-            //? 依赖注入
-            config.DependencyResolver = new AutofacWebApiDependencyResolver(IocRegisters(new ContainerBuilder()));
-#else
-            config.DependencyResolver = new SkyDependencyResolver();
-#endif
         }
 
-#if NET45 || NET451 || NET452 || NET461
         #region Private
         /// <summary>
         /// 依赖注入

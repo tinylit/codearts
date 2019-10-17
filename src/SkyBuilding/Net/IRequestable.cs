@@ -143,7 +143,7 @@ namespace SkyBuilding.Net
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Json<T>(T param, NamingType namingType = NamingType.Normal) where T : class;
+        IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// content-type = "application/xml";
         /// </summary>

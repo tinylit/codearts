@@ -265,6 +265,15 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     }
     ```
 * .NET40(Support dependency injection, routing, exception capture, login, and authCode, etc)
+    ``` csharp
+    public class WebApiApplication : HttpApplication
+    {
+        protected void Application_Start()
+        {
+            ApiConfig.Register(GlobalConfiguration.Configuration); //This is a must.
+        }
+    }
+    ```
 * .NET45+(Support dependency injection, SwaggerUi, routing, exception capture, login and authCode,etc)
     ``` csharp
     public class WebApiApplication : HttpApplication
@@ -272,6 +281,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
         protected void Application_Start()
         {
             GlobalConfiguration.Configure(ApiConfig.Register); //This is a must.
+
+            GlobalConfiguration.Configure(ApiConfig.SwaggerUI);
         }
     }
     ```

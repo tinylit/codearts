@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SkyBuilding.Mvc.Converters
+namespace SkyBuilding.Converters
 {
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
@@ -107,7 +107,7 @@ namespace SkyBuilding.Mvc.Converters
 using Newtonsoft.Json;
 using System;
 
-namespace SkyBuilding.Mvc.Converters
+namespace SkyBuilding.Converters
 {
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）

@@ -11,6 +11,8 @@ namespace Mvc45
         protected void Application_Start()
         {
             GlobalConfiguration.Configure(ApiConfig.Register);
+
+            GlobalConfiguration.Configure(ApiConfig.SwaggerUI);
         }
     }
 }

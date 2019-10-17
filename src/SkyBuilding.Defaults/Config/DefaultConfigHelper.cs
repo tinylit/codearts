@@ -122,12 +122,12 @@ namespace SkyBuilding.Config
     }
 }
 #else
+using SkyBuilding.Config;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Web.Configuration;
-using SkyBuilding.Config;
 
 namespace SkyBuilding.Config
 {
@@ -146,7 +146,6 @@ namespace SkyBuilding.Config
             Config = WebConfigurationManager.OpenWebConfiguration("~");
 
             Reload();
-
 
             var filePath = Config.FilePath;
             var fileName = Path.GetFileName(filePath);
