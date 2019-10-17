@@ -7,8 +7,7 @@ skip_commits:
     - '**/*.png'
     - '**/*.jpg'
 image: Visual Studio 2019
-configuration:
-- Release
+configuration: Release
 clone_depth: 5
 environment:
   DEV-DATABASE-SQLSEVER-DOMAIN:
@@ -31,7 +30,7 @@ deploy:
 - provider: NuGet
   api_key:
     secure: tiqrW+/1hsyCLjZu/VFQOX6ERU/AQ8X9r5mNRFUPAocmkGx2+fLJ/hEltdrHUIDx
-  artifact: .\.nupkgs\*.nupkg
+  skip_symbols: false
   on:
     branch: master
 notifications:
@@ -39,6 +38,6 @@ notifications:
   to:
   - tinylit@foxmail.com
   subject: skybuilding
-  on_build_success: true
+  on_build_success: false
   on_build_failure: true
   on_build_status_changed: false
