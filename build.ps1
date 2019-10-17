@@ -5,7 +5,7 @@ param(
 
 Write-Host "Run Parameters:" -ForegroundColor Cyan
 Write-Host "  CreatePackages: $CreatePackages"
-Write-Host "  CreatePackages: $configuration"
+Write-Host "  Configuration: $Configuration"
 Write-Host "  dotnet --version:" (dotnet --version)
 
 $packageOutputFolder = "$PSScriptRoot\.nupkgs"
@@ -27,7 +27,7 @@ Write-Host "Building all packages" -ForegroundColor "Green"
 if ($CreatePackages) {
 	foreach ($project in $projectsToBuild) {
 		Write-Host "Packing $project (dotnet pack)..." -ForegroundColor "Magenta"
-		dotnet pack ".\src\$project\$project.csproj" --no-build -c Release /p:PackageOutputPath=$packageOutputFolder /p:NoPackageAnalysis=true /p:CI=true
+		dotnet pack ".\src\$project\$project.csproj" --no-build Release /p:PackageOutputPath=$packageOutputFolder /p:NoPackageAnalysis=true /p:CI=true
 		Write-Host ""
 	}
 }
