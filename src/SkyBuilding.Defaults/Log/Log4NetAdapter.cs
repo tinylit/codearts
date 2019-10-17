@@ -3,7 +3,6 @@ using log4net.Config;
 using log4net.Core;
 using log4net.Filter;
 using log4net.Layout;
-using SkyBuilding.Log;
 using System;
 
 namespace SkyBuilding.Log
@@ -118,7 +117,7 @@ namespace SkyBuilding.Log
         /// <summary>
         /// 初始化一个类型的新实例
         /// </summary>
-        public Log4NetAdapter()
+        static Log4NetAdapter()
         {
             log4net.GlobalContext.Properties["LogSite"] = LogSite;
 
