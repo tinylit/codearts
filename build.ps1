@@ -17,6 +17,10 @@ $projectsToBuild =
     'SkyBuilding.SqlServer',
     'SkyBuilding.Dapper'
 
+Write-Host "Restoring all projects..." -ForegroundColor "Magenta"
+dotnet restore
+Write-Host "Done restoring." -ForegroundColor "Green"
+
 Write-Host "Building all projects..." -ForegroundColor "Magenta"
 dotnet build -c Release --no-restore /p:CI=true
 Write-Host "Done building." -ForegroundColor "Green"
