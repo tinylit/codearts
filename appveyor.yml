@@ -8,7 +8,6 @@ skip_commits:
     - '**/*.jpg'
 image: Visual Studio 2019
 configuration:
-- Debug
 - Release
 platform: Any CPU
 clone_depth: 5
