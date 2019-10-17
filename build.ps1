@@ -27,7 +27,7 @@ Write-Host "Building all packages" -ForegroundColor "Green"
 if ($CreatePackages) {
 	foreach ($project in $projectsToBuild) {
 		Write-Host "Packing $project (dotnet pack)..." -ForegroundColor "Magenta"
-		dotnet pack ".\src\$project\$project.csproj" --no-build Release /p:PackageOutputPath=$packageOutputFolder /p:NoPackageAnalysis=true /p:CI=true
+		dotnet pack ".\src\$project\$project.csproj" --no-build -c /p:Configuration=Release /p:PackageOutputPath=$packageOutputFolder /p:NoPackageAnalysis=true /p:CI=true
 		Write-Host ""
 	}
 }
