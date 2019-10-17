@@ -9,7 +9,6 @@ skip_commits:
 image: Visual Studio 2019
 configuration:
 - Release
-platform: Any CPU
 clone_depth: 5
 environment:
   DEV-DATABASE-SQLSEVER-DOMAIN:
