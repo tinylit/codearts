@@ -1,7 +1,12 @@
 version: 1.0.{build}
-branches:
-  only:
-  - master
+skip_tags: true
+skip_commits:
+  files:
+    - '**/*.md'
+    - '**/*.txt'
+    - '**/*.png'
+    - '**/*.jpg'
+image: Visual Studio 2019
 configuration:
 - Debug
 - Release
@@ -13,29 +18,29 @@ environment:
   DEV-DATABASE-SQLSEVER-USER: orm
   DEV-DATABASE-SQLSEVER-PASSWORD: Password12!
   DEV-DATABASE-SQLSERVER-DATABASE: yep_sky_orm
-image: Visual Studio 2019
-skip_tags: true
-skip_commits:
-  files:
-    - '**/*.md'
-    - '**/*.txt'
-    - '**/*.png'
-    - '**/*.jpg'
 services:
-  - mssql2008r2sp2
-  - mysql
-# scripts that are called at very beginning, before repo cloning
-init:
-  - git config --global core.autocrlf input
+- mssql2008r2sp2
+- mysql
 before_build:
 - cmd: nuget restore
 build:
   verbosity: minimal
+before_package:
+- ps: .\build.ps1
+artifacts:
+- path: .\.nupkgs\*.nupkg
+deploy:
+- provider: NuGet
+  api_key:
+    secure: tiqrW+/1hsyCLjZu/VFQOX6ERU/AQ8X9r5mNRFUPAocmkGx2+fLJ/hEltdrHUIDx
+  artifact: .\.nupkgs\*.nupkg
+  on:
+    branch: master
 notifications:
 - provider: Email
   to:
   - tinylit@foxmail.com
   subject: skybuilding
-  on_build_success: false
+  on_build_success: true
   on_build_failure: true
   on_build_status_changed: false

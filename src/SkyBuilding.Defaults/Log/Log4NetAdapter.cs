@@ -112,7 +112,26 @@ namespace SkyBuilding.Log
             }
         }
 
-        private static string LogSite => "site".Config("local");
+        private static string logSite;
+        private static string LogSite
+        {
+            get
+            {
+                if (logSite is null)
+                {
+                    try
+                    {
+                        logSite = "site".Config("local");
+                    }
+                    catch (Exception)
+                    {
+                        logSite = "local";
+                    }
+                }
+
+                return logSite;
+            }
+        }
 
         /// <summary>
         /// 初始化一个类型的新实例
