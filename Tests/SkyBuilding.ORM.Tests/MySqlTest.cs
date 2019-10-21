@@ -90,7 +90,7 @@ namespace UnitTest
         public void SelectNullableTest()
         {
             var role = new UserRole?(UserRole.Owner);
-            var defautUser = userSingleton.Where(x => x.Role == role.Value).First();
+            var defautUser = userSingleton.Where(x => x.Role == role.Value).FirstOrDefault();
         }
 
         [TestMethod]
