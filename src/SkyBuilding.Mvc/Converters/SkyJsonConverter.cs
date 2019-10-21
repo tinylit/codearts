@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_1
+﻿#if NETCOREAPP3_0
 using System;
 using System.Text;
 using System.Text.Json;

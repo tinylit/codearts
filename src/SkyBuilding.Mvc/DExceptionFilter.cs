@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETSTANDARD2_1
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 #else
@@ -12,7 +12,7 @@ using System.Net;
 
 namespace SkyBuilding.Mvc
 {
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
     /// <summary> 默认的异常处理 </summary>
     public class DExceptionFilter : IExceptionFilter
     {

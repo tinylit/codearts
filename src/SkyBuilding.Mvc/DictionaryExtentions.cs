@@ -138,7 +138,7 @@ namespace SkyBuilding.Mvc
         {
             var identity = new ClaimsIdentity("JwtBearer", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
 
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
 
             identity.AddClaim(new Claim("aud", "jwt:audience".Config("api")));
             identity.AddClaim(new Claim("iss", "jwt:issuer".Config("yep")));

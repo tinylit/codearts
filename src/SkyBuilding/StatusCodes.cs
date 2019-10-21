@@ -9,7 +9,6 @@ namespace SkyBuilding
     /// </summary>
     public abstract class StatusCodes
     {
-
         /// <summary>
         ///     等效于 HTTP 状态 100。 System.Net.HttpStatusCode.Continue 指示客户端可能继续其请求。
         /// </summary>
@@ -56,23 +55,11 @@ namespace SkyBuilding
         [Description("指示客户端应重置（而非重新加载）当前资源.")]
         public const int PartialContent = 206;
         /// <summary>
-        ///     等效于 HTTP 状态 300。 System.Net.HttpStatusCode.MultipleChoices 指示请求的信息有多种表示形式。 默认操作是将此状态视为重定向，并遵循与此响应关联的
-        ///     Location 标头的内容。
-        /// </summary>
-        [Description("指示请求的信息有多种表示形式.")]
-        public const int MultipleChoices = 300;
-        /// <summary>
         ///     等效于 HTTP 状态 300。 System.Net.HttpStatusCode.Ambiguous 指示请求的信息有多种表示形式。 默认操作是将此状态视为重定向，并遵循与此响应关联的
         ///     Location 标头的内容。
         /// </summary>
         [Description("指示请求的信息有多种表示形式.")]
         public const int Ambiguous = 300;
-        /// <summary>
-        ///     等效于 HTTP 状态 301。 System.Net.HttpStatusCode.MovedPermanently 指示请求的信息已移到 Location
-        ///     头中指定的 URI 处。 接收到此状态时的默认操作为遵循与响应关联的 Location 标头。
-        /// </summary>
-        [Description("指示请求的信息已移到 Location 头中指定的 URI 处.")]
-        public const int MovedPermanently = 301;
         /// <summary>
         ///     等效于 HTTP 状态 301。 System.Net.HttpStatusCode.Moved 指示请求的信息已移到 Location 头中指定的 URI
         ///     处。 接收到此状态时的默认操作为遵循与响应关联的 Location 标头。 原始请求方法为 POST 时，重定向的请求将使用 GET 方法。
@@ -80,23 +67,11 @@ namespace SkyBuilding
         [Description("指示请求的信息已移到 Location 头中指定的 URI 处.")]
         public const int Moved = 301;
         /// <summary>
-        ///     等效于 HTTP 状态 302。 System.Net.HttpStatusCode.Found 指示请求的信息位于 Location 标头中指定的 URI
-        ///     处。 接收到此状态时的默认操作为遵循与响应关联的 Location 标头。 原始请求方法为 POST 时，重定向的请求将使用 GET 方法。
-        /// </summary>
-        [Description("指示请求的信息位于 Location 标头中指定的 URI 处.")]
-        public const int Found = 302;
-        /// <summary>
         ///     等效于 HTTP 状态 302。 System.Net.HttpStatusCode.Redirect 指示请求的信息位于 Location 标头中指定的
         ///     URI 处。 接收到此状态时的默认操作为遵循与响应关联的 Location 标头。 原始请求方法为 POST 时，重定向的请求将使用 GET 方法。
         /// </summary>
         [Description("指示请求的信息位于 Location 标头中指定的 URI 处.")]
         public const int Redirect = 302;
-        /// <summary>
-        ///     等效于 HTTP 状态 303。 作为 POST 的结果，System.Net.HttpStatusCode.SeeOther 将客户端自动重定向到 Location
-        ///     标头中指定的 URI。 用 GET 生成对 Location 标头所指定的资源的请求。
-        /// </summary>
-        [Description("将客户端自动重定向到 Location 标头中指定的 URI.")]
-        public const int SeeOther = 303;
         /// <summary>
         ///     等效于 HTTP 状态 303。 作为 POST 的结果，System.Net.HttpStatusCode.RedirectMethod 将客户端自动重定向到
         ///     Location 标头中指定的 URI。 用 GET 生成对 Location 标头所指定的资源的请求。
@@ -119,13 +94,6 @@ namespace SkyBuilding
         /// </summary>
         [Description("是未完全指定的 HTTP/1.1 规范的建议扩展.")]
         public const int Unused = 306;
-        /// <summary>
-        ///     等效于 HTTP 状态 307。 System.Net.HttpStatusCode.TemporaryRedirect 指示请求信息位于 Location
-        ///     标头中指定的 URI 处。 接收到此状态时的默认操作为遵循与响应关联的 Location 标头。 原始请求方法为 POST 时，重定向的请求还将使用 POST
-        ///     方法。
-        /// </summary>
-        [Description("指示请求信息位于 Location 标头中指定的 URI 处")]
-        public const int TemporaryRedirect = 307;
         /// <summary>
         ///     等效于 HTTP 状态 307。 System.Net.HttpStatusCode.RedirectKeepVerb 指示请求信息位于 Location
         ///     标头中指定的 URI 处。 接收到此状态时的默认操作为遵循与响应关联的 Location 标头。 原始请求方法为 POST 时，重定向的请求还将使用 POST

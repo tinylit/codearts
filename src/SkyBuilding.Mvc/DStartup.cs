@@ -1,6 +1,5 @@
-﻿#if NETSTANDARD2_0 || NETSTANDARD2_1
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -28,6 +27,11 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+#if NETCOREAPP3_0
+using Microsoft.Extensions.Hosting;
+#else
+using Autofac.Extensions.DependencyInjection;
+#endif
 
 namespace SkyBuilding.Mvc
 {
@@ -36,7 +40,7 @@ namespace SkyBuilding.Mvc
     /// </summary>
     public class DStartup
     {
-#if NETSTANDARD2_1
+#if NETCOREAPP3_0
         /// <summary>
         /// 配置服务
         /// </summary>
@@ -44,7 +48,7 @@ namespace SkyBuilding.Mvc
         /// <returns></returns>
         public virtual void ConfigureServices(IServiceCollection services)
         {
-            //services.AddControllers();
+            services.AddControllers();
 #else
         /// <summary>
         /// 配置服务
@@ -65,21 +69,31 @@ namespace SkyBuilding.Mvc
                             .AllowCredentials();
                     });
             });
-            //? MVC
+#if NETCOREAPP3_0
+            services
+                .AddMvc(options =>
+                {
+                    options.EnableEndpointRouting = false;
+                    //自定义异常捕获
+                    options.Filters.Add<DExceptionFilter>();
+                }).AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
+                }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+#else
             services
                 .AddMvc(options =>
                 {
                     //自定义异常捕获
                     options.Filters.Add<DExceptionFilter>();
-                })
-                .AddJsonOptions(options =>
+                }).AddJsonOptions(options =>
                 {
-#if NETSTANDARD2_0
                     options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
                     options.SerializerSettings.Converters.Add(new SkyJsonConverter());
-#endif
                 })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+#endif
+
 
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
             RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
@@ -94,8 +108,8 @@ namespace SkyBuilding.Mvc
             //增加XML文档解析
             services.AddSwaggerGen(c =>
             {
-#if NETSTANDARD2_1
-                c.SwaggerDoc("swagger:version".Config("v1"), new Info { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
+#if NETCOREAPP3_0
+                c.SwaggerDoc("swagger:version".Config("v1"), new Microsoft.OpenApi.Models.OpenApiInfo { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
 #else
                 c.SwaggerDoc("swagger:version".Config("v1"), new Info { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
 #endif
@@ -105,50 +119,22 @@ namespace SkyBuilding.Mvc
                     c.IncludeXmlComments(file);
                 }
             });
-#if NETSTANDARD2_1
-            services.AddAutofac(container => IocRegisters(container));
-#else
+#if NETSTANDARD2_0
             var container = new ContainerBuilder();
+
             container.Populate(services);
 
-            return new AutofacServiceProvider(IocRegisters(container));
+            ConfigureContainer(container);
+
+            return new AutofacServiceProvider(container.Build());
 #endif
         }
 
         /// <summary>
-        /// 配置管道
+        /// 配置容器
         /// </summary>
-        /// <param name="app"></param>
-        /// <param name="env"></param>
-        public virtual void Configure(IApplicationBuilder app, IHostingEnvironment env)
-        {
-#if NETSTANDARD2_1
-            //app.UseRouting();
-#endif
-            //? 跨域
-            app.UseAuthentication()
-                .UseCors("Allow")
-                .UseMvc()
-                .UseSwagger()
-                .UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config("v1") + "/swagger.json", "swagger:title".Config("API接口文档"));
-                });
-
-#if NETSTANDARD2_1
-            //app.UseEndpoints(endpoints =>
-            //{
-            //    endpoints.MapControllers();
-            //});
-#endif
-        }
-
-        /// <summary>
-        /// 依赖注入
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        private IContainer IocRegisters(ContainerBuilder builder)
+        /// <param name="builder">容器</param>
+        public virtual void ConfigureContainer(ContainerBuilder builder)
         {
             var path = AppDomain.CurrentDomain.RelativeSearchPath;
             if (!Directory.Exists(path))
@@ -178,8 +164,56 @@ namespace SkyBuilding.Mvc
                 .AsSelf() //自身服务，用于没有接口的类
                 .AsImplementedInterfaces() //接口服务
                 .PropertiesAutowired(); //属性注入
+        }
 
-            return builder.Build();
+#if NETCOREAPP3_0
+        /// <summary>
+        /// 配置管道
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="env"></param>
+        public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+#else
+        /// <summary>
+        /// 配置管道
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="env"></param>
+        public virtual void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
+#endif
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+#if NETCOREAPP3_0
+            //? 跨域
+            app.UseRouting()
+                .UseAuthentication()
+                .UseStaticFiles()
+                .UseMvc()
+                .UseCors("Allow")
+                .UseSwagger()
+                .UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config("v1") + "/swagger.json", "swagger:title".Config("API接口文档"));
+                }).UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                });
+#else
+            //? 跨域
+            app.UseAuthentication()
+                .UseCors("Allow")
+                .UseMvc()
+                .UseSwagger()
+                .UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config("v1") + "/swagger.json", "swagger:title".Config("API接口文档"));
+                });
+#endif
         }
     }
 
@@ -195,7 +229,7 @@ namespace SkyBuilding.Mvc
         /// </summary>
         protected ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.Second);
 
-#if NETSTANDARD2_1
+#if NETCOREAPP3_0
         public override void ConfigureServices(IServiceCollection services)
 #else
         public override IServiceProvider ConfigureServices(IServiceCollection services)
@@ -226,31 +260,35 @@ namespace SkyBuilding.Mvc
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.Secret)))
                 };
             });
-#if NETSTANDARD2_1
+#if NETCOREAPP3_0
             base.ConfigureServices(services);
 #else
             return base.ConfigureServices(services);
 #endif
         }
-
+#if NETCOREAPP3_0
+        public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+#else
         public override void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+#endif
             base.Configure(app, env);
 
             app.Use(next =>
-            {
-                return async context =>
                 {
-                    try
+                    return async context =>
                     {
-                        await next.Invoke(context);
-                    }
-                    catch (Exception exception)
-                    {
-                        await context.Response.WriteJsonAsync(ExceptionHandler.Handler(exception));
-                    }
-                };
-            });
+                        try
+                        {
+                            await next.Invoke(context);
+                        }
+                        catch (Exception exception)
+                        {
+                            await context.Response.WriteJsonAsync(ExceptionHandler.Handler(exception));
+                        }
+                    };
+                });
 
             //? 验证码路由
             app.Map("/authCode", builder => builder.Run(async context =>

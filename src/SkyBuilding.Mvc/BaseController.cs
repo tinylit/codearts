@@ -1,7 +1,7 @@
 ﻿using SkyBuilding.Mvc.Filters;
 using System.Collections.Generic;
 using System;
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,7 +14,7 @@ using JWT.Serializers;
 namespace SkyBuilding.Mvc
 {
     [ValidateModel]
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
     public abstract class BaseController : ControllerBase
 
 #else
@@ -75,7 +75,7 @@ namespace SkyBuilding.Mvc
 
                 if (_profile == null)
                 {
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
                     var authorize = HttpContext.Request.Headers[HeaderNames.Authorization];
                     var tokenHandler = new JwtSecurityTokenHandler();
                     var token = tokenHandler.ReadJwtToken(authorize.ToString());

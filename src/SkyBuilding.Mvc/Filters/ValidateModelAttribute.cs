@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETSTANDARD2_1
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -15,7 +15,7 @@ using System.Net;
 namespace SkyBuilding.Mvc.Filters
 {
     /// <summary> 模型验证过滤器 </summary>
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
     public class ValidateModelAttribute : Microsoft.AspNetCore.Mvc.Filters.ActionFilterAttribute
 #else
     public class ValidateModelAttribute : System.Web.Http.Filters.ActionFilterAttribute
@@ -23,7 +23,7 @@ namespace SkyBuilding.Mvc.Filters
     {
         private readonly ILogger _logger = LogManager.Logger<ValidateModelAttribute>();
 
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETCOREAPP3_0
         /// <summary>
         /// 出错是验证
         /// </summary>
