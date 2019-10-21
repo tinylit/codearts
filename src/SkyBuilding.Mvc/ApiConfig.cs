@@ -104,7 +104,12 @@ namespace SkyBuilding.Mvc
             config.Formatters
                 .JsonFormatter
                 .SerializerSettings
-                .PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.Objects;
+                .PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.None;
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
 
             config.Formatters
                 .JsonFormatter

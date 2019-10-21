@@ -28,10 +28,26 @@ namespace SkyBuilding.ORM
     }
 
     /// <summary>
+    /// 查询器
+    /// </summary>
+    public interface IQueryBuilder : IBuilder
+    {
+        /// <summary>
+        /// 是否必须有查询或执行结果
+        /// </summary>
+        bool Required { get; }
+
+        /// <summary>
+        /// 默认值
+        /// </summary>
+        object DefaultValue { get; }
+    }
+
+    /// <summary>
     /// 增删改
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IBuilder<T>: IBuilder
+    public interface IBuilder<T> : IBuilder
     {
         /// <summary>
         /// 执行行为

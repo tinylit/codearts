@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkyBuilding.ORM.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -121,7 +122,7 @@ namespace SkyBuilding.ORM
             }
         }
 
-        protected override T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters)
+        protected override T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters, bool reqiured, T defaultValue)
         {
             conn.Open();
 
@@ -131,26 +132,17 @@ namespace SkyBuilding.ORM
 
                 AddParameterAuto(command, parameters);
 
-                var type = typeof(T);
-
-                var value = default(T);
-
-                if (type.IsValueType || type == typeof(string))
-                {
-                    var data = command.ExecuteScalar();
-
-                    if (!(data is null))
-                        value = data.CastTo<T>();
-
-                    return value;
-                }
+                var value = defaultValue;
 
                 using (var dr = command.ExecuteReader())
                 {
-
                     if (dr.Read())
                     {
                         value = dr.MapTo<T>();
+                    }
+                    else if (reqiured)
+                    {
+                        throw new DRequiredException();
                     }
 
                     while (dr.NextResult()) { /* ignore subsequent result sets */ }

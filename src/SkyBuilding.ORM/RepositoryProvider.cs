@@ -34,7 +34,7 @@ namespace SkyBuilding.ORM
         /// 创建SQL查询器
         /// </summary>
         /// <returns></returns>
-        public virtual IBuilder Create() => new QueryBuilder(Settings);
+        public virtual IQueryBuilder Create() => new QueryBuilder(Settings);
 
         /// <summary>
         /// 创建执行器
@@ -51,7 +51,7 @@ namespace SkyBuilding.ORM
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
         /// <returns></returns>
-        protected abstract T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters);
+        protected abstract T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters, bool reqiured, T defaultValue);
 
         /// <summary>
         /// 查询列表集合
@@ -99,7 +99,15 @@ namespace SkyBuilding.ORM
                     {
                         return (TResult)Select<T>(conn, sql, builder.Parameters);
                     }
-                    return Single<TResult>(conn, sql, builder.Parameters);
+
+                    bool reqiured = builder.Required;
+
+                    if (builder.DefaultValue is TResult defaultValue)
+                    {
+                        return Single(conn, sql, builder.Parameters, reqiured, defaultValue);
+                    }
+
+                    return Single(conn, sql, builder.Parameters, reqiured, default(TResult));
                 }
                 catch (DbException db)
                 {

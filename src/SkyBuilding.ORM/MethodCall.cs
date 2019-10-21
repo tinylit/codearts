@@ -55,6 +55,8 @@ namespace SkyBuilding.ORM
         public const string OrderByDescending = "OrderByDescending"; //? ORDER BY {AnyFiled} DESC
         public const string ThenByDescending = "ThenByDescending"; //? ORDER BY {AnyFiled} DESC
 
+        public const string DefaultIfEmpty = "DefaultIfEmpty";
+
         public const string Reverse = "Reverse"; //! 必须配合排序函数（OrderBy/OrderByDescending）使用。
 
         public const string Concat = "Concat"; //? UNION ALL

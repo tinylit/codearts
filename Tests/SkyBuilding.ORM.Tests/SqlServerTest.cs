@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SkyBuilding.ORM;
 using SkyBuilding.ORM.Domain;
+using SkyBuilding.ORM.Exceptions;
 using SkyBuilding.ORM.Tests;
 using SkyBuilding.SqlServer;
 using System;
@@ -934,18 +935,18 @@ namespace UnitTest
              */
         }
         [TestMethod]
-        public void FirstTest()
+        public void FirstOrDefaultTest()
         {
 
             var user = new UserRepository();
-            var userEntity = user.First();
+            var userEntity = user.FirstOrDefault();
             /**
              *  SELECT TOP 1 [uid] AS [Id], [bcid], [username], [email], [mobile], [password], [mallagid], [salt], [userstatus], [created_time] AS [CreatedTime], [modified_time] AS [ModifiedTime] 
              *  FROM [fei_users]
              */
         }
         [TestMethod]
-        public void FirstWhereTest()
+        public void FirstOrDefaultWhereTest()
         {
             var user = new UserRepository();
 
@@ -954,7 +955,7 @@ namespace UnitTest
 
             var userEntity = user.Where(x => x.Username.Length > 10 && x.Id < 100 && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.Id)
-                .First();
+                .FirstOrDefault();
             /**
              *   SELECT TOP 1 [x].[uid] AS [Id], [x].[bcid], [x].[username], [x].[email], [x].[mobile], [x].[password], [x].[mallagid], [x].[salt], [x].[userstatus], [x].[created_time] AS [CreatedTime], [x].[modified_time] AS [ModifiedTime] 
              *   FROM [fei_users] [x] 
@@ -1209,7 +1210,6 @@ namespace UnitTest
         [TestMethod]
         public void CustomFirstWithMethodTest()
         {
-
             var user = new UserRepository();
             var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).TakeFirst(y => y.Id) && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.CreatedTime)
@@ -1234,6 +1234,56 @@ namespace UnitTest
              *  AND ([x].[created_time]<@__variable_now)) 
              * ) [CTE] 
              * WHERE [__Row_number_] > 100 AND [__Row_number_]<=110
+             */
+        }
+
+        [TestMethod]
+        public void RequiredTest()
+        {
+            var user = new UserRepository();
+
+            try
+            {
+                user.Where(x => x.Id < 0)
+                .DefaultIfEmpty(new FeiUsers
+                {
+                    Id = 50,
+                    Bcid = 1,
+                    CreatedTime = DateTime.Now
+                })
+                .First();
+            }
+            catch (DRequiredException)
+            {
+                //? 查询结果不加【OrDefault】后缀时，数据库未查询到数据，ORM会抛出【DRequiredException】异常。
+            }
+
+            /**
+             *  SELECT TOP 1 [x].[uid] AS [Id],[x].[bcid],[x].[username],[x].[email],[x].[mobile],[x].[password],[x].[mallagid],[x].[salt],[x].[userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] 
+             *  FROM [fei_users] [x] 
+             *  WHERE ([x].[uid]<@__variable_1)
+             */
+        }
+
+        //? 不经过SQL处理，仅代码逻辑处理。
+        [TestMethod]
+        public void DefaultIfEmptyTest()
+        {
+            var user = new UserRepository();
+
+            var result = user.Where(x => x.Id < 100)
+                 .DefaultIfEmpty(new FeiUsers
+                 {
+                     Id = 50,
+                     Bcid = 1,
+                     CreatedTime = DateTime.Now
+                 })
+                 .FirstOrDefault();
+
+            /**
+             *  SELECT TOP 1 [x].[uid] AS [Id],[x].[bcid],[x].[username],[x].[email],[x].[mobile],[x].[password],[x].[mallagid],[x].[salt],[x].[userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] 
+             *  FROM [fei_users] [x] 
+             *  WHERE ([x].[uid]<@__variable_1)
              */
         }
 

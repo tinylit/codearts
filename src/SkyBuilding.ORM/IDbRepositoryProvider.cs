@@ -12,7 +12,7 @@ namespace SkyBuilding.ORM
         /// 创建查询器
         /// </summary>
         /// <returns></returns>
-        IBuilder Create();
+        IQueryBuilder Create();
 
         /// <summary>
         /// 创建执行器

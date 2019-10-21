@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SkyBuilding
@@ -40,6 +41,11 @@ namespace SkyBuilding
         /// 是否成功
         /// </summary>
         public bool Success => Code == StatusCodes.OK;
+
+        /// <summary>
+        /// Utc
+        /// </summary>
+        public DateTime Timestamp => DateTime.UtcNow;
 
         /// <summary>
         /// 成功

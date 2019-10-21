@@ -194,6 +194,7 @@ namespace SkyBuilding.Implements
         }
 
         #endregion
+
         /// <summary>
         /// 创建表达式
         /// </summary>
@@ -217,33 +218,7 @@ namespace SkyBuilding.Implements
         /// <param name="genericType">泛型参数</param>
         /// <returns></returns>
         protected override Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type genericType)
-        {
-            var parameterExp = Parameter(typeof(object), "source");
-
-            var valueExp = Variable(conversionType, "value");
-
-            var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
-
-            var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
-
-            Expression coreExp = parameterExp;
-
-            if (sourceType != genericType)
-            {
-                var invoke = Create(sourceType, genericType);
-
-                coreExp = invoke.Method.IsStatic ?
-                    Call(null, invoke.Method, parameterExp)
-                    :
-                    Call(Constant(invoke.Target), invoke.Method, parameterExp);
-            }
-
-            var bodyExp = New(ctorInfo.Member, Convert(coreExp, sourceType));
-
-            var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
-
-            return lamdaExp.Compile();
-        }
+            => source => source.CastTo<TResult>();
 
         /// <summary>
         /// 值类型转目标类型
@@ -673,16 +648,13 @@ namespace SkyBuilding.Implements
 
             if (conversionType.IsValueType)
             {
-                if (conversionType.IsNullable())
+                if (conversionType.IsEnum)
+                {
+                    conversionType = Enum.GetUnderlyingType(conversionType);
+                }
+                else if (conversionType.IsNullable())
                 {
                     conversionType = Nullable.GetUnderlyingType(conversionType);
-                }
-                else
-                {
-                    if (conversionType.IsEnum)
-                    {
-                        conversionType = Enum.GetUnderlyingType(conversionType);
-                    }
                 }
             }
 

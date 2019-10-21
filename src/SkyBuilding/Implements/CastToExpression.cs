@@ -138,9 +138,45 @@ namespace SkyBuilding.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type genericType)
         {
-            var invoke = Create(sourceType, genericType);
+            if (sourceType == genericType)
+            {
+                var parameterExp = Parameter(typeof(object), "source");
 
-            return source => (TResult)invoke.Invoke(source);
+                var valueExp = Variable(conversionType, "value");
+
+                var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
+
+                var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
+
+                var bodyExp = New(ctorInfo.Member, Convert(parameterExp, sourceType));
+
+                var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
+
+                return lamdaExp.Compile();
+            }
+            else
+            {
+                var invoke = Create(sourceType, genericType);
+
+                var parameterExp = Parameter(typeof(object), "source");
+
+                var valueExp = Variable(conversionType, "value");
+
+                var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
+
+                var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
+
+                var coreExp = invoke.Method.IsStatic ?
+                    Call(null, invoke.Method, parameterExp)
+                    :
+                    Call(Constant(invoke.Target), invoke.Method, parameterExp);
+
+                var bodyExp = New(ctorInfo.Member, Convert(coreExp, sourceType));
+
+                var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
+
+                return lamdaExp.Compile();
+            }
         }
 
         /// <summary>

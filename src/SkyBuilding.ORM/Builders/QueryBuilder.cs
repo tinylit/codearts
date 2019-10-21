@@ -13,7 +13,7 @@ namespace SkyBuilding.ORM.Builders
     /// <summary>
     /// 构造器
     /// </summary>
-    public class QueryBuilder : Builder, IBuilder, IDisposable
+    public class QueryBuilder : Builder, IQueryBuilder, IBuilder, IDisposable
     {
         #region 分页
 
@@ -600,12 +600,19 @@ namespace SkyBuilding.ORM.Builders
             //? 函数名称
             string name = node.Method.Name;
 
-            if (node.Arguments.Count > 1 ?
-                !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast) :
-                (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average)
+            if (name == MethodCall.DefaultIfEmpty || (
+                node.Arguments.Count > 1
+                ? !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast)
+                : (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average)
+                )
             )
             {
                 _MethodLevel += 1;
+            }
+
+            if (defaultIfEmpty && !(defaultIfEmpty = node.Type == defaultValueType) && !(DefaultValue is null))
+            {
+                DefaultValue = null;
             }
 
             switch (name)
@@ -671,6 +678,8 @@ namespace SkyBuilding.ORM.Builders
                     if (this.take > 0 && index < this.take)
                         throw new IndexOutOfRangeException();
 
+                    Required = name == MethodCall.ElementAt;
+
                     this.take = 1;
 
                     this.skip += index;
@@ -701,10 +710,10 @@ namespace SkyBuilding.ORM.Builders
                     if (this.take == -1) this.take = take;
 
                     return node;
-                case MethodCall.Single:
-                case MethodCall.SingleOrDefault:
                 case MethodCall.First:
                 case MethodCall.FirstOrDefault:
+                case MethodCall.Single:
+                case MethodCall.SingleOrDefault:
 
                     // TOP(1)
                     this.take = 1;
@@ -717,6 +726,8 @@ namespace SkyBuilding.ORM.Builders
                     {
                         base.Visit(node.Arguments[0]);
                     }
+
+                    Required = name == MethodCall.First || name == MethodCall.Single;
 
                     return node;
                 case MethodCall.Last:
@@ -738,6 +749,8 @@ namespace SkyBuilding.ORM.Builders
 
                     if (!isContainsOrderBy)
                         throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+
+                    Required = name == MethodCall.Last;
 
                     return node;
                 case MethodCall.Skip:
@@ -934,6 +947,14 @@ namespace SkyBuilding.ORM.Builders
                     buildCast = true;
 
                     return base.Visit(node.Arguments[0]);
+                case MethodCall.DefaultIfEmpty:
+                    if (node.Arguments.Count > 1)
+                    {
+                        DefaultValue = node.Arguments[1].GetValueFromExpression();
+                    }
+                    defaultIfEmpty = true;
+                    defaultValueType = node.Type;
+                    return base.Visit(node.Arguments[0]);
                 default:
                     return VisitFormatterMethodCall(node);
             }
@@ -972,7 +993,7 @@ namespace SkyBuilding.ORM.Builders
                 case MethodCall.TakeSingleOrDefault:
 
                     // TOP(1)
-                    this.take = 1;
+                    take = 1;
 
                     buildSelect = false;
 
@@ -990,12 +1011,14 @@ namespace SkyBuilding.ORM.Builders
 
                     }, () => base.Visit(node.Arguments[0]));
 
+                    Required = name == MethodCall.TakeFirst || name == MethodCall.TakeSingle;
+
                     return node;
                 case MethodCall.TakeLast:
                 case MethodCall.TakeLastOrDefault:
 
                     // TOP(..)
-                    this.take = 1;
+                    take = 1;
 
                     isOrderByReverse ^= true;
 
@@ -1017,6 +1040,8 @@ namespace SkyBuilding.ORM.Builders
 
                     if (!isContainsOrderBy)
                         throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+
+                    Required = name == MethodCall.TakeLast;
 
                     return node;
                 default:
@@ -1121,6 +1146,13 @@ namespace SkyBuilding.ORM.Builders
         protected override Builder CreateBuilder(ISQLCorrectSettings settings) => new QueryBuilder(settings);
 
         #endregion
+
+        private bool defaultIfEmpty = false;
+        private Type defaultValueType = null;
+
+        public bool Required { protected set; get; }
+
+        public object DefaultValue { private set; get; }
 
         private string ToSQL(string value)
         {

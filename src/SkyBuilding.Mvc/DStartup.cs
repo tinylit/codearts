@@ -75,6 +75,7 @@ namespace SkyBuilding.Mvc
                 .AddJsonOptions(options =>
                 {
 #if NETSTANDARD2_0
+                    options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
                     options.SerializerSettings.Converters.Add(new SkyJsonConverter());
 #endif
                 })
