@@ -8,9 +8,9 @@ using Microsoft.Extensions.Hosting;
 using SkyBuilding;
 using SkyBuilding.Cache;
 using SkyBuilding.Config;
-using SkyBuilding.Converters;
 using SkyBuilding.Log;
 using SkyBuilding.Mvc;
+using SkyBuilding.Mvc.Converters;
 using SkyBuilding.Serialize.Json;
 using Swashbuckle.AspNetCore.Swagger;
 using System;
@@ -60,6 +60,7 @@ namespace Mvc.Core
         /// <inheritdoc />
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddControllers();
             services.AddCors(options =>
             {
                 options.AddPolicy("Allow",
@@ -117,6 +118,8 @@ namespace Mvc.Core
             }
 
             app.UseRouting();
+
+            app.UseCors();
 
             //app.UseAuthorization();
 

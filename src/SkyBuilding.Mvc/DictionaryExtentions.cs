@@ -46,15 +46,6 @@ namespace SkyBuilding.Mvc
         /// <returns></returns>
         public static IPrincipal AsPrincipal(this IDictionary<string, object> userData)
         {
-            foreach (var kv in userData)
-            {
-                var value = kv.Value;
-
-                if (value is null) continue;
-
-                var key = kv.Key.ToLower();
-            }
-
             return new GenericPrincipal(userData.AsIdentity(), userData.Where(x => x.Key.ToLower() == "role").Select(x => x.Value.ToString()).ToArray());
         }
 #else

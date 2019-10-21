@@ -7,7 +7,6 @@ using System;
 using System.Net;
 using System.Net.Http;
 #if NET40
-using System.Security.Principal;
 using System.Threading;
 #else
 using System.Security.Claims;

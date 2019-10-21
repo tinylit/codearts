@@ -11,6 +11,11 @@ using SkyBuilding.Exceptions;
 namespace MVC461.Controllers
 {
     /// <inheritdoc />
+    public enum TestEnum
+    {
+        Normal
+    }
+    /// <inheritdoc />
     public interface IDependency
     {
 
@@ -32,9 +37,9 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         // GET api/values
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IEnumerable<object> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new object[] { TestEnum.Normal, 1000000uL, 10000000000000000000uL };
         }
 
         /// <summary>
@@ -44,9 +49,9 @@ namespace MVC461.Controllers
         /// <returns></returns>
         // GET api/values/5
         [HttpGet]
-        public string Get(int id)
+        public ulong Get(ulong id)
         {
-            return "value";
+            return id;
         }
         /// <inheritdoc />
         // POST api/values

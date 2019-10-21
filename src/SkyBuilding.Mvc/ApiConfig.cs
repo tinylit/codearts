@@ -24,7 +24,7 @@ using System;
 using System.Web.Http;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
-using SkyBuilding.Converters;
+using SkyBuilding.Mvc.Converters;
 
 namespace SkyBuilding.Mvc
 {
@@ -99,6 +99,13 @@ namespace SkyBuilding.Mvc
             config.Routes.Add("route", config.Routes.CreateRoute("api/{controller}/{id}", new { id = RouteParameter.Optional }, new object()));
 #endif
             //?天空之城JSON转换器（修复长整型前端数据丢失的问题）
+            config.Formatters.Remove(config.Formatters.XmlFormatter);
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.Objects;
+
             config.Formatters
                 .JsonFormatter
                 .SerializerSettings

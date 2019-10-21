@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SkyBuilding.Converters
+namespace SkyBuilding.Mvc.Converters
 {
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
@@ -56,49 +56,44 @@ namespace SkyBuilding.Converters
 
             var type = value.GetType();
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (type.IsEnum)
             {
-                type = Nullable.GetUnderlyingType(type);
+                value = Convert.ChangeType(value, Enum.GetUnderlyingType(type));
             }
-
-            var typeCode = Type.GetTypeCode(type);
-
-            if (typeCode == TypeCode.Int64 || typeCode == TypeCode.UInt64)
+            else if (type.IsNullable())
             {
-                writer.WriteStringValue(string.Concat("\"", value.ToString(), "\""));
-            }
-            else
+                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
+            }            
+
+            switch (value)
             {
-                switch (value)
-                {
-                    case bool b:
-                        writer.WriteBooleanValue(b);
-                        break;
-                    case int i32:
-                        writer.WriteNumberValue(i32);
-                        break;
-                    case long i64 when i64 >= 9007199254740991F && i64 < 9007199254740991L:
-                        writer.WriteNumberValue(i64);
-                        break;
-                    case float f when f >= 9007199254740991F && f < 9007199254740991F:
-                        writer.WriteNumberValue(f);
-                        break;
-                    case double d when d >= -9007199254740991D && d <= 9007199254740991D:
-                        writer.WriteNumberValue(d);
-                        break;
-                    case decimal m when m >= -9007199254740991M && m <= 9007199254740991M:
-                        writer.WriteNumberValue(m);
-                        break;
-                    case ulong u64 when u64 <= 9007199254740991uL:
-                        writer.WriteNumberValue(u64);
-                        break;
-                    case uint u32:
-                        writer.WriteNumberValue(u32);
-                        break;
-                    default:
-                        writer.WriteStringValue(value.ToString());
-                        break;
-                }
+                case bool b:
+                    writer.WriteBooleanValue(b);
+                    break;
+                case int i32:
+                    writer.WriteNumberValue(i32);
+                    break;
+                case long i64 when i64 >= -9007199254740991L && i64 <= 9007199254740991L:
+                    writer.WriteNumberValue(i64);
+                    break;
+                case float f when f >= -9007199254740991F && f <= 9007199254740991F:
+                    writer.WriteNumberValue(f);
+                    break;
+                case double d when d >= -9007199254740991D && d <= 9007199254740991D:
+                    writer.WriteNumberValue(d);
+                    break;
+                case decimal m when m >= -9007199254740991M && m <= 9007199254740991M:
+                    writer.WriteNumberValue(m);
+                    break;
+                case ulong u64 when u64 <= 9007199254740991uL:
+                    writer.WriteNumberValue(u64);
+                    break;
+                case uint u32:
+                    writer.WriteNumberValue(u32);
+                    break;
+                default:
+                    writer.WriteStringValue(value.ToString());
+                    break;
             }
         }
     }
@@ -107,7 +102,7 @@ namespace SkyBuilding.Converters
 using Newtonsoft.Json;
 using System;
 
-namespace SkyBuilding.Converters
+namespace SkyBuilding.Mvc.Converters
 {
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
@@ -134,7 +129,7 @@ namespace SkyBuilding.Converters
 
             if (conversionType.IsValueType)
             {
-                if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                if (conversionType.IsNullable())
                 {
                     conversionType = Nullable.GetUnderlyingType(conversionType);
                 }
@@ -247,20 +242,27 @@ namespace SkyBuilding.Converters
 
             var type = value.GetType();
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (type.IsEnum)
             {
-                type = Nullable.GetUnderlyingType(type);
+                value = Convert.ChangeType(value, Enum.GetUnderlyingType(type));
+            }
+            else if (type.IsNullable())
+            {
+                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
             }
 
-            var typeCode = Type.GetTypeCode(type);
-
-            if (typeCode == TypeCode.Int64 || typeCode == TypeCode.UInt64)
+            switch (value)
             {
-                writer.WriteValue(value.ToString());
-            }
-            else
-            {
-                writer.WriteValue(value);
+                case ulong u64 when u64 > 9007199254740991uL:
+                case long i64 when i64 < -9007199254740991L || i64 > 9007199254740991L:
+                case float f when f < -9007199254740991F || f > 9007199254740991F:
+                case double d when d < -9007199254740991D || d > 9007199254740991D:
+                case decimal m when m < -9007199254740991M || m > 9007199254740991M:
+                    writer.WriteValue(value.ToString());
+                    break;
+                default:
+                    writer.WriteValue(value);
+                    break;
             }
         }
     }
