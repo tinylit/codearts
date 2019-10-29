@@ -1,7 +1,5 @@
 ﻿using SkyBuilding;
 using SkyBuilding.Implements;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace System
 {
@@ -10,6 +8,20 @@ namespace System
     /// </summary>
     public static class ObjectExtentions
     {
+        private static ICastToExpression cast;
+        private static ICastToExpression Cast
+        {
+            get
+            {
+                if (cast is null)
+                {
+                    cast = RuntimeServManager.Singleton<ICastToExpression, CastToExpression>(value => cast = value);
+                }
+
+                return cast;
+            }
+        }
+
         /// <summary>
         /// 对象转换
         /// </summary>
@@ -17,9 +29,7 @@ namespace System
         /// <param name="def">默认值</param>
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
-        public static T CastTo<T>(this object obj, T def = default) =>
-            RuntimeServManager.Singleton<ICastToExpression, CastToExpression>()
-            .CastTo(obj, def);
+        public static T CastTo<T>(this object obj, T def = default) => Cast.CastTo(obj, def);
 
         /// <summary> 
         /// 对象转换 
@@ -27,9 +37,21 @@ namespace System
         /// <param name="obj">数据源</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        public static object CastTo(this object obj, Type conversionType) =>
-            RuntimeServManager.Singleton<ICastToExpression, CastToExpression>()
-            .CastTo(obj, conversionType);
+        public static object CastTo(this object obj, Type conversionType) => Cast.CastTo(obj, conversionType);
+
+        private static ICopyToExpression copy;
+        private static ICopyToExpression Copy
+        {
+            get
+            {
+                if (copy is null)
+                {
+                    copy = RuntimeServManager.Singleton<ICopyToExpression, MapToExpression>(value => copy = value);
+                }
+
+                return copy;
+            }
+        }
 
         /// <summary>
         /// 对象克隆
@@ -38,9 +60,21 @@ namespace System
         /// <param name="def">默认值</param>
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
-        public static T CopyTo<T>(this T obj, T def = default) =>
-            RuntimeServManager.Singleton<ICopyToExpression, MapToExpression>()
-            .CopyTo(obj, def);
+        public static T CopyTo<T>(this T obj, T def = default) => Copy.CopyTo(obj, def);
+
+        private static IMapToExpression map;
+        private static IMapToExpression Map
+        {
+            get
+            {
+                if (map is null)
+                {
+                    map = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>(value => map = value);
+                }
+
+                return map;
+            }
+        }
 
         /// <summary>
         /// 对象映射
@@ -49,9 +83,7 @@ namespace System
         /// <param name="def">默认值</param>
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
-        public static T MapTo<T>(this object obj, T def = default) =>
-            RuntimeServManager.Singleton<IMapToExpression, MapToExpression>()
-            .MapTo(obj, def);
+        public static T MapTo<T>(this object obj, T def = default) => Map.MapTo(obj, def);
 
         /// <summary> 
         /// 对象映射
@@ -59,8 +91,6 @@ namespace System
         /// <param name="obj">数据源</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        public static object MapTo(this object obj, Type conversionType) =>
-            RuntimeServManager.Singleton<IMapToExpression, MapToExpression>()
-            .MapTo(obj, conversionType);
+        public static object MapTo(this object obj, Type conversionType) => Map.MapTo(obj, conversionType);
     }
 }

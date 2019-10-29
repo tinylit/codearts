@@ -27,12 +27,12 @@ namespace SkyBuilding.Config
             public T Get<T>(string key, T defaultValue = default) => defaultValue;
         }
 
-        private readonly IConfigHelper _helper;
+        private IConfigHelper _helper;
 
         /// <summary>
         /// 构造函数
         /// </summary>
-        private ConfigHelper() => _helper = RuntimeServManager.Singleton<IConfigHelper, DefaultConfigHelper>();
+        private ConfigHelper() => _helper = RuntimeServManager.Singleton<IConfigHelper, DefaultConfigHelper>(helper => _helper = helper);
 
         ///<summary> 配置文件变更事件 </summary>
         public event Action<object> OnConfigChanged

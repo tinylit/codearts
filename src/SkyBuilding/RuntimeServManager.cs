@@ -77,6 +77,20 @@ namespace SkyBuilding
             => Nested<TService>.Instance ?? Nested<TService, TImplementation>.Instance;
 
         /// <summary>
+        /// 添加服务
+        /// </summary>
+        /// <param name="listenSingletonChanged">监听单例变化</param>
+        /// <typeparam name="TService">服务类型</typeparam>
+        public static TService Singleton<TService, TImplementation>(Action<TService> listenSingletonChanged)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            Nested<TService>.Listen(listenSingletonChanged);
+
+            return Nested<TService>.Instance ?? Nested<TService, TImplementation>.Instance;
+        }
+
+        /// <summary>
         /// 获取服务
         /// </summary>
         /// <typeparam name="TService">服务类型</typeparam>
@@ -87,6 +101,21 @@ namespace SkyBuilding
             => Nested<TService>.Instance ?? factory.Invoke();
 
         /// <summary>
+        /// 获取服务
+        /// </summary>
+        /// <typeparam name="TService">服务类型</typeparam>
+        /// <param name="factory">实现工厂</param>
+        /// <param name="listenSingletonChanged">监听单例变化</param>
+        /// <returns></returns>
+        public static TService Singleton<TService>(Func<TService> factory, Action<TService> listenSingletonChanged)
+            where TService : class
+        {
+            Nested<TService>.Listen(listenSingletonChanged);
+
+            return Nested<TService>.Instance ?? factory.Invoke();
+        }
+
+        /// <summary>
         /// 静态内部类
         /// </summary>
         /// <typeparam name="TService">服务类型</typeparam>
@@ -94,6 +123,8 @@ namespace SkyBuilding
             where TService : class
         {
             private static Lazy<TService> _lazy;
+
+            private static Action<TService> OnSingletonChanged;
 
             private static volatile bool _useBaseTryAdd = true;
 
@@ -103,6 +134,16 @@ namespace SkyBuilding
             static Nested()
             {
                 ServiceCache[typeof(TService)] = typeof(Nested<TService>);
+            }
+
+            public static void Listen(Action<TService> listenSingletonChanged)
+            {
+                if (listenSingletonChanged is null)
+                {
+                    throw new ArgumentNullException(nameof(listenSingletonChanged));
+                }
+
+                OnSingletonChanged += listenSingletonChanged;
             }
 
             /// <summary>
@@ -122,7 +163,14 @@ namespace SkyBuilding
                     if (defineService)
                         _useBaseTryAdd = false;
 
+                    var isValueCreated = _lazy?.IsValueCreated ?? false;
+
                     _lazy = new Lazy<TService>(factory);
+
+                    if (isValueCreated)
+                    {
+                        OnSingletonChanged?.Invoke(_lazy.Value);
+                    }
                 }
             }
 
