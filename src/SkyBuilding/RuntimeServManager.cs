@@ -101,21 +101,6 @@ namespace SkyBuilding
             => Nested<TService>.Instance ?? factory.Invoke();
 
         /// <summary>
-        /// 获取服务
-        /// </summary>
-        /// <typeparam name="TService">服务类型</typeparam>
-        /// <param name="factory">实现工厂</param>
-        /// <param name="listenSingletonChanged">监听单例变化</param>
-        /// <returns></returns>
-        public static TService Singleton<TService>(Func<TService> factory, Action<TService> listenSingletonChanged)
-            where TService : class
-        {
-            Nested<TService>.Listen(listenSingletonChanged);
-
-            return Nested<TService>.Instance ?? factory.Invoke();
-        }
-
-        /// <summary>
         /// 静态内部类
         /// </summary>
         /// <typeparam name="TService">服务类型</typeparam>
