@@ -9,6 +9,9 @@ namespace System
     public static class ObjectExtentions
     {
         private static ICastToExpression cast;
+        /// <summary>
+        /// 转换接口
+        /// </summary>
         private static ICastToExpression Cast
         {
             get
@@ -40,6 +43,9 @@ namespace System
         public static object CastTo(this object obj, Type conversionType) => Cast.CastTo(obj, conversionType);
 
         private static ICopyToExpression copy;
+        /// <summary>
+        /// 复制接口
+        /// </summary>
         private static ICopyToExpression Copy
         {
             get
@@ -63,6 +69,9 @@ namespace System
         public static T CopyTo<T>(this T obj, T def = default) => Copy.CopyTo(obj, def);
 
         private static IMapToExpression map;
+        /// <summary>
+        /// 映射接口
+        /// </summary>
         private static IMapToExpression Map
         {
             get
