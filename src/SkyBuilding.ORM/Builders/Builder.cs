@@ -1225,6 +1225,59 @@ namespace SkyBuilding.ORM.Builders
 
             if (isAndOrLike) return BuildBinaryWarp(() => VisitConditionBinary(node, isAndLike), true);
 
+            if ((nodeType == ExpressionType.Equal || nodeType == ExpressionType.NotEqual) && (left.Type.IsClass || left.Type.IsNullable()) && (right.Type.IsClass || right.Type.IsNullable()))
+            {
+                if (IsStaticVariable(right))
+                {
+                    var value = right.GetValueFromExpression();
+
+                    if (value is null)
+                    {
+                        SQLWriter.OpenBrace();
+
+                        VisitEvaluate(left);
+
+                        if (nodeType == ExpressionType.Equal)
+                        {
+                            SQLWriter.IsNull();
+                        }
+                        else
+                        {
+                            SQLWriter.IsNotNull();
+                        }
+
+                        SQLWriter.CloseBrace();
+
+                        return node;
+                    }
+                }
+                else if (IsStaticVariable(left))
+                {
+                    var value = left.GetValueFromExpression();
+
+                    if (value is null)
+                    {
+                        SQLWriter.OpenBrace();
+
+                        VisitEvaluate(right);
+
+                        if (nodeType == ExpressionType.Equal)
+                        {
+                            SQLWriter.IsNull();
+                        }
+                        else
+                        {
+                            SQLWriter.IsNotNull();
+                        }
+
+                        SQLWriter.CloseBrace();
+
+                        return node;
+                    }
+                }
+            }
+
+
             if (left.Type.IsValueType || right.Type.IsValueType)
             {
                 return BuildBinaryWarp(() =>

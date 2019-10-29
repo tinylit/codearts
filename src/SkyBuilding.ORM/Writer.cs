@@ -189,6 +189,19 @@ namespace SkyBuilding.ORM
 
             WriteNull();
         }
+
+        public void IsNotNull()
+        {
+            WriteIS();
+
+            if (!Not)
+            {
+                WriteNot();
+            }
+
+            WriteNull();
+        }
+
         public void LengthMethod()
         {
             Write(settings.Length);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkyBuilding.Config;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 链接配置
         /// </summary>
-        protected IReadOnlyConnectionConfig ConnectionConfig { get; }
+        protected IReadOnlyConnectionConfig ConnectionConfig { private set; get; }
         /// <summary>
         /// 数据库链接
         /// </summary>
@@ -41,10 +42,12 @@ namespace SkyBuilding.ORM
         private DbConfigAttribute GetAttribute() => mapperCache.GetOrAdd(GetType(), type =>
         {
             var attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+
             if (attr == null)
             {
                 attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type.BaseType, typeof(DbConfigAttribute));
             }
+
             return attr ?? throw new NotImplementedException("仓库类未指定数据库链接属性!");
         });
 
@@ -52,7 +55,17 @@ namespace SkyBuilding.ORM
         /// 获取数据库配置
         /// </summary>
         /// <returns></returns>
-        protected virtual ConnectionConfig GetDbConfig() => GetAttribute().GetConfig();
+        protected virtual ConnectionConfig GetDbConfig()
+        {
+            var attr = GetAttribute();
+
+            ConfigHelper.Instance.OnConfigChanged += _ =>
+            {
+                ConnectionConfig = attr.GetConfig();
+            };
+
+            return attr.GetConfig();
+        }
 
         /// <summary>
         /// 链接

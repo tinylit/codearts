@@ -6,16 +6,23 @@ namespace SkyBuilding.ORM
     /// 数据库供应器
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public abstract class DbConfigAttribute : Attribute
+    public class DbConfigAttribute : Attribute
     {
+        private readonly string configName;
+
         /// <summary>
         /// 构造函数（使用默认数据库链接）
         /// </summary>
-        public DbConfigAttribute() { }
+        protected DbConfigAttribute() { }
+
+        /// <summary>
+        /// 构造函数（使用默认数据库链接）
+        /// </summary>
+        public DbConfigAttribute(string configName) => this.configName = configName;
         /// <summary>
         /// 获取数据库链接配置
         /// </summary>
         /// <returns></returns>
-        public abstract ConnectionConfig GetConfig();
+        public virtual ConnectionConfig GetConfig() => configName.Config<ConnectionConfig>();
     }
 }

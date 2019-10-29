@@ -153,6 +153,7 @@ namespace SkyBuilding.ORM
             {
                 throw new ArgumentNullException(nameof(adapter));
             }
+
             string key = adapter.ProviderName.ToLower();
 
             if (Providers.TryGetValue(key, out RepositoryProvider provider))

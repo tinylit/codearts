@@ -14,7 +14,6 @@ using SkyBuilding.Exceptions;
 using SkyBuilding.Log;
 using SkyBuilding.Serialize.Json;
 using SkyBuilding.Mvc.Converters;
-using Swashbuckle.AspNetCore.Swagger;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -28,8 +27,10 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 #if NETCOREAPP3_0
+using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
 #else
+using Swashbuckle.AspNetCore.Swagger;
 using Autofac.Extensions.DependencyInjection;
 #endif
 
@@ -58,17 +59,6 @@ namespace SkyBuilding.Mvc
         public virtual IServiceProvider ConfigureServices(IServiceCollection services)
         {
 #endif
-            services.AddCors(options =>
-            {
-                options.AddPolicy("Allow",
-                    builder =>
-                    {
-                        builder.SetIsOriginAllowed(origin => true)
-                            .AllowAnyMethod()
-                            .AllowAnyHeader()
-                            .AllowCredentials();
-                    });
-            });
 #if NETCOREAPP3_0
             services
                 .AddMvc(options =>
@@ -79,7 +69,8 @@ namespace SkyBuilding.Mvc
                 }).AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
-                }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+                })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 #else
             services
                 .AddMvc(options =>
@@ -91,9 +82,19 @@ namespace SkyBuilding.Mvc
                     options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
                     options.SerializerSettings.Converters.Add(new SkyJsonConverter());
                 })
-            .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 #endif
-
+            services.AddCors(options =>
+            {
+                options.AddPolicy("Allow",
+                    builder =>
+                    {
+                        builder.SetIsOriginAllowed(origin => true)
+                            .AllowAnyMethod()
+                            .AllowAnyHeader()
+                            .AllowCredentials();
+                    });
+            });
 
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
             RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
@@ -109,7 +110,7 @@ namespace SkyBuilding.Mvc
             services.AddSwaggerGen(c =>
             {
 #if NETCOREAPP3_0
-                c.SwaggerDoc("swagger:version".Config("v1"), new Microsoft.OpenApi.Models.OpenApiInfo { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
+                c.SwaggerDoc("swagger:version".Config("v1"), new OpenApiInfo { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
 #else
                 c.SwaggerDoc("swagger:version".Config("v1"), new Info { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
 #endif
@@ -140,12 +141,12 @@ namespace SkyBuilding.Mvc
             if (!Directory.Exists(path))
                 path = AppDomain.CurrentDomain.BaseDirectory;
 
-
             var assemblys = Directory.GetFiles(path, "*.dll")
-                    .Select(Assembly.LoadFrom)
-                    .SelectMany(x => x.GetTypes());
+                    .Select(Assembly.LoadFrom);
 
-            var controllerTypes = assemblys
+            var assemblyTypes = assemblys.SelectMany(x => x.GetTypes());
+
+            var controllerTypes = assemblyTypes
                 .Where(type => type.IsClass && !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type));
 
             var interfaceTypes = controllerTypes
@@ -157,7 +158,19 @@ namespace SkyBuilding.Mvc
                 })
                 .Distinct();
 
-            var types = interfaceTypes.SelectMany(x => assemblys.Where(y => x.IsAssignableFrom(y)));
+            if (assemblys.Any(x => x.FullName.StartsWith("SkyBuilding.ORM")))
+            {
+                var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
+                    .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"));
+
+                builder.RegisterTypes(assemblyTypes.Where(type => type.IsClass && repositoryTypes.Any(x => x.IsAssignableFrom(type))).ToArray())
+                    .AsSelf()
+                    .AsImplementedInterfaces()
+                    .PropertiesAutowired()
+                    .SingleInstance();
+            }
+
+            var types = interfaceTypes.SelectMany(x => assemblyTypes.Where(y => x.IsAssignableFrom(y)));
 
             builder.RegisterTypes(types.Union(interfaceTypes).Union(controllerTypes).ToArray())
                 .Where(type => type.IsInterface || type.IsClass)
@@ -190,23 +203,23 @@ namespace SkyBuilding.Mvc
 
 #if NETCOREAPP3_0
             //? 跨域
-            app.UseRouting()
-                .UseAuthentication()
-                .UseStaticFiles()
+            app.UseStaticFiles()
+                .UseRouting()                
                 .UseMvc()
                 .UseCors("Allow")
                 .UseSwagger()
                 .UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/" + "swagger:version".Config("v1") + "/swagger.json", "swagger:title".Config("API接口文档"));
-                }).UseEndpoints(endpoints =>
+                })
+                .UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();
                 });
 #else
             //? 跨域
-            app.UseAuthentication()
-                .UseCors("Allow")
+            app.UseStaticFiles()
+                .UseCors("Allow")                
                 .UseMvc()
                 .UseSwagger()
                 .UseSwaggerUI(c =>
@@ -243,7 +256,7 @@ namespace SkyBuilding.Mvc
 
             }).AddJwtBearer(options =>
             {
-                options.Authority = "https://oidc.faasx.com/";
+                options.Authority = "jwt:authority".Config<string>();
                 options.Audience = "jwt:audience".Config("api");
 
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -273,6 +286,8 @@ namespace SkyBuilding.Mvc
         public override void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
 #endif
+            app.UseAuthentication();
+
             base.Configure(app, env);
 
             app.Use(next =>

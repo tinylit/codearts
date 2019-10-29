@@ -7,11 +7,32 @@ namespace SkyBuilding.Config
     /// </summary>
     public class ConfigHelper : DesignMode.Singleton<ConfigHelper>
     {
+        /// <summary>
+        /// 默认配置助手
+        /// </summary>
+        private class DefaultConfigHelper : IConfigHelper
+        {
+            /// <summary>
+            /// 配置改变事件
+            /// </summary>
+            public event Action<object> OnConfigChanged;
+
+            /// <summary>
+            /// 默认值
+            /// </summary>
+            /// <typeparam name="T">返回数据类型</typeparam>
+            /// <param name="key">键</param>
+            /// <param name="defaultValue">默认值</param>
+            /// <returns></returns>
+            public T Get<T>(string key, T defaultValue = default) => defaultValue;
+        }
+
         private readonly IConfigHelper _helper;
+
         /// <summary>
         /// 构造函数
         /// </summary>
-        private ConfigHelper() => _helper = RuntimeServManager.Singleton<IConfigHelper>();
+        private ConfigHelper() => _helper = RuntimeServManager.Singleton<IConfigHelper, DefaultConfigHelper>();
 
         ///<summary> 配置文件变更事件 </summary>
         public event Action<object> OnConfigChanged

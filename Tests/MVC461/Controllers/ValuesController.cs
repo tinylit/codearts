@@ -1,12 +1,13 @@
-﻿using System;
-using SkyBuilding.Mvc;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
+﻿using Mvc461.Domain;
 using SkyBuilding;
 using SkyBuilding.Exceptions;
+using SkyBuilding.Mvc;
+using System.Linq;
+using System.Collections.Generic;
+using System.Web.Http;
+using Mvc461.Domain.Entities;
+using System.ComponentModel.DataAnnotations;
+using System;
 
 namespace MVC461.Controllers
 {
@@ -18,21 +19,63 @@ namespace MVC461.Controllers
     /// <inheritdoc />
     public interface IDependency
     {
-
+        /// <inheritdoc />
+        bool AddUser(UserDto user);
     }
     /// <inheritdoc />
     public class Dependency : IDependency
     {
+        private readonly UserRepository user;
 
+        /// <inheritdoc />
+        public Dependency(UserRepository user)
+        {
+            this.user = user;
+        }
+
+        /// <inheritdoc />
+        public bool AddUser(UserDto user)
+        {
+            return this.user.AsInsertable(user.MapTo<User>()).ExecuteCommand() > 0;
+        }
+    }
+
+    /// <inheritdoc />
+    public class UserDto
+    {
+        /// <summary>
+        /// ID
+        /// </summary>
+        public ulong Id { get; set; }
+        /// <summary>
+        /// 机构ID
+        /// </summary>
+        public ulong OrgId { get; set; }
+        /// <summary>
+        /// 公司ID
+        /// </summary>
+        public long CompanyId { get; set; }
+        /// <summary>
+        /// 账户
+        /// </summary>
+        [Display(Name = "用户账户")]
+        public string Account { get; set; }
+        /// <summary>
+        /// 用户名称
+        /// </summary>
+        [Display(Name = "用户名称")]
+        public string Name { get; set; }
     }
 
     /// <inheritdoc />
     public class ValuesController : BaseController
     {
+        private readonly IDependency dependency;
+
         /// <inheritdoc />
         public ValuesController(IDependency dependency)
         {
-
+            this.dependency = dependency;
         }
         /// <inheritdoc />
         // GET api/values
@@ -56,14 +99,16 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         // POST api/values
         [HttpPost]
-        public void Post([FromBody]string value)
+        public DResult Post([FromBody]UserDto value)
         {
+            return dependency.AddUser(value) ? DResult.Ok() : DResult.Error("新增数据失败!");
         }
         /// <inheritdoc />
         // PUT api/values/5
         [HttpPut]
         public void Put(int id, [FromBody]string value)
         {
+
         }
         /// <inheritdoc />
         // DELETE api/values/5

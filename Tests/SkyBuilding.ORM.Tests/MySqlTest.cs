@@ -94,6 +94,12 @@ namespace UnitTest
         }
 
         [TestMethod]
+        public void IsNullableTest()
+        {
+            var defautUser = userSingleton.Where(x => x.Name == null).FirstOrDefault();
+        }
+
+        [TestMethod]
         public void SelectOrTest()
         {
             UserInDto user = new UserInDto

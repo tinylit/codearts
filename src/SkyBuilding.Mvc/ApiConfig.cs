@@ -198,10 +198,11 @@ namespace SkyBuilding.Mvc
                 path = AppDomain.CurrentDomain.BaseDirectory;
 
             var assemblys = Directory.GetFiles(path, "*.dll")
-                    .Select(Assembly.LoadFrom)
-                    .SelectMany(x => x.GetTypes());
+                    .Select(Assembly.LoadFrom);
 
-            var controllerTypes = assemblys
+            var assemblyTypes = assemblys.SelectMany(x => x.GetTypes());
+
+            var controllerTypes = assemblyTypes
                 .Where(type => type.IsClass && !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type));
 
             var interfaceTypes = controllerTypes
@@ -212,7 +213,19 @@ namespace SkyBuilding.Mvc
                           .Select(y => y.ParameterType));
                 }).Distinct();
 
-            var types = interfaceTypes.SelectMany(x => assemblys.Where(y => x.IsAssignableFrom(y)));
+            if (assemblyTypes.Any(x => x.FullName.StartsWith("SkyBuilding.ORM")))
+            {
+                var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
+                    .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"));
+
+                builder.RegisterTypes(assemblyTypes.Where(type => type.IsClass && repositoryTypes.Any(x => x.IsAssignableFrom(type))).ToArray())
+                    .AsSelf()
+                    .AsImplementedInterfaces()
+                    .PropertiesAutowired()
+                    .SingleInstance();
+            }
+
+            var types = interfaceTypes.SelectMany(x => assemblyTypes.Where(y => x.IsAssignableFrom(y)));
 
             builder.RegisterTypes(types.Union(interfaceTypes).Union(controllerTypes).ToArray())
                 .Where(type => type.IsInterface || type.IsClass)

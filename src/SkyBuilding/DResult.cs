@@ -12,14 +12,14 @@ namespace SkyBuilding
         /// <summary>
         /// 错误信息实体
         /// </summary>
-        private class ErrorDresult : DResult
+        private class ErrorResult : DResult
         {
             /// <summary>
             /// 构造函数
             /// </summary>
             /// <param name="errorMsg">错误消息</param>
             /// <param name="statusCode">错误编码</param>
-            public ErrorDresult(string errorMsg, int statusCode) : base(statusCode) => Msg = errorMsg;
+            public ErrorResult(string errorMsg, int statusCode) : base(statusCode) => Msg = errorMsg;
 
             /// <summary>
             /// 错误信息
@@ -81,7 +81,7 @@ namespace SkyBuilding
         /// <param name="errorMsg">错误信息</param>
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
-        public static DResult Error(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorDresult(errorMsg, statusCode);
+        public static DResult Error(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorResult(errorMsg, statusCode);
     }
 
     /// <summary>

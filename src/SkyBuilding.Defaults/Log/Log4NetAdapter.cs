@@ -119,14 +119,7 @@ namespace SkyBuilding.Log
             {
                 if (logSite is null)
                 {
-                    try
-                    {
-                        logSite = "site".Config("local");
-                    }
-                    catch (Exception)
-                    {
-                        logSite = "local";
-                    }
+                    logSite = "site".Config("local");
                 }
 
                 return logSite;

@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>net461;net452;net451;net45;net40;netstandard2.0</TargetFrameworks>
     <ApplicationIcon></ApplicationIcon>
     <Authors>Tiny Lit</Authors>
-    <Version>1.2.0.1</Version>
+    <Version>1.2.0.2</Version>
 	<PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -13,8 +13,8 @@
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net451'">
+    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
   </ItemGroup>
 
   <ItemGroup>

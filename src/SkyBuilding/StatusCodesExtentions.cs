@@ -75,6 +75,9 @@ namespace SkyBuilding
                     var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
                     foreach (var field in fields)
                     {
+                        var key = (int)field.GetRawConstantValue();
+
+                        if (codes.ContainsKey(key)) continue;
 #if NET40
                         var attr = (DescriptionAttribute)Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute));
 #else
@@ -83,7 +86,7 @@ namespace SkyBuilding
 
                         var message = attr is null ? field.Name : attr.Description ?? field.Name;
 
-                        codes.Add((int)field.GetRawConstantValue(), message);
+                        codes[key] = message;
                     }
 
                 } while (StatusCodeType.IsAssignableFrom(type = type.BaseType));

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Mvc.Core.Domain;
 using SkyBuilding;
 using SkyBuilding.Exceptions;
 using SkyBuilding.Mvc;
@@ -19,8 +20,14 @@ namespace Mvc.Core.Controllers
     /// <inheritdoc />
     public class Dependency : IDependency
     {
+        private readonly UserRepository user;
 
+        public Dependency(UserRepository user)
+        {
+            this.user = user;
+        }
     }
+
 
     /// <summary>
     /// 默认

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option csharp_namespace = "Mvc.Core";
+
+package main;
+
+// The greeting service definition.
+service Push {
+  // Sends a greeting
+  rpc Push (PushRequest) returns (PushResult);
+}
+
+// The request message containing the user's name.
+message PushRequest {
+  uint64 companyId = 1;
+  string requestId = 2;
+  enum InvoiceType {
+        ELECTRIC = 0;
+        NORMAL   = 1;
+        SPECIAL  = 2;
+        ROLL	 = 3;
+  }
+  InvoiceType invoiceType = 3;
+  string invoiceCode = 4;
+  string invoiceNo = 5;
+  string jshj = 6;
+  enum Ticket{
+    BLUE = 0;
+	RED = 1;
+  }
+  Ticket ticket = 7;
+  string pdf = 8;
+  string kprq = 9;
+}
+
+// The response message containing the greetings.
+message PushResult {
+  int32 Code = 1;
+  string Msg = 2;
+}

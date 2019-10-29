@@ -8,7 +8,6 @@ using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 namespace SkyBuilding.ORM
@@ -37,7 +36,7 @@ namespace SkyBuilding.ORM
                     .Except(validationAttributes.OfType<RegularExpressionAttribute>());
             }
 
-            Validator.ValidateValue(value, validationContext, validationAttributes);
+            DbValidator.ValidateValue(value, validationContext, validationAttributes);
         }
 
         /// <summary>

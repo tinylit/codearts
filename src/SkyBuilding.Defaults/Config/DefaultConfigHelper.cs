@@ -9,60 +9,69 @@ namespace SkyBuilding.Config
     /// <summary>
     /// Json 配置助手
     /// </summary>
-    public class DefaultConfigHelper : DesignMode.Singleton<DefaultConfigHelper>, IConfigHelper
+    public class DefaultConfigHelper : IConfigHelper
     {
+        private static IConfigurationBuilder _builder;
+
         /// <summary>
-        /// 单例构造
+        /// 获取默认配置
         /// </summary>
-        private DefaultConfigHelper()
+        /// <param name="useConfigCenter"></param>
+        /// <returns></returns>
+        static IConfigurationBuilder ConfigurationBuilder()
         {
-            InitBuilder();
-            InitConfig();
+            string currentDir = Directory.GetCurrentDirectory();
+
+            var builder = new ConfigurationBuilder()
+                 .SetBasePath(currentDir);
+
+            var path = Path.Combine(currentDir, "appsettings.json");
+
+            if (File.Exists(path))
+            {
+                builder.AddJsonFile(path, false, true);
+            }
+
+            return builder;
         }
 
-        //系统盘
-        private const string SystemDevice = "C:\\";
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public DefaultConfigHelper() : this(_builder ?? (_builder = ConfigurationBuilder()))
+        {
 
-        private IConfigurationRoot _config;
+        }
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="builder">配置</param>
+        public DefaultConfigHelper(IConfigurationBuilder builder) : this(builder.Build())
+        {
+
+        }
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="config">配置</param>
+        public DefaultConfigHelper(IConfigurationRoot config)
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+
+            _callbackRegistration = config.GetReloadToken()
+                .RegisterChangeCallback(ConfigChanged, config);
+        }
+
+        private readonly IConfigurationRoot _config;
         private IDisposable _callbackRegistration;
-        private IConfigurationBuilder _builder;
 
         /// <summary> 配置文件变更事件 </summary>
         public event Action<object> OnConfigChanged;
 
         /// <summary> 当前配置 </summary>
         public IConfiguration Config => _config;
-
-        /// <summary>
-        /// 初始化构造器
-        /// </summary>
-        /// <param name="useConfigCenter"></param>
-        private void InitBuilder(bool useConfigCenter = false)
-        {
-            string currentDir = useConfigCenter ?
-                SystemDevice :
-                Directory.GetCurrentDirectory();
-
-            _builder = new ConfigurationBuilder()
-                .SetBasePath(currentDir);
-
-            var path = Path.Combine(currentDir, "appsettings.json");
-
-            if (File.Exists(path))
-            {
-                _builder.AddJsonFile(path, false, true);
-            }
-        }
-
-        /// <summary>
-        /// 初始化配置
-        /// </summary>
-        private void InitConfig()
-        {
-            _config = _builder.Build();
-            _callbackRegistration = _config.GetReloadToken()
-                .RegisterChangeCallback(ConfigChanged, _config);
-        }
 
         /// <summary>
         /// 配置变更事件
@@ -74,21 +83,6 @@ namespace SkyBuilding.Config
             _callbackRegistration?.Dispose();
             _callbackRegistration = _config.GetReloadToken()
                 .RegisterChangeCallback(ConfigChanged, state);
-        }
-
-        /// <summary> 构建额外配置 </summary>
-        /// <param name="builderAction"></param>
-        public void Build(Action<IConfigurationBuilder> builderAction)
-        {
-            builderAction.Invoke(_builder);
-            var sources = _builder.Sources.Reverse().ToArray();
-            //倒序排列，解决读取配置时的优先级问题
-            for (var i = 0; i < sources.Length; i++)
-            {
-                _builder.Sources[i] = sources[i];
-            }
-
-            _config = _builder.Build();
         }
 
         /// <summary>
@@ -136,10 +130,13 @@ namespace SkyBuilding.Config
     {
         private readonly Configuration Config;
         private readonly Dictionary<string, string> Configs;
+        private readonly Dictionary<string, ConnectionStringSettings> ConnectionStrings;
 
         private DefaultConfigHelper()
         {
             Configs = new Dictionary<string, string>();
+
+            ConnectionStrings = new Dictionary<string, ConnectionStringSettings>();
 
             Config = WebConfigurationManager.OpenWebConfiguration("~");
 
@@ -169,9 +166,18 @@ namespace SkyBuilding.Config
 
         public T Get<T>(string key, T defaultValue = default)
         {
-            if (Configs.TryGetValue(key, out string value))
+            var type = typeof(T);
+
+            if (type.IsValueType || type == typeof(string))
             {
-                return value.CastTo(defaultValue);
+                if (Configs.TryGetValue(key, out string value))
+                {
+                    return value.CastTo(defaultValue);
+                }
+            }
+            else if (ConnectionStrings.TryGetValue(key, out ConnectionStringSettings settings))
+            {
+                return settings.MapTo<T>(defaultValue);
             }
 
             return defaultValue;
@@ -180,6 +186,15 @@ namespace SkyBuilding.Config
         /// <summary> 重新加载配置 </summary>
         public void Reload()
         {
+            ConnectionStrings.Clear();
+
+            var connectionStrings = Config.ConnectionStrings;
+
+            foreach (ConnectionStringSettings stringSettings in connectionStrings.ConnectionStrings)
+            {
+                ConnectionStrings.Add(stringSettings.Name, stringSettings);
+            }
+
             Configs.Clear();
 
             var appSettings = Config.AppSettings;

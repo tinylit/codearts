@@ -19,11 +19,11 @@ namespace SkyBuilding.Mvc
             if (!Directory.Exists(path))
                 path = AppDomain.CurrentDomain.BaseDirectory;
 
-            var assemblys = Directory.GetFiles(path, "*.dll")
+            var assemblyTypes = Directory.GetFiles(path, "*.dll")
                     .Select(Assembly.LoadFrom)
                     .SelectMany(x => x.GetTypes());
 
-            var controllerTypes = assemblys
+            var controllerTypes = assemblyTypes
                 .Where(type => type.IsClass && !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type));
 
             var interfaceTypes = controllerTypes
@@ -34,7 +34,7 @@ namespace SkyBuilding.Mvc
                           .Select(y => y.ParameterType));
                 }).Distinct();
 
-            var types = interfaceTypes.SelectMany(x => assemblys.Where(y => x.IsAssignableFrom(y)));
+            var types = interfaceTypes.SelectMany(x => assemblyTypes.Where(y => x.IsAssignableFrom(y)));
 
             controllerTypes.ForEach(type =>
             {
