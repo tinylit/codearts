@@ -264,19 +264,7 @@ namespace SkyBuilding
 
                 var typeMethod = GetMethodInfo(GetServiceObject);
 
-                storeItem.ParameterStores.ForEach(info =>
-                {
-                    if (info.IsOptional)
-                    {
-                        list.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
-                    }
-                    else
-                    {
-                        list.Add(Convert(Call(typeMethod, Constant(info.ParameterType)), info.ParameterType));
-                    }
-                });
-
-                var bodyEx = New(storeItem.Member, list);
+                var bodyEx = New(storeItem.Member, storeItem.ParameterStores.Select(info => info.IsOptional ? Convert(Constant(info.DefaultValue), info.ParameterType) : Convert(Call(null, typeMethod, Constant(info.ParameterType)), info.ParameterType)));
 
                 var lamdaEx = Lambda<Func<TImplementation>>(bodyEx);
 
