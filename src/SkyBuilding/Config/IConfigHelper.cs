@@ -9,6 +9,7 @@ namespace SkyBuilding.Config
     {
         ///<summary> 配置文件变更事件 </summary>
         event Action<object> OnConfigChanged;
+
         /// <summary>
         /// 配置文件读取
         /// </summary>

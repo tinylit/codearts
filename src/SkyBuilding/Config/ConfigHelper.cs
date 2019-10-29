@@ -15,7 +15,7 @@ namespace SkyBuilding.Config
             /// <summary>
             /// 配置改变事件
             /// </summary>
-            public event Action<object> OnConfigChanged;
+            public event Action<object> OnConfigChanged { add { } remove { } }
 
             /// <summary>
             /// 默认值
