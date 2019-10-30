@@ -148,11 +148,9 @@ namespace SkyBuilding
                     if (defineService)
                         _useBaseTryAdd = false;
 
-                    var isValueCreated = _lazy?.IsValueCreated ?? false;
-
                     _lazy = new Lazy<TService>(factory);
 
-                    if (isValueCreated)
+                    if (!(OnSingletonChanged is null))
                     {
                         OnSingletonChanged?.Invoke(_lazy.Value);
                     }
