@@ -53,7 +53,7 @@ namespace SkyBuilding.Mvc.Controllers
 
         [HttpGet]
         [Route("login")]
-        public DResult Login(string authCode = null, bool debug = false)
+        public IResult Login(string authCode = null, bool debug = false)
         {
             if (!debug)
             {
@@ -97,7 +97,7 @@ namespace SkyBuilding.Mvc.Controllers
 
             var result = loginUri.AsRequestable()
             .Query(reqUri.Query)
-            .ByJson<DResult<Dictionary<string, object>>>()
+            .ByJson<ServResult<Dictionary<string, object>>>()
             .Get();
 
             if (result.Success)
@@ -262,7 +262,7 @@ namespace SkyBuilding.Mvc.Controllers
         }
 
         [HttpGet]
-        public DResult Get(string authCode = null, bool debug = false)
+        public IResult Get(string authCode = null, bool debug = false)
         {
             if (!debug)
             {
@@ -306,7 +306,7 @@ namespace SkyBuilding.Mvc.Controllers
 
             var result = loginUri.AsRequestable()
             .Query(reqUri.Query)
-            .ByJson<DResult<Dictionary<string, object>>>()
+            .ByJson<ServResult<Dictionary<string, object>>>()
             .Get();
 
             if (result.Success)

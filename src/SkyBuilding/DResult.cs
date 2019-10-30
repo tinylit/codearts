@@ -7,12 +7,12 @@ namespace SkyBuilding
     /// <summary>
     /// 数据结果
     /// </summary>
-    public class DResult
+    public class DResult: IResult
     {
         /// <summary>
         /// 错误信息实体
         /// </summary>
-        private class ErrorResult : DResult
+        private class ErrorResult : DResult, IResult
         {
             /// <summary>
             /// 构造函数
@@ -88,7 +88,7 @@ namespace SkyBuilding
     /// 数据结果
     /// </summary>
     /// <typeparam name="T">数据</typeparam>
-    public class DResult<T> : DResult
+    public class DResult<T> : DResult, IResult<T>, IResult
     {
         /// <summary>
         /// 构造函数
@@ -99,7 +99,7 @@ namespace SkyBuilding
         /// <summary>
         /// 数据
         /// </summary>
-        public T Data { get; set; }
+        public T Data { get; }
 
         /// <summary>
         /// 类型默认转换
@@ -112,7 +112,7 @@ namespace SkyBuilding
     /// 数据结果
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DResults<T> : DResult<List<T>>
+    public class DResults<T> : DResult<List<T>>, IResults<T>, IResult<List<T>>, IResult
     {
         /// <summary>
         /// 构造函数

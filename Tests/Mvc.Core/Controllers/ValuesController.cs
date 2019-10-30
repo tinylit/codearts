@@ -42,7 +42,7 @@ namespace Mvc.Core.Controllers
         /// <param name="dependency">依赖注入</param>
         public ValuesController(IDependency dependency)
         {
-
+            
         }
 
         /// <summary>

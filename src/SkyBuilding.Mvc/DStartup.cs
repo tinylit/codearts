@@ -369,7 +369,7 @@ namespace SkyBuilding.Mvc
 
                 var result = loginUri.AsRequestable()
                 .Query(context.Request.QueryString.Value)
-                .ByJson<DResult<Dictionary<string, object>>>()
+                .ByJson<ServResult<Dictionary<string, object>>>()
                 .Get();
 
                 if (result.Success)

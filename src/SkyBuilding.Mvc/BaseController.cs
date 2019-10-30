@@ -52,7 +52,7 @@ namespace SkyBuilding.Mvc
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
         [NonAction]
-        public DResult Error(string errorMsg, int statusCode = 500) => DResult.Error(errorMsg, statusCode);
+        public DResult Error(string errorMsg, int statusCode = StatusCodes.Error) => DResult.Error(errorMsg, statusCode);
     }
 
     /// <summary>
