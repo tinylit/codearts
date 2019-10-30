@@ -107,7 +107,7 @@ namespace SkyBuilding.Tests
         {
             //RuntimeServicePools.TryAdd<IProfileConfiguration, ProfileConfiguration>();
 
-            var mapTo = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>();
+            var mapTo = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>(x => { var y = x; });
 
             //? 为类型“CopyTest”指定代理。
             mapTo.Run<CopyToTest, MapToTest>(source =>
