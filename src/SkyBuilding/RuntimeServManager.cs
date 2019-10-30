@@ -109,7 +109,7 @@ namespace SkyBuilding
         {
             private static Lazy<TService> _lazy;
 
-            private static Action<TService> OnSingletonChanged;
+            private static event Action<TService> OnSingletonChanged;
 
             private static volatile bool _useBaseTryAdd = true;
 
@@ -148,14 +148,9 @@ namespace SkyBuilding
                     if (defineService)
                         _useBaseTryAdd = false;
 
-                    var isValueCreated = _lazy?.IsValueCreated ?? false;
-
                     _lazy = new Lazy<TService>(factory);
 
-                    if (isValueCreated)
-                    {
-                        OnSingletonChanged?.Invoke(_lazy.Value);
-                    }
+                    OnSingletonChanged?.Invoke(_lazy.Value);
                 }
             }
 

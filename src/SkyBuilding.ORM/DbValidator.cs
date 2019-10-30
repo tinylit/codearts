@@ -9,7 +9,7 @@ namespace SkyBuilding.ORM
     /// </summary>
     public static class DbValidator
     {
-        private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, string>> Cache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, string>>();
+        private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>> Cache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>>();
 
         /// <summary>
         /// 消息验证（校验异常时，返回自定义的错误消息）
@@ -23,7 +23,22 @@ namespace SkyBuilding.ORM
                 throw new ArgumentNullException(nameof(validator));
             }
 
-            Cache[typeof(T)] = (attr, context) => validator.Invoke((T)attr, context);
+            Cache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context);
+        }
+
+        /// <summary>
+        /// 消息验证（校验异常时，返回自定义的错误消息）
+        /// </summary>
+        /// <typeparam name="T">验证属性</typeparam>
+        /// <param name="validator">验证器</param>
+        public static void CustomValidate<T>(Func<T, ValidationContext, object, string> validator) where T : ValidationAttribute
+        {
+            if (validator is null)
+            {
+                throw new ArgumentNullException(nameof(validator));
+            }
+
+            Cache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context, value);
         }
 
         /// <summary>
@@ -50,9 +65,9 @@ namespace SkyBuilding.ORM
 
                 if (validation == ValidationResult.Success) continue;
 
-                if (Cache.TryGetValue(attr.GetType(), out Func<ValidationAttribute, ValidationContext, string> invoke))
+                if (Cache.TryGetValue(attr.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
                 {
-                    validation.ErrorMessage = invoke.Invoke(attr, validationContext);
+                    validation.ErrorMessage = invoke.Invoke(attr, validationContext, value);
                 }
 
                 throw new ValidationException(validation, attr, value);

@@ -51,7 +51,7 @@ namespace SkyBuilding.Tests
 
                 var listInt = list.CastTo<List<int>>();
 
-                var quene = list.CastTo<Queue<int>>(); 
+                var quene = list.CastTo<Queue<int>>();
 
                 var queneGuid = list.CastTo<Queue<Guid>>();
             }
@@ -119,6 +119,8 @@ namespace SkyBuilding.Tests
                     Date = source.Date
                 };
             });
+
+            RuntimeServManager.TryAddSingleton<IMapToExpression>(() => mapTo);
 
             var value = new CopyToTest
             {
