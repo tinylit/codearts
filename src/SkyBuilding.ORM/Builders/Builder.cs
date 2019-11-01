@@ -703,12 +703,46 @@ namespace SkyBuilding.ORM.Builders
                     SQLWriter.CloseBrace();
                     return node;
                 case MethodCall.Substring:
+
+                    SQLWriter.Write("CASE WHEN ");
+
+                    base.Visit(node.Object);
+
+                    SQLWriter.Write(" IS NULL OR ");
+
+                    SQLWriter.OpenBrace();
+                    SQLWriter.LengthMethod();
+                    SQLWriter.OpenBrace();
+                    base.Visit(node.Object);
+                    SQLWriter.CloseBrace();
+                    SQLWriter.Write(" - ");
+                    base.Visit(node.Arguments[0]);
+                    SQLWriter.CloseBrace();
+
+                    SQLWriter.Write(" < 1");
+
+                    SQLWriter.Write(" THEN ");
+                    SQLWriter.Parameter(string.Empty);
+                    SQLWriter.Write(" ELSE ");
+
                     SQLWriter.SubstringMethod();
                     SQLWriter.OpenBrace();
                     base.Visit(node.Object);
                     SQLWriter.Delimiter();
-                    base.Visit(node.Arguments[0]);
-                    SQLWriter.Write(" + 1");
+
+                    if (IsStaticVariable(node.Arguments[0]))
+                    {
+                        var indexStart = (int)node.Arguments[0].GetValueFromExpression();
+
+                        SQLWriter.Parameter(indexStart + 1);
+                    }
+                    else
+                    {
+                        base.Visit(node.Arguments[0]);
+
+                        SQLWriter.Write(" + 1");
+                    }
+
                     SQLWriter.Delimiter();
                     if (node.Arguments.Count > 1)
                     {
@@ -724,6 +758,8 @@ namespace SkyBuilding.ORM.Builders
                         base.Visit(node.Arguments[0]);
                     }
                     SQLWriter.CloseBrace();
+
+                    SQLWriter.Write(" END");
                     return node;
                 case MethodCall.ToUpper:
                 case MethodCall.ToLower:
