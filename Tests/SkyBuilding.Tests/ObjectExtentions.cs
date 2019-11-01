@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SkyBuilding.Implements;
 using System;
-using Newtonsoft.Json;
+using System.Threading;
 using System.Collections.Generic;
 
 namespace SkyBuilding.Tests
@@ -106,7 +106,6 @@ namespace SkyBuilding.Tests
         public void MapTo()
         {
             //RuntimeServicePools.TryAdd<IProfileConfiguration, ProfileConfiguration>();
-
             var mapTo = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>(x => { var y = x; });
 
             //? 为类型“CopyTest”指定代理。

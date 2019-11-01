@@ -6,6 +6,10 @@
     public interface ISQLCorrectSimSettings
     {
         /// <summary>
+        /// 数据库引擎
+        /// </summary>
+        DatabaseEngine Engine { get; }
+        /// <summary>
         /// 字符串截取
         /// </summary>
         string Substring { get; }
@@ -22,11 +26,6 @@
         /// 索引交换位置（默认：value.indexOf("x")=>IndexOfMethod(value,"x")）
         /// </summary>
         bool IndexOfSwapPlaces { get; }
-
-        /// <summary>
-        /// 别名更新风格（默认：正常）
-        /// </summary>
-        UpdateAsStyle UpdateAsStyle { get; }
 
         /// <summary>
         /// 字段名称

@@ -694,8 +694,61 @@ namespace SkyBuilding.ORM
         /// <returns></returns>
         public virtual IDeleteable<T> AsDeleteable(IEnumerable<T> collect) => new Deleteable(this, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)));
 
+        /// <summary>
+        /// 表达式分析
+        /// </summary>
+        /// <param name="expression">表达式</param>
+        /// <returns></returns>
         int IEditable<T>.Excute(Expression expression) => DbExecuter.Execute<T>(Connection, expression);
 
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
+        /// <returns></returns>
         int IEditable.Excute(string sql, Dictionary<string, object> parameters) => DbExecuter.Execute(Connection, sql, parameters);
+
+        /// <summary>
+        /// 执行
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <returns>影响行</returns>
+        public virtual int Excute(ISQL sql, object param = null)
+        {
+            if (param is null)
+            {
+                if (sql.Parameters.Count > 0)
+                    throw new DSyntaxErrorException("参数不匹配!");
+
+                return DbExecuter.Execute(Connection, sql.ToString(Settings));
+            }
+
+            var type = param.GetType();
+
+            if (type.IsValueType || type == typeof(string))
+            {
+                if (sql.Parameters.Count > 1)
+                    throw new DSyntaxErrorException("参数不匹配!");
+
+                var token = sql.Parameters.First();
+
+                return DbExecuter.Execute(Connection, sql.ToString(Settings), new Dictionary<string, object>
+                {
+                    [token.Name] = param
+                });
+            }
+
+            if (!(param is Dictionary<string, object> parameters))
+            {
+                parameters = param.MapTo<Dictionary<string, object>>();
+            }
+
+            if (sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+                return DbExecuter.Execute(Connection, sql.ToString(Settings), parameters);
+
+            throw new DSyntaxErrorException("参数不匹配!");
+        }
     }
 }

@@ -188,23 +188,20 @@ namespace SkyBuilding.ORM.Builders
 
                     SQLWriter.Update();
 
-                    switch (settings.UpdateAsStyle)
+                    if (settings.Engine == DatabaseEngine.SqlServer || settings.Engine == DatabaseEngine.Access)
                     {
-                        case UpdateAsStyle.Normal:
-                            SQLWriter.Alias(GetOrAddTablePrefix(typeof(T)));
-                            break;
-                        case UpdateAsStyle.MySql:
-                            WriteTable(typeRegions);
-                            break;
-                        default:
-                            throw new NotSupportedException();
+                        SQLWriter.Alias(GetOrAddTablePrefix(typeRegions.TableType));
+                    }
+                    else
+                    {
+                        WriteTable(typeRegions);
                     }
 
                     SQLWriter.Set();
 
                     base.Visit(node.Arguments[1]);
 
-                    if (settings.UpdateAsStyle == UpdateAsStyle.Normal)
+                    if (settings.Engine == DatabaseEngine.SqlServer || settings.Engine == DatabaseEngine.Access)
                     {
                         SQLWriter.From();
 

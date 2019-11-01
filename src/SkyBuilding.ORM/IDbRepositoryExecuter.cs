@@ -10,6 +10,13 @@ namespace SkyBuilding.ORM
     public interface IDbRepositoryExecuter
     {
         /// <summary>
+        /// 创建执行器
+        /// </summary>
+        /// <typeparam name="T">实体</typeparam>
+        /// <returns></returns>
+        IBuilder<T> Create<T>();
+
+        /// <summary>
         /// 执行增删改功能
         /// </summary>
         /// <param name="conn">数据库链接</param>
@@ -23,6 +30,6 @@ namespace SkyBuilding.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">执行语句</param>
         /// <param name="parameters">参数</param>
-        int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters);
+        int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
     }
 }

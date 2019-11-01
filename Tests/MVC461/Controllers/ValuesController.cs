@@ -36,6 +36,8 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         public bool AddUser(UserDto user)
         {
+            var data = this.user.Where(x => x.Id == 10000).FirstOrDefault();
+
             return this.user.AsInsertable(user.MapTo<User>()).ExecuteCommand() > 0;
         }
     }

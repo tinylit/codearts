@@ -316,7 +316,6 @@ namespace SkyBuilding.Implements
 
                 list.Add(Assign(targetExp, New(commonCtor.Member, arguments)));
 
-
                 if (Kind == PatternKind.Property || Kind == PatternKind.All)
                 {
                     typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>

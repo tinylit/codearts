@@ -66,6 +66,9 @@ namespace SkyBuilding.ORM
 
         private static void AddParameterAuto(IDbCommand command, Dictionary<string, object> parameters)
         {
+            if (parameters is null)
+                return;
+
             foreach (var kv in parameters)
             {
                 AddParameterAuto(command, kv.Key, kv.Value);
@@ -84,7 +87,7 @@ namespace SkyBuilding.ORM
             command.Parameters.Add(dbParameter);
         }
 
-        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters)
+        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
             conn.Open();
 
@@ -97,8 +100,7 @@ namespace SkyBuilding.ORM
                 return command.ExecuteNonQuery();
             }
         }
-
-        protected override IEnumerable<T> Select<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters)
+        public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
             conn.Open();
 
@@ -122,7 +124,7 @@ namespace SkyBuilding.ORM
             }
         }
 
-        protected override T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters, bool reqiured, T defaultValue)
+        public override T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
             conn.Open();
 

@@ -50,8 +50,10 @@ namespace SkyBuilding.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="required">是否必须</param>
+        /// <param name="defaultValue">默认值</param>
         /// <returns></returns>
-        protected abstract T Single<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters, bool reqiured, T defaultValue);
+        public abstract T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
 
         /// <summary>
         /// 查询列表集合
@@ -61,7 +63,7 @@ namespace SkyBuilding.ORM
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
         /// <returns></returns>
-        protected abstract IEnumerable<T> Select<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters);
+        public abstract IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
 
         /// <summary>
         /// 测评表达式语句（查询）
@@ -97,17 +99,17 @@ namespace SkyBuilding.ORM
                 {
                     if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
                     {
-                        return (TResult)Select<T>(conn, sql, builder.Parameters);
+                        return (TResult)Query<T>(conn, sql, builder.Parameters);
                     }
 
-                    bool reqiured = builder.Required;
+                    bool required = builder.Required;
 
                     if (builder.DefaultValue is TResult defaultValue)
                     {
-                        return Single(conn, sql, builder.Parameters, reqiured, defaultValue);
+                        return One(conn, sql, builder.Parameters, required, defaultValue);
                     }
 
-                    return Single(conn, sql, builder.Parameters, reqiured, default(TResult));
+                    return One<TResult>(conn, sql, builder.Parameters, required);
                 }
                 catch (DbException db)
                 {
@@ -164,6 +166,6 @@ namespace SkyBuilding.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">执行语句</param>
         /// <param name="parameters">参数</param>
-        public abstract int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters);
+        public abstract int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
     }
 }

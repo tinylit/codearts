@@ -193,6 +193,21 @@ namespace SkyBuilding.Implements
             return default;
         }
 
+        private static Dictionary<string, object> ByIDataRecordToValueTypeOrStringDictionary(IDataRecord dataRecord, MapToExpression mapTo)
+            => ByIDataRecordToValueTypeOrStringCollectionLike<Dictionary<string, object>>(dataRecord, mapTo);
+
+        private static TResult ByIDataRecordToValueTypeOrStringCollectionLike<TResult>(IDataRecord dataRecord, MapToExpression mapTo) where TResult : ICollection<KeyValuePair<string, object>>
+        {
+            var results = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
+
+            for (int i = 0; i < dataRecord.FieldCount; i++)
+            {
+                results.Add(new KeyValuePair<string, object>(dataRecord.GetName(i), dataRecord.GetValue(i)));
+            }
+
+            return results;
+        }
+
         #endregion
 
         /// <summary>
@@ -690,7 +705,49 @@ namespace SkyBuilding.Implements
                 return ByIDataRecordToValueTypeOrString<TResult>(sourceType, conversionType);
             }
 
+            if (typeof(IEnumerable<KeyValuePair<string, object>>).IsAssignableFrom(conversionType))
+                return ByIDataRecordToEnumerableKeyStringValueObjectPair<TResult>(sourceType, conversionType);
+
             return ByIDataRecordToObject<TResult>(sourceType, conversionType);
+        }
+
+        protected virtual Func<object, TResult> ByIDataRecordToEnumerableKeyStringValueObjectPair<TResult>(Type sourceType, Type conversionType)
+        {
+            if (conversionType.IsInterface || conversionType.IsClass && conversionType == typeof(Dictionary<string, object>))
+            {
+                if (conversionType.IsClass || conversionType.IsAssignableFrom(typeof(Dictionary<string, object>)))
+                {
+                    var parameterExp = Parameter(typeof(object), "source");
+
+                    var method = typeof(MapToExpression).GetMethod(nameof(ByIDataRecordToValueTypeOrStringDictionary), BindingFlags.NonPublic | BindingFlags.Static);
+
+                    var bodyExp = Call(null, method, Convert(parameterExp, sourceType), Constant(this));
+
+                    var lamdaExp =
+                        conversionType.IsClass ?
+                        Lambda<Func<object, TResult>>(bodyExp, parameterExp)
+                        :
+                        Lambda<Func<object, TResult>>(Convert(bodyExp, conversionType), parameterExp);
+
+                    return lamdaExp.Compile();
+                }
+            }
+            else if (conversionType.IsClass && typeof(ICollection<KeyValuePair<string, object>>).IsAssignableFrom(conversionType))
+            {
+                var parameterExp = Parameter(typeof(object), "source");
+
+                var method = typeof(MapToExpression).GetMethod(nameof(ByIDataRecordToValueTypeOrStringCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+
+                var methodG = method.MakeGenericMethod(conversionType);
+
+                var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
+
+                var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
+
+                return lamdaExp.Compile();
+            }
+
+            throw new InvalidCastException();
         }
 
         protected virtual Func<object, TResult> ByIDataRecordToAnonymous<TResult>(Type sourceType, Type conversionType)

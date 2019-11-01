@@ -25,6 +25,7 @@ using System.Web.Http;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
 using SkyBuilding.Mvc.Converters;
+using System.Diagnostics;
 
 namespace SkyBuilding.Mvc
 {
@@ -193,45 +194,58 @@ namespace SkyBuilding.Mvc
         /// <returns></returns>
         private static IContainer IocRegisters(ContainerBuilder builder)
         {
-            var path = AppDomain.CurrentDomain.RelativeSearchPath;
-            if (!Directory.Exists(path))
-                path = AppDomain.CurrentDomain.BaseDirectory;
+            var assemblys = AssemblyFinder.FindAll();
 
-            var assemblys = Directory.GetFiles(path, "*.dll")
-                    .Select(Assembly.LoadFrom);
-
-            var assemblyTypes = assemblys.SelectMany(x => x.GetTypes());
+            var assemblyTypes = assemblys
+                .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
+                .ToList();
 
             var controllerTypes = assemblyTypes
-                .Where(type => type.IsClass && !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type));
+                .Where(type => !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type))
+                .ToList();
 
             var interfaceTypes = controllerTypes
                 .SelectMany(type =>
                 {
                     return type.GetConstructors()
-                          .SelectMany(x => x.GetParameters()
-                          .Select(y => y.ParameterType));
-                }).Distinct();
+                    .Where(x => x.IsPublic)
+                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType));
 
-            if (assemblyTypes.Any(x => x.FullName.StartsWith("SkyBuilding.ORM")))
+                }).Distinct()
+                .ToList();
+
+            var types = interfaceTypes
+                .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
+                .ToList();
+
+            var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
+                .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"))
+                .ToList();
+
+            if (repositoryTypes.Count > 0)
             {
-                var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
-                    .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"));
+                var injectionTypes = types.SelectMany(type =>
+                {
+                    return type.GetConstructors()
+                    .Where(x => x.IsPublic)
+                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType))
+                    .Where(x => (x.IsClass || x.IsInterface) && repositoryTypes.Any(y => y.IsAssignableFrom(x)));
+                }).ToList();
 
-                builder.RegisterTypes(assemblyTypes.Where(type => type.IsClass && repositoryTypes.Any(x => x.IsAssignableFrom(type))).ToArray())
+                var exactlyTypes = assemblyTypes
+                    .Where(type => type.IsClass && injectionTypes.Any(x => x.IsAssignableFrom(type)))
+                    .ToList();
+
+                builder.RegisterTypes(exactlyTypes.ToArray())
                     .AsSelf()
                     .AsImplementedInterfaces()
-                    .PropertiesAutowired()
                     .SingleInstance();
             }
-
-            var types = interfaceTypes.SelectMany(x => assemblyTypes.Where(y => x.IsAssignableFrom(y)));
 
             builder.RegisterTypes(types.Union(interfaceTypes).Union(controllerTypes).ToArray())
                 .Where(type => type.IsInterface || type.IsClass)
                 .AsSelf() //自身服务，用于没有接口的类
-                .AsImplementedInterfaces() //接口服务
-                .PropertiesAutowired(); //属性注入
+                .AsImplementedInterfaces(); //接口服务
 
             return builder.Build();
         }

@@ -36,7 +36,7 @@ namespace SkyBuilding.ORM.SqlServer
         /// </summary>
         public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
 
-        public UpdateAsStyle UpdateAsStyle => UpdateAsStyle.Normal;
+        public DatabaseEngine Engine => DatabaseEngine.SqlServer;
 
         public string Name(string name) => string.Concat("[", name, "]");
         public string AsName(string name) => Name(name);

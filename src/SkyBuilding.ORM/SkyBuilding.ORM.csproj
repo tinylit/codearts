@@ -4,7 +4,7 @@
 	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Version>1.2.0.7</Version>
+    <Version>1.2.1</Version>
     <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
     <Description>A Linq to SQL ORM framework.</Description>
@@ -22,10 +22,12 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
   
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' ">
+	<Reference Include="System.Web" />
+  </ItemGroup>
+  
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <Reference Include="System.ComponentModel.Annotations">
-      <HintPath>C:\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.netcore.app\2.1.0\ref\netcoreapp2.1\System.ComponentModel.Annotations.dll</HintPath>
-    </Reference>
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>

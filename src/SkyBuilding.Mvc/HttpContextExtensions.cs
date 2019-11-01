@@ -1,8 +1,6 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
-using SkyBuilding.Exceptions;
 using System.Linq;
 using System.Net.NetworkInformation;
 
@@ -17,7 +15,7 @@ namespace SkyBuilding.Mvc
         /// 获取客户端IP地址
         /// </summary>
         /// <returns></returns>
-        public static string GetRemoteIpAddress(this HttpContext context)
+        public static string GetRemoteIpAddress(this Microsoft.AspNetCore.Http.HttpContext context)
         {
             string ipAddress = context.Connection.RemoteIpAddress.ToString();
 
@@ -30,9 +28,9 @@ namespace SkyBuilding.Mvc
         /// <summary>
         /// 获取客户端Mac地址
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="_context">请求上下文</param>
         /// <returns></returns>
-        public static string GetRemoteMacAddress(this HttpContext context)
+        public static string GetRemoteMacAddress(this Microsoft.AspNetCore.Http.HttpContext _)
         {
             var networks = NetworkInterface.GetAllNetworkInterfaces();
             foreach (var network in networks.Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
@@ -49,7 +47,7 @@ namespace SkyBuilding.Mvc
         /// 获取请求方的地址
         /// </summary>
         /// <returns></returns>
-        public static string GetRefererUrlStrings(this HttpContext context)
+        public static string GetRefererUrlStrings(this Microsoft.AspNetCore.Http.HttpContext context)
         {
             StringValues origin = context.Request.Headers[HeaderNames.Referer];
             if (origin == StringValues.Empty)

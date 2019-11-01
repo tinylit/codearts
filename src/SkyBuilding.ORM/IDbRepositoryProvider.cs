@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using System.Linq.Expressions;
 
 namespace SkyBuilding.ORM
@@ -15,11 +16,24 @@ namespace SkyBuilding.ORM
         IQueryBuilder Create();
 
         /// <summary>
-        /// 创建执行器
+        /// 查询独立实体
         /// </summary>
-        /// <typeparam name="T">实体</typeparam>
+        /// <typeparam name="T">实体类型</typeparam>
+        /// <param name="conn">数据库链接</param>
+        /// <param name="sql">查询语句</param>
+        /// <param name="parameters">参数</param>
         /// <returns></returns>
-        IBuilder<T> Create<T>();
+        T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
+
+        /// <summary>
+        /// 查询列表集合
+        /// </summary>
+        /// <typeparam name="T">集合元素类型</typeparam>
+        /// <param name="conn">数据库链接</param>
+        /// <param name="sql">查询语句</param>
+        /// <param name="parameters">参数</param>
+        /// <returns></returns>
+        IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
 
         /// <summary>
         /// 测评表达式语句（查询）

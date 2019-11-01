@@ -30,7 +30,7 @@ namespace UnitTest
                 SqlServerConsts.User,
                 SqlServerConsts.Password);
 
-            using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
+            using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
             {
                 try
                 {

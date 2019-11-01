@@ -1,4 +1,5 @@
 ﻿using SkyBuilding.Config;
+using SkyBuilding.ORM.Exceptions;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -25,7 +26,7 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 数据库链接
         /// </summary>
-        protected IDbConnection Connection => TransactionScopeConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? ThreadScopeConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter);
+        protected IDbConnection Connection => TransactionConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter);
         /// <summary>
         /// 数据库适配器
         /// </summary>
@@ -86,7 +87,7 @@ namespace SkyBuilding.ORM
         /// <returns></returns>
         protected TResult Transaction<TResult>(Func<IDbConnection, IDbTransaction, TResult> factory, IsolationLevel? level = null)
         {
-            using (IDbConnection dbConnection = ThreadScopeConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter, false))
+            using (IDbConnection dbConnection = DispatchConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter, false))
             {
                 try
                 {
@@ -170,7 +171,7 @@ namespace SkyBuilding.ORM
                 throw new ArgumentException("无效表达式!", nameof(expression));
             }
 
-            Type type2 = typeof(Repository<>).MakeGenericType(type.GetGenericArguments().First());
+            Type type2 = typeof(Repository<>).MakeGenericType(type.GetGenericArguments());
 
             return (IQueryable)Activator.CreateInstance(type2, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[2]
             {
@@ -226,6 +227,112 @@ namespace SkyBuilding.ORM
         /// 表达式
         /// </summary>
         public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
+
+        /// <summary>
+        /// 查询一条数据(未查询到数据)
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        public virtual TResult QueryFirst<TResult>(ISQL sql, object param = null) => Query<TResult>(sql, param, true);
+
+        /// <summary>
+        /// 查询一条数据(未查询到数据)
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        public virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null) => Query<TResult>(sql, param, false);
+
+        /// <summary>
+        /// 查询一条数据
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="required">是否必须返回数据</param>
+        /// <returns></returns>
+        protected virtual TResult Query<TResult>(ISQL sql, object param, bool required)
+        {
+            if (param is null)
+            {
+                if (sql.Parameters.Count > 0)
+                    throw new DSyntaxErrorException("参数不匹配!");
+
+                return DbProvider.One<TResult>(Connection, sql.ToString(Settings), required: required);
+            }
+
+            var type = param.GetType();
+
+            if (type.IsValueType || type == typeof(string))
+            {
+                if (sql.Parameters.Count > 1)
+                    throw new DSyntaxErrorException("参数不匹配!");
+
+                var token = sql.Parameters.First();
+
+                return DbProvider.One<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
+                {
+                    [token.Name] = param
+                }, required);
+            }
+
+            if (!(param is Dictionary<string, object> parameters))
+            {
+                parameters = param.MapTo<Dictionary<string, object>>();
+            }
+
+            if (sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+                return DbProvider.One<TResult>(Connection, sql.ToString(Settings), parameters, required);
+
+            throw new DSyntaxErrorException("参数不匹配!");
+        }
+
+        /// <summary>
+        /// 查询所有数据
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        public virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null)
+        {
+            if (param is null)
+            {
+                if (sql.Parameters.Count > 0)
+                    throw new DSyntaxErrorException("参数不匹配!");
+
+                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings));
+            }
+
+            var type = param.GetType();
+
+            if (type.IsValueType || type == typeof(string))
+            {
+                if (sql.Parameters.Count > 1)
+                    throw new DSyntaxErrorException("参数不匹配!");
+
+                var token = sql.Parameters.First();
+
+                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
+                {
+                    [token.Name] = param
+                });
+            }
+
+            if (!(param is Dictionary<string, object> parameters))
+            {
+                parameters = param.MapTo<Dictionary<string, object>>();
+            }
+
+            if (sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters);
+
+            throw new DSyntaxErrorException("参数不匹配!");
+
+        }
 
         private IEnumerator<T> GetEnumerator()
         {

@@ -138,9 +138,13 @@ namespace System
 
                 var parameterNameExp = Parameter(typeof(string), "name");
 
+                var parameterNamingExp = Parameter(typeof(NamingType), "namingType");
+
                 var parameterLostMatchExp = Parameter(typeof(bool), "lostMacth");
 
                 var concatExp = GetMethodInfo(string.Concat);
+
+                var namingMethod = typeof(StringExtentions).GetMethod(nameof(ToNamingCase), BindingFlags.Public | BindingFlags.Static);
 
                 var enumerCase = typeStore.PropertyStores.Select(info =>
                 {
@@ -159,9 +163,11 @@ namespace System
                         return SwitchCase(method.IsStatic ? Call(null, method, propertyExp) : Call(Constant(factory.Target), method, propertyExp), nameCst);
                     }
 
+                    var namingCst = Call(null, namingMethod, nameCst, parameterNamingExp);
+
                     if (info.MemberType == typeof(string))
                     {
-                        return SwitchCase(Coalesce(propertyExp, defaultCst), nameCst);
+                        return SwitchCase(Coalesce(propertyExp, defaultCst), namingCst);
                     }
 
                     if (info.MemberType.IsArray || typeof(IEnumerable).IsAssignableFrom(info.MemberType))
@@ -170,14 +176,14 @@ namespace System
 
                         var coreExp = Call(null, joinMethod, Convert(propertyExp, typeof(IEnumerable)), Constant(","));
 
-                        return SwitchCase(Call(null, concatExp, Constant("["), coreExp, Constant("]")), nameCst);
+                        return SwitchCase(Call(null, concatExp, Constant("["), coreExp, Constant("]")), namingCst);
                     }
 
                     var toStringMethod = info.MemberType.GetMethod("ToString", new Type[] { });
 
                     if (toStringMethod is null)
                     {
-                        return SwitchCase(Call(null, typeof(StringExtentions).GetMethod(nameof(ObjectToString), BindingFlags.NonPublic | BindingFlags.Static), parameterExp), nameCst);
+                        return SwitchCase(Call(null, typeof(StringExtentions).GetMethod(nameof(ObjectToString), BindingFlags.NonPublic | BindingFlags.Static), parameterExp), namingCst);
                     }
 
                     var body = Call(propertyExp, toStringMethod);
@@ -186,18 +192,17 @@ namespace System
                     {
                         var testExp = Equal(propertyExp, Constant(null, info.MemberType));
 
-                        return SwitchCase(Condition(testExp, defaultCst, body), nameCst);
+                        return SwitchCase(Condition(testExp, defaultCst, body), namingCst);
                     }
 
-                    return SwitchCase(body, nameCst);
+                    return SwitchCase(body, namingCst);
                 });
-
 
                 var bodyExp = Call(null, concatExp, Constant("{"), parameterNameExp, Constant("}"));
 
-                var switchExp = Switch(parameterNameExp, Condition(Equal(parameterLostMatchExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
+                var switchExp = Switch(Call(null, namingMethod, parameterNameExp, parameterNamingExp), Condition(Equal(parameterLostMatchExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
 
-                var lamda = Lambda<Func<T, string, bool, string>>(switchExp, parameterExp, parameterNameExp, parameterLostMatchExp);
+                var lamda = Lambda<Func<T, string, NamingType, bool, string>>(switchExp, parameterExp, parameterNameExp, parameterNamingExp, parameterLostMatchExp);
 
                 Invoke = lamda.Compile();
             }
@@ -205,7 +210,7 @@ namespace System
             /// <summary>
             /// 调用
             /// </summary>
-            public static readonly Func<T, string, bool, string> Invoke;
+            public static readonly Func<T, string, NamingType, bool, string> Invoke;
         }
 
         /// <summary>
@@ -214,9 +219,10 @@ namespace System
         /// <typeparam name="T"></typeparam>
         /// <param name="value">字符串</param>
         /// <param name="source">资源</param>
+        /// <param name="namingType">比较的命名方式</param>
         /// <param name="keepLostMatch">保留迷失的匹配</param>
         /// <returns></returns>
-        public static string PropSugar<T>(this string value, T source, bool keepLostMatch = false) where T : class
+        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal, bool keepLostMatch = false) where T : class
         {
             if (source is null)
             {
@@ -225,7 +231,7 @@ namespace System
 
             return PatternProperty.Replace(value, match =>
             {
-                return Nested<T>.Invoke(source, match.Groups["name"].Value, keepLostMatch);
+                return Nested<T>.Invoke(source, match.Groups["name"].Value, namingType, keepLostMatch);
             });
         }
     }

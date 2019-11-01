@@ -38,7 +38,7 @@ namespace SkyBuilding.ORM.Oracle
 
         public bool IndexOfSwapPlaces => false;
 
-        public UpdateAsStyle UpdateAsStyle => UpdateAsStyle.Normal;
+        public DatabaseEngine Engine => DatabaseEngine.Oracle;
 
         public string AsName(string name) => Name(name);
 

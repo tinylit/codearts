@@ -15,13 +15,9 @@ namespace SkyBuilding.Mvc
     {
         static SkyDependencyResolver()
         {
-            var path = AppDomain.CurrentDomain.RelativeSearchPath;
-            if (!Directory.Exists(path))
-                path = AppDomain.CurrentDomain.BaseDirectory;
+            var assemblys = AssemblyFinder.FindAll();
 
-            var assemblyTypes = Directory.GetFiles(path, "*.dll")
-                    .Select(Assembly.LoadFrom)
-                    .SelectMany(x => x.GetTypes());
+            var assemblyTypes = assemblys.SelectMany(x => x.GetTypes());
 
             var controllerTypes = assemblyTypes
                 .Where(type => type.IsClass && !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type));

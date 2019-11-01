@@ -12,7 +12,7 @@ namespace SkyBuilding.Tests
         {
             for (int i = 0; i < 100000; i++)
             {
-                string value = $"{i}xxx{{x}}-{{y}}-{{z}}--{{xyz}}-{{sb}}-{{abc}}".PropSugar(new { x = 1, y = DateTime.Now, z = "测试", xyz = new int[] { 1, 2, 3 }, sb = new StringBuilder("sb") }, true);
+                string value = $"{i}xxx{{x}}-{{y}}-{{z}}--{{xyz}}-{{sb}}-{{abc}}".PropSugar(new { x = 1, y = DateTime.Now, z = "测试", xyz = new int[] { 1, 2, 3 }, sb = new StringBuilder("sb") });
             }
         }
     }

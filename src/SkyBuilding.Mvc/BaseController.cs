@@ -28,6 +28,7 @@ namespace SkyBuilding.Mvc
         /// <returns></returns>
         [NonAction]
         public DResult Ok() => DResult.Ok();
+
 #else
         /// <summary>
         /// 成功

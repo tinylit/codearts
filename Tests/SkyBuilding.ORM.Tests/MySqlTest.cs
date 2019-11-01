@@ -35,7 +35,7 @@ namespace UnitTest
 
             var connectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;";
 
-            using (var connection = TransactionScopeConnections.GetConnection(connectionString, adapter) ?? ThreadScopeConnections.Instance.GetConnection(connectionString, adapter))
+            using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
             {
                 try
                 {

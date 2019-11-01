@@ -4,17 +4,18 @@ using System.Data;
 namespace SkyBuilding.ORM
 {
     /// <summary>
-    /// 数据库
+    /// 数据库(Close和Dispose接口虚拟，通过接口调用时不会真正关闭或释放，只有通过类调用才会真实的执行)
     /// </summary>
-    public abstract class DbConnection : IDbConnection
+    public class DbConnection : IDbConnection
     {
-        //事务中，当前还有多少次连接
         private readonly IDbConnection _connection; //数据库连接
 
-        public DbConnection(IDbConnection connection)
-        {
-            _connection = connection;
-        }
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="connection">数据库链接</param>
+        public DbConnection(IDbConnection connection) => _connection = connection;
+
         /// <summary>
         /// 数据库连接
         /// </summary>
@@ -39,49 +40,31 @@ namespace SkyBuilding.ORM
         /// 创建事务
         /// </summary>
         /// <returns></returns>
-        public IDbTransaction BeginTransaction()
-        {
-            if (_connection.State == ConnectionState.Closed)
-            {
-                Open();
-            }
-
-            return _connection.BeginTransaction();
-        }
+        public IDbTransaction BeginTransaction() => _connection.BeginTransaction();
 
         /// <summary>
         /// 创建事务
         /// </summary>
         /// <param name="il">隔离等级</param>
         /// <returns></returns>
-        public IDbTransaction BeginTransaction(IsolationLevel il)
-        {
-            if (_connection.State == ConnectionState.Closed)
-            {
-                Open();
-            }
-
-            return _connection.BeginTransaction(il);
-        }
+        public IDbTransaction BeginTransaction(IsolationLevel il) => _connection.BeginTransaction(il);
 
         /// <summary>
         /// 修改数据库
         /// </summary>
         /// <param name="databaseName">数据库名称</param>
-        public void ChangeDatabase(string databaseName)
-        {
-            if (State == ConnectionState.Closed)
-            {
-                Open();
-            }
-
-            _connection.ChangeDatabase(databaseName);
-        }
+        public void ChangeDatabase(string databaseName) => _connection.ChangeDatabase(databaseName);
 
         /// <summary>
         /// 打开链接
         /// </summary>
-        public virtual void Open() => _connection.Open();
+        public virtual void Open()
+        {
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
+        }
+
+        void IDbConnection.Close() { }
 
         /// <summary>
         /// 关闭链接
@@ -92,15 +75,12 @@ namespace SkyBuilding.ORM
         /// 创建命令
         /// </summary>
         /// <returns></returns>
-        public IDbCommand CreateCommand()
-        {
-            if (_connection.State == ConnectionState.Closed)
-            {
-                Open();
-            }
+        public IDbCommand CreateCommand() => _connection.CreateCommand();
 
-            return _connection.CreateCommand();
-        }
+        /// <summary>
+        /// 释放器不释放
+        /// </summary>
+        void IDisposable.Dispose() { }
 
         /// <summary>
         /// 释放内存
@@ -110,13 +90,15 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 释放内存
         /// </summary>
-        /// <param name="disposing"></param>
+        /// <param name="disposing">确认释放</param>
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
                 _connection?.Close();
                 _connection?.Dispose();
+
+                GC.SuppressFinalize(this);
             }
         }
     }

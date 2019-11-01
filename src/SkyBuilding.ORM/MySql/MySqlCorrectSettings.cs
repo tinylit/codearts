@@ -35,7 +35,7 @@ namespace SkyBuilding.ORM.MySql
         /// </summary>
         public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
 
-        public UpdateAsStyle UpdateAsStyle => UpdateAsStyle.MySql;
+        public DatabaseEngine Engine => DatabaseEngine.MySQL;
 
         public string Name(string name) => string.Concat("`", name, "`");
         public string AsName(string name) => Name(name);
