@@ -41,7 +41,7 @@ namespace SkyBuilding.Tests
         [TestMethod]
         public void CastTo()
         {
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 var guid = "0bbd0503-4879-42de-8cf0-666537b642e2".CastTo<Guid?>();
 
@@ -127,6 +127,7 @@ namespace SkyBuilding.Tests
                 Name = "test",
                 Date = DateTime.Now
             };
+                        
 
             for (int i = 0; i < 100000; i++)
             {

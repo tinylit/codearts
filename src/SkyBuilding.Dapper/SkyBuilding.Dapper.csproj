@@ -5,7 +5,7 @@
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <ApplicationIcon></ApplicationIcon>
     <Authors>Tiny Lit</Authors>
-    <Version>1.2.1</Version>
+    <Version>2.1.0</Version>
 	<PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/SkyBuilding</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

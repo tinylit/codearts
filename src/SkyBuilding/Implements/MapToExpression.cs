@@ -48,6 +48,10 @@ namespace SkyBuilding.Implements
 
                 return value;
             }
+            catch (InvalidCastException)
+            {
+                throw;
+            }
             catch
             {
                 return def;
@@ -101,6 +105,33 @@ namespace SkyBuilding.Implements
         }
 
         #region 反射使用
+
+        private static Dictionary<int, string> GetKeyWithFields(IDataRecord dataRecord)
+        {
+            var dic = new Dictionary<int, string>();
+
+            for (int i = 0; i < dataRecord.FieldCount; i++)
+            {
+                var name = dataRecord.GetName(i);
+
+                dic.Add(i, name.ToLower());
+            }
+
+            return dic;
+        }
+
+        private static int GetOrdinal(Dictionary<int, string> names, string name)
+        {
+            name = name.ToLower();
+
+            foreach (var kv in names)
+            {
+                if (name == kv.Value)
+                    return kv.Key;
+            }
+
+            return -1;
+        }
 
         private static MethodInfo GetMethodInfo<T1, T2, T3>(Func<T1, T2, T3> func) => func.Method;
 
@@ -750,7 +781,7 @@ namespace SkyBuilding.Implements
             throw new InvalidCastException();
         }
 
-        protected virtual Func<object, TResult> ByIDataRecordToAnonymous<TResult>(Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByIDataRecordToComplex<TResult>(Type sourceType, Type conversionType)
         {
             var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
@@ -770,6 +801,8 @@ namespace SkyBuilding.Implements
             var negativeExp = Constant(-1);
 
             var errorExp = Parameter(typeof(Exception), "e");
+
+            var dicExp = Variable(typeof(Dictionary<int, string>), "dic");
 
             var typeMap = TypeMap.GetOrAdd(sourceType, type =>
             {
@@ -793,19 +826,29 @@ namespace SkyBuilding.Implements
                 };
             });
 
-            var getOrdinal = sourceType.GetMethod("GetOrdinal", new Type[] { typeof(string) });
+            var mapType = typeof(MapToExpression);
+
+            var getNames = mapType.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var getOrdinal = mapType.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
 
             var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
 
+            var getFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
+
             var convertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
+
+            var castToMethod = typeof(ObjectExtentions).GetMethod(nameof(ObjectExtentions.CastTo), new Type[] { typeof(object), typeof(Type) });
 
             var list = new List<Expression> { Assign(valueExp, Convert(parameterExp, sourceType)) };
 
-            var variables = new List<ParameterExpression> { valueExp, indexExp };
+            list.Add(Assign(dicExp, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
+
+            var variables = new List<ParameterExpression> { valueExp, indexExp, dicExp };
 
             var arguments = new List<Expression>();
 
-            commonCtor.ParameterStores.ForEach(info => Config(info));
+            commonCtor.ParameterStores.ForEach(info => ConfigParameter(info));
 
             list.Add(New(commonCtor.Member, arguments));
 
@@ -813,11 +856,11 @@ namespace SkyBuilding.Implements
 
             return lamdaExp.Compile();
 
-            void Config(ParameterStoreItem info)
+            void ConfigParameter(ParameterStoreItem info)
             {
                 var memberType = info.ParameterType;
 
-                list.Add(Assign(indexExp, Call(valueExp, getOrdinal, Constant(info.Name))));
+                list.Add(Assign(indexExp, Call(null, getOrdinal, valueExp, Constant(info.Name))));
 
                 var testExp = GreaterThan(indexExp, negativeExp);
 
@@ -844,7 +887,11 @@ namespace SkyBuilding.Implements
 
                 if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
                 {
-                    objExp = TryCatch(Call(valueExp, methodInfo, indexExp), Catch(errorExp, Convert(Call(null, convertMethod, objExp, Constant(memberType)), memberType)));
+                    var memberTypeCst = Constant(memberType);
+
+                    objExp = TryCatch(Call(null, convertMethod, objExp, memberTypeCst), Catch(errorExp, Call(null, castToMethod, objExp, memberTypeCst)));
+
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(objExp, memberType));
                 }
                 else
                 {
@@ -876,7 +923,206 @@ namespace SkyBuilding.Implements
             }
         }
 
-        protected virtual Func<object, TResult> ByIDataRecordToByCommon<TResult>(Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByIDataRecordToComplex<TResult>(TypeStoreItem typeStore, Type sourceType, Type conversionType)
+        {
+            var commonCtor = typeStore.ConstructorStores
+                 .Where(x => x.CanRead)
+                 .OrderBy(x => x.ParameterStores.Count)
+                 .FirstOrDefault();
+
+            var parameterExp = Parameter(typeof(object), "source");
+
+            var nullCst = Constant(null);
+
+            var valueExp = Variable(sourceType, "value");
+
+            var indexExp = Variable(typeof(int), "index");
+
+            var targetExp = Variable(conversionType, "target");
+
+            var negativeExp = Constant(-1);
+
+            var dicExp = Variable(typeof(Dictionary<int, string>), "dic");
+
+            var typeMap = TypeMap.GetOrAdd(sourceType, type =>
+            {
+                var types = new Type[1] { typeof(int) };
+
+                return new Dictionary<Type, MethodInfo>
+                {
+                    [typeof(bool)] = type.GetMethod("GetBoolean", types),
+                    [typeof(byte)] = type.GetMethod("GetByte", types),
+                    [typeof(char)] = type.GetMethod("GetChar", types),
+                    [typeof(short)] = type.GetMethod("GetInt16", types),
+                    [typeof(int)] = type.GetMethod("GetInt32", types),
+                    [typeof(long)] = type.GetMethod("GetInt64", types),
+                    [typeof(float)] = type.GetMethod("GetFloat", types),
+                    [typeof(double)] = type.GetMethod("GetDouble", types),
+                    [typeof(decimal)] = type.GetMethod("GetDecimal", types),
+                    [typeof(Guid)] = type.GetMethod("GetGuid", types),
+                    [typeof(DateTime)] = type.GetMethod("GetDateTime", types),
+                    [typeof(string)] = type.GetMethod("GetString", types),
+                    [typeof(object)] = type.GetMethod("GetValue", types)
+                };
+            });
+
+            var mapType = typeof(MapToExpression);
+
+            var getNames = mapType.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var getOrdinal = mapType.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
+
+            var getFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
+
+            var convertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
+
+            var list = new List<Expression> { Assign(valueExp, Convert(parameterExp, sourceType)) };
+
+            list.Add(Assign(dicExp, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
+
+            var variables = new List<ParameterExpression> { valueExp, targetExp, indexExp, dicExp };
+
+            var arguments = new List<Expression>();
+
+            commonCtor.ParameterStores
+                .ForEach(info => ConfigParameter(info));
+
+            list.Add(Assign(targetExp, New(commonCtor.Member, arguments)));
+
+            if (Kind == PatternKind.Property || Kind == PatternKind.All)
+            {
+                typeStore.PropertyStores.Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
+                   .ForEach(info => Config(info, Property(targetExp, info.Member)));
+            }
+
+            if (Kind == PatternKind.Field || Kind == PatternKind.All)
+            {
+                typeStore.FieldStores.Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
+                   .ForEach(info => Config(info, Field(targetExp, info.Member)));
+            }
+
+            list.Add(targetExp);
+
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(variables, list), parameterExp);
+
+            return lamdaExp.Compile();
+
+            void Config<T>(StoreItem<T> info, Expression left) where T : MemberInfo
+            {
+                var memberType = info.MemberType;
+
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
+
+                var testExp = GreaterThan(indexExp, negativeExp);
+
+                if (memberType.IsValueType)
+                {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+                    else
+                    {
+                        if (memberType.IsEnum)
+                        {
+                            memberType = Enum.GetUnderlyingType(memberType);
+                        }
+
+                        testExp = AndAlso(testExp, Not(Call(valueExp, isDBNull, indexExp)));
+                    }
+                }
+
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], indexExp);
+
+                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
+                {
+                    var memberTypeCst = Constant(memberType);
+
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
+                }
+                else
+                {
+                    objExp = Convert(objExp, memberType);
+                }
+
+                if (memberType == info.MemberType)
+                {
+                    list.Add(IfThen(testExp, Assign(left, objExp)));
+                }
+                else
+                {
+                    list.Add(IfThen(testExp, Assign(left, Convert(objExp, info.MemberType))));
+                }
+            }
+
+            void ConfigParameter(ParameterStoreItem info)
+            {
+                var memberType = info.ParameterType;
+
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
+
+                var testExp = GreaterThan(indexExp, negativeExp);
+
+                if (memberType.IsValueType)
+                {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+                    else
+                    {
+                        if (memberType.IsEnum)
+                        {
+                            memberType = Enum.GetUnderlyingType(memberType);
+                        }
+
+                        testExp = AndAlso(testExp, Not(Call(valueExp, isDBNull, indexExp)));
+                    }
+                }
+
+                var nameExp = Variable(info.ParameterType, info.Name.ToCamelCase());
+
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], indexExp);
+
+                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
+                {
+                    var memberTypeCst = Constant(memberType);
+
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
+                }
+                else
+                {
+                    objExp = Convert(objExp, memberType);
+                }
+
+                Expression defaultExp = null;
+
+                if (info.IsOptional)
+                {
+                    defaultExp = Constant(info.DefaultValue, info.ParameterType);
+                }
+                else
+                {
+                    defaultExp = Default(info.ParameterType);
+                }
+
+                if (memberType == info.ParameterType)
+                {
+                    list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, defaultExp)));
+                }
+                else
+                {
+                    list.Add(IfThenElse(testExp, Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, defaultExp)));
+                }
+
+                variables.Add(nameExp);
+                arguments.Add(nameExp);
+            }
+        }
+
+        protected virtual Func<object, TResult> ByIDataRecordToByCommon<TResult>(TypeStoreItem typeStore, Type sourceType, Type conversionType)
         {
             var method = ServiceCtor.Method;
 
@@ -886,8 +1132,6 @@ namespace SkyBuilding.Implements
                 , conversionType);
 
             var list = new List<Expression>();
-
-            var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -899,9 +1143,9 @@ namespace SkyBuilding.Implements
 
             var indexExp = Variable(typeof(int), "index");
 
-            var negativeExp = Constant(-1);
+            var dicExp = Variable(typeof(Dictionary<int, string>), "dic");
 
-            var errorExp = Parameter(typeof(Exception), "e");
+            var negativeExp = Constant(-1);
 
             list.Add(Assign(valueExp, Convert(parameterExp, sourceType)));
 
@@ -929,11 +1173,19 @@ namespace SkyBuilding.Implements
                 };
             });
 
-            var getOrdinal = sourceType.GetMethod("GetOrdinal", new Type[] { typeof(string) });
+            var mapType = typeof(MapToExpression);
+
+            var getNames = mapType.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var getOrdinal = mapType.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
+
+            list.Add(Assign(dicExp, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
 
             var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
 
-            var convertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
+            var getFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
+
+            var convertMethod = typeof(Convert).GetMethod(nameof(System.Convert.ChangeType), new Type[] { typeof(object), typeof(Type) });
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
@@ -949,7 +1201,7 @@ namespace SkyBuilding.Implements
 
             list.Add(targetExp);
 
-            var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { valueExp, indexExp, targetExp }, list), parameterExp);
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { valueExp, indexExp, targetExp, dicExp }, list), parameterExp);
 
             return lamdaExp.Compile();
 
@@ -957,7 +1209,7 @@ namespace SkyBuilding.Implements
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(valueExp, getOrdinal, Constant(info.Name))));
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
 
                 var testExp = GreaterThan(indexExp, negativeExp);
 
@@ -982,7 +1234,9 @@ namespace SkyBuilding.Implements
 
                 if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
                 {
-                    objExp = TryCatch(Call(valueExp, methodInfo, indexExp), Catch(errorExp, Convert(Call(null, convertMethod, objExp, Constant(memberType)), memberType)));
+                    var memberTypeCst = Constant(memberType);
+
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
                 }
                 else
                 {
@@ -1002,10 +1256,12 @@ namespace SkyBuilding.Implements
 
         protected virtual Func<object, TResult> ByIDataRecordToObject<TResult>(Type sourceType, Type conversionType)
         {
-            if (conversionType.IsClass && conversionType.IsGenericType && conversionType.Name.StartsWith("<>"))
-                return ByIDataRecordToAnonymous<TResult>(sourceType, conversionType);
+            var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
-            return ByIDataRecordToByCommon<TResult>(sourceType, conversionType);
+            if (typeStore.ConstructorStores.Any(x => x.ParameterStores.Count == 0))
+                return ByIDataRecordToByCommon<TResult>(typeStore, sourceType, conversionType);
+
+            return ByIDataRecordToComplex<TResult>(typeStore, sourceType, conversionType);
         }
 
         #endregion

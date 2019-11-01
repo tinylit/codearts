@@ -715,8 +715,11 @@ namespace SkyBuilding.ORM
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
         /// <returns>影响行</returns>
-        public virtual int Excute(ISQL sql, object param = null)
+        protected virtual int Excute(ISQL sql, object param = null)
         {
+            if (!Authorize(sql))
+                throw new NonAuthorizeException();
+
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)

@@ -8,6 +8,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 
 namespace SkyBuilding.ORM
 {
@@ -121,6 +122,24 @@ namespace SkyBuilding.ORM
     /// <typeparam name="T"></typeparam>
     public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IEnumerable, IQueryProvider
     {
+        private static ITableRegions tableRegions;
+
+        /// <summary>
+        /// 实体表信息
+        /// </summary>
+        public static ITableRegions TableRegions
+        {
+            get
+            {
+                if (tableRegions is null)
+                {
+                    Interlocked.CompareExchange(ref tableRegions, MapperRegions.Resolve(typeof(T)), null);
+                }
+
+                return tableRegions;
+            }
+        }
+
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -229,13 +248,10 @@ namespace SkyBuilding.ORM
         public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
 
         /// <summary>
-        /// 查询一条数据(未查询到数据)
+        /// SQL验证
         /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
         /// <returns></returns>
-        public virtual TResult QueryFirst<TResult>(ISQL sql, object param = null) => Query<TResult>(sql, param, true);
+        protected virtual bool Authorize(ISQL sql) => sql.Tables.All(x => string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// 查询一条数据(未查询到数据)
@@ -244,7 +260,16 @@ namespace SkyBuilding.ORM
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        public virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null) => Query<TResult>(sql, param, false);
+        public virtual TResult QueryFirst<TResult>(ISQL sql, object param = null) => First<TResult>(sql, param, true);
+
+        /// <summary>
+        /// 查询一条数据(未查询到数据)
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        public virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null) => First<TResult>(sql, param, false);
 
         /// <summary>
         /// 查询一条数据
@@ -254,8 +279,11 @@ namespace SkyBuilding.ORM
         /// <param name="param">参数</param>
         /// <param name="required">是否必须返回数据</param>
         /// <returns></returns>
-        protected virtual TResult Query<TResult>(ISQL sql, object param, bool required)
+        protected virtual TResult First<TResult>(ISQL sql, object param, bool required)
         {
+            if (!Authorize(sql))
+                throw new NonAuthorizeException();
+
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
@@ -299,6 +327,9 @@ namespace SkyBuilding.ORM
         /// <returns></returns>
         public virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null)
         {
+            if (!Authorize(sql))
+                throw new NonAuthorizeException();
+
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
