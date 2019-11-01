@@ -218,10 +218,10 @@ namespace SkyBuilding.ORM
             {
                 case ExpressionType.AndAlso:
                 case ExpressionType.And when node.Left.IsBoolean():
-                    return "AND";
+                    return " AND ";
                 case ExpressionType.OrElse:
                 case ExpressionType.Or when node.Left.IsBoolean():
-                    return "OR";
+                    return " OR ";
                 default:
                     return GetOperator(nodeType ?? node.NodeType);
             }
@@ -236,40 +236,40 @@ namespace SkyBuilding.ORM
             switch (expressionType)
             {
                 case ExpressionType.And:
-                    return "&";
+                    return " & ";
                 case ExpressionType.Or:
-                    return "|";
+                    return " | ";
                 case ExpressionType.Equal:
-                    return "=";
+                    return " = ";
                 case ExpressionType.NotEqual:
-                    return "<>";
+                    return " <> ";
                 case ExpressionType.LessThan:
-                    return "<";
+                    return " < ";
                 case ExpressionType.LessThanOrEqual:
-                    return "<=";
+                    return " <= ";
                 case ExpressionType.GreaterThan:
-                    return ">";
+                    return " > ";
                 case ExpressionType.GreaterThanOrEqual:
-                    return ">=";
+                    return " >= ";
                 case ExpressionType.Add:
                 case ExpressionType.AddChecked:
-                    return "+";
+                    return " + ";
                 case ExpressionType.Subtract:
                 case ExpressionType.SubtractChecked:
-                    return "-";
+                    return " - ";
                 case ExpressionType.Multiply:
                 case ExpressionType.MultiplyChecked:
-                    return "*";
+                    return " * ";
                 case ExpressionType.Divide:
-                    return "/";
+                    return " / ";
                 case ExpressionType.Modulo:
-                    return "%";
+                    return " % ";
                 case ExpressionType.ExclusiveOr:
-                    return "^";
+                    return " ^ ";
                 case ExpressionType.LeftShift:
-                    return "<<";
+                    return " << ";
                 case ExpressionType.RightShift:
-                    return ">>";
+                    return " >> ";
                 default:
                     throw new NotSupportedException();
             }

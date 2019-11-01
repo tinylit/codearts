@@ -102,7 +102,10 @@ namespace SkyBuilding.ORM
         }
         public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
-            conn.Open();
+            if (conn.State == ConnectionState.Closed)
+            {
+                conn.Open();
+            }
 
             using (var command = conn.CreateCommand())
             {
@@ -126,7 +129,10 @@ namespace SkyBuilding.ORM
 
         public override T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
-            conn.Open();
+            if (conn.State == ConnectionState.Closed)
+            {
+                conn.Open();
+            }
 
             using (var command = conn.CreateCommand())
             {

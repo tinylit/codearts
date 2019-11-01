@@ -704,6 +704,11 @@ namespace SkyBuilding.ORM.Builders
                     return node;
                 case MethodCall.Substring:
 
+                    if (BuildWhere)
+                    {
+                        SQLWriter.OpenBrace();
+                    }
+
                     SQLWriter.Write("CASE WHEN ");
 
                     base.Visit(node.Object);
@@ -732,9 +737,7 @@ namespace SkyBuilding.ORM.Builders
 
                     if (IsStaticVariable(node.Arguments[0]))
                     {
-                        var indexStart = (int)node.Arguments[0].GetValueFromExpression();
-
-                        SQLWriter.Parameter(indexStart + 1);
+                        SQLWriter.Parameter((int)node.Arguments[0].GetValueFromExpression() + 1);
                     }
                     else
                     {
@@ -760,6 +763,11 @@ namespace SkyBuilding.ORM.Builders
                     SQLWriter.CloseBrace();
 
                     SQLWriter.Write(" END");
+
+                    if (BuildWhere)
+                    {
+                        SQLWriter.CloseBrace();
+                    }
                     return node;
                 case MethodCall.ToUpper:
                 case MethodCall.ToLower:
@@ -773,18 +781,95 @@ namespace SkyBuilding.ORM.Builders
                 case MethodCall.TrimStart:
                     return TrimMethod(node);
                 case MethodCall.IndexOf:
+                    if (BuildWhere)
+                    {
+                        SQLWriter.OpenBrace();
+                    }
+
+                    var isVariable = IsStaticVariable(node.Arguments[1]);
+
+                    var indexStart = isVariable ? (int)node.Arguments[1].GetValueFromExpression() : -1;
+
+                    SQLWriter.Write("CASE WHEN ");
+                    base.Visit(_settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
+                    SQLWriter.Write(" IS NULL OR ");
+                    base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
+                    SQLWriter.Write(" IS NULL ");
+
+                    if (node.Arguments.Count > 2)
+                    {
+                        SQLWriter.Write(" OR ");
+                        SQLWriter.IndexOfMethod();
+                        SQLWriter.OpenBrace();
+                        base.Visit(_settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
+                        SQLWriter.Delimiter();
+
+                        base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
+                        if (node.Arguments.Count > 1)
+                        {
+                            SQLWriter.Delimiter();
+
+                            if (isVariable)
+                            {
+                                SQLWriter.Parameter(indexStart + 1);
+                            }
+                            else
+                            {
+                                base.Visit(node.Arguments[1]);
+                                SQLWriter.Write(" + 1");
+                            }
+                        }
+
+                        SQLWriter.CloseBrace();
+
+                        SQLWriter.Write(" > ");
+
+                        if (isVariable)
+                        {
+                            SQLWriter.Parameter(indexStart);
+                        }
+                        else
+                        {
+                            base.Visit(node.Arguments[1]);
+                        }
+
+                        SQLWriter.Write(" + ");
+
+                        base.Visit(node.Arguments[2]);
+                    }
+
+                    SQLWriter.Write(" THEN -1 ELSE ");
+
                     SQLWriter.IndexOfMethod();
                     SQLWriter.OpenBrace();
                     base.Visit(_settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
                     SQLWriter.Delimiter();
+
                     base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
                     if (node.Arguments.Count > 1)
                     {
                         SQLWriter.Delimiter();
-                        base.Visit(node.Arguments[1]);
-                        SQLWriter.Write(" + 1");
+
+                        if (isVariable)
+                        {
+                            SQLWriter.Parameter(indexStart + 1);
+                        }
+                        else
+                        {
+                            base.Visit(node.Arguments[1]);
+                            SQLWriter.Write(" + 1");
+                        }
+
                     }
                     SQLWriter.CloseBrace();
+
+                    SQLWriter.Write(" - 1 END");
+
+                    if (BuildWhere)
+                    {
+                        SQLWriter.CloseBrace();
+                    }
+
                     return node;
                 default:
                     return VisitFormatterMethodCall(node);

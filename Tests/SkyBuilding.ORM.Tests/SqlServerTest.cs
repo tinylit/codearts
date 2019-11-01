@@ -650,6 +650,16 @@ namespace UnitTest
             var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
                 .Select(x => new { x.Id, Name = x.Username.Substring(3), Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
             var list = result.ToList();
+
+            /**
+             * SELECT [x].[uid] AS [Id],
+             * CASE WHEN [x].[username] IS NULL OR (LEN([x].[username]) - @__variable_2) < 1 
+             *  THEN @__variable_3 
+             *  ELSE SUBSTRING([x].[username],4,LEN([x].[username]) - @__variable_4) 
+             * END AS [Name],@__variable_ticks AS [Time],([x].[uid]+@__variable_5) AS [OldId],[x].[created_time] AS [Date] 
+             * FROM [fei_users] [x] 
+             * WHERE (([x].[uid]<@__variable_1) AND ([x].[created_time]<@__variable_now))
+             */
         }
 
         [TestMethod]
@@ -694,9 +704,10 @@ namespace UnitTest
                 .Select(x => new { x.Id, Name = x.Username, Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
             var list = result.ToList();
             /**
-             * SELECT [x].[uid] AS [Id], [x].[username] AS [Name], @ticks AS [Time], ([x].[uid] + 1) AS [OldId], [x].[created_time] AS [Date] 
+             * SELECT [x].[uid] AS [Id],[x].[username] AS [Name],@__variable_ticks AS [Time],([x].[uid]+@__variable_5) AS [OldId],[x].[created_time] AS [Date] 
              * FROM [fei_users] [x] 
-             * WHERE ((([x].[uid] < 100) AND ([x].[created_time] < @now)) AND (CHARINDEX('in', [x].[username]) > 1))
+             * WHERE ((([x].[uid]<@__variable_1) AND ([x].[created_time]<@__variable_now)) 
+             * AND ((CASE WHEN @__variable_3 IS NULL OR [x].[username] IS NULL THEN -1 ELSE CHARINDEX(@__variable_4,[x].[username]) - 1 END)>@__variable_2))
              */
         }
         [TestMethod]
