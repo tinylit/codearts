@@ -280,7 +280,7 @@ namespace SkyBuilding.ORM
                 if (sql.Parameters.Count > 0)
                     throw new DSyntaxErrorException("参数不匹配!");
 
-                return DbProvider.One<TResult>(Connection, sql.ToString(Settings), required: required);
+                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), null, required);
             }
 
             var type = param.GetType();
@@ -292,9 +292,9 @@ namespace SkyBuilding.ORM
 
                 var token = sql.Parameters.First();
 
-                return DbProvider.One<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
+                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
-                    [token.Name] = param
+                    [Settings.ParamterName(token.Name)] = param
                 }, required);
             }
 
@@ -303,10 +303,24 @@ namespace SkyBuilding.ORM
                 parameters = param.MapTo<Dictionary<string, object>>();
             }
 
-            if (sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-                return DbProvider.One<TResult>(Connection, sql.ToString(Settings), parameters, required);
+            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+                throw new DSyntaxErrorException("参数不匹配!");
 
-            throw new DSyntaxErrorException("参数不匹配!");
+            var dic = new Dictionary<string, object>();
+
+            foreach (var kv in parameters)
+            {
+                string key = kv.Key;
+
+                if (key[0] == '?' || key[0] == '@' || key[0] == ':')
+                {
+                    key = key.Substring(1);
+                }
+
+                dic.Add(Settings.ParamterName(key), kv.Value);
+            }
+
+            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), dic, required);
         }
 
         /// <summary>
@@ -340,7 +354,7 @@ namespace SkyBuilding.ORM
 
                 return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
-                    [token.Name] = param
+                    [Settings.ParamterName(token.Name)] = param
                 });
             }
 
@@ -349,10 +363,25 @@ namespace SkyBuilding.ORM
                 parameters = param.MapTo<Dictionary<string, object>>();
             }
 
-            if (sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters);
+            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+                throw new DSyntaxErrorException("参数不匹配!");
 
-            throw new DSyntaxErrorException("参数不匹配!");
+            var dic = new Dictionary<string, object>();
+
+            foreach (var kv in parameters)
+            {
+                string key = kv.Key;
+
+                if (key[0] == '?' || key[0] == '@' || key[0] == ':')
+                {
+                    key = key.Substring(1);
+                }
+
+                dic.Add(Settings.ParamterName(key), kv.Value);
+            }
+
+            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), dic);
+
         }
 
         private IEnumerator<T> GetEnumerator()

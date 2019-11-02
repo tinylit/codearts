@@ -53,7 +53,7 @@ namespace SkyBuilding.ORM
         /// <param name="required">是否必须</param>
         /// <param name="defaultValue">默认值</param>
         /// <returns></returns>
-        public abstract T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
+        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
 
         /// <summary>
         /// 查询列表集合
@@ -106,10 +106,10 @@ namespace SkyBuilding.ORM
 
                     if (builder.DefaultValue is TResult defaultValue)
                     {
-                        return One(conn, sql, builder.Parameters, required, defaultValue);
+                        return QueryFirst(conn, sql, builder.Parameters, required, defaultValue);
                     }
 
-                    return One<TResult>(conn, sql, builder.Parameters, required);
+                    return QueryFirst<TResult>(conn, sql, builder.Parameters, required);
                 }
                 catch (DbException db)
                 {

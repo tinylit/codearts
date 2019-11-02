@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
+using SkyBuilding.ORM.Exceptions;
 
 namespace SkyBuilding.ORM
 {
@@ -22,8 +23,11 @@ namespace SkyBuilding.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="required">是否必须</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <exception cref="DRequiredException">当 【required】 为真且未查询到数据</exception>
         /// <returns></returns>
-        T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
+        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
 
         /// <summary>
         /// 查询列表集合

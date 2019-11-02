@@ -749,10 +749,24 @@ namespace SkyBuilding.ORM
                 parameters = param.MapTo<Dictionary<string, object>>();
             }
 
-            if (sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-                return DbExecuter.Execute(Connection, sql.ToString(Settings), parameters);
+            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+                throw new DSyntaxErrorException("参数不匹配!");
 
-            throw new DSyntaxErrorException("参数不匹配!");
+            var dic = new Dictionary<string, object>();
+
+            foreach (var kv in parameters)
+            {
+                string key = kv.Key;
+
+                if (key[0] == '?' || key[0] == '@' || key[0] == ':')
+                {
+                    key = key.Substring(1);
+                }
+
+                dic.Add(Settings.ParamterName(key), kv.Value);
+            }
+
+            return DbExecuter.Execute(Connection, sql.ToString(Settings), dic);
         }
     }
 }

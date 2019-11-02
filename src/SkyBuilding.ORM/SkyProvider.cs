@@ -100,6 +100,7 @@ namespace SkyBuilding.ORM
                 return command.ExecuteNonQuery();
             }
         }
+
         public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
             if (conn.State == ConnectionState.Closed)
@@ -134,7 +135,7 @@ namespace SkyBuilding.ORM
             }
         }
 
-        public override T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
             if (conn.State == ConnectionState.Closed)
             {

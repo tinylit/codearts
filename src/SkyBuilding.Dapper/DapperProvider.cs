@@ -26,7 +26,7 @@ namespace SkyBuilding.Dapper
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
         /// <returns></returns>
-        public override T One<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default)
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default)
         {
             if (required)
                 return conn.QueryFirst<T>(sql, parameters);
