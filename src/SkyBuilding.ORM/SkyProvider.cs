@@ -89,15 +89,25 @@ namespace SkyBuilding.ORM
 
         public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
-            conn.Open();
-
-            using (var command = conn.CreateCommand())
+            if (conn.State == ConnectionState.Closed)
             {
-                command.CommandText = sql;
+                conn.Open();
+            }
 
-                AddParameterAuto(command, parameters);
+            try
+            {
+                using (var command = conn.CreateCommand())
+                {
+                    command.CommandText = sql;
 
-                return command.ExecuteNonQuery();
+                    AddParameterAuto(command, parameters);
+
+                    return command.ExecuteNonQuery();
+                }
+            }
+            finally
+            {
+                conn.Close();
             }
         }
 
