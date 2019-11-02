@@ -107,23 +107,30 @@ namespace SkyBuilding.ORM
                 conn.Open();
             }
 
-            using (var command = conn.CreateCommand())
+            try
             {
-                command.CommandText = sql;
-
-                AddParameterAuto(command, parameters);
-
-                using (var dr = command.ExecuteReader())
+                using (var command = conn.CreateCommand())
                 {
-                    while (dr.Read())
+                    command.CommandText = sql;
+
+                    AddParameterAuto(command, parameters);
+
+                    using (var dr = command.ExecuteReader())
                     {
-                        yield return dr.MapTo<T>();
+                        while (dr.Read())
+                        {
+                            yield return dr.MapTo<T>();
+                        }
+
+                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
+
+                        dr.Close();
                     }
-
-                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
-
-                    dr.Close();
                 }
+            }
+            finally
+            {
+                conn.Close();
             }
         }
 
@@ -134,31 +141,39 @@ namespace SkyBuilding.ORM
                 conn.Open();
             }
 
-            using (var command = conn.CreateCommand())
+            var value = defaultValue;
+
+            try
             {
-                command.CommandText = sql;
-
-                AddParameterAuto(command, parameters);
-
-                var value = defaultValue;
-
-                using (var dr = command.ExecuteReader())
+                using (var command = conn.CreateCommand())
                 {
-                    if (dr.Read())
-                    {
-                        value = dr.MapTo<T>();
-                    }
-                    else if (reqiured)
-                    {
-                        throw new DRequiredException();
-                    }
+                    command.CommandText = sql;
 
-                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                    AddParameterAuto(command, parameters);
 
-                    dr.Close();
+                    using (var dr = command.ExecuteReader())
+                    {
+                        if (dr.Read())
+                        {
+                            value = dr.MapTo<T>();
+                        }
+                        else if (reqiured)
+                        {
+                            throw new DRequiredException();
+                        }
+
+                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
+
+                        dr.Close();
+                    }
                 }
-                return value;
             }
+            finally
+            {
+                conn.Close();
+            }
+
+            return value;
         }
     }
 }
