@@ -35,7 +35,7 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// SQL矫正设置
         /// </summary>
-        public ISQLCorrectSettings Settings => DbAdapter.Settings;
+        public ISQLCorrectSimSettings Settings => DbAdapter.Settings;
 
         /// <summary>
         /// 获取仓储数据库配置属性
@@ -248,10 +248,10 @@ namespace SkyBuilding.ORM
         public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
 
         /// <summary>
-        /// SQL验证
+        /// 查询SQL验证
         /// </summary>
         /// <returns></returns>
-        protected virtual bool Authorize(ISQL sql) => sql.Tables.All(x => string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
+        protected virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// 查询一条数据(未查询到数据)
@@ -260,16 +260,7 @@ namespace SkyBuilding.ORM
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        public virtual TResult QueryFirst<TResult>(ISQL sql, object param = null) => First<TResult>(sql, param, true);
-
-        /// <summary>
-        /// 查询一条数据(未查询到数据)
-        /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <returns></returns>
-        public virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null) => First<TResult>(sql, param, false);
+        protected virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null) => QueryFirst<TResult>(sql, param, false);
 
         /// <summary>
         /// 查询一条数据
@@ -277,11 +268,11 @@ namespace SkyBuilding.ORM
         /// <typeparam name="TResult">结果</typeparam>
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
-        /// <param name="required">是否必须返回数据</param>
+        /// <param name="required">是否必须返回数据(为真时数据库无数据会抛异常)</param>
         /// <returns></returns>
-        protected virtual TResult First<TResult>(ISQL sql, object param, bool required)
+        protected virtual TResult QueryFirst<TResult>(ISQL sql, object param, bool required = true)
         {
-            if (!Authorize(sql))
+            if (!QueryAuthorize(sql))
                 throw new NonAuthorizeException();
 
             if (param is null)
@@ -325,9 +316,9 @@ namespace SkyBuilding.ORM
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        public virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null)
+        protected virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null)
         {
-            if (!Authorize(sql))
+            if (!QueryAuthorize(sql))
                 throw new NonAuthorizeException();
 
             if (param is null)
@@ -362,7 +353,6 @@ namespace SkyBuilding.ORM
                 return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters);
 
             throw new DSyntaxErrorException("参数不匹配!");
-
         }
 
         private IEnumerator<T> GetEnumerator()

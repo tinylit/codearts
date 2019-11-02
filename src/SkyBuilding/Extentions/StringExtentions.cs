@@ -105,16 +105,6 @@ namespace System
         public static T Config<T>(this string configName, T defaultValue = default) => ConfigHelper.Instance.Get(configName, defaultValue);
 
         /// <summary>
-        /// 默认转字符串的方法
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private static string ObjectToString(object value)
-        {
-            return value?.ToString() ?? string.Empty;
-        }
-
-        /// <summary>
         /// 内嵌的
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
@@ -181,9 +171,9 @@ namespace System
 
                     var toStringMethod = info.MemberType.GetMethod("ToString", new Type[] { });
 
-                    if (toStringMethod is null)
+                    if (toStringMethod is null || toStringMethod.DeclaringType == typeof(object))
                     {
-                        return SwitchCase(Call(null, typeof(StringExtentions).GetMethod(nameof(ObjectToString), BindingFlags.NonPublic | BindingFlags.Static), parameterExp), namingCst);
+                        return SwitchCase(defaultCst, namingCst);
                     }
 
                     var body = Call(propertyExp, toStringMethod);

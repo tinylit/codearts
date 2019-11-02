@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace SkyBuilding.ORM
 {
@@ -7,16 +8,26 @@ namespace SkyBuilding.ORM
     /// </summary>
     public interface ISQL
     {
+#if NET40
         /// <summary>
         /// 操作的表
         /// </summary>
-        ReadOnlyCollection<SQLToken> Tables { get; }
+        ReadOnlyCollection<TableToken> Tables { get; }
 
         /// <summary>
         /// 参数
         /// </summary>
-        ReadOnlyCollection<SQLToken> Parameters { get; }
-
+        ReadOnlyCollection<ParameterToken> Parameters { get; }
+#else
+        /// <summary>
+        /// 操作的表
+        /// </summary>
+        IReadOnlyCollection<TableToken> Tables { get; }
+        /// <summary>
+        /// 参数
+        /// </summary>
+        IReadOnlyCollection<ParameterToken> Parameters { get; }
+#endif
         /// <summary>
         /// 转为实际数据库的SQL语句
         /// </summary>

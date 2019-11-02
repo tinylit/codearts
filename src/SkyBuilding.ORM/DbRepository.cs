@@ -636,11 +636,6 @@ namespace SkyBuilding.ORM
         }
 
         /// <summary>
-        /// SQL矫正
-        /// </summary>
-        ISQLCorrectSimSettings IEditable.Settings => Settings;
-
-        /// <summary>
         /// 插入、更新、删除执行器
         /// </summary>
         /// <returns></returns>
@@ -710,6 +705,12 @@ namespace SkyBuilding.ORM
         int IEditable.Excute(string sql, Dictionary<string, object> parameters) => DbExecuter.Execute(Connection, sql, parameters);
 
         /// <summary>
+        /// 执行SQL验证
+        /// </summary>
+        /// <returns></returns>
+        protected virtual bool ExcuteAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>
         /// 执行
         /// </summary>
         /// <param name="sql">SQL</param>
@@ -717,7 +718,7 @@ namespace SkyBuilding.ORM
         /// <returns>影响行</returns>
         protected virtual int Excute(ISQL sql, object param = null)
         {
-            if (!Authorize(sql))
+            if (!ExcuteAuthorize(sql))
                 throw new NonAuthorizeException();
 
             if (param is null)

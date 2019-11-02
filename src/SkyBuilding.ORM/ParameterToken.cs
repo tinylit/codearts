@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
+#if NET40
+using System.Collections.ObjectModel;
+#endif
 
 namespace SkyBuilding.ORM
 {
@@ -8,7 +10,7 @@ namespace SkyBuilding.ORM
     /// 参数令牌
     /// </summary>
     [DebuggerDisplay("{Name}")]
-    public struct SQLToken
+    public struct ParameterToken
     {
         /// <summary>
         /// 令牌
@@ -25,7 +27,7 @@ namespace SkyBuilding.ORM
         /// </summary>
         /// <param name="token">令牌</param>
         /// <param name="name">名称</param>
-        public SQLToken(string token, string name)
+        public ParameterToken(string token, string name)
         {
             Token = token ?? throw new System.ArgumentNullException(nameof(token));
             Name = name ?? throw new System.ArgumentNullException(nameof(name));
@@ -33,6 +35,11 @@ namespace SkyBuilding.ORM
 
         public override string ToString() => Name;
 
-        public readonly static ReadOnlyCollection<SQLToken> None = new ReadOnlyCollection<SQLToken>(new List<SQLToken>());
+#if NET40
+
+        public readonly static ReadOnlyCollection<ParameterToken> None = new ReadOnlyCollection<ParameterToken>(new List<ParameterToken>());
+#else
+        public readonly static IReadOnlyCollection<ParameterToken> None = new List<ParameterToken>();
+#endif
     }
 }
