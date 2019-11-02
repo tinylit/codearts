@@ -46,6 +46,35 @@ namespace SkyBuilding.ORM
         /// <returns></returns>
         private static int ParameterAnalysis(string value, int startIndex)
         {
+            var indexOf = value.IndexOf("CASE", startIndex, StringComparison.OrdinalIgnoreCase);
+
+            if (indexOf > -1 && (startIndex == indexOf || string.IsNullOrWhiteSpace(value.Substring(startIndex, indexOf - startIndex))))
+            {
+                startIndex = indexOf;
+
+                int indexCase, indexEnd;
+
+                do
+                {
+                    indexEnd = value.IndexOf("END", startIndex + 4, StringComparison.OrdinalIgnoreCase);
+
+                    if (indexEnd == value.Length)
+                    {
+                        return indexEnd;
+                    }
+
+                    indexCase = value.IndexOf("CASE", startIndex + 4, StringComparison.OrdinalIgnoreCase);
+
+                    startIndex = indexEnd;
+
+                } while (indexCase > -1 && indexEnd > indexCase);
+
+                if (startIndex == value.Length)
+                {
+                    return startIndex;
+                }
+            }
+
             int index = value.IndexOf(',', startIndex);
 
             //? 不包含分割符

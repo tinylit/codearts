@@ -780,7 +780,8 @@ namespace SkyBuilding.ORM.Builders
                 case MethodCall.TrimEnd:
                 case MethodCall.TrimStart:
                     return TrimMethod(node);
-                case MethodCall.IndexOf:
+                case MethodCall.IndexOf when node.Arguments.Count > 1:
+
                     if (BuildWhere)
                     {
                         SQLWriter.OpenBrace();
@@ -805,19 +806,17 @@ namespace SkyBuilding.ORM.Builders
                         SQLWriter.Delimiter();
 
                         base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
-                        if (node.Arguments.Count > 1)
-                        {
-                            SQLWriter.Delimiter();
 
-                            if (isVariable)
-                            {
-                                SQLWriter.Parameter(indexStart + 1);
-                            }
-                            else
-                            {
-                                base.Visit(node.Arguments[1]);
-                                SQLWriter.Write(" + 1");
-                            }
+                        SQLWriter.Delimiter();
+
+                        if (isVariable)
+                        {
+                            SQLWriter.Parameter(indexStart + 1);
+                        }
+                        else
+                        {
+                            base.Visit(node.Arguments[1]);
+                            SQLWriter.Write(" + 1");
                         }
 
                         SQLWriter.CloseBrace();
@@ -846,21 +845,47 @@ namespace SkyBuilding.ORM.Builders
                     SQLWriter.Delimiter();
 
                     base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
-                    if (node.Arguments.Count > 1)
+                    SQLWriter.Delimiter();
+
+                    if (isVariable)
                     {
-                        SQLWriter.Delimiter();
-
-                        if (isVariable)
-                        {
-                            SQLWriter.Parameter(indexStart + 1);
-                        }
-                        else
-                        {
-                            base.Visit(node.Arguments[1]);
-                            SQLWriter.Write(" + 1");
-                        }
-
+                        SQLWriter.Parameter(indexStart + 1);
                     }
+                    else
+                    {
+                        base.Visit(node.Arguments[1]);
+                        SQLWriter.Write(" + 1");
+                    }
+
+                    SQLWriter.CloseBrace();
+
+                    SQLWriter.Write(" - 1 END");
+
+                    if (BuildWhere)
+                    {
+                        SQLWriter.CloseBrace();
+                    }
+                    return node;
+                case MethodCall.IndexOf:
+
+                    if (BuildWhere)
+                    {
+                        SQLWriter.OpenBrace();
+                    }
+
+                    SQLWriter.Write("CASE WHEN ");
+                    base.Visit(_settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
+                    SQLWriter.Write(" IS NULL OR ");
+                    base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
+                    SQLWriter.Write(" IS NULL THEN -1 ELSE ");
+
+                    SQLWriter.IndexOfMethod();
+                    SQLWriter.OpenBrace();
+                    base.Visit(_settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
+                    SQLWriter.Delimiter();
+
+                    base.Visit(_settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
+
                     SQLWriter.CloseBrace();
 
                     SQLWriter.Write(" - 1 END");
