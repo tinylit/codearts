@@ -14,6 +14,7 @@ namespace SkyBuilding
     {
         private static readonly string assemblyPath;
 
+        private static readonly ConcurrentDictionary<string, Assembly> AassemblyLoads = new ConcurrentDictionary<string, Assembly>();
         private static readonly ConcurrentDictionary<string, IEnumerable<Assembly>> AssemblyCache = new ConcurrentDictionary<string, IEnumerable<Assembly>>();
 
         /// <summary>
@@ -50,7 +51,7 @@ namespace SkyBuilding
                 pattern += ".dll";
             }
 
-            return AssemblyCache.GetOrAdd(pattern, searchPattern => Directory.GetFiles(assemblyPath, searchPattern).Select(Assembly.LoadFrom));
+            return AssemblyCache.GetOrAdd(pattern, searchPattern => Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, Assembly.LoadFrom)).ToList());
         }
 
     }
