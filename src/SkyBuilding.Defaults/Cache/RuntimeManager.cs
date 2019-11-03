@@ -55,7 +55,6 @@ namespace SkyBuilding.Cache
         /// 获取内存缓存
         /// </summary>
         /// <param name="name">缓存名称</param>
-        /// <param name="sizeLimit">缓存大小</param>
         /// <returns></returns>
         public MemoryCache GetDatabase(string name = "default") => _connections.GetOrAdd(name ?? "default", _ => new MemoryCache(name));
 

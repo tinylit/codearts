@@ -2,6 +2,9 @@
 
 namespace SkyBuilding.ORM
 {
+    /// <summary>
+    /// 数据库连接字符配置
+    /// </summary>
     [Serializable]
     public sealed class ConnectionConfig : IReadOnlyConnectionConfig
     {

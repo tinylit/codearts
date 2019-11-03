@@ -97,7 +97,6 @@ namespace SkyBuilding.Net
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
-        /// <typeparam name="T">类型</typeparam>
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
@@ -105,7 +104,6 @@ namespace SkyBuilding.Net
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
-        /// <typeparam name="T">类型</typeparam>
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
@@ -142,6 +140,7 @@ namespace SkyBuilding.Net
         ///  content-type = "application/json"
         /// </summary>
         /// <param name="param">参数</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
@@ -166,6 +165,7 @@ namespace SkyBuilding.Net
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         IRequestable Form<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
 
@@ -177,28 +177,28 @@ namespace SkyBuilding.Net
         IRequestable Query(string param);
 
         /// <summary>
-        /// 请求参数。?id=1&name="yep"
+        /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
         IRequestable Query(IEnumerable<string> param);
 
         /// <summary>
-        /// 请求参数。?id=1&name="yep"
+        /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
         IRequestable Query(IEnumerable<KeyValuePair<string, string>> param);
 
         /// <summary>
-        /// 请求参数。?id=1&name="yep"
+        /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
         IRequestable Query(IEnumerable<KeyValuePair<string, DateTime>> param);
 
         /// <summary>
-        /// 请求参数。?id=1&name="yep"
+        /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="param">参数</param>
@@ -206,10 +206,11 @@ namespace SkyBuilding.Net
         IRequestable Query<T>(IEnumerable<KeyValuePair<string, T>> param);
 
         /// <summary>
-        /// 请求参数。?id=1&name="yep"
+        /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="param">参数</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         IRequestable Query<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class;
 
@@ -217,15 +218,13 @@ namespace SkyBuilding.Net
         /// 数据返回JSON格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
-        /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：秒</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.CamelCase);
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
-        /// <param name="method">求取方式</param>
         /// <returns></returns>
         IXmlRequestable<T> ByXml<T>();
 
@@ -234,7 +233,7 @@ namespace SkyBuilding.Net
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="anonymousTypeObject">匿名对象</param>
-        /// <param name="method">求取方式</param>
+        /// <param name="namingType">命名规范</param>
         /// <returns></returns>
         IJsonRequestable<T> ByJson<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
@@ -242,8 +241,6 @@ namespace SkyBuilding.Net
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="anonymousTypeObject">匿名对象</param>
-        /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：秒</param>
         /// <returns></returns>
         IXmlRequestable<T> ByXml<T>(T anonymousTypeObject) where T : class;
     }

@@ -142,7 +142,9 @@ namespace SkyBuilding.Tests
 
                 var map4 = value.MapTo<ICollection<KeyValuePair<string, object>>>();
 
-                var map5 = value.MapTo<Dictionary<string, object>>();
+                var map5 = value.MapTo<IDictionary<string, object>>();
+
+                var map6 = value.MapTo<Dictionary<string, object>>();
 
                 value.Name = "test5";
             }

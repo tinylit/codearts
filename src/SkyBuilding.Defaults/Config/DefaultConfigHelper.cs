@@ -16,7 +16,6 @@ namespace SkyBuilding.Config
         /// <summary>
         /// 获取默认配置
         /// </summary>
-        /// <param name="useConfigCenter"></param>
         /// <returns></returns>
         static IConfigurationBuilder ConfigurationBuilder()
         {
@@ -164,6 +163,13 @@ namespace SkyBuilding.Config
         /// </summary>
         public event Action<object> OnConfigChanged;
 
+        /// <summary>
+        /// 获取配置
+        /// </summary>
+        /// <typeparam name="T">返回类型</typeparam>
+        /// <param name="key">键</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <returns></returns>
         public T Get<T>(string key, T defaultValue = default)
         {
             var type = typeof(T);

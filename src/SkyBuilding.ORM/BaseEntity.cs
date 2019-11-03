@@ -15,6 +15,9 @@ namespace SkyBuilding.ORM
     /// <typeparam name="T"></typeparam>
     public class BaseEntity<T> : BaseEntity
     {
+        /// <summary>
+        /// 主键
+        /// </summary>
         [Key]
         public virtual T Id { set; get; }
     }

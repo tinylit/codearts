@@ -28,9 +28,9 @@ namespace SkyBuilding.Mvc
         /// <summary>
         /// 获取客户端Mac地址
         /// </summary>
-        /// <param name="_context">请求上下文</param>
+        /// <param name="context">请求上下文</param>
         /// <returns></returns>
-        public static string GetRemoteMacAddress(this Microsoft.AspNetCore.Http.HttpContext _)
+        public static string GetRemoteMacAddress(this Microsoft.AspNetCore.Http.HttpContext context)
         {
             var networks = NetworkInterface.GetAllNetworkInterfaces();
             foreach (var network in networks.Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))

@@ -45,7 +45,7 @@ namespace SkyBuilding.Mvc
                 throw new ArgumentNullException(nameof(destinationPath));
             }
 
-            return app.Map(path, HttpVerbs.Get | HttpVerbs.Post | HttpVerbs.Put | HttpVerbs.Delete | HttpVerbs.Head | HttpVerbs.Patch | HttpVerbs.Options, destinationPath);
+            return app.Map(path, HttpVerbs.GET | HttpVerbs.POST | HttpVerbs.PUT | HttpVerbs.DELETE | HttpVerbs.HEAD | HttpVerbs.PATCH | HttpVerbs.OPTIONS, destinationPath);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace SkyBuilding.Mvc
                     request.Header(HeaderNames.Authorization, token);
                 }
 
-                if (verbs != HttpVerbs.Get && verbs != HttpVerbs.Delete)
+                if (verbs != HttpVerbs.GET && verbs != HttpVerbs.DELETE)
                 {
                     string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
 

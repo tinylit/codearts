@@ -12,8 +12,16 @@ namespace SkyBuilding.Log
         /// </summary>
         public string Name { get; private set; }
 
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="type">类型标识</param>
         public Logger(Type type) : this(type.FullName) { }
 
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="name">名称标识</param>
         public Logger(string name) => Name = name;
 
         /// <summary>

@@ -30,20 +30,52 @@ namespace SkyBuilding.ORM.Oracle
         /// </summary>
         public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
 
+        /// <summary>
+        /// 字符串截取。 SUBSTRING
+        /// </summary>
         public string Substring => "SUBSTRING";
 
+        /// <summary>
+        /// 字符串索引。 INSTR
+        /// </summary>
         public string IndexOf => "INSTR";
 
+        /// <summary>
+        /// 字符串长度。 LENGTH
+        /// </summary>
         public string Length => "LENGTH";
 
+        /// <summary>
+        /// 索引项是否交换位置。 false.
+        /// </summary>
         public bool IndexOfSwapPlaces => false;
 
+        /// <summary>
+        /// Oracle
+        /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.Oracle;
 
+        /// <summary>
+        /// 别名
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string AsName(string name) => Name(name);
 
+        /// <summary>
+        /// 字段
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string Name(string name) => string.Concat("\"", name, "\"");
 
+        /// <summary>
+        /// 分页
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="take">获取N条</param>
+        /// <param name="skip">跳过M条</param>
+        /// <returns></returns>
         public virtual string PageSql(string sql, int take, int skip)
         {
             var sb = new StringBuilder();
@@ -143,12 +175,20 @@ namespace SkyBuilding.ORM.Oracle
         });
 
         /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List<string>{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
         /// </summary>
         /// <param name="columns">以“,”分割的列集合</param>
         /// <returns></returns>
         protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
 
+        /// <summary>
+        /// 分页（并集、交集等）
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="take">获取N条</param>
+        /// <param name="skip">跳过M条</param>
+        /// <param name="orderBy">排序</param>
+        /// <returns></returns>
         public virtual string PageUnionSql(string sql, int take, int skip, string orderBy)
         {
             var sb = new StringBuilder();
@@ -211,8 +251,18 @@ namespace SkyBuilding.ORM.Oracle
                  .ToString();
         }
 
+        /// <summary>
+        /// 参数名称
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string ParamterName(string name) => string.Concat(":", name);
 
+        /// <summary>
+        /// 表名称
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string TableName(string name) => Name(name);
     }
 }

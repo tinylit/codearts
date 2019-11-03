@@ -11,6 +11,10 @@ namespace SkyBuilding.ORM
     public class SkyProvider : RepositoryProvider
     {
         private static readonly Dictionary<Type, DbType> typeMap;
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="settings">SQL矫正配置</param>
         public SkyProvider(ISQLCorrectSettings settings) : base(settings)
         {
         }
@@ -87,6 +91,13 @@ namespace SkyBuilding.ORM
             command.Parameters.Add(dbParameter);
         }
 
+        /// <summary>
+        /// 执行SQL。
+        /// </summary>
+        /// <param name="conn">数据库连接</param>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
+        /// <returns></returns>
         public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
             if (conn.State == ConnectionState.Closed)
@@ -111,6 +122,14 @@ namespace SkyBuilding.ORM
             }
         }
 
+        /// <summary>
+        /// 查询。
+        /// </summary>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="conn">数据库连接</param>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
+        /// <returns></returns>
         public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
             if (conn.State == ConnectionState.Closed)
@@ -145,6 +164,17 @@ namespace SkyBuilding.ORM
             }
         }
 
+        /// <summary>
+        /// 查询。
+        /// </summary>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="conn">数据库连接</param>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
+        /// <param name="reqiured">是否必须。</param>
+        /// <param name="defaultValue">默认</param>
+        /// <exception cref="DRequiredException">必须且数据库未查询到数据</exception>
+        /// <returns></returns>
         public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
             if (conn.State == ConnectionState.Closed)

@@ -108,6 +108,11 @@ namespace SkyBuilding.ORM.Builders
             base.Evaluate(node);
         }
 
+        /// <summary>
+        /// 重写函数调用
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             if (node.Method.DeclaringType == typeof(Executeable))
@@ -118,8 +123,16 @@ namespace SkyBuilding.ORM.Builders
             return base.VisitMethodCall(node);
         }
 
+        /// <summary>
+        /// 执行行为
+        /// </summary>
         public ExecuteBehavior Behavior { get; private set; }
 
+        /// <summary>
+        /// 重写变量分析
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (typeof(IExecuteable).IsAssignableFrom(node.Type))
@@ -128,6 +141,11 @@ namespace SkyBuilding.ORM.Builders
             return base.VisitConstant(node);
         }
 
+        /// <summary>
+        /// Where 条件
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
         private Expression MakeWhereNode(MethodCallExpression node)
         {
             bool whereIsNotEmpty = false;
@@ -156,7 +174,11 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <summary>
+        /// 函数调用
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
         private Expression VisitExecuteMethodCall(MethodCallExpression node)
         {
             switch (node.Method.Name)
@@ -248,7 +270,11 @@ namespace SkyBuilding.ORM.Builders
 
             throw new ExpressionNotSupportedException();
         }
-
+        /// <summary>
+        /// 成员分析
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
             if (typeRegions.ReadWrites.TryGetValue(node.Member.Name, out string value))
@@ -261,6 +287,11 @@ namespace SkyBuilding.ORM.Builders
 
             throw new ExpressionNotSupportedException($"{node.Member.Name}字段不可写!");
         }
+        /// <summary>
+        /// 创建构造器
+        /// </summary>
+        /// <param name="settings">SQL矫正配置</param>
+        /// <returns></returns>
         protected override Builder CreateBuilder(ISQLCorrectSettings settings)
         {
             if (Behavior == ExecuteBehavior.Insert)

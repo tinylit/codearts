@@ -44,7 +44,6 @@ namespace SkyBuilding.Cache
         /// 内存缓存服务器
         /// </summary>
         /// <param name="name">内存块名</param>
-        /// <param name="sizeLimit">缓存大小</param>
         public RuntimeCache(string name = "default")
         {
             _region = _name = name;
@@ -95,18 +94,24 @@ namespace SkyBuilding.Cache
         /// <summary>
         /// 获取键值
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key">键</param>
         /// <returns></returns>
         public override object Get(string key) => _database.Get(GetKey(key));
 
 #if NETSTANDARD2_0 || NETSTANDARD2_1
+        /// <summary>
+        /// 获取键值
+        /// </summary>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="key">键</param>
+        /// <returns></returns>
         public override T Get<T>(string key) => _database.Get<T>(GetKey(key));
 #else
         /// <summary>
         /// 获取键值
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="key"></param>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="key">键</param>
         /// <returns></returns>
         public override T Get<T>(string key)
         {

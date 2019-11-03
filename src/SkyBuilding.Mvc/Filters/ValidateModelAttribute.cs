@@ -23,11 +23,11 @@ namespace SkyBuilding.Mvc.Filters
     {
         private readonly ILogger _logger = LogManager.Logger<ValidateModelAttribute>();
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
         /// <summary>
-        /// 出错是验证
+        /// 出错时验证。
         /// </summary>
         /// <param name="context">异常上下文</param>
+#if NETSTANDARD2_0 || NETCOREAPP3_0
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             //? 验证是否通过

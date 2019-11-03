@@ -87,6 +87,11 @@ namespace SkyBuilding.ORM.Builders
             base.Evaluate(node);
         }
 
+        /// <summary>
+        /// 内部分析
+        /// </summary>
+        /// <param name="writer">写入器</param>
+        /// <param name="node">节点</param>
         protected override void Evaluate(Writer writer, Expression node)
         {
             var appendAt = writer.AppendAt;
@@ -383,7 +388,11 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <summary>
+        /// 写入指定成员
+        /// </summary>
+        /// <param name="prefix">前缀</param>
+        /// <param name="names">成员集合</param>
         protected virtual void WriteMembers(string prefix, IEnumerable<KeyValuePair<string, string>> names)
         {
             var kv = names.GetEnumerator();
@@ -542,7 +551,11 @@ namespace SkyBuilding.ORM.Builders
         }
 
         #region 重写
-
+        /// <summary>
+        /// 获取真实实体类型
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
         protected override Type GetRealType(Type type)
         {
             if (_TypeCache.TryGetValue(type, out Type realType))
@@ -550,8 +563,13 @@ namespace SkyBuilding.ORM.Builders
 
             return base.GetRealType(type);
         }
+        /// <summary>
+        /// 过滤成员
+        /// </summary>
+        /// <param name="members">成员集合</param>
+        /// <returns></returns>
         protected override IEnumerable<MemberInfo> FilterMembers(IEnumerable<MemberInfo> members) => members.Where(x => InCastList(x.Name));
-
+        /// <inheritdoc />
         protected override Expression VisitParameterMember(MemberExpression node)
         {
             if (inSelect)
@@ -564,9 +582,9 @@ namespace SkyBuilding.ORM.Builders
 
             return base.VisitParameterMember(node);
         }
-
+        /// <inheritdoc />
         protected virtual Expression VisitMemberParameterSelect(MemberExpression node) => base.VisitParameterMember(node);
-
+        /// <inheritdoc />
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
             var me = base.VisitMemberAssignment(node);
@@ -575,7 +593,7 @@ namespace SkyBuilding.ORM.Builders
 
             return me;
         }
-
+        /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.Type.IsQueryable())
@@ -811,6 +829,7 @@ namespace SkyBuilding.ORM.Builders
 
                     if (isUnion)
                     {
+                        SQLWriter.HasWriteReturn = true;
                         SQLWriter.AddWriter(orderby);
                     }
 
@@ -825,6 +844,7 @@ namespace SkyBuilding.ORM.Builders
 
                     if (isUnion)
                     {
+                        SQLWriter.HasWriteReturn = false;
                         SQLWriter.RemoveWriter(orderby);
                     }
                     return node;
@@ -1048,7 +1068,7 @@ namespace SkyBuilding.ORM.Builders
                     return VisitFormatterMethodCall(node);
             }
         }
-
+        /// <inheritdoc />
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             if (node.Method.DeclaringType == typeof(Queryable))
@@ -1094,7 +1114,14 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        
+        /// <summary>
+        /// Lamda 分析
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="node">节点</param>
+        /// <param name="addPrefixCache">添加前缀缓存</param>
+        /// <returns></returns>
         protected override Expression VisitLambda<T>(Expression<T> node, Action<Type, string> addPrefixCache)
         {
             if (node.Parameters.Count > 1)
@@ -1133,16 +1160,26 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <summary>
+        /// 过滤成员
+        /// </summary>
+        /// <param name="bindings">成员集合</param>
+        /// <returns></returns>
         protected override IEnumerable<MemberBinding> FilterMemberBindings(IEnumerable<MemberBinding> bindings) => bindings.Where(item => InCastList(item.Member.Name));
 
+        /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
         {
             if (isUnion) return node;
 
             return base.VisitParameter(node);
         }
-
+        
+        /// <summary>
+        /// 创建构造器
+        /// </summary>
+        /// <param name="settings">SQL矫正配置</param>
+        /// <returns></returns>
         protected override Builder CreateBuilder(ISQLCorrectSettings settings) => new QueryBuilder(settings);
 
         #endregion
@@ -1150,8 +1187,14 @@ namespace SkyBuilding.ORM.Builders
         private bool defaultIfEmpty = false;
         private Type defaultValueType = null;
 
+        /// <summary>
+        /// 是否必须
+        /// </summary>
         public bool Required { protected set; get; }
 
+        /// <summary>
+        /// 默认值
+        /// </summary>
         public object DefaultValue { private set; get; }
 
         private string ToSQL(string value)
@@ -1168,7 +1211,10 @@ namespace SkyBuilding.ORM.Builders
 
             return value;
         }
-
+        /// <summary>
+        /// SQL
+        /// </summary>
+        /// <returns></returns>
         public override string ToSQL() => ToSQL(base.ToSQL());
     }
 }

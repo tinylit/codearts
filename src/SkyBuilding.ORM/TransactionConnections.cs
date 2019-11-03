@@ -49,6 +49,12 @@ namespace SkyBuilding.ORM
         }
 
         private static readonly ConcurrentDictionary<Transaction, Dictionary<string, TransactionConnection>> transactionConnections = new ConcurrentDictionary<Transaction, Dictionary<string, TransactionConnection>>();
+        /// <summary>
+        /// 获取数据库连接
+        /// </summary>
+        /// <param name="connectionString">连接字符串</param>
+        /// <param name="adapter">数据库适配器</param>
+        /// <returns></returns>
         public static IDbConnection GetConnection(string connectionString, IDbConnectionAdapter adapter)
         {
             if (adapter == null)

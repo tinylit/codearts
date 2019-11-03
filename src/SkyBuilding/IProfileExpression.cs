@@ -18,8 +18,8 @@ namespace SkyBuilding
         /// <summary>
         /// 映射
         /// </summary>
+        /// <typeparam name="TSource">源类型</typeparam>
         /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
         /// <param name="plan">将对象转为目标类型的方案</param>
         void Absolute<TSource, TResult>(Func<TSource, TResult> plan);
 

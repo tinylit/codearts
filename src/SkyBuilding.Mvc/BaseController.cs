@@ -13,11 +13,15 @@ using JWT.Serializers;
 
 namespace SkyBuilding.Mvc
 {
+    /// <summary>
+    /// 控制器基类（数据注解验证）
+    /// </summary>
     [ValidateModel]
 #if NETSTANDARD2_0 || NETCOREAPP3_0
     public abstract class BaseController : ControllerBase
 
 #else
+    
     public abstract class BaseController : ApiController
 #endif
     {

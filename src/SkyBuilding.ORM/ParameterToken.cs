@@ -32,13 +32,21 @@ namespace SkyBuilding.ORM
             Token = token ?? throw new System.ArgumentNullException(nameof(token));
             Name = name ?? throw new System.ArgumentNullException(nameof(name));
         }
-
+        /// <summary>
+        /// 返回 参数名称。
+        /// </summary>
+        /// <returns></returns>
         public override string ToString() => Name;
 
 #if NET40
-
+        /// <summary>
+        /// 空集合
+        /// </summary>
         public readonly static ReadOnlyCollection<ParameterToken> None = new ReadOnlyCollection<ParameterToken>(new List<ParameterToken>());
 #else
+        /// <summary>
+        /// 空集合
+        /// </summary>
         public readonly static IReadOnlyCollection<ParameterToken> None = new List<ParameterToken>();
 #endif
     }

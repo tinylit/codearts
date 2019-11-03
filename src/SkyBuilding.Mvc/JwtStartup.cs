@@ -36,6 +36,10 @@ namespace SkyBuilding.Mvc
         /// </summary>
         protected ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.Second);
 
+        /// <summary>
+        /// 服务配置
+        /// </summary>
+        /// <param name="services">服务集合</param>
 #if NETCOREAPP3_0
         public override void ConfigureServices(IServiceCollection services)
 #else
@@ -73,6 +77,11 @@ namespace SkyBuilding.Mvc
             return base.ConfigureServices(services);
 #endif
         }
+        /// <summary>
+        /// 配置
+        /// </summary>
+        /// <param name="app">项目构建器</param>
+        /// <param name="env">环境变量</param>
 #if NETCOREAPP3_0
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
@@ -102,7 +111,7 @@ namespace SkyBuilding.Mvc
             //? 验证码路由
             app.Map("/authCode", builder => builder.Run(async context =>
             {
-                string code = CreateRandomCode(4); //验证码的字符为4个
+                string code = CreateRandomCode("authCode".Config(4)); //验证码的字符为4个
                 byte[] bytes = CreateValidateGraphic(code);
 
                 string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
@@ -182,7 +191,7 @@ namespace SkyBuilding.Mvc
         /// <summary>
         /// 生成随机的字符串
         /// </summary>
-        /// <param name="codeCount"></param>
+        /// <param name="codeCount">验证码长度</param>
         /// <returns></returns>
         private string CreateRandomCode(int codeCount)
         {
@@ -198,7 +207,7 @@ namespace SkyBuilding.Mvc
         /// <summary>
         /// 创建验证码图片
         /// </summary>
-        /// <param name="validateCode"></param>
+        /// <param name="validateCode">验证码</param>
         /// <returns></returns>
         private byte[] CreateValidateGraphic(string validateCode)
         {
@@ -250,6 +259,7 @@ namespace SkyBuilding.Mvc
         /// <summary>
         /// 写入Token
         /// </summary>
+        /// <param name="context">请求上下文</param>
         /// <param name="user">用户</param>
         /// <returns></returns>
         private async Task WriteToken(HttpContext context, Dictionary<string, object> user)

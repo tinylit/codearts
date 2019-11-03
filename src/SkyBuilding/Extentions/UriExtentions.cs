@@ -124,6 +124,7 @@ namespace System
             /// content-type = "application/x-www-form-urlencoded";
             /// </summary>
             /// <param name="param">参数</param>
+            /// <param name="namingType">命名规则</param>
             /// <returns></returns>
             public IRequestable Form<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class => Form(JsonHelper.ToJson(param, namingType));
 
@@ -143,12 +144,13 @@ namespace System
             /// content-type = "application/json"
             /// </summary>
             /// <param name="param">参数</param>
+            /// <param name="namingType">命名规则</param>
             /// <returns></returns>
             public IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
                 => Json(JsonHelper.ToJson(param, namingType));
 
             /// <summary>
-            /// 请求参数。?id=1&name="yep"
+            /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
@@ -166,7 +168,7 @@ namespace System
             }
 
             /// <summary>
-            /// 请求参数。?id=1&name="yep"
+            /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
@@ -174,7 +176,7 @@ namespace System
               => Query(string.Join("&", param));
 
             /// <summary>
-            /// 请求参数。?id=1&name="yep"
+            /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
@@ -182,7 +184,7 @@ namespace System
                  => Query(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value))));
 
             /// <summary>
-            /// 请求参数。?id=1&name="yep"
+            /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
@@ -190,7 +192,7 @@ namespace System
                  => Query(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value.ToString("yyyy-MM-dd HH:mm:ss")))));
 
             /// <summary>
-            /// 请求参数。?id=1&name="yep"
+            /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <typeparam name="T">类型</typeparam>
             /// <param name="param">参数</param>
@@ -207,10 +209,11 @@ namespace System
                   })));
 
             /// <summary>
-            /// 请求参数。?id=1&name="yep"
+            /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <typeparam name="T">类型</typeparam>
             /// <param name="param">参数</param>
+            /// <param name="namingType">命名规则</param>
             /// <returns></returns>
             public IRequestable Query<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class
             {
@@ -309,8 +312,7 @@ namespace System
             /// </summary>
             /// <typeparam name="T">类型</typeparam>
             /// <param name="_">匿名对象</param>
-            /// <param name="method">求取方式</param>
-            /// <param name="timeout">超时时间，单位：秒</param>
+            /// <param name="namingType">命名规则</param>
             /// <returns></returns>
             public IJsonRequestable<T> ByJson<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
             /// <summary>
@@ -318,8 +320,6 @@ namespace System
             /// </summary>
             /// <typeparam name="T">类型</typeparam>
             /// <param name="_">匿名对象</param>
-            /// <param name="method">求取方式</param>
-            /// <param name="timeout">超时时间，单位：秒</param>
             /// <returns></returns>
             public IXmlRequestable<T> ByXml<T>(T _) where T : class => new XmlRequestable<T>(this);
         }

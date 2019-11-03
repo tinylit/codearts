@@ -55,7 +55,6 @@ namespace SkyBuilding
         /// <summary>
         /// 成功
         /// </summary>
-        /// <param name="total">总数</param>
         /// <param name="data">数据</param>
         /// <returns></returns>IRequestable
         public static DResult<T> Ok<T>(T data) => new DResult<T>(data);

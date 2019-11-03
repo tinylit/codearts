@@ -45,7 +45,6 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 为当前所有为指定仓库供应器的适配器添加此仓库供应器
         /// </summary>
-        /// <param name="provider"></param>
         public static void AddProvider<T>() where T : RepositoryProvider
         {
             foreach (string key in Adapters.Keys)
@@ -57,8 +56,7 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 为数据库适配器指定仓库提供者
         /// </summary>
-        /// <param name="providerName"></param>
-        /// <param name="provider"></param>
+        /// <param name="providerName">供应商名称</param>
         /// <exception cref="ArgumentException">providerName不能为Null或空字符串!</exception>
         /// <exception cref="NotImplementedException">供应器类型必须包含公共构造函数!</exception>
         public static void AddProvider<T>(string providerName) where T : RepositoryProvider

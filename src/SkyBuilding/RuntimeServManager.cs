@@ -81,6 +81,7 @@ namespace SkyBuilding
         /// </summary>
         /// <param name="listenSingletonChanged">监听单例变化</param>
         /// <typeparam name="TService">服务类型</typeparam>
+        /// <typeparam name="TImplementation">服务实现类</typeparam>
         public static TService Singleton<TService, TImplementation>(Action<TService> listenSingletonChanged)
             where TService : class
             where TImplementation : class, TService
@@ -121,6 +122,10 @@ namespace SkyBuilding
                 ServiceCache[typeof(TService)] = typeof(Nested<TService>);
             }
 
+            /// <summary>
+            /// 服务变化监听
+            /// </summary>
+            /// <param name="listenSingletonChanged">监听</param>
             public static void Listen(Action<TService> listenSingletonChanged)
             {
                 if (listenSingletonChanged is null)
@@ -134,8 +139,8 @@ namespace SkyBuilding
             /// <summary>
             /// 尝试添加构造函数
             /// </summary>
-            /// <typeparam name="TImplementation"></typeparam>
-            /// <param name="factory"></param>
+            /// <param name="factory">工厂</param>
+            /// <param name="defineService">声明服务</param>
             public static void TryAdd(Func<TService> factory, bool defineService = false)
             {
                 if (factory is null)

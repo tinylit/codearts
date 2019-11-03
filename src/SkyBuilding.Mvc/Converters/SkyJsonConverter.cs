@@ -18,6 +18,13 @@ namespace SkyBuilding.Mvc.Converters
         /// <returns></returns>
         public override bool CanConvert(Type objectType) => objectType.IsValueType || typeof(string) == objectType;
 
+        /// <summary>
+        /// 读取数据
+        /// </summary>
+        /// <param name="reader">读取器</param>
+        /// <param name="typeToConvert">目标类型</param>
+        /// <param name="options">配置</param>
+        /// <returns></returns>
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Null)
@@ -45,7 +52,12 @@ namespace SkyBuilding.Mvc.Converters
 
             return value.CastTo(typeToConvert);
         }
-
+        /// <summary>
+        /// 写入
+        /// </summary>
+        /// <param name="writer">写入器</param>
+        /// <param name="value">数据</param>
+        /// <param name="options">配置</param>
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
             if (value == null)
@@ -90,6 +102,9 @@ namespace SkyBuilding.Mvc.Converters
                     break;
                 case uint u32:
                     writer.WriteNumberValue(u32);
+                    break;
+                case DateTime date:
+                    writer.WriteStringValue(date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"));
                     break;
                 default:
                     writer.WriteStringValue(value.ToString());

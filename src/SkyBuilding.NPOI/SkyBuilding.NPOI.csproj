@@ -4,7 +4,6 @@
   	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
 	  <PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>

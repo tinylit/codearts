@@ -56,7 +56,7 @@ namespace SkyBuilding.Log
 
         /// <summary> 是否可启用目标日志等级 </summary>
         /// <param name="level">当前日志等级</param>
-        /// <param name="targetLevel">目标日志等级</param>
+        /// <param name="logLevel">目标日志等级</param>
         /// <returns></returns>
         private static bool IsEnableLevel(LogLevel level, LogLevel logLevel)
         {

@@ -12,6 +12,7 @@ namespace SkyBuilding
         /// </summary>
         /// <typeparam name="T">目标类型</typeparam>
         /// <param name="source">数据源</param>
+        /// <param name="def">默认值</param>
         /// <returns></returns>
         T CastTo<T>(object source, T def = default);
 

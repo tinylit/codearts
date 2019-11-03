@@ -13,6 +13,10 @@ namespace SkyBuilding.Log
         //日志接口
         private readonly log4net.Core.ILogger _logger;
 
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="wrapper">日志实例</param>
         public Log4NetLog(ILoggerWrapper wrapper)
         {
             _logger = wrapper.Logger;

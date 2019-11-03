@@ -207,7 +207,8 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 获取操作符
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">节点</param>
+        /// <param name="nodeType">节点类型</param>
         /// <returns></returns>
         internal static string GetOperator(this BinaryExpression node, ExpressionType? nodeType = null)
         {

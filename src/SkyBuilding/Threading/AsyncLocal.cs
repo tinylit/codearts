@@ -4,14 +4,10 @@ using System.Security;
 namespace System.Threading
 {
 #if NET40 || NET45 || NET451 || NET452
-    //
-    // 摘要:
-    //     Represents ambient data that is local to a given asynchronous control flow, such
-    //     as an asynchronous method.
-    //
-    // 类型参数:
-    //   T:
-    //     The type of the ambient data.
+    /// <summary>
+    /// 异步对象（数据在每个线程中唯一。）
+    /// </summary>
+    /// <typeparam name="T">对象类型</typeparam>
     public sealed class AsyncLocal<T>
     {
         [SecurityCritical]
@@ -19,12 +15,9 @@ namespace System.Threading
 
         private readonly static ConcurrentDictionary<Thread, T> mapperCache = new ConcurrentDictionary<Thread, T>();
 
-        //
-        // 摘要:
-        //     Gets or sets the value of the ambient data.
-        //
-        // 返回结果:
-        //     The value of the ambient data.
+        /// <summary>
+        /// 数据值
+        /// </summary>
         public T Value
         {
             [SecuritySafeCritical]

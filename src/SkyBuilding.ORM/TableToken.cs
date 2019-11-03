@@ -49,13 +49,21 @@ namespace SkyBuilding.ORM
 
             CommandType = new UppercaseString(commandType);
         }
-
+        /// <summary>
+        /// 返回表名称
+        /// </summary>
+        /// <returns></returns>
         public override string ToString() => Name;
 
 #if NET40
-
+        /// <summary>
+        /// 空集合。
+        /// </summary>
         public readonly static ReadOnlyCollection<TableToken> None = new ReadOnlyCollection<TableToken>(new List<TableToken>());
 #else
+        /// <summary>
+        /// 空集合。
+        /// </summary>
         public readonly static IReadOnlyCollection<TableToken> None = new List<TableToken>();
 #endif
     }

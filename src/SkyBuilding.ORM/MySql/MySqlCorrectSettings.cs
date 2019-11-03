@@ -20,12 +20,24 @@ namespace SkyBuilding.ORM.MySql
 
         private readonly static Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\[\w+\]\.)*(?<name>(\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
 
+        /// <summary>
+        /// 字符串截取。 SUBSTRING
+        /// </summary>
         public string Substring => "SUBSTRING";
 
+        /// <summary>
+        /// 字符串索引。 LOCATE
+        /// </summary>
         public string IndexOf => "LOCATE";
 
+        /// <summary>
+        /// 字符串长度。 LENGTH
+        /// </summary>
         public string Length => "LENGTH";
 
+        /// <summary>
+        /// 索引项是否对调。 true
+        /// </summary>
         public bool IndexOfSwapPlaces => true;
 
         private List<IVisitter> visitters;
@@ -35,12 +47,41 @@ namespace SkyBuilding.ORM.MySql
         /// </summary>
         public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
 
+        /// <summary>
+        /// MySQL
+        /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.MySQL;
-
+        /// <summary>
+        /// 字段名称
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string Name(string name) => string.Concat("`", name, "`");
+        /// <summary>
+        /// 别名
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string AsName(string name) => Name(name);
+        /// <summary>
+        /// 表名称
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string TableName(string name) => Name(name);
+        /// <summary>
+        /// 参数名称
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         public string ParamterName(string name) => string.Concat("?", name);
+        /// <summary>
+        /// 分页
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="take">获取N条</param>
+        /// <param name="skip">跳过M条</param>
+        /// <returns></returns>
         public virtual string PageSql(string sql, int take, int skip)
         {
             var sb = new StringBuilder();
@@ -87,11 +128,20 @@ namespace SkyBuilding.ORM.MySql
         });
 
         /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List<string>{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
         /// </summary>
         /// <param name="columns">以“,”分割的列集合</param>
         /// <returns></returns>
         protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
+        
+        /// <summary>
+        /// 分页（交集、并集等）
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="take">获取N条</param>
+        /// <param name="skip">跳过M条</param>
+        /// <param name="orderBy">排序</param>
+        /// <returns></returns>
         public virtual string PageUnionSql(string sql, int take, int skip, string orderBy)
         {
             var sb = new StringBuilder();

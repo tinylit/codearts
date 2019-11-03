@@ -44,8 +44,16 @@ namespace SkyBuilding
         /// </summary>
         public int Count => list.Count();
 
+        /// <summary>
+        /// 获取迭代器
+        /// </summary>
+        /// <returns></returns>
         public IEnumerator<T> GetEnumerator() => list.Skip(Size * (Page - 1)).Take(Size).GetEnumerator();
 
+        /// <summary>
+        /// 获取迭代器
+        /// </summary>
+        /// <returns></returns>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

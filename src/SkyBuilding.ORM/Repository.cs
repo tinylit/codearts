@@ -72,7 +72,6 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 链接
         /// </summary>
-        /// <param name="connectionConfig">链接配置</param>
         protected Repository() => ConnectionConfig = GetDbConfig() ?? throw new NoNullAllowedException("未找到数据链接配置信息!");
 
         /// <summary>

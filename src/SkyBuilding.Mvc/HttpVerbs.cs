@@ -9,13 +9,34 @@ namespace SkyBuilding.Mvc
     [Flags]
     public enum HttpVerbs
     {
-        Get = 1,
-        Post = 2,
-        Put = 4,
-        Delete = 8,
-        Head = 16,
-        Patch = 32,
-        Options = 64
+        /// <summary>
+        /// Get
+        /// </summary>
+        GET = 1,
+        /// <summary>
+        /// Post
+        /// </summary>
+        POST = 2,
+        /// <summary>
+        /// Put
+        /// </summary>
+        PUT = 4,
+        /// <summary>
+        /// Delete
+        /// </summary>
+        DELETE = 8,
+        /// <summary>
+        /// Head
+        /// </summary>
+        HEAD = 16,
+        /// <summary>
+        /// Patch
+        /// </summary>
+        PATCH = 32,
+        /// <summary>
+        /// Options
+        /// </summary>
+        OPTIONS = 64
     }
 }
 #endif

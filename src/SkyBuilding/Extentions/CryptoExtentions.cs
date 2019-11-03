@@ -205,6 +205,7 @@ namespace System
         /// </summary>
         /// <param name="data">数据</param>
         /// <param name="encoding">编码，默认：UTF8</param>
+        /// <param name="toUpperCase">是否转为大小</param>
         /// <returns></returns>
         public static string Md5(this string data, Encoding encoding = null, bool toUpperCase = true)
         {
@@ -229,6 +230,7 @@ namespace System
         /// </summary>
         /// <param name="data">数据</param>
         /// <param name="encoding">编码，默认：UTF8</param>
+        /// <param name="toUpperCase">是否转为大小</param>
         /// <returns></returns>
         public static string MD5Light(this string data, Encoding encoding = null, bool toUpperCase = true)
             => data.Md5(encoding ?? Encoding.UTF8, toUpperCase).Substring(8, 16);

@@ -21,6 +21,11 @@ namespace SkyBuilding.Net
         /// </summary>
         public int Timeout { get; set; } = 5000;
 
+        /// <summary>
+        /// 获取 Web 请求实例。
+        /// </summary>
+        /// <param name="address">请求地址</param>
+        /// <returns></returns>
         protected override WebRequest GetWebRequest(Uri address)
         {
             var request = base.GetWebRequest(address);

@@ -11,8 +11,14 @@ using System.Web.Http.Dependencies;
 
 namespace SkyBuilding.Mvc
 {
+    /// <summary>
+    /// 依赖注入解决器
+    /// </summary>
     public class SkyDependencyResolver : IDependencyResolver
     {
+        /// <summary>
+        /// 静态构造函数
+        /// </summary>
         static SkyDependencyResolver()
         {
             var assemblys = AssemblyFinder.FindAll();
@@ -66,6 +72,10 @@ namespace SkyBuilding.Mvc
 
         private readonly static Dictionary<Type, Func<object>> Cache = new Dictionary<Type, Func<object>>();
 
+        /// <summary>
+        /// 依赖注入范围
+        /// </summary>
+        /// <returns></returns>
         public IDependencyScope BeginScope() => this;
 
         /// <summary>
@@ -91,7 +101,11 @@ namespace SkyBuilding.Mvc
                 GC.SuppressFinalize(this);
             }
         }
-
+        /// <summary>
+        /// 获取服务实例
+        /// </summary>
+        /// <param name="serviceType">服务类型</param>
+        /// <returns></returns>
         public object GetService(Type serviceType)
         {
             if (Cache.TryGetValue(serviceType, out Func<object> invoke))
@@ -101,7 +115,11 @@ namespace SkyBuilding.Mvc
 
             return null;
         }
-
+        /// <summary>
+        /// 获取服务
+        /// </summary>
+        /// <param name="serviceType">服务类型</param>
+        /// <returns></returns>
         public IEnumerable<object> GetServices(Type serviceType)
         {
             yield break;

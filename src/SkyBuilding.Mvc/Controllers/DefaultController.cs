@@ -51,6 +51,12 @@ namespace SkyBuilding.Mvc.Controllers
             return encoder.Encode(userData, "jwt-secret".Config(Consts.Secret));
         }
 
+        /// <summary>
+        /// 登录接口
+        /// </summary>
+        /// <param name="authCode">验证码</param>
+        /// <param name="debug">是否是调试</param>
+        /// <returns></returns>
         [HttpGet]
         [Route("login")]
         public IResult Login(string authCode = null, bool debug = false)
@@ -108,7 +114,10 @@ namespace SkyBuilding.Mvc.Controllers
             return result;
         }
 
-
+        /// <summary>
+        /// 验证码
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("authCode")]
         public string AuthCode()
@@ -239,6 +248,7 @@ namespace SkyBuilding.Mvc.Controllers
 #endregion
     }
 #else
+    
     public sealed class LoginController : ApiController
     {
         /// <summary>
@@ -261,6 +271,12 @@ namespace SkyBuilding.Mvc.Controllers
             return encoder.Encode(userData, "jwt-secret".Config(Consts.Secret));
         }
 
+        /// <summary>
+        /// 登录
+        /// </summary>
+        /// <param name="authCode">验证码</param>
+        /// <param name="debug">是否为调试模式</param>
+        /// <returns></returns>
         [HttpGet]
         public IResult Get(string authCode = null, bool debug = false)
         {
@@ -357,7 +373,9 @@ namespace SkyBuilding.Mvc.Controllers
         }
 
     }
-
+    /// <summary>
+    /// 验证码
+    /// </summary>
     public sealed class AuthCodeController : ApiController
     {
         private readonly char[] CharArray = "0123456789ABCDEabcdefghigklmnopqrFGHIGKLMNOPQRSTUVWXYZstuvwxyz".ToCharArray();
@@ -405,7 +423,7 @@ namespace SkyBuilding.Mvc.Controllers
 
             return ipAddress;
         }
-
+        /// <inheritdoc />
         public override Task<HttpResponseMessage> ExecuteAsync(HttpControllerContext controllerContext, CancellationToken cancellationToken)
         {
             return Task.Factory.StartNew(() =>

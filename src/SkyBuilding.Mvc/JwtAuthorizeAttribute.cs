@@ -22,6 +22,11 @@ namespace SkyBuilding.Mvc
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = true)]
     public class JwtAuthorizeAttribute : AuthorizeAttribute
     {
+        /// <summary>
+        /// 是否认证通过
+        /// </summary>
+        /// <param name="context">请求上下文</param>
+        /// <returns></returns>
         protected override bool IsAuthorized(HttpActionContext context)
         {
             //前端请求api时会将token存放在名为"auth"的请求头中

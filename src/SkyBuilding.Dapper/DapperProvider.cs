@@ -25,6 +25,8 @@ namespace SkyBuilding.Dapper
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="required">是否必须</param>
+        /// <param name="defaultValue">默认值</param>
         /// <returns></returns>
         public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default)
         {
@@ -51,9 +53,6 @@ namespace SkyBuilding.Dapper
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">执行语句</param>
         /// <param name="parameters">参数</param>
-        /// <param name="trans">事务</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <param name="commandType">操作方式</param>
         /// <returns></returns>
         public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {

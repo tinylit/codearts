@@ -18,10 +18,19 @@ namespace SkyBuilding.Runtime
         {
         }
 
+        /// <summary>
+        /// 获取声明该成员的类。
+        /// </summary>
         public override Type MemberType => Member.DeclaringType;
 
+        /// <summary>
+        /// 是否可读
+        /// </summary>
         public override bool CanRead => Member.IsPublic;
 
+        /// <summary>
+        /// 是否可写
+        /// </summary>
         public override bool CanWrite => false;
 
 

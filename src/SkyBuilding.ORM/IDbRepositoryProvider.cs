@@ -44,7 +44,7 @@ namespace SkyBuilding.ORM
         /// </summary>
         /// <typeparam name="T">仓储泛型类型</typeparam>
         /// <typeparam name="TResult">返回值类型</typeparam>
-        /// <param name="connection">数据库链接</param>
+        /// <param name="conn">数据库链接</param>
         /// <param name="expression">查询表达式</param>
         /// <returns></returns>
         TResult Evaluate<T, TResult>(IDbConnection conn, Expression expression);

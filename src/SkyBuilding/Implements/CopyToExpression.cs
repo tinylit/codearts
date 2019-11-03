@@ -103,7 +103,6 @@ namespace SkyBuilding.Implements
         /// </summary>
         /// <typeparam name="T">目标类型</typeparam>
         /// <param name="source">数据源</param>
-        /// <param name="def">默认值</param>
         /// <returns></returns>
         private T UnsafeCopyTo<T>(T source)
         {
@@ -120,9 +119,8 @@ namespace SkyBuilding.Implements
         /// <summary>
         /// 对象复制（不安全）
         /// </summary>
-        /// <typeparam name="T">目标类型</typeparam>
         /// <param name="source">数据源</param>
-        /// <param name="def">默认值</param>
+        /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
         private object UnsafeCopyTo(object source, Type conversionType)
         {
@@ -166,6 +164,7 @@ namespace SkyBuilding.Implements
         }
 
         private static Dictionary<TKey, TValue> GetDictionaryByEnumarable<TKey, TValue>(IDictionary<TKey, TValue> source, CopyToExpression<TCopyto> copyTo) => GetDictionaryLikeByEnumarable<TKey, TValue, Dictionary<TKey, TValue>>(source, copyTo);
+
         private static TResult GetDictionaryLikeByEnumarable<TKey, TValue, TResult>(IDictionary<TKey, TValue> source, CopyToExpression<TCopyto> copyTo) where TResult : IDictionary<TKey, TValue>
         {
             var results = (TResult)copyTo.ServiceCtor.Invoke(typeof(TResult));
@@ -180,20 +179,20 @@ namespace SkyBuilding.Implements
         #endregion
 
         /// <summary>
-        /// 对象转对象
+        /// 解决 相似对象的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToObject<TResult>(Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByLikeObject<TResult>(Type sourceType, Type conversionType)
         {
             var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
             var commonCtor = typeStore.ConstructorStores
                 .Where(x => x.CanRead)
                 .OrderBy(x => x.ParameterStores.Count)
-                .First();
+                .FirstOrDefault();
 
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -436,10 +435,9 @@ namespace SkyBuilding.Implements
         {
             if (sourceType.IsValueType)
             {
-                if (sourceType.IsGenericType)
+                if (sourceType.IsKeyValuePair())
                 {
-                    if (sourceType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                        return ByKeyValueLike<TResult>(conversionType);
+                    return ByLikeKeyValuePair<TResult>(sourceType, conversionType);
                 }
 
                 if (sourceType.IsPrimitive)
@@ -452,12 +450,19 @@ namespace SkyBuilding.Implements
                 return source => (TResult)source;
 
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
-                return ByEnumarableLike<TResult>(conversionType);
+                return ByLikeEnumarable<TResult>(sourceType, conversionType);
 
-            return ByObjectToObject<TResult>(sourceType, conversionType);
+            return ByLikeObject<TResult>(sourceType, conversionType);
         }
 
-        protected virtual Func<object, TResult> ByKeyValueLike<TResult>(Type conversionType)
+        /// <summary>
+        /// 解决 相似 KeyValuePair&lt;TKey, TValue&gt; 的转换
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeKeyValuePair<TResult>(Type sourceType, Type conversionType)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -465,40 +470,46 @@ namespace SkyBuilding.Implements
 
             var methodG = method.MakeGenericMethod(conversionType.GetGenericArguments());
 
-            var bodyExp = Call(null, methodG, Convert(parameterExp, conversionType), Constant(this));
+            var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
 
             var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
 
             return lamdaExp.Compile();
         }
 
-        protected virtual Func<object, TResult> ByEnumarableLike<TResult>(Type conversionType)
+        /// <summary>
+        /// 解决相似 类似 IEnumarable 类型的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarable<TResult>(Type sourceType, Type conversionType)
         {
             if (!conversionType.IsGenericType)
-                return ByEnumarableLikeToEnumarable<TResult>(conversionType);
+                return ByLikeEnumarableToEnumarable<TResult>(sourceType, conversionType);
 
             var typeDefinition = conversionType.GetGenericTypeDefinition();
 
-            var types = conversionType.GetGenericArguments();
+            var typeArguments = conversionType.GetGenericArguments();
 
             if (conversionType.IsInterface)
             {
-                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-                    return ByEnumarableLikeToList<TResult>(conversionType, types.First());
-
-#if !NET40
-                if (typeDefinition == typeof(IReadOnlyCollection<>))
-                    return ByEnumarableLikeToList<TResult>(conversionType, types.First());
-#endif
+#if NET40
                 if (typeDefinition == typeof(IDictionary<,>))
-                    return ByEnumarableLikeToDictionary<TResult>(conversionType, types);
-
-#if !NET40
-                if (typeDefinition == typeof(IReadOnlyDictionary<,>))
-                    return ByEnumarableLikeToDictionary<TResult>(conversionType, types);
+#else
+                if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
 #endif
+                    return ByLikeEnumarableToDictionary<TResult>(sourceType, conversionType, typeArguments);
 
-                throw new InvalidCastException();
+#if NET40
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
+#else
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+#endif
+                    return ByLikeEnumarableToList<TResult>(sourceType, conversionType, typeArguments.First());
+
+                return ByLikeEnumarableToUnknownInterface<TResult>(sourceType, conversionType, typeArguments);
             }
 
             var interfaces = conversionType.GetInterfaces();
@@ -509,18 +520,53 @@ namespace SkyBuilding.Implements
                 {
                     var type = item.GetGenericTypeDefinition();
 
+#if NET40
                     if (type == typeof(IDictionary<,>))
-                        return ByEnumarableLikeToDictionaryLike<TResult>(conversionType, type.GetGenericArguments());
+#else
+                    if (type == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
+#endif
+                        return ByLikeEnumarableToDictionaryLike<TResult>(sourceType, conversionType, type.GetGenericArguments());
 
-                    if (type == typeof(ICollection<>))
-                        return ByEnumarableLikeToCollectionLike<TResult>(conversionType, type.GetGenericArguments().First());
+#if NET40
+                    if (type == typeof(ICollection<>) || type == typeof(IList<>))
+#else
+                    if (type == typeof(ICollection<>) || type == typeof(IList<>) || type == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+#endif
+                        return ByLikeEnumarableToCollectionLike<TResult>(sourceType, conversionType, type.GetGenericArguments().First());
                 }
             }
 
-            throw new InvalidCastException();
+            return ByLikeEnumarableToUnknownInterface<TResult>(sourceType, conversionType);
         }
 
-        protected virtual Func<object, TResult> ByEnumarableLikeToCollectionLike<TResult>(Type conversionType, Type typeArgument)
+        /// <summary>
+        /// 解决 类似 IEnumarable&lt;T&gt; 到 未知泛型接口的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToUnknownInterface<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
+
+        /// <summary>
+        /// 解决 类似 IEnumarable 到 未知泛型接口的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
+
+        /// <summary>
+        /// 解决类似 IEnumerable 到类似 ICollection&lt;T&gt; 的数据操作。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【T】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -535,7 +581,15 @@ namespace SkyBuilding.Implements
             return lamdaExp.Compile();
         }
 
-        protected virtual Func<object, TResult> ByEnumarableLikeToDictionaryLike<TResult>(Type conversionType, Type[] typeArguments)
+        /// <summary>
+        /// 解决类似 IEnumerable 到类似 Dictionary&lt;TKey,TValue&gt; 的数据操作。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型【TKey，TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -550,7 +604,15 @@ namespace SkyBuilding.Implements
             return lamdaExp.Compile();
         }
 
-        protected virtual Func<object, TResult> ByEnumarableLikeToDictionary<TResult>(Type conversionType, Type[] typeArguments)
+        /// <summary>
+        /// 解决类似 IEnumerable 到 Dictionary&lt;TKey,TValue&gt; 的数据操作。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型【TKey，TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToDictionary<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -565,7 +627,15 @@ namespace SkyBuilding.Implements
             return lamdaExp.Compile();
         }
 
-        protected virtual Func<object, TResult> ByEnumarableLikeToList<TResult>(Type conversionType, Type typeArgument)
+        /// <summary>
+        /// 解决类似 IEnumerable 到 List&lt;T&gt; 的数据操作。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【T】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToList<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -580,7 +650,14 @@ namespace SkyBuilding.Implements
             return lamdaExp.Compile();
         }
 
-        protected virtual Func<object, TResult> ByEnumarableLikeToEnumarable<TResult>(Type conversionType)
+        /// <summary>
+        /// 解决类似 IEnumerable 到 IEnumerable 的数据转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType"></param>
+        /// <param name="conversionType">目标类型</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByLikeEnumarableToEnumarable<TResult>(Type sourceType, Type conversionType)
         {
             var method = GetMethodInfo<IEnumerable>(GetEnumerableByEnumerable);
 

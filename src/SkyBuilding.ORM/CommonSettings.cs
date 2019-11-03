@@ -89,7 +89,7 @@ namespace SkyBuilding.ORM
         }
 
         /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List<string>{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
         /// </summary>
         /// <param name="columns">以“,”分割的列集合</param>
         /// <returns></returns>

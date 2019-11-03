@@ -47,6 +47,7 @@ namespace SkyBuilding.Cache
         /// 获取服务商
         /// </summary>
         /// <param name="level">缓存等级</param>
+        /// <param name="provider">缓存供应器</param>
         /// <returns></returns>
         public static bool TryGetProvider(CacheLevel level, out ICacheProvider provider) => CacheProvider.TryGetValue(level, out provider);
 

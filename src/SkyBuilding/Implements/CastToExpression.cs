@@ -129,16 +129,16 @@ namespace SkyBuilding.Implements
         #endregion
 
         /// <summary>
-        /// 可空类型
+        /// 解决 任意类型 到 可空类型的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
-        /// <param name="genericType">泛型参数</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <param name="typeArgument">泛型约束</param>
         /// <returns></returns>
-        protected override Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type genericType)
+        protected override Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            if (sourceType == genericType)
+            if (sourceType == typeArgument)
             {
                 var parameterExp = Parameter(typeof(object), "source");
 
@@ -156,7 +156,7 @@ namespace SkyBuilding.Implements
             }
             else
             {
-                var invoke = Create(sourceType, genericType);
+                var invoke = Create(sourceType, typeArgument);
 
                 var parameterExp = Parameter(typeof(object), "source");
 
@@ -180,7 +180,7 @@ namespace SkyBuilding.Implements
         }
 
         /// <summary>
-        /// 值类型转目标类型
+        /// 解决 值类型 到 任意类型的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
@@ -196,15 +196,15 @@ namespace SkyBuilding.Implements
                 }
             }
 
-            return ByCommonCtor<TResult>(sourceType, conversionType);
+            return ByObjectToCommon<TResult>(sourceType, conversionType);
         }
 
         /// <summary>
-        /// 源类型转值类型
+        /// 解决 任意类型 到 值类型的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
         /// <returns></returns>
         protected override Func<object, TResult> ToValueType<TResult>(Type sourceType, Type conversionType)
         {
@@ -222,17 +222,18 @@ namespace SkyBuilding.Implements
                 return source => (TResult)System.Convert.ChangeType(source, conversionType);
             }
 
-            return ByCommonCtor<TResult>(sourceType, conversionType);
+            return ByObjectToCommon<TResult>(sourceType, conversionType);
         }
 
         /// <summary>
-        /// 对象转可迭代类型
+        /// 解决 对象 到类似 IEnumerable&lt;T&gt; 的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <param name="typeArgument">泛型【T】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToEnumarable<TResult>(Type sourceType, Type conversionType)
+        protected override Func<object, TResult> ByObjectToEnumerableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -246,20 +247,20 @@ namespace SkyBuilding.Implements
         }
 
         /// <summary>
-        /// 对象转可迭代类型
+        /// 解决 类 到类似 IEnumarable&lt;T&gt; 类型的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
-        /// <param name="genericType">泛型参数</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <param name="typeArgument">泛型【T】约束</param>
         /// <returns></returns>
-        protected override Func<object, TResult> ByObjectToEnumarable<TResult>(Type sourceType, Type conversionType, Type genericType)
+        protected override Func<object, TResult> ByObjectToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
             var method = typeof(CastToExpression).GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(genericType);
+            var methodG = method.MakeGenericMethod(typeArgument);
 
             var bodyExp = Call(methodG, parameterExp, Constant(this));
 
@@ -268,13 +269,21 @@ namespace SkyBuilding.Implements
             return lamdaExp.Compile();
         }
 
-        protected override Func<object, TResult> ByObjectToCollectionLike<TResult>(Type sourceType, Type conversionType, Type genericType)
+        /// <summary>
+        /// 解决 类 到类似 ICollection&lt;T&gt; 类型的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <param name="typeArgument">泛型【T】约束</param>
+        /// <returns></returns>
+        protected override Func<object, TResult> ByObjectToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(CastToExpression).GetMethod(nameof(ByObjectToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeof(CastToExpression).GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(genericType, conversionType);
+            var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
             var bodyExp = Call(methodG, parameterExp, Constant(this));
 
@@ -284,38 +293,21 @@ namespace SkyBuilding.Implements
         }
 
         /// <summary>
-        /// 对象转普通数据
+        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IEnumarable&lt;T2&gt; 的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
-        /// <returns></returns>
-        protected override Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType)
-        {
-            if (conversionType == typeof(IEnumerable))
-            {
-                return ByObjectToEnumarable<TResult>(sourceType, conversionType);
-            }
-
-            return ByCommonCtor<TResult>(sourceType, conversionType);
-        }
-
-        /// <summary>
-        /// 可迭代类型转可迭代类型
-        /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
-        /// <param name="genericType">泛型参数</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <param name="typeArgument">泛型【T2】约束</param>
         /// <returns></returns>
 
-        protected override Func<object, TResult> ByEnumarableToEnumarable<TResult>(Type sourceType, Type conversionType, Type genericType)
+        protected override Func<object, TResult> ByIEnumarableLikeToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
             var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(genericType);
+            var methodG = method.MakeGenericMethod(typeArgument);
 
             var bodyExp = Call(methodG, Convert(parameterExp, typeof(IEnumerable)), Constant(this));
 
@@ -325,20 +317,20 @@ namespace SkyBuilding.Implements
         }
 
         /// <summary>
-        /// 可迭代类型转集合
+        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 ICollection&lt;T2&gt; 的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
-        /// <param name="genericType">泛型参数</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <param name="typeArgument">泛型【T2】约束</param>
         /// <returns></returns>
-        protected override Func<object, TResult> ByEnumarableToCollection<TResult>(Type sourceType, Type conversionType, Type genericType)
+        protected override Func<object, TResult> ByIEnumarableLikeToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
             var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(genericType);
+            var methodG = method.MakeGenericMethod(typeArgument);
 
             var bodyExp = Call(methodG, Convert(parameterExp, typeof(IEnumerable)), Constant(this));
 
@@ -348,45 +340,55 @@ namespace SkyBuilding.Implements
         }
 
         /// <summary>
-        /// 可迭代类型转集合
+        /// 解决 IEnumarable&lt;T1&gt; 到 ICollection&lt;T2&gt; 的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
-        /// <param name="genericType">泛型参数</param>
+        /// <param name="typeArgument">泛型【T2】约束</param>
         /// <returns></returns>
-        protected override Func<object, TResult> ByEnumarableToCollectionLike<TResult>(Type sourceType, Type conversionType, Type genericType)
+        protected override Func<object, TResult> ByIEnumarableLikeToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
             var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(genericType, conversionType);
+            var methodG = method.MakeGenericMethod(typeArgument);
 
             var bodyExp = Call(methodG, Convert(parameterExp, typeof(IEnumerable)), Constant(this));
 
-            var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
+            var lamdaExp = Lambda<Func<object, TResult>>(Convert(bodyExp, conversionType), parameterExp);
 
             return lamdaExp.Compile();
         }
 
         /// <summary>
-        /// 可迭代类型转普通类型
+        /// 解决 IEnumarable&lt;T&gt; 到 未知泛型接口的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型约束</param>
         /// <returns></returns>
-        protected override Func<object, TResult> ByEnumarableToCommon<TResult>(Type sourceType, Type conversionType) => ByCommonCtor<TResult>(sourceType, conversionType);
+        protected override Func<object, TResult> ByIEnumarableLikeToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => ByIEnumarableLikeToCommon<TResult>(sourceType, conversionType);
 
         /// <summary>
-        /// 通过普通类型构造函数
+        /// 解决 类似 IEnumarable&lt;T&gt; 到 类 的转换。
         /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByCommonCtor<TResult>(Type sourceType, Type conversionType)
+        protected override Func<object, TResult> ByIEnumarableLikeToCommon<TResult>(Type sourceType, Type conversionType) => ByObjectToCommon<TResult>(sourceType, conversionType);
+
+        /// <summary>
+        /// 解决 对象 到 任意对象 的操作，
+        /// </summary>
+        /// <typeparam name="TResult">目标数据类型</typeparam>
+        /// <param name="sourceType">源数据类型</param>
+        /// <param name="conversionType">目标数据类型</param>
+        /// <returns></returns>
+        protected override Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType)
         {
             var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
@@ -395,7 +397,7 @@ namespace SkyBuilding.Implements
             {
                 if (item.ParameterStores.Any(x => x.ParameterType == sourceType || x.IsOptional))
                 {
-                    return ByLikeCtor<TResult>(item, sourceType);
+                    return ByLikeCtor<TResult>(item, sourceType, conversionType);
                 }
             }
 
@@ -404,21 +406,22 @@ namespace SkyBuilding.Implements
             {
                 if (item.ParameterStores.Any(x => x.ParameterType.IsAssignableFrom(sourceType) || x.IsOptional))
                 {
-                    return ByLikeCtor<TResult>(item, sourceType);
+                    return ByLikeCtor<TResult>(item, sourceType, conversionType);
                 }
             }
 
-            return ByCommonCtor<TResult>(typeStore.ConstructorStores, sourceType, conversionType);
+            return ByObjectToCommon<TResult>(typeStore.ConstructorStores, sourceType, conversionType);
         }
 
         /// <summary>
-        /// 通过相似对象构造函数
+        /// 解决 对象 到 包含 源类型或源类型父类 的公共无参构造函数的目标类型的转换，
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="storeItem">构造函数</param>
         /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByLikeCtor<TResult>(ConstructorStoreItem storeItem, Type sourceType)
+        protected virtual Func<object, TResult> ByLikeCtor<TResult>(ConstructorStoreItem storeItem, Type sourceType, Type conversionType)
         {
             var parameterExp = Parameter(typeof(object));
 
@@ -450,14 +453,14 @@ namespace SkyBuilding.Implements
         }
 
         /// <summary>
-        /// 通过对象构造函数
+        /// 解决 对象 到 任意类型的转换，
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="storeItem">构造函数</param>
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByCommonCtor<TResult>(IEnumerable<ConstructorStoreItem> storeItem, Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(IEnumerable<ConstructorStoreItem> storeItem, Type sourceType, Type conversionType)
         {
             Expression bodyExp = null;
 

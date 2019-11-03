@@ -36,12 +36,18 @@ namespace SkyBuilding.ORM.Builders
             }
         }
 
+        /// <summary>
+        /// 空实例
+        /// </summary>
         public static readonly List<IVisitter> Empty = new List<IVisitter>();
 
         private static readonly ConcurrentDictionary<Type, Type> EntryCache = new ConcurrentDictionary<Type, Type>();
 
         private Writer _write;
 
+        /// <summary>
+        /// SQL 写入器
+        /// </summary>
         protected Writer SQLWriter => _write ?? (_write = CreateWriter(_settings, CreateWriterMap(_settings)));
 
         private ISQLCorrectSettings _settings;
@@ -81,7 +87,6 @@ namespace SkyBuilding.ORM.Builders
         /// 创建构造器
         /// </summary>
         /// <param name="settings">修正配置</param>
-        /// <param name="writeMap">写入映射关系</param>
         /// <returns></returns>
         protected abstract Builder CreateBuilder(ISQLCorrectSettings settings);
 
@@ -106,6 +111,11 @@ namespace SkyBuilding.ORM.Builders
             base.Visit(node);
         }
 
+        /// <summary>
+        /// 分析
+        /// </summary>
+        /// <param name="writer">输入器</param>
+        /// <param name="node">节点</param>
         protected virtual void Evaluate(Writer writer, Expression node)
         {
             _write = writer;
@@ -113,8 +123,19 @@ namespace SkyBuilding.ORM.Builders
             Evaluate(node);
         }
 
+        /// <summary>
+        /// 获取真实实体类型
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
         protected virtual Type GetRealType(Type type) => type;
 
+        /// <summary>
+        /// 获取初始实体类型
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <param name="throwsError">是否抛出异常</param>
+        /// <returns></returns>
         protected Type GetInitialType(Type type, bool throwsError = true)
         {
             while (type.IsSubclassOf(typeof(Expression)) || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Func<,>))
@@ -131,7 +152,12 @@ namespace SkyBuilding.ORM.Builders
 
             return GetEntityType(GetRealType(type), throwsError);
         }
-
+        /// <summary>
+        /// 获取或设置表别名
+        /// </summary>
+        /// <param name="tableType">表类型</param>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
         protected string GetOrAddTablePrefix(Type tableType, string name = null)
         {
             string highName = MakePrefixFrom(tableType = GetInitialType(tableType), name);
@@ -155,6 +181,10 @@ namespace SkyBuilding.ORM.Builders
             return highName ?? name;
         }
 
+        /// <summary>
+        /// 设置获取表名称的工厂
+        /// </summary>
+        /// <param name="table">工厂</param>
         protected void SetTableFactory(Func<ITableRegions, string> table) => tableFactory = table;
 
         private string MakePrefixFrom(Type type, string name, bool noCheck = false)
@@ -167,13 +197,24 @@ namespace SkyBuilding.ORM.Builders
 
             return Parent?.MakePrefixFrom(type, name, noCheck);
         }
-
+        /// <summary>
+        /// 写入表名称
+        /// </summary>
+        /// <param name="tableType"></param>
         public void WriteTable(Type tableType) => WriteTable(MakeTableRegions(tableType));
-
+        /// <summary>
+        /// 写入表名称
+        /// </summary>
+        /// <param name="tableRegions"></param>
         public void WriteTable(ITableRegions tableRegions) => SQLWriter.TableName(GetTableName(tableRegions), GetOrAddTablePrefix(tableRegions.TableType));
 
         private string GetTableName(ITableRegions regions) => tableFactory?.Invoke(regions) ?? regions.TableName;
-
+        /// <summary>
+        /// Not 取反
+        /// </summary>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="factory">公司</param>
+        /// <returns></returns>
         protected T WrapNot<T>(Func<T> factory)
         {
             SQLWriter.Not ^= true;
@@ -184,7 +225,10 @@ namespace SkyBuilding.ORM.Builders
 
             return value;
         }
-
+        /// <summary>
+        /// Not 取反
+        /// </summary>
+        /// <param name="factory">工厂</param>
         protected void WrapNot(Action factory)
         {
             SQLWriter.Not ^= true;
@@ -359,7 +403,7 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <inheritdoc />
         protected ITableRegions MakeTableRegions(Type type)
         {
             Type entityType = GetInitialType(type);
@@ -440,7 +484,12 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <summary>
+        /// 获取实体类型
+        /// </summary>
+        /// <param name="repositoryType">仓库类型</param>
+        /// <param name="throwsError">是否抛出异常</param>
+        /// <returns></returns>
         protected Type GetEntityType(Type repositoryType, bool throwsError = true)
         {
             if (EntryCache.TryGetValue(repositoryType, out Type value)) return value;
@@ -479,7 +528,12 @@ namespace SkyBuilding.ORM.Builders
 
             return EntryCache.GetOrAdd(repositoryType, baseType);
         }
-
+        /// <summary>
+        /// AppendAt 修正
+        /// </summary>
+        /// <param name="coreFactory">核心工厂</param>
+        /// <param name="beforeFactory">在核心工厂之前执行</param>
+        /// <param name="afterFactory">在核心工厂之后执行</param>
         protected void WriteAppendAtFix(Action coreFactory, Action beforeFactory = null, Action<int> afterFactory = null)
         {
             var index = SQLWriter.Length;
@@ -507,9 +561,15 @@ namespace SkyBuilding.ORM.Builders
         }
 
         #region 重写
-
+        
+        /// <summary>
+        /// 过滤成员
+        /// </summary>
+        /// <param name="members">成员集合</param>
+        /// <returns></returns>
         protected virtual IEnumerable<MemberInfo> FilterMembers(IEnumerable<MemberInfo> members) => members;
 
+        /// <inheritdoc />
         protected override Expression VisitNew(NewExpression node)
         {
             Type type = node.Type;
@@ -546,7 +606,7 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.IsBoolean())
@@ -558,7 +618,7 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <inheritdoc />
         protected virtual IEnumerable<IVisitter> GetCustomVisitters() => Empty;
 
         /// <summary>
@@ -944,7 +1004,13 @@ namespace SkyBuilding.ORM.Builders
                  _PrefixCache.GetOrAdd(type, name);
              });
         }
-
+        /// <summary>
+        /// Lamda 分析
+        /// </summary>
+        /// <typeparam name="T">约束</typeparam>
+        /// <param name="node">节点</param>
+        /// <param name="addPrefixCache">添加前缀缓存</param>
+        /// <returns></returns>
         protected virtual Expression VisitLambda<T>(Expression<T> node, Action<Type, string> addPrefixCache)
         {
             var parameter = node.Parameters[0];
@@ -955,7 +1021,7 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <inheritdoc />
         protected void VisitBuilder(Expression node)
         {
             using (var builder = CreateBuilder(_settings))
@@ -1005,16 +1071,20 @@ namespace SkyBuilding.ORM.Builders
         {
             return base.Visit(node.Expression);
         }
-
+        /// <inheritdoc />
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
             VisitEvaluate(node.Expression);
 
             return node;
         }
-
+        /// <summary>
+        /// 过来成员
+        /// </summary>
+        /// <param name="bindings">成员集合</param>
+        /// <returns></returns>
         protected virtual IEnumerable<MemberBinding> FilterMemberBindings(IEnumerable<MemberBinding> bindings) => bindings;
-
+        /// <inheritdoc />
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             var bindings = FilterMemberBindings(node.Bindings);
@@ -1069,7 +1139,7 @@ namespace SkyBuilding.ORM.Builders
             }
             return node;
         }
-
+        /// <inheritdoc />
         protected virtual Expression VisitParameterMember(MemberExpression node)
         {
             string name = node.Member.Name;
@@ -1141,7 +1211,7 @@ namespace SkyBuilding.ORM.Builders
 
             return node;
         }
-
+        /// <inheritdoc />
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression == null)
@@ -1166,7 +1236,7 @@ namespace SkyBuilding.ORM.Builders
 
             return VisitMemberSimple(node);
         }
-
+        /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
         {
             SQLWriter.WritePrefix(GetOrAddTablePrefix(node.Type, node.Name));
@@ -1502,7 +1572,7 @@ namespace SkyBuilding.ORM.Builders
             }
             return base.VisitUnary(node);
         }
-
+        /// <inheritdoc />
         protected override Expression VisitSwitch(SwitchExpression node)
         {
             SQLWriter.Write("CASE ");
@@ -1516,7 +1586,7 @@ namespace SkyBuilding.ORM.Builders
             SQLWriter.Write(" END");
             return node;
         }
-
+        /// <inheritdoc />
         protected override SwitchCase VisitSwitchCase(SwitchCase node)
         {
             SQLWriter.Write(" WHEN ");
@@ -1538,49 +1608,58 @@ namespace SkyBuilding.ORM.Builders
         #endregion
 
         #region 不支持的重写
+        /// <inheritdoc />
         protected override Expression VisitNewArray(NewArrayExpression node)
         {
             throw new ExpressionNotSupportedException();
         }
-
+        /// <inheritdoc />
         protected override Expression VisitBlock(BlockExpression node)
         {
             throw new ExpressionNotSupportedException();
         }
-
+        /// <inheritdoc />
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
         {
             throw new ExpressionNotSupportedException();
         }
-
+        /// <inheritdoc />
         protected override Expression VisitGoto(GotoExpression node)
         {
             throw new ExpressionNotSupportedException();
         }
-
+        /// <inheritdoc />
         protected override Expression VisitLabel(LabelExpression node)
         {
             throw new ExpressionNotSupportedException();
         }
-
+        /// <inheritdoc />
         protected override Expression VisitLoop(LoopExpression node)
         {
             throw new ExpressionNotSupportedException();
         }
-
+        /// <inheritdoc />
         protected override Expression VisitTry(TryExpression node)
         {
             throw new ExpressionNotSupportedException();
         }
         #endregion
 
+        /// <summary>
+        /// 参数集合
+        /// </summary>
         public Dictionary<string, object> Parameters => SQLWriter.Parameters;
 
+        /// <summary>
+        /// SQL
+        /// </summary>
+        /// <returns></returns>
         public virtual string ToSQL() => SQLWriter.ToString();
 
         #region IDisposable Support
         private bool disposedValue = false; // 要检测冗余调用
 
+        /// <inheritdoc />
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -1599,7 +1678,7 @@ namespace SkyBuilding.ORM.Builders
             }
         }
 
-        // 添加此代码以正确实现可处置模式。
+        /// <inheritdoc />
         public void Dispose()
         {
             // 请勿更改此代码。将清理代码放入以上 Dispose(bool disposing) 中。

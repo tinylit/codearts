@@ -17,7 +17,7 @@ namespace SkyBuilding.Mvc
         /// 返回json
         /// </summary>
         /// <param name="httpResponse">响应</param>
-        /// <param name="text">返回内容</param>
+        /// <param name="bytes">媒体内容</param>
         /// <returns></returns>
         public static Task WriteImageAsync(this HttpResponse httpResponse, byte[] bytes)
         {
@@ -40,7 +40,7 @@ namespace SkyBuilding.Mvc
         /// 返回json
         /// </summary>
         /// <param name="httpResponse">响应</param>
-        /// <param name="text">返回内容</param>
+        /// <param name="value">返回内容</param>
         /// <returns></returns>
         public static Task WriteJsonAsync<T>(this HttpResponse httpResponse, T value)
         {

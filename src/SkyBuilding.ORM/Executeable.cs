@@ -66,6 +66,7 @@ namespace SkyBuilding.ORM
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
         /// <param name="source">源</param>
+        /// <param name="expression">条件表达式</param>
         /// <returns></returns>
         public static int Delete<T>(this IExecuteable<T> source, Expression<Func<T, bool>> expression)
         => source.Where(expression).Delete();

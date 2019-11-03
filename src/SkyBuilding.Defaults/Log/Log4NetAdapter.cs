@@ -136,6 +136,11 @@ namespace SkyBuilding.Log
             BasicConfigurator.Configure(log4net.LogManager.CreateRepository(LogSite), Log4NetDefaultConfig.TraceAppender(), Log4NetDefaultConfig.DebugAppender(), Log4NetDefaultConfig.ErrorAppender());
         }
 
+        /// <summary>
+        /// 获取日志实例。
+        /// </summary>
+        /// <param name="name">名称标识</param>
+        /// <returns></returns>
         public override ILog GetLogger(string name) => new Log4NetLog(log4net.LogManager.GetLogger(LogSite, name));
     }
 }
