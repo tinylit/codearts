@@ -4,7 +4,8 @@
   	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-	<Authors>Tiny Lit</Authors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
     <Description>An Mvc infrastructure.</Description>
     <PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
@@ -13,7 +14,7 @@
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/icon.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
-    <Version>2.5.0</Version>
+    <Version>2.5.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netcoreapp3.0'">
