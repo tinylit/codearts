@@ -78,7 +78,8 @@ namespace SkyBuilding
 
                 var sb = new StringBuilder();
 
-                sb.Append(Convert(enumerator.Current));
+                sb.Append("[")
+                    .Append(Convert(enumerator.Current));
 
                 while (enumerator.MoveNext())
                 {
@@ -89,7 +90,8 @@ namespace SkyBuilding
                         .Append(Convert(enumerator.Current));
                 }
 
-                return sb.ToString();
+                return sb.Append("]")
+                    .ToString();
             }
 
             return value.ToString();
@@ -120,7 +122,7 @@ namespace SkyBuilding
             }
             catch (Exception)
             {
-                return string.Empty;
+                return null;
             }
         }
     }

@@ -5,7 +5,7 @@
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>2.5.0.6</Version>
+    <Version>2.5.0.7</Version>
     <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
     <Description>A Linq to SQL ORM framework.</Description>

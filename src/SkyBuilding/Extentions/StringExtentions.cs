@@ -16,7 +16,7 @@ namespace System
     {
         private static readonly Regex Whitespace = new Regex("[\\x20\\t\\r\\n\\f]", RegexOptions.Compiled);
 
-        private static readonly Regex PatternProperty = new Regex("\\{(?<name>(\\w+))\\}", RegexOptions.Multiline);
+        private static readonly Regex PatternProperty = new Regex("\\{(?<name>\\w+)([\\x20\\t\\r\\n\\f]*(?<token>[?+]+)[\\x20\\t\\r\\n\\f]*(?<name>\\w+))*\\}", RegexOptions.Multiline);
 
         private static readonly Regex PatternCamelCase = new Regex("_(?<letter>([a-z]))", RegexOptions.Singleline & RegexOptions.Compiled);
 
@@ -183,7 +183,7 @@ namespace System
         }
 
         /// <summary>
-        /// 属性格式化语法糖
+        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（包含问号即视为空字符串运算）】和属性内容合并，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value">字符串</param>
@@ -193,7 +193,7 @@ namespace System
         public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, SettingsCache.GetOrAdd(namingType, namingCase => new PropSettings(namingCase)));
 
         /// <summary>
-        /// 属性格式化语法糖
+        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（包含问号即视为空字符串运算）】和属性内容合并，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value">字符串</param>
@@ -214,7 +214,32 @@ namespace System
 
             return PatternProperty.Replace(value, match =>
             {
-                return Nested<T>.Invoke(source, match.Groups["name"].Value, settings);
+                var nameGrp = match.Groups["name"];
+
+                var tokenGrp = match.Groups["token"];
+
+                if (!tokenGrp.Success)
+                    return Nested<T>.Invoke(source, nameGrp.Value, settings);
+
+                var nameCap = nameGrp.Captures.GetEnumerator();
+
+                var tokenCap = tokenGrp.Captures.GetEnumerator();
+
+                string valueStr = string.Empty;
+
+                while (nameCap.MoveNext())
+                {
+                    valueStr += Nested<T>.Invoke(source, ((Capture)nameCap.Current).Value, settings);
+
+                    if (!tokenCap.MoveNext()) return valueStr;
+
+                    string token = ((Capture)tokenCap.Current).Value;
+
+                    if ((token.Length == 1 ? token == "?" : token.IndexOf("?") > -1) && valueStr.Length > 0)
+                        return valueStr;
+                }
+
+                return valueStr;
             });
         }
     }
