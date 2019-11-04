@@ -24,9 +24,19 @@ namespace SkyBuilding.Runtime
         public override Type MemberType => Member.DeclaringType;
 
         /// <summary>
+        /// 静态构造函数
+        /// </summary>
+        public override bool IsStatic => Member.IsStatic;
+
+        /// <summary>
+        /// 公共构造函数
+        /// </summary>
+        public override bool IsPublic => Member.IsPublic;
+
+        /// <summary>
         /// 是否可读
         /// </summary>
-        public override bool CanRead => Member.IsPublic;
+        public override bool CanRead => true;
 
         /// <summary>
         /// 是否可写

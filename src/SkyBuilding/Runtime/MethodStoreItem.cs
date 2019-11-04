@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace SkyBuilding.Runtime
 {
@@ -24,6 +22,16 @@ namespace SkyBuilding.Runtime
         /// 放回值类型
         /// </summary>
         public override Type MemberType => Member.ReturnType;
+
+        /// <summary>
+        /// 静态方法
+        /// </summary>
+        public override bool IsStatic => Member.IsStatic;
+
+        /// <summary>
+        /// 公共方法
+        /// </summary>
+        public override bool IsPublic => Member.IsPublic;
 
         /// <summary>
         /// 可以调用

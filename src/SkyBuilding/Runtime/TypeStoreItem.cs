@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+#if NET40
 using System.Collections.ObjectModel;
+#endif
 using System.Linq;
-using System.Reflection;
 
 namespace SkyBuilding.Runtime
 {
@@ -29,6 +30,16 @@ namespace SkyBuilding.Runtime
         /// 类型全名
         /// </summary>
         public string FullName => Type.FullName;
+
+        /// <summary>
+        /// 静态类
+        /// </summary>
+        public bool IsStatic => Type.IsAbstract && Type.IsSealed;
+
+        /// <summary>
+        /// 公共类
+        /// </summary>
+        public bool IsPublic => Type.IsPublic;
 
         /// <summary>
         /// 类型

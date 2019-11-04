@@ -71,6 +71,16 @@ namespace SkyBuilding.Runtime
         T Member { get; }
 
         /// <summary>
+        /// 静态成员
+        /// </summary>
+        bool IsStatic { get; }
+
+        /// <summary>
+        /// 公共成员
+        /// </summary>
+        bool IsPublic { get; }
+
+        /// <summary>
         /// 可读
         /// </summary>
         bool CanRead { get; }
@@ -251,6 +261,16 @@ namespace SkyBuilding.Runtime
         /// 成员
         /// </summary>
         public T Member { get; }
+
+        /// <summary>
+        /// 静态成员
+        /// </summary>
+        public abstract bool IsStatic { get; }
+
+        /// <summary>
+        /// 公共成员
+        /// </summary>
+        public abstract bool IsPublic { get; }
 
         /// <summary>
         /// 成员类型

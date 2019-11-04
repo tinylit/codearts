@@ -37,7 +37,7 @@ namespace SkyBuilding.Mvc
         protected ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.Second);
 
         /// <summary>
-        /// 服务配置
+        /// 服务配置（这个方法被运行时调用。使用此方法向容器添加服务。）
         /// </summary>
         /// <param name="services">服务集合</param>
 #if NETCOREAPP3_0
@@ -78,7 +78,7 @@ namespace SkyBuilding.Mvc
 #endif
         }
         /// <summary>
-        /// 配置
+        /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道。）
         /// </summary>
         /// <param name="app">项目构建器</param>
         /// <param name="env">环境变量</param>
@@ -187,7 +187,7 @@ namespace SkyBuilding.Mvc
             }));
         }
 
-        #region Private
+#region Private
         /// <summary>
         /// 生成随机的字符串
         /// </summary>
@@ -285,7 +285,7 @@ namespace SkyBuilding.Mvc
                 type = "Bearer"
             }));
         }
-        #endregion
+#endregion
     }
 }
 #endif

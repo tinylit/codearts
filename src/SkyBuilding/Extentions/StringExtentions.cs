@@ -136,57 +136,57 @@ namespace System
 
                 var namingMethod = typeof(StringExtentions).GetMethod(nameof(ToNamingCase), BindingFlags.Public | BindingFlags.Static);
 
-                var enumerCase = typeStore.PropertyStores.Select(info =>
-                {
-                    var nameCst = Constant(info.Name);
+                var enumerCase = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).Select(info =>
+                  {
+                      var nameCst = Constant(info.Name);
 
-                    var propertyExp = Property(parameterExp, info.Name);
+                      var propertyExp = Property(parameterExp, info.Name);
 
-                    var propSugarAttr = info.GetCustomAttribute<PropSugarAttribute>();
+                      var propSugarAttr = info.GetCustomAttribute<PropSugarAttribute>();
 
-                    if (!(propSugarAttr is null))
-                    {
-                        var factory = propSugarAttr.ToStringMethod;
+                      if (!(propSugarAttr is null))
+                      {
+                          var factory = propSugarAttr.ToStringMethod;
 
-                        var method = factory.Method;
+                          var method = factory.Method;
 
-                        return SwitchCase(method.IsStatic ? Call(null, method, propertyExp) : Call(Constant(factory.Target), method, propertyExp), nameCst);
-                    }
+                          return SwitchCase(method.IsStatic ? Call(null, method, propertyExp) : Call(Constant(factory.Target), method, propertyExp), nameCst);
+                      }
 
-                    var namingCst = Call(null, namingMethod, nameCst, parameterNamingExp);
+                      var namingCst = Call(null, namingMethod, nameCst, parameterNamingExp);
 
-                    if (info.MemberType == typeof(string))
-                    {
-                        return SwitchCase(Coalesce(propertyExp, defaultCst), namingCst);
-                    }
+                      if (info.MemberType == typeof(string))
+                      {
+                          return SwitchCase(Coalesce(propertyExp, defaultCst), namingCst);
+                      }
 
-                    if (info.MemberType.IsArray || typeof(IEnumerable).IsAssignableFrom(info.MemberType))
-                    {
-                        var joinMethod = GetJoinMethodInfo(IEnumerableExtentions.Join);
+                      if (info.MemberType.IsArray || typeof(IEnumerable).IsAssignableFrom(info.MemberType))
+                      {
+                          var joinMethod = GetJoinMethodInfo(IEnumerableExtentions.Join);
 
-                        var coreExp = Call(null, joinMethod, Convert(propertyExp, typeof(IEnumerable)), Constant(","));
+                          var coreExp = Call(null, joinMethod, Convert(propertyExp, typeof(IEnumerable)), Constant(","));
 
-                        return SwitchCase(Call(null, concatExp, Constant("["), coreExp, Constant("]")), namingCst);
-                    }
+                          return SwitchCase(Call(null, concatExp, Constant("["), coreExp, Constant("]")), namingCst);
+                      }
 
-                    var toStringMethod = info.MemberType.GetMethod("ToString", new Type[] { });
+                      var toStringMethod = info.MemberType.GetMethod("ToString", new Type[] { });
 
-                    if (toStringMethod is null || toStringMethod.DeclaringType == typeof(object))
-                    {
-                        return SwitchCase(defaultCst, namingCst);
-                    }
+                      if (toStringMethod is null || toStringMethod.DeclaringType == typeof(object))
+                      {
+                          return SwitchCase(defaultCst, namingCst);
+                      }
 
-                    var body = Call(propertyExp, toStringMethod);
+                      var body = Call(propertyExp, toStringMethod);
 
-                    if (info.MemberType.IsClass || info.MemberType.IsNullable())
-                    {
-                        var testExp = Equal(propertyExp, Constant(null, info.MemberType));
+                      if (info.MemberType.IsClass || info.MemberType.IsNullable())
+                      {
+                          var testExp = Equal(propertyExp, Constant(null, info.MemberType));
 
-                        return SwitchCase(Condition(testExp, defaultCst, body), namingCst);
-                    }
+                          return SwitchCase(Condition(testExp, defaultCst, body), namingCst);
+                      }
 
-                    return SwitchCase(body, namingCst);
-                });
+                      return SwitchCase(body, namingCst);
+                  });
 
                 var bodyExp = Call(null, concatExp, Constant("{"), parameterNameExp, Constant("}"));
 

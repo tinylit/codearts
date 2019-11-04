@@ -27,21 +27,16 @@ namespace SkyBuilding.Mvc
     /// </summary>
     public class DStartup
     {
-#if NETCOREAPP3_0
         /// <summary>
-        /// 配置服务
+        /// 配置服务（这个方法被运行时调用。使用此方法向容器添加服务。）
         /// </summary>
-        /// <param name="services"></param>
+        /// <param name="services">服务集合</param>
         /// <returns></returns>
+#if NETCOREAPP3_0
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
 #else
-        /// <summary>
-        /// 配置服务
-        /// </summary>
-        /// <param name="services"></param>
-        /// <returns></returns>
         public virtual IServiceProvider ConfigureServices(IServiceCollection services)
         {
 #endif
@@ -119,7 +114,7 @@ namespace SkyBuilding.Mvc
         }
 
         /// <summary>
-        /// 配置容器
+        /// 配置容器（依赖注入）
         /// </summary>
         /// <param name="builder">容器</param>
         public virtual void ConfigureContainer(ContainerBuilder builder)
@@ -180,10 +175,10 @@ namespace SkyBuilding.Mvc
 
 #if NETCOREAPP3_0
         /// <summary>
-        /// 配置管道
+        /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道。）
         /// </summary>
-        /// <param name="app"></param>
-        /// <param name="env"></param>
+        /// <param name="app">项目构建器</param>
+        /// <param name="env">环境变量</param>
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
 #else
