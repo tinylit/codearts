@@ -1,6 +1,7 @@
 ﻿using SkyBuilding;
 using SkyBuilding.Config;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -22,6 +23,8 @@ namespace System
         private static readonly Regex PatternPascalCase = new Regex("(^|_)(?<letter>([a-z]))", RegexOptions.Singleline & RegexOptions.Compiled);
 
         private static readonly Regex PatternUrlCamelCase = new Regex("(?<letter>([A-Z]))", RegexOptions.Singleline & RegexOptions.Compiled);
+
+        private static readonly ConcurrentDictionary<NamingType, PropSettings> SettingsCache = new ConcurrentDictionary<NamingType, PropSettings>();
 
         /// <summary>
         /// 命名
@@ -126,11 +129,17 @@ namespace System
 
                 var parameterExp = Parameter(type, "source");
 
-                var parameterNameExp = Parameter(typeof(string), "name");
+                var nameExp = Parameter(typeof(string), "name");
 
-                var parameterNamingExp = Parameter(typeof(NamingType), "namingType");
+                var settingsType = typeof(PropSettings);
 
-                var parameterLostMatchExp = Parameter(typeof(bool), "lostMacth");
+                var settingsExp = Parameter(settingsType, "settings");
+
+                var resolvePropertyNameMethod = settingsType.GetMethod("ResolvePropertyName");
+
+                var convertMethod = settingsType.GetMethod("Convert");
+
+                var preserveUnknownExp = Property(settingsExp, "PreserveUnknownPropertyName");
 
                 var concatExp = GetMethodInfo(string.Concat);
 
@@ -142,6 +151,8 @@ namespace System
 
                       var propertyExp = Property(parameterExp, info.Name);
 
+                      var namingCst = Call(settingsExp, resolvePropertyNameMethod, nameCst);
+
                       var propSugarAttr = info.GetCustomAttribute<PropSugarAttribute>();
 
                       if (!(propSugarAttr is null))
@@ -150,49 +161,17 @@ namespace System
 
                           var method = factory.Method;
 
-                          return SwitchCase(method.IsStatic ? Call(null, method, propertyExp) : Call(Constant(factory.Target), method, propertyExp), nameCst);
+                          return SwitchCase(method.IsStatic ? Call(null, method, propertyExp) : Call(Constant(factory.Target), method, propertyExp), namingCst);
                       }
 
-                      var namingCst = Call(null, namingMethod, nameCst, parameterNamingExp);
-
-                      if (info.MemberType == typeof(string))
-                      {
-                          return SwitchCase(Coalesce(propertyExp, defaultCst), namingCst);
-                      }
-
-                      if (info.MemberType.IsArray || typeof(IEnumerable).IsAssignableFrom(info.MemberType))
-                      {
-                          var joinMethod = GetJoinMethodInfo(IEnumerableExtentions.Join);
-
-                          var coreExp = Call(null, joinMethod, Convert(propertyExp, typeof(IEnumerable)), Constant(","));
-
-                          return SwitchCase(Call(null, concatExp, Constant("["), coreExp, Constant("]")), namingCst);
-                      }
-
-                      var toStringMethod = info.MemberType.GetMethod("ToString", new Type[] { });
-
-                      if (toStringMethod is null || toStringMethod.DeclaringType == typeof(object))
-                      {
-                          return SwitchCase(defaultCst, namingCst);
-                      }
-
-                      var body = Call(propertyExp, toStringMethod);
-
-                      if (info.MemberType.IsClass || info.MemberType.IsNullable())
-                      {
-                          var testExp = Equal(propertyExp, Constant(null, info.MemberType));
-
-                          return SwitchCase(Condition(testExp, defaultCst, body), namingCst);
-                      }
-
-                      return SwitchCase(body, namingCst);
+                      return SwitchCase(Call(settingsExp, convertMethod, nameCst, Constant(info.MemberType), Convert(propertyExp, typeof(object))), namingCst);
                   });
 
-                var bodyExp = Call(null, concatExp, Constant("{"), parameterNameExp, Constant("}"));
+                var bodyExp = Call(null, concatExp, Constant("{"), nameExp, Constant("}"));
 
-                var switchExp = Switch(Call(null, namingMethod, parameterNameExp, parameterNamingExp), Condition(Equal(parameterLostMatchExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
+                var switchExp = Switch(Call(settingsExp, resolvePropertyNameMethod, nameExp), Condition(Equal(preserveUnknownExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
 
-                var lamda = Lambda<Func<T, string, NamingType, bool, string>>(switchExp, parameterExp, parameterNameExp, parameterNamingExp, parameterLostMatchExp);
+                var lamda = Lambda<Func<T, string, PropSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
 
                 Invoke = lamda.Compile();
             }
@@ -200,7 +179,7 @@ namespace System
             /// <summary>
             /// 调用
             /// </summary>
-            public static readonly Func<T, string, NamingType, bool, string> Invoke;
+            public static readonly Func<T, string, PropSettings, string> Invoke;
         }
 
         /// <summary>
@@ -210,18 +189,32 @@ namespace System
         /// <param name="value">字符串</param>
         /// <param name="source">资源</param>
         /// <param name="namingType">比较的命名方式</param>
-        /// <param name="keepLostMatch">保留迷失的匹配</param>
         /// <returns></returns>
-        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal, bool keepLostMatch = false) where T : class
+        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, SettingsCache.GetOrAdd(namingType, namingCase => new PropSettings(namingCase)));
+
+        /// <summary>
+        /// 属性格式化语法糖
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">字符串</param>
+        /// <param name="source">资源</param>
+        /// <param name="settings">属性配置</param>
+        /// <returns></returns>
+        public static string PropSugar<T>(this string value, T source, PropSettings settings) where T : class
         {
             if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
+            if (settings is null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
             return PatternProperty.Replace(value, match =>
             {
-                return Nested<T>.Invoke(source, match.Groups["name"].Value, namingType, keepLostMatch);
+                return Nested<T>.Invoke(source, match.Groups["name"].Value, settings);
             });
         }
     }

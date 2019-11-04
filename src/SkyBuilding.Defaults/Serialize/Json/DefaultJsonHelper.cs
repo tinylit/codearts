@@ -18,8 +18,8 @@ namespace SkyBuilding.Serialize.Json
             /// <summary>
             /// 构造定义命名解析风格
             /// </summary>
-            /// <param name="camelCase"></param>
-            public JsonContractResolver(NamingType camelCase) => _camelCase = camelCase;
+            /// <param name="namingCase">命名规则</param>
+            public JsonContractResolver(NamingType namingCase) => _camelCase = namingCase;
 
             /// <summary>
             /// 属性名解析
