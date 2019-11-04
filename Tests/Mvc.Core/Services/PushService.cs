@@ -16,7 +16,7 @@ namespace Mvc.Core
         /// <returns></returns>
         public override Task<PushResult> Push(PushRequest request, ServerCallContext context)
         {
-            return base.Push(request, context);
+            return new Task<PushResult>(() => new PushResult { Code = 200 });
         }
     }
 }

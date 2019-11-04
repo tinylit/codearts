@@ -84,6 +84,7 @@ namespace MVC461.Controllers
         [HttpGet]
         public IEnumerable<object> Get()
         {
+            "".Config<string>();
             return new object[] { TestEnum.Normal, 1000000uL, 10000000000000000000uL };
         }
 

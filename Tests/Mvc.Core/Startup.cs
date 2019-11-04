@@ -43,7 +43,7 @@ namespace Mvc.Core
 
             app.UseEndpoints(endpoints =>
             {
-                //endpoints.MapGrpcService<PushService>();
+                endpoints.MapGrpcService<PushService>();
 
                 endpoints.MapGet("/", async context =>
                 {

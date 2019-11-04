@@ -14,7 +14,7 @@ namespace GrpcClient
         static async Task Main()
         {
             // The port number(5001) must match the port of the gRPC server.
-            var channel = GrpcChannel.ForAddress("https://localhost:44327");
+            var channel = GrpcChannel.ForAddress("https://localhost:44327/");
             var client = new Push.PushClient(channel);
             var reply = await client.PushAsync(new PushRequest
             {

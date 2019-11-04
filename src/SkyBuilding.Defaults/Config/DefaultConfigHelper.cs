@@ -118,48 +118,87 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Configuration;
 
 namespace SkyBuilding.Config
 {
     /// <summary>
+    /// 运行环境
+    /// </summary>
+    public enum RuntimeEnvironment
+    {
+        /// <summary>
+        /// Web
+        /// </summary>
+        Web = 1,
+        /// <summary>
+        /// From
+        /// </summary>
+        Form = 2,
+        /// <summary>
+        /// Service
+        /// </summary>
+        Service = 3
+    }
+
+    /// <summary>
     /// Json 配置助手
     /// </summary>
-    public class DefaultConfigHelper : DesignMode.Singleton<DefaultConfigHelper>, IConfigHelper
+    public class DefaultConfigHelper : IConfigHelper
     {
+        private FileSystemWatcher _watcher;
         private readonly Configuration Config;
         private readonly Dictionary<string, string> Configs;
         private readonly Dictionary<string, ConnectionStringSettings> ConnectionStrings;
 
-        private DefaultConfigHelper()
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public DefaultConfigHelper() : this(RuntimeEnvironment.Web) { }
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="environment">运行环境</param>
+        public DefaultConfigHelper(RuntimeEnvironment environment)
         {
             Configs = new Dictionary<string, string>();
 
             ConnectionStrings = new Dictionary<string, ConnectionStringSettings>();
 
-            Config = WebConfigurationManager.OpenWebConfiguration("~");
+            switch (environment)
+            {
+                case RuntimeEnvironment.Form:
+                case RuntimeEnvironment.Service:
+                    Config = ConfigurationManager.OpenExeConfiguration(string.Empty);
+                    break;
+                case RuntimeEnvironment.Web:
+                default:
+                    Config = WebConfigurationManager.OpenWebConfiguration("~");
+                    break;
+            }
 
             Reload();
-
-            var filePath = Config.FilePath;
-            var fileName = Path.GetFileName(filePath);
-            var path = filePath.Substring(0, filePath.Length - fileName.Length);
-
-            using (var watcher = new FileSystemWatcher(path, fileName))
-            {
-                watcher.Changed += Watcher_Changed;
-            }
         }
 
+        /// <summary>
+        /// 文件内容变动事件
+        /// </summary>
+        /// <param name="sender">对象实例</param>
+        /// <param name="e">事件参数</param>
         private void Watcher_Changed(object sender, FileSystemEventArgs e)
         {
+            _watcher.Dispose();
+
             OnConfigChanged?.Invoke(sender);
 
             Reload();
         }
 
         /// <summary>
-        /// 无效
+        /// 配置文件改变事件
         /// </summary>
         public event Action<object> OnConfigChanged;
 
@@ -209,6 +248,17 @@ namespace SkyBuilding.Config
             {
                 Configs.Add(kv.Key, kv.Value);
             }
+
+            var filePath = Config.FilePath;
+            var fileName = Path.GetFileName(filePath);
+            var path = filePath.Substring(0, filePath.Length - fileName.Length);
+
+            _watcher = new FileSystemWatcher(path, fileName)
+            {
+                EnableRaisingEvents = true
+            };
+
+            _watcher.Changed += Watcher_Changed;
         }
     }
 }
