@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace SkyBuilding
 {
     /// <summary>
-    /// JSON 属性设置
+    /// JSON 属性设置(非数字格式的内容会加双引号)
     /// </summary>
     public class JsonSettings : DefaultSettings
     {
@@ -31,7 +31,7 @@ namespace SkyBuilding
 
             if (value is DateTime date)
             {
-                return string.Concat("\"", date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"), "\"");
+                return string.Concat("\"", date.ToString(DateFormatString), "\"");
             }
 
             if (value is IEnumerable enumerable)
