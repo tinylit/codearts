@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SkyBuilding.Implements;
 using System;
-using System.Threading;
 using System.Collections.Generic;
 
 namespace SkyBuilding.Tests

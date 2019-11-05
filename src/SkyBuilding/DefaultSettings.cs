@@ -8,7 +8,7 @@ namespace SkyBuilding
     /// <summary>
     /// 属性设置
     /// </summary>
-    public sealed class PropSettings
+    public class DefaultSettings
     {
         private readonly NamingType _camelCase;
 
@@ -16,12 +16,23 @@ namespace SkyBuilding
         /// 构造函数
         /// </summary>
         /// <param name="namingCase">命名规则</param>
-        public PropSettings(NamingType namingCase) => _camelCase = namingCase;
+        public DefaultSettings(NamingType namingCase) => _camelCase = namingCase;
 
         /// <summary>
-        /// 保留未知的属性名称 (为真时，保留匹配的 {PropertyName} 标识，默认：false)
+        /// 保留未知的属性令牌 (为真时，保留匹配的 {PropertyName} 标识，默认：false)
         /// </summary>
-        public bool PreserveUnknownPropertyName { get; set; }
+        public bool PreserveUnknownPropertyToken { get; set; }
+
+        private string dateFormatString;
+
+        /// <summary>
+        /// 获取或设置如何系统。DateTime和系统。格式化DateTimeOffset值,写入JSON文本时，以及读取JSON文本时的期望日期格式。默认值是"yyyy'-'MM'-'dd'T'hh ':' MM':'ss.FFFFFFFK"。
+        /// </summary>
+        public string DateFormatString
+        {
+            get => dateFormatString ?? "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFFK";
+            set => dateFormatString = value;
+        }
 
         private ICollection<PropConverter> converters;
         /// <summary>
@@ -53,14 +64,14 @@ namespace SkyBuilding
         /// </summary>
         /// <param name="value">内容</param>
         /// <returns></returns>
-        private string Convert(object value)
+        protected virtual string Convert(object value)
         {
-            if (value is string text) 
+            if (value is string text)
                 return text;
 
             if (value is DateTime date)
             {
-                return date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK");
+                return date.ToString(DateFormatString);
             }
 
             if (value is IEnumerable enumerable)
@@ -104,9 +115,9 @@ namespace SkyBuilding
         /// <param name="typeToConvert">属性类型</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public string Convert(string propertyName, Type typeToConvert, object value)
+        public virtual string Convert(string propertyName, Type typeToConvert, object value)
         {
-            if (value is null) return string.Empty;
+            if (value is null) return null;
 
             foreach (PropConverter converter in Converters)
             {

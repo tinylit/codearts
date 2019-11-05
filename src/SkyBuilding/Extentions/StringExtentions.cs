@@ -16,7 +16,7 @@ namespace System
     {
         private static readonly Regex Whitespace = new Regex("[\\x20\\t\\r\\n\\f]", RegexOptions.Compiled);
 
-        private static readonly Regex PatternProperty = new Regex("\\{(?<name>\\w+)([\\x20\\t\\r\\n\\f]*(?<token>[?+]+)[\\x20\\t\\r\\n\\f]*(?<name>\\w+))*\\}", RegexOptions.Multiline);
+        private static readonly Regex Pattern = new Regex("\\{(?<name>\\w+)([\\x20\\t\\r\\n\\f]*(?<token>(\\?[?+]))[\\x20\\t\\r\\n\\f]*(?<name>\\w+))*\\}", RegexOptions.Multiline);
 
         private static readonly Regex PatternCamelCase = new Regex("_(?<letter>([a-z]))", RegexOptions.Singleline & RegexOptions.Compiled);
 
@@ -24,7 +24,7 @@ namespace System
 
         private static readonly Regex PatternUrlCamelCase = new Regex("(?<letter>([A-Z]))", RegexOptions.Singleline & RegexOptions.Compiled);
 
-        private static readonly ConcurrentDictionary<NamingType, PropSettings> SettingsCache = new ConcurrentDictionary<NamingType, PropSettings>();
+        private static readonly ConcurrentDictionary<NamingType, DefaultSettings> SettingsCache = new ConcurrentDictionary<NamingType, DefaultSettings>();
 
         /// <summary>
         /// 命名
@@ -113,7 +113,6 @@ namespace System
         /// <typeparam name="T">类型</typeparam>
         private static class Nested<T>
         {
-            private static MethodInfo GetJoinMethodInfo(Func<IEnumerable, string, string> func) => func.Method;
             private static MethodInfo GetMethodInfo(Func<string, string, string, string> func) => func.Method;
 
             /// <summary>
@@ -131,7 +130,7 @@ namespace System
 
                 var nameExp = Parameter(typeof(string), "name");
 
-                var settingsType = typeof(PropSettings);
+                var settingsType = typeof(DefaultSettings);
 
                 var settingsExp = Parameter(settingsType, "settings");
 
@@ -139,7 +138,7 @@ namespace System
 
                 var convertMethod = settingsType.GetMethod("Convert");
 
-                var preserveUnknownExp = Property(settingsExp, "PreserveUnknownPropertyName");
+                var preserveUnknownExp = Property(settingsExp, "PreserveUnknownPropertyToken");
 
                 var concatExp = GetMethodInfo(string.Concat);
 
@@ -171,7 +170,7 @@ namespace System
 
                 var switchExp = Switch(Call(settingsExp, resolvePropertyNameMethod, nameExp), Condition(Equal(preserveUnknownExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
 
-                var lamda = Lambda<Func<T, string, PropSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
+                var lamda = Lambda<Func<T, string, DefaultSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
 
                 Invoke = lamda.Compile();
             }
@@ -179,28 +178,28 @@ namespace System
             /// <summary>
             /// 调用
             /// </summary>
-            public static readonly Func<T, string, PropSettings, string> Invoke;
+            public static readonly Func<T, string, DefaultSettings, string> Invoke;
         }
 
         /// <summary>
-        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（包含问号即视为空字符串运算）】和属性内容合并，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
+        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为空或空字符串时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非空字符串合并【空字符串试探合并符(A?+B)，当属性A为空或空字符串时，返回A内容，否则返回A和B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value">字符串</param>
         /// <param name="source">资源</param>
         /// <param name="namingType">比较的命名方式</param>
         /// <returns></returns>
-        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, SettingsCache.GetOrAdd(namingType, namingCase => new PropSettings(namingCase)));
+        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, SettingsCache.GetOrAdd(namingType, namingCase => new DefaultSettings(namingCase)));
 
         /// <summary>
-        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（包含问号即视为空字符串运算）】和属性内容合并，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
+        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为空或空字符串时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非空字符串合并【空字符串试探合并符(A?+B)，当属性A为空或空字符串时，返回A内容，否则返回A和B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value">字符串</param>
         /// <param name="source">资源</param>
         /// <param name="settings">属性配置</param>
         /// <returns></returns>
-        public static string PropSugar<T>(this string value, T source, PropSettings settings) where T : class
+        public static string PropSugar<T>(this string value, T source, DefaultSettings settings) where T : class
         {
             if (source is null)
             {
@@ -212,7 +211,7 @@ namespace System
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            return PatternProperty.Replace(value, match =>
+            return Pattern.Replace(value, match =>
             {
                 var nameGrp = match.Groups["name"];
 
@@ -229,14 +228,27 @@ namespace System
 
                 while (nameCap.MoveNext())
                 {
-                    valueStr += Nested<T>.Invoke(source, ((Capture)nameCap.Current).Value, settings);
+                    string text = Nested<T>.Invoke(source, ((Capture)nameCap.Current).Value, settings);
 
-                    if (!tokenCap.MoveNext()) return valueStr;
+                    if(!(text is null))
+                    {
+                        valueStr += text;
+                    }
+
+                    if (!tokenCap.MoveNext()) 
+                        return valueStr;
 
                     string token = ((Capture)tokenCap.Current).Value;
 
-                    if ((token.Length == 1 ? token == "?" : token.IndexOf("?") > -1) && valueStr.Length > 0)
+                    if (valueStr.Length > 0)
+                    {
+                        if (token == "?" || token == "??") 
+                            return valueStr;
+                    }
+                    else if (token == "?+")
+                    {
                         return valueStr;
+                    }
                 }
 
                 return valueStr;
