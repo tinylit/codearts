@@ -16,7 +16,7 @@ namespace System
     {
         private static readonly Regex Whitespace = new Regex("[\\x20\\t\\r\\n\\f]", RegexOptions.Compiled);
 
-        private static readonly Regex Pattern = new Regex("\\{(?<name>\\w+)([\\x20\\t\\r\\n\\f]*(?<token>(\\?[?+]))[\\x20\\t\\r\\n\\f]*(?<name>\\w+))*\\}", RegexOptions.Multiline);
+        private static readonly Regex Pattern = new Regex("\\{(?<name>\\w+)([\\x20\\t\\r\\n\\f]*(?<token>(\\??[?+]))[\\x20\\t\\r\\n\\f]*(?<name>\\w+))*\\}", RegexOptions.Multiline);
 
         private static readonly Regex PatternCamelCase = new Regex("_(?<letter>([a-z]))", RegexOptions.Singleline & RegexOptions.Compiled);
 
