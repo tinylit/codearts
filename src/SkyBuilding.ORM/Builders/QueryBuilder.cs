@@ -1206,7 +1206,7 @@ namespace SkyBuilding.ORM.Builders
 
             if (isUnion && orderby.Length > 0)
             {
-                return string.Concat("SELECT * FROM (", value, ") ", settings.TableName("CTE_UNION"), " ", orderby.ToString());
+                return string.Concat("SELECT * FROM (", value, ") ", settings.Name("CTE_UNION"), " ", orderby.ToString());
             }
 
             return value;

@@ -59,6 +59,7 @@ namespace SkyBuilding.ORM
         /// 参数集合。
         /// </summary>
         public Dictionary<string, object> Parameters { internal set => paramsters = value; get => paramsters ?? (paramsters = new Dictionary<string, object>()); }
+
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -72,22 +73,27 @@ namespace SkyBuilding.ORM
 
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
+
         /// <summary>
         /// )
         /// </summary>
         public void CloseBrace() => Write(_writer.CloseBrace);
+
         /// <summary>
         /// ,
         /// </summary>
         public void Delimiter() => Write(_writer.Delimiter);
+
         /// <summary>
         /// DISTINCT
         /// </summary>
         public void Distinct() => Write("DISTINCT" + _writer.WhiteSpace);
+
         /// <summary>
         /// ''
         /// </summary>
         public void EmptyString() => Write(_writer.EmptyString);
+
         /// <summary>
         /// Exists
         /// </summary>
@@ -97,6 +103,7 @@ namespace SkyBuilding.ORM
 
             Write("EXISTS");
         }
+
         /// <summary>
         /// Like
         /// </summary>
@@ -110,6 +117,7 @@ namespace SkyBuilding.ORM
 
             WhiteSpace();
         }
+
         /// <summary>
         /// IN
         /// </summary>
@@ -121,22 +129,27 @@ namespace SkyBuilding.ORM
 
             Write("IN");
         }
+
         /// <summary>
         /// From
         /// </summary>
         public void From() => Write(_writer.WhiteSpace + "FROM" + _writer.WhiteSpace);
+
         /// <summary>
         /// Left Join
         /// </summary>
         public void Join() => Write(_writer.WhiteSpace + "LEFT" + _writer.WhiteSpace + "JOIN" + _writer.WhiteSpace);
+
         /// <summary>
         /// (
         /// </summary>
         public void OpenBrace() => Write(_writer.OpenBrace);
+
         /// <summary>
         /// Order By
         /// </summary>
         public void OrderBy() => Write(_writer.WhiteSpace + "ORDER" + _writer.WhiteSpace + "BY" + _writer.WhiteSpace);
+
         /// <summary>
         /// 参数
         /// </summary>
@@ -155,6 +168,7 @@ namespace SkyBuilding.ORM
 
             Parameters.Add(paramterName, value);
         }
+
         /// <summary>
         /// 参数
         /// </summary>
@@ -198,10 +212,12 @@ namespace SkyBuilding.ORM
 
             Parameters.Add(paramterName, value);
         }
+
         /// <summary>
         /// Select
         /// </summary>
         public void Select() => Write("SELECT" + _writer.WhiteSpace);
+
         /// <summary>
         /// Insert Into
         /// </summary>
@@ -211,46 +227,57 @@ namespace SkyBuilding.ORM
         /// Values
         /// </summary>
         public void Values() => Write("VALUES");
+
         /// <summary>
         /// Update
         /// </summary>
         public void Update() => Write("UPDATE" + _writer.WhiteSpace);
+
         /// <summary>
         /// Set
         /// </summary>
         public void Set() => Write(_writer.WhiteSpace + "SET" + _writer.WhiteSpace);
+
         /// <summary>
         /// Delete
         /// </summary>
         public void Delete() => Write("DELETE" + _writer.WhiteSpace);
+
         /// <summary>
         /// Where
         /// </summary>
         public void Where() => Write(_writer.WhiteSpace + "WHERE" + _writer.WhiteSpace);
+
         /// <summary>
         /// And
         /// </summary>
         public void WriteAnd() => Write(_writer.WhiteSpace + (Not ? "OR" : "AND") + _writer.WhiteSpace);
+
         /// <summary>
         /// Desc
         /// </summary>
         public void WriteDesc() => Write(_writer.WhiteSpace + "DESC");
+
         /// <summary>
         /// Is
         /// </summary>
         public void WriteIS() => Write(_writer.WhiteSpace + "IS" + _writer.WhiteSpace);
+
         /// <summary>
         /// Not
         /// </summary>
         public void WriteNot() => Write("NOT" + _writer.WhiteSpace);
+
         /// <summary>
         /// Null
         /// </summary>
         public virtual void WriteNull() => Write("NULL");
+
         /// <summary>
         /// Or
         /// </summary>
         public void WriteOr() => Write(_writer.WhiteSpace + (Not ? "AND" : "OR") + _writer.WhiteSpace);
+
         /// <summary>
         /// {prefix}.
         /// </summary>
@@ -263,15 +290,18 @@ namespace SkyBuilding.ORM
 
             Write(".");
         }
+
         /// <summary>
         /// 别名
         /// </summary>
         /// <param name="name"></param>
-        public void Alias(string name) => Write(_writer.Alias(name));
+        public void Alias(string name) => Write(_writer.Name(name));
+
         /// <summary>
         /// AS
         /// </summary>
         public void As() => Write(_writer.WhiteSpace + "AS" + _writer.WhiteSpace);
+
         /// <summary>
         /// AS {name}
         /// </summary>
@@ -285,20 +315,24 @@ namespace SkyBuilding.ORM
 
             Alias(name);
         }
+
         /// <summary>
         /// 字段
         /// </summary>
         /// <param name="name">名称</param>
         public void Name(string name) => Write(_writer.Name(name));
+
         /// <summary>
         /// 表名称
         /// </summary>
         /// <param name="name">名称</param>
-        public void TableName(string name) => Write(_writer.TableName(name));
+        public void TableName(string name) => Write(_writer.Name(name));
+
         /// <summary>
         /// 空格
         /// </summary>
         public void WhiteSpace() => Write(_writer.WhiteSpace);
+
         /// <summary>
         /// {prefix}.{name}
         /// </summary>
@@ -310,6 +344,7 @@ namespace SkyBuilding.ORM
 
             Name(name);
         }
+
         /// <summary>
         /// IS NULL
         /// </summary>
@@ -324,6 +359,7 @@ namespace SkyBuilding.ORM
 
             WriteNull();
         }
+
         /// <summary>
         /// IS NOT ULL
         /// </summary>
@@ -338,27 +374,22 @@ namespace SkyBuilding.ORM
 
             WriteNull();
         }
+
         /// <summary>
         /// 长度函数
         /// </summary>
-        public void LengthMethod()
-        {
-            Write(settings.Length);
-        }
+        public void LengthMethod()=> Write(settings.Length);
+
         /// <summary>
         /// 索引函数
         /// </summary>
-        public void IndexOfMethod()
-        {
-            Write(settings.IndexOf);
-        }
+        public void IndexOfMethod() => Write(settings.IndexOf);
+
         /// <summary>
         /// 截取函数
         /// </summary>
-        public void SubstringMethod()
-        {
-            Write(settings.Substring);
-        }
+        public void SubstringMethod() => Write(settings.Substring);
+
         /// <summary>
         /// {name} {alias}
         /// </summary>
@@ -380,11 +411,13 @@ namespace SkyBuilding.ORM
         /// </summary>
         /// <param name="builder">写入器。</param>
         public void AddWriter(StringBuilder builder) => builders.Add(builder ?? throw new ArgumentNullException(nameof(builder)));
+
         /// <summary>
         /// 移除写入器。
         /// </summary>
         /// <param name="builder">写入器。</param>
         public void RemoveWriter(StringBuilder builder) => builders.Remove(builder);
+
         /// <summary>
         /// 清空写入器。
         /// </summary>
@@ -416,6 +449,7 @@ namespace SkyBuilding.ORM
                 _builder.Append(value);
             }
         }
+
         /// <summary>
         /// 写入类型。
         /// </summary>
@@ -424,14 +458,17 @@ namespace SkyBuilding.ORM
         {
             Write(ExpressionExtensions.GetOperator(Not ? nodeType.ReverseWhere() : nodeType));
         }
+
         /// <summary>
         /// =
         /// </summary>
         public void Equal() => Write(ExpressionType.Equal);
+
         /// <summary>
         /// &lt;&gt;
         /// </summary>
         public void NotEqual() => Write(ExpressionType.NotEqual);
+
         /// <summary>
         /// false
         /// </summary>
@@ -446,6 +483,7 @@ namespace SkyBuilding.ORM
                 Parameter("__variable_false", false);
             }
         }
+
         /// <summary>
         /// true
         /// </summary>
@@ -469,6 +507,7 @@ namespace SkyBuilding.ORM
         /// <param name="length">长度</param>
         /// <returns></returns>
         public string ToString(int startIndex, int length) => _builder.ToString(startIndex, length);
+
         /// <summary>
         /// 返回写入器数据。
         /// </summary>

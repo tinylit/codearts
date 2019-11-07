@@ -19,10 +19,13 @@ namespace UnitTest
     [TestClass]
     public class MySqlTest
     {
+        private static bool isCompleted;
+
         private readonly MySqlUserRespository userSingleton = Singleton<MySqlUserRespository>.Instance;
         private readonly AuthShipRepository authShipSingleton = Singleton<AuthShipRepository>.Instance;
         private readonly AuthTreeRepository authTreesingleton = Singleton<AuthTreeRepository>.Instance;
         private readonly TaxCodeRepository taxCodeSingleton = Singleton<TaxCodeRepository>.Instance;
+
         [TestInitialize]
         public void Initialize()
         {
@@ -32,6 +35,8 @@ namespace UnitTest
 
             DbConnectionManager.AddAdapter(adapter);
             DbConnectionManager.AddProvider<SkyProvider>();
+
+            if (isCompleted) return;
 
             var connectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;";
 
@@ -55,6 +60,8 @@ namespace UnitTest
                             command.ExecuteNonQuery();
                         }
                     }
+
+                    isCompleted = true;
                 }
                 finally
                 {

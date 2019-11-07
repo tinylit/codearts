@@ -50,12 +50,11 @@ namespace SkyBuilding.ORM.SQLite
         /// </summary>
         public bool IndexOfSwapPlaces => false;
 
+        private ICollection<IFormatter> formatters;
         /// <summary>
-        /// 别名
+        /// 格式化集合
         /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public string AsName(string name) => Name(name);
+        public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
 
         /// <summary>
         /// 字段名称
@@ -103,7 +102,7 @@ namespace SkyBuilding.ORM.SQLite
                     return Tuple.Create(match.Groups["name"].Value, false);
                 }
 
-                return Tuple.Create(AsName("__sqlite_col"), true);
+                return Tuple.Create(Name("__sqlite_col"), true);
             }
 
             return Tuple.Create(string.Join(",", list.ConvertAll(item =>
@@ -147,7 +146,7 @@ namespace SkyBuilding.ORM.SQLite
                  .Append(" FROM (")
                  .Append(sql)
                  .Append(") ")
-                 .Append(TableName("CTE"))
+                 .Append(Name("CTE"))
                  .Append(" ")
                  .Append(orderBy)
                  .Append(" LIMIT ")
@@ -163,12 +162,5 @@ namespace SkyBuilding.ORM.SQLite
         /// <param name="name">名称</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("@", name);
-
-        /// <summary>
-        /// 表名称
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public string TableName(string name) => Name(name);
     }
 }

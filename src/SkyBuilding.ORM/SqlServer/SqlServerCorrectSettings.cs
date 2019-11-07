@@ -51,6 +51,14 @@ namespace SkyBuilding.ORM.SqlServer
         /// SqlServer
         /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.SqlServer;
+
+
+        private ICollection<IFormatter> formatters;
+        /// <summary>
+        /// 格式化集合
+        /// </summary>
+        public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
+
         /// <summary>
         /// 字段
         /// </summary>
@@ -58,23 +66,48 @@ namespace SkyBuilding.ORM.SqlServer
         /// <returns></returns>
         public string Name(string name) => string.Concat("[", name, "]");
         /// <summary>
-        /// 别名
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public string AsName(string name) => Name(name);
-        /// <summary>
-        /// 表名称
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public string TableName(string name) => Name(name);
-        /// <summary>
         /// 参数名称
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("@", name);
+
+        private Tuple<string, bool> GetColumns(string columns) => mapperCache.GetOrAdd(columns, _ =>
+        {
+            var list = ToSingleColumnCodeBlock(columns);
+
+            if (list.Count == 1)
+            {
+                var match = PatternSingleAsColumn.Match(list.First());
+
+                if (match.Success)
+                {
+                    return Tuple.Create(match.Groups["name"].Value, false);
+                }
+
+                return Tuple.Create(Name("__sql_server_col"), true);
+            }
+
+            return Tuple.Create(string.Join(",", list.ConvertAll(item =>
+            {
+                var match = PatternSingleAsColumn.Match(item);
+
+                if (match.Success)
+                {
+                    return match.Groups["name"].Value;
+                }
+
+                throw new DException("分页且多字段时,必须指定字段名!");
+            })), false);
+        });
+
+        /// <summary>
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// </summary>
+        /// <param name="columns">以“,”分割的列集合</param>
+        /// <returns></returns>
+        protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
+
         /// <summary>
         /// 分页
         /// </summary>
@@ -126,7 +159,7 @@ namespace SkyBuilding.ORM.SqlServer
                 value += " AS " + tuple.Item1;
             }
 
-            string row_name = AsName("__Row_number_");
+            string row_name = Name("__Row_number_");
 
             return sb.Append("SELECT ")
                  .Append(tuple.Item1)
@@ -140,7 +173,7 @@ namespace SkyBuilding.ORM.SqlServer
                  .Append(" FROM ")
                  .Append(sql)
                  .Append(") ")
-                 .Append(TableName("CTE"))
+                 .Append(Name("CTE"))
                  .Append(" WHERE ")
                  .Append(row_name)
                  .Append(" > ")
@@ -151,42 +184,6 @@ namespace SkyBuilding.ORM.SqlServer
                  .Append(skip + take)
                  .ToString();
         }
-        private Tuple<string, bool> GetColumns(string columns) => mapperCache.GetOrAdd(columns, _ =>
-        {
-            var list = ToSingleColumnCodeBlock(columns);
-
-            if (list.Count == 1)
-            {
-                var match = PatternSingleAsColumn.Match(list.First());
-
-                if (match.Success)
-                {
-                    return Tuple.Create(match.Groups["name"].Value, false);
-                }
-
-                return Tuple.Create(AsName("__sql_server_col"), true);
-            }
-
-            return Tuple.Create(string.Join(",", list.ConvertAll(item =>
-            {
-                var match = PatternSingleAsColumn.Match(item);
-
-                if (match.Success)
-                {
-                    return match.Groups["name"].Value;
-                }
-
-                throw new DException("分页且多字段时,必须指定字段名!");
-            })), false);
-        });
-
-        /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
-        /// </summary>
-        /// <param name="columns">以“,”分割的列集合</param>
-        /// <returns></returns>
-        protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
-
         /// <summary>
         /// 分页（交集、并集等）
         /// </summary>
@@ -205,7 +202,7 @@ namespace SkyBuilding.ORM.SqlServer
                      .Append(" * FROM (")
                      .Append(sql)
                      .Append(") ")
-                     .Append(TableName("CTE"))
+                     .Append(Name("CTE"))
                      .Append(" ")
                      .Append(orderBy)
                      .ToString();
@@ -225,7 +222,7 @@ namespace SkyBuilding.ORM.SqlServer
                 throw new DException("组合查询必须指定字段名!");
             }
 
-            string row_name = AsName("__Row_number_");
+            string row_name = Name("__Row_number_");
 
            return sb.Append("SELECT ")
                 .Append(tuple.Item1)
@@ -239,9 +236,9 @@ namespace SkyBuilding.ORM.SqlServer
                 .Append(" FROM (")
                 .Append(sql)
                 .Append(") ")
-                .Append(TableName("CTE_ROW_NUMBER"))
+                .Append(Name("CTE_ROW_NUMBER"))
                 .Append(") ")
-                .Append(TableName("CTE"))
+                .Append(Name("CTE"))
                 .Append(" WHERE ")
                 .Append(row_name)
                 .Append(" > ")

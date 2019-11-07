@@ -1,4 +1,6 @@
-﻿namespace SkyBuilding.ORM
+﻿using System.Collections.Generic;
+
+namespace SkyBuilding.ORM
 {
     /// <summary>
     /// SQL矫正设置
@@ -28,23 +30,17 @@
         bool IndexOfSwapPlaces { get; }
 
         /// <summary>
+        /// 格式化集合（用作ISQL.ToString(ISQLCorrectSimSettings settings)矫正SQL语句使用）。
+        /// </summary>
+        ICollection<IFormatter> Formatters { get; }
+
+        /// <summary>
         /// 字段名称
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
         string Name(string name);
-        /// <summary>
-        /// 别名名称(字段或表别名)
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        string AsName(string name);
-        /// <summary>
-        /// 表名称
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        string TableName(string name);
+
         /// <summary>
         /// 参数名称
         /// </summary>

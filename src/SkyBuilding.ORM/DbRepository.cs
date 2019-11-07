@@ -195,7 +195,7 @@ namespace SkyBuilding.ORM
                 var storeItem = typeStore.PropertyStores.First(x => x.Name == column.Key);
 
                 sb.Append("DELETE FROM ")
-                .Append(Settings.TableName(from?.Invoke(typeRegions) ?? typeRegions.TableName))
+                .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
                 .Append(" WHERE ")
                 .Append(column.Value);
 
@@ -238,7 +238,7 @@ namespace SkyBuilding.ORM
                 var sb = new StringBuilder();
 
                 sb.Append("DELETE FROM ")
-                   .Append(Settings.TableName(from?.Invoke(typeRegions) ?? typeRegions.TableName))
+                   .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
                    .Append(" WHERE ")
                    .Append(string.Join(" OR ", collect.Select((item, index) =>
                    {
@@ -330,7 +330,7 @@ namespace SkyBuilding.ORM
                     throw new DException("未指定插入字段!");
 
                 sb.Append("INSERT INTO ")
-                    .Append(Settings.TableName(from?.Invoke(typeRegions) ?? typeRegions.TableName))
+                    .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
                     .Append("(")
                     .Append(string.Join(",", columns.Select(x => Settings.Name(x.Value))))
                     .Append(")")
@@ -476,7 +476,7 @@ namespace SkyBuilding.ORM
                     }));
 
                     sb.Append("UPDATE ")
-                        .Append(Settings.TableName(from?.Invoke(typeRegions, item) ?? typeRegions.TableName))
+                        .Append(Settings.Name(from?.Invoke(typeRegions, item) ?? typeRegions.TableName))
                         .Append(" SET ")
                         .Append(string.Join(",", columns.Select(kv =>
                         {

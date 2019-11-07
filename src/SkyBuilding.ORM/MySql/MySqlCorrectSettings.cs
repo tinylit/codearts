@@ -1,5 +1,4 @@
-﻿using SkyBuilding.ORM;
-using SkyBuilding.ORM.Exceptions;
+﻿using SkyBuilding.ORM.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -51,24 +50,19 @@ namespace SkyBuilding.ORM.MySql
         /// MySQL
         /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.MySQL;
+
+        private ICollection<IFormatter> formatters;
+        /// <summary>
+        /// 格式化集合
+        /// </summary>
+        public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
+
         /// <summary>
         /// 字段名称
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
         public string Name(string name) => string.Concat("`", name, "`");
-        /// <summary>
-        /// 别名
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public string AsName(string name) => Name(name);
-        /// <summary>
-        /// 表名称
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public string TableName(string name) => Name(name);
         /// <summary>
         /// 参数名称
         /// </summary>
@@ -111,7 +105,7 @@ namespace SkyBuilding.ORM.MySql
                     return Tuple.Create(match.Groups["name"].Value, false);
                 }
 
-                return Tuple.Create(AsName("__my_sql_col"), true);
+                return Tuple.Create(Name("__my_sql_col"), true);
             }
 
             return Tuple.Create(string.Join(",", list.ConvertAll(item =>
@@ -162,7 +156,7 @@ namespace SkyBuilding.ORM.MySql
                 .Append(" FROM (")
                 .Append(sql)
                 .Append(") ")
-                .Append(TableName("CTE"))
+                .Append(Name("CTE"))
                 .Append(" ")
                 .Append(orderBy)
                 .Append(" LIMIT ");

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace SkyBuilding.ORM
 {
@@ -37,29 +36,18 @@ namespace SkyBuilding.ORM
         /// 空格
         /// </summary>
         public string WhiteSpace => " ";
-        /// <summary>
-        /// 别名
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public virtual string Alias(string name) => _settings.AsName(name);
+
         /// <summary>
         /// 参数名称
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
-        public virtual string Paramter(string name) => _settings.ParamterName(name);
+        public virtual string ParamterName(string name) => _settings.ParamterName(name);
         /// <summary>
         /// 字段
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
         public virtual string Name(string name) => _settings.Name(name);
-        /// <summary>
-        /// 表名称
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <returns></returns>
-        public virtual string TableName(string name) => _settings.TableName(name);
     }
 }

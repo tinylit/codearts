@@ -50,7 +50,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mvc45", "Tests\Mvc45\Mvc45.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mvc461", "Tests\Mvc461\Mvc461.csproj", "{F3F2410E-7640-404B-B3BA-DBBF3203DC6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrpcClient", "Tests\GrpcClient\GrpcClient.csproj", "{1A4E60AE-24E5-41A6-AB4A-5A1A8CEA1FD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcClient", "Tests\GrpcClient\GrpcClient.csproj", "{1A4E60AE-24E5-41A6-AB4A-5A1A8CEA1FD8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
