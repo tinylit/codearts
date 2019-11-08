@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <input type="button" id="btnSend" value="调用无认证标记的方法" />
+    <input type="button" id="btnSend2" value="调用证标记的方法" />
+    <input type="button" id="btnSend3" value="调用管理员角色认证标记的方法" />
+    <ul id="msglist"></ul>
+
+    <script type="text/javascript" src="jquery-1.6.4.js"></script>
+    <script type="text/javascript" src="jquery.signalR-2.2.2.js"></script>
+    <script src="app-signalr.js"></script>
+    <script>
+        $(function () {
+            //http://120.77.148.35:9090
+            var hub = $.hubYep("http://localhost:57940", "test", {
+                hello: function () {
+                    $('#msglist').append($('<li>').text("hello word!"));
+                },
+                authorize: function () {
+                    $('#msglist').append($('<li>').text("认证通过!"));
+                },
+                admin: function () {
+                    $('#msglist').append($('<li>').text("当前用户是管理员!"));
+                }
+            });
+            hub.stateChanged(function (data) {
+                console.log(data);
+            })
+                .start()
+                .done(function () {
+                    console.log("上线");
+                }).fail(function () {
+                    console.log("下线");
+                });
+
+            $("#btnSend").click(function () {
+                //调用服务器方法
+                hub.invoke("hello");
+            });
+            $("#btnSend2").click(function () {
+                //调用服务器方法
+                hub.invoke("authorize");
+            });
+            $("#btnSend3").click(function () {
+                //调用服务器方法
+                hub.invoke("admin");
+            });
+        });
+    </script>
+</body>
+</html>

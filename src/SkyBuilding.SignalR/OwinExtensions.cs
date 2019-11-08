@@ -208,7 +208,7 @@ namespace SkyBuilding.SignalR
 
             resolver.InitializeHost(instanceName, token);
 
-            builder.Use(typeof(T), new object[1] { configuration }.Concat(arguments));
+            builder.Use(typeof(T), (new object[1] { configuration }).Concat(arguments).ToArray());
 
             // BUG 2306: We need to make that SignalR runs before any handlers are
             // mapped in the IIS pipeline so that we avoid side effects like
