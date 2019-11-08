@@ -48,7 +48,7 @@ namespace SkyBuilding.Mvc.Controllers
             var urlEncoder = new JwtBase64UrlEncoder();
             var encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
 
-            return encoder.Encode(userData, "jwt-secret".Config(Consts.Secret));
+            return encoder.Encode(userData, "jwt-secret".Config(Consts.JwtSecret));
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace SkyBuilding.Mvc.Controllers
         [Route("authCode")]
         public string AuthCode()
         {
-            string code = CreateRandomCode(4); //验证码的字符为4个
+            string code = CreateRandomCode("captcha-length".Config(Consts.CaptchaLength)); //验证码的字符为4个
             byte[] bytes = CreateValidateGraphic(code);
 
             string id = GetRemoteMacAddress();
@@ -176,7 +176,7 @@ namespace SkyBuilding.Mvc.Controllers
             return ipAddress;
         }
 
-#region Private
+    #region Private
         /// <summary>
         /// 生成随机的字符串
         /// </summary>
@@ -245,10 +245,10 @@ namespace SkyBuilding.Mvc.Controllers
             }
         }
 
-#endregion
+    #endregion
     }
 #else
-    
+
     public sealed class LoginController : ApiController
     {
         /// <summary>
@@ -268,7 +268,7 @@ namespace SkyBuilding.Mvc.Controllers
             var urlEncoder = new JwtBase64UrlEncoder();
             var encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
 
-            return encoder.Encode(userData, "jwt-secret".Config(Consts.Secret));
+            return encoder.Encode(userData, "jwt-secret".Config(Consts.JwtSecret));
         }
 
         /// <summary>
@@ -428,7 +428,7 @@ namespace SkyBuilding.Mvc.Controllers
         {
             return Task.Factory.StartNew(() =>
             {
-                string code = CreateRandomCode(4); //验证码的字符为4个
+                string code = CreateRandomCode("captcha-length".Config(Consts.CaptchaLength)); //验证码的字符为4个
                 byte[] bytes = CreateValidateGraphic(code);
 
                 string id = GetRemoteMacAddress();
@@ -448,7 +448,7 @@ namespace SkyBuilding.Mvc.Controllers
             });
         }
 
-#region Private
+        #region Private
         /// <summary>
         /// 生成随机的字符串
         /// </summary>
@@ -517,7 +517,7 @@ namespace SkyBuilding.Mvc.Controllers
             }
         }
 
-#endregion
+        #endregion
     }
 #endif
 }

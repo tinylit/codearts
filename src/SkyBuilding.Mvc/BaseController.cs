@@ -92,7 +92,7 @@ namespace SkyBuilding.Mvc
                     var urlEncoder = new JwtBase64UrlEncoder();
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
 
-                    _profile = decoder.DecodeToObject<TUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.Secret), false);
+                    _profile = decoder.DecodeToObject<TUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
 #endif
                 }
 

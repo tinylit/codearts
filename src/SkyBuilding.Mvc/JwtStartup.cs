@@ -55,7 +55,7 @@ namespace SkyBuilding.Mvc
             }).AddJwtBearer(options =>
             {
                 options.Authority = "jwt:authority".Config<string>();
-                options.Audience = "jwt:audience".Config("api");
+                options.Audience = "jwt:audience".Config(Consts.JwtAudience);
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -66,9 +66,9 @@ namespace SkyBuilding.Mvc
                         return token.ValidTo > DateTime.UtcNow;
                     },
                     // 用于适配本地模拟Token
-                    ValidIssuer = "jwt:issuer".Config("yep"),
+                    ValidIssuer = "jwt:issuer".Config(Consts.JwtIssuer),
                     ValidateIssuer = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.Secret)))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.JwtSecret)))
                 };
             });
 #if NETCOREAPP3_0
@@ -111,7 +111,7 @@ namespace SkyBuilding.Mvc
             //? 验证码路由
             app.Map("/authCode", builder => builder.Run(async context =>
             {
-                string code = CreateRandomCode("authCode".Config(4)); //验证码的字符为4个
+                string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
                 byte[] bytes = CreateValidateGraphic(code);
 
                 string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
@@ -266,7 +266,7 @@ namespace SkyBuilding.Mvc
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var key = Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.Secret));
+            var key = Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.JwtSecret));
 
             var expires = DateTime.UtcNow.AddDays(1D);
 

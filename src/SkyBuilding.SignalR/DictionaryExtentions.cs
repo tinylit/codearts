@@ -7,7 +7,7 @@ using System;
 using System.Security.Claims;
 #endif
 
-namespace SkyBuilding.Mvc
+namespace SkyBuilding.SignalR
 {
     /// <summary>
     /// 将字段内容转换为登录认证信息实体。

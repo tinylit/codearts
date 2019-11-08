@@ -14,6 +14,7 @@ $projectsToBuild =
     'SkyBuilding.Mvc',
     'SkyBuilding.ORM',
     'SkyBuilding.MySql',
+	'SkyBuilding.SignalR',
     'SkyBuilding.SqlServer',
     'SkyBuilding.Dapper'
 

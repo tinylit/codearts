@@ -5,11 +5,6 @@ using Autofac.Integration.WebApi;
 using Swashbuckle.Application;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Globalization;
-using System.Net;
-using System.Web.Http.Controllers;
-using System.Web.Http.Dispatcher;
 #else
 using System.Collections.Generic;
 using System.Web.Http.Routing;
@@ -25,7 +20,6 @@ using System.Web.Http;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
 using SkyBuilding.Mvc.Converters;
-using System.Diagnostics;
 
 namespace SkyBuilding.Mvc
 {
@@ -110,7 +104,7 @@ namespace SkyBuilding.Mvc
             config.Formatters
                 .JsonFormatter
                 .SerializerSettings
-                .DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
+                .DateFormatString = Consts.DateFormatString;
 
             config.Formatters
                 .JsonFormatter
@@ -157,7 +151,7 @@ namespace SkyBuilding.Mvc
             {
                 c.Schemes(new[] { "http", "https" });
 
-                c.SingleApiVersion("swagger-version".Config("v1"), "swagger-title".Config("API接口文档"));
+                c.SingleApiVersion("swagger-version".Config(Consts.SwaggerVersion), "swagger-title".Config(Consts.SwaggerTitle));
 
                 var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
                 foreach (var file in files)

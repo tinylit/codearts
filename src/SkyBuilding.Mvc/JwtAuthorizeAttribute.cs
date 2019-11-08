@@ -61,7 +61,7 @@ namespace SkyBuilding.Mvc
 
             try
             {
-                var userData = decoder.DecodeToObject(token.Scheme, "jwt-secret".Config(Consts.Secret), true);
+                var userData = decoder.DecodeToObject(token.Scheme, "jwt-secret".Config(Consts.JwtSecret), true);
 
 #if NET40
                 Thread.CurrentPrincipal = userData.AsPrincipal();

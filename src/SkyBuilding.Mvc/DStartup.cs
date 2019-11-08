@@ -60,7 +60,7 @@ namespace SkyBuilding.Mvc
                     options.Filters.Add<DExceptionFilter>();
                 }).AddJsonOptions(options =>
                 {
-                    options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
+                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
                     options.SerializerSettings.Converters.Add(new SkyJsonConverter());
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
@@ -91,9 +91,9 @@ namespace SkyBuilding.Mvc
             services.AddSwaggerGen(c =>
             {
 #if NETCOREAPP3_0
-                c.SwaggerDoc("swagger:version".Config("v1"), new OpenApiInfo { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
+                c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
 #else
-                c.SwaggerDoc("swagger:version".Config("v1"), new Info { Title = "swagger:title".Config("API接口文档"), Version = "v3" });
+                c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
 #endif
                 var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
                 foreach (var file in files)
@@ -204,7 +204,7 @@ namespace SkyBuilding.Mvc
                 .UseSwagger()
                 .UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config("v1") + "/swagger.json", "swagger:title".Config("API接口文档"));
+                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
                 })
                 .UseEndpoints(endpoints =>
                 {
@@ -218,7 +218,7 @@ namespace SkyBuilding.Mvc
                 .UseSwagger()
                 .UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config("v1") + "/swagger.json", "swagger:title".Config("API接口文档"));
+                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
                 });
 #endif
         }

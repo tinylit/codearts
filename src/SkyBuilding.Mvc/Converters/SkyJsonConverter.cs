@@ -104,7 +104,7 @@ namespace SkyBuilding.Mvc.Converters
                     writer.WriteNumberValue(u32);
                     break;
                 case DateTime date:
-                    writer.WriteStringValue(date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"));
+                    writer.WriteStringValue(date.ToString(Consts.DateFormatString));
                     break;
                 default:
                     writer.WriteStringValue(value.ToString());
