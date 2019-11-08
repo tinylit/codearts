@@ -10,9 +10,9 @@ using System.Security.Claims;
 namespace SkyBuilding.Mvc
 {
     /// <summary>
-    /// 声明助手
+    /// 将字段内容转换为登录认证信息实体。
     /// </summary>
-    internal static class DictionaryExtentions
+    public static class DictionaryExtentions
     {
 #if NET40
         /// <summary>
