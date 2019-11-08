@@ -299,7 +299,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
             }
         },
         "login": "api/values/login", //登录地址，必填
-        "jwt": { // 可选
+        "jwt": {
+			"authority": "" // 使用JwtStartup时必须。
             //"secret": "",  //密钥
             //"audience":"",  // 添加 identity.AddClaim(new Claim("aud", "jwt:audience".Config("api")));
             //"issuer":""  // 添加 identity.AddClaim(new Claim("iss", "jwt:issuer".Config("yep")));
