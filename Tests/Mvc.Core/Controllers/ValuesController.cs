@@ -42,7 +42,7 @@ namespace Mvc.Core.Controllers
         /// <param name="dependency">依赖注入</param>
         public ValuesController(IDependency dependency)
         {
-            
+
         }
 
         /// <summary>
@@ -113,7 +113,8 @@ namespace Mvc.Core.Controllers
             return DResult.Ok(new
             {
                 id = 100000,
-                name = account
+                name = account,
+                account = account
             });
         }
     }

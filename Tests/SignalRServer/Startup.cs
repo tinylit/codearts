@@ -26,7 +26,8 @@ namespace SignalRServer
                 // Turns cors support on allowing everything
                 // In real applications, the origins should be locked down
                 map.UseCors(CorsOptions.AllowAll)
-                   .UseJwtSignalR(); //? JWT消息中间件
+                   .UseJwtBearer() //? JWT消息中间件
+                   .RunSignalR();
             });
 
             // Turn tracing on programmatically
