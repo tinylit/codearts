@@ -1,7 +1,8 @@
 ﻿#if NET45 || NET451 || NET452 ||NET461
+using SkyBuilding.SignalR;
 using System;
 
-namespace SkyBuilding.SignalR
+namespace Owin
 {
     /// <summary>
     /// Jwt 认证事件
