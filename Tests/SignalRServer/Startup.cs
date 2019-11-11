@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNet.SignalR;
 using Microsoft.Owin.Cors;
 using Owin;
-using SkyBuilding.SignalR;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Web;
 
 namespace SignalRServer
 {
@@ -39,9 +34,8 @@ namespace SignalRServer
                                data.Add("name", value);
                            }
                        }
-                   }); ; //? JWT消息中间件
-
-                map.RunSignalR();
+                   }) //? JWT消息中间件
+                   .RunSignalR(); //? 启动通讯
             });
 
             // Turn tracing on programmatically

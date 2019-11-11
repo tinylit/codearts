@@ -81,7 +81,6 @@ namespace System
 
             using (var algorithm = GetSymmetricAlgorithm(kind))
             {
-
                 var rgbKey = Encoding.ASCII.GetBytes(key);
 
                 var rgbIV = Encoding.ASCII.GetBytes(secret);
@@ -126,7 +125,6 @@ namespace System
 
             using (var algorithm = GetSymmetricAlgorithm(kind))
             {
-
                 var rgbKey = Encoding.ASCII.GetBytes(key);
 
                 var rgbIV = Encoding.ASCII.GetBytes(secret);
@@ -144,7 +142,7 @@ namespace System
             {
                 using (var cs = new CryptoStream(ms, crypto, CryptoStreamMode.Write))
                 {
-                    var buffer = Encoding.UTF8.GetBytes(data);
+                    var buffer = Convert.FromBase64String(data);
 
                     cs.Write(buffer, 0, buffer.Length);
 
@@ -153,7 +151,7 @@ namespace System
                     cs.Close();
                 }
 
-                return Convert.ToBase64String(ms.ToArray());
+                return Encoding.UTF8.GetString(ms.ToArray());
             }
         }
 
@@ -192,10 +190,10 @@ namespace System
 
 #if NET40 || NET45 || NET451 || NET452
 
-                return Convert.ToBase64String(rsa.DecryptValue(Encoding.UTF8.GetBytes(data)));
+                return Encoding.UTF8.GetString(rsa.DecryptValue(Convert.FromBase64String(data)));
 #else
 
-                return Convert.ToBase64String(rsa.Decrypt(Encoding.UTF8.GetBytes(data), RSAEncryptionPadding.OaepSHA512));
+                return Encoding.UTF8.GetString(rsa.Decrypt(Convert.FromBase64String(data), RSAEncryptionPadding.OaepSHA512));
 #endif
             }
         }
