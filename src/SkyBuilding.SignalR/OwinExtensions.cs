@@ -1,12 +1,8 @@
 ﻿#if NET45 || NET451 || NET452 ||NET461
-using JWT;
-using JWT.Serializers;
-using SkyBuilding;
 using SkyBuilding.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Security.Claims;
 
 namespace Owin
@@ -28,17 +24,15 @@ namespace Owin
         /// 使用 JWT 认证。
         /// </summary>
         /// <param name="app">项目构建器</param>
+        /// <param name="events">认证事件</param>
         /// <returns></returns>
-        public static IAppBuilder UseJwtBearer(this IAppBuilder app) => app.UseJwtBearer(AsIdentity);
-
-        /// <summary>
-        /// 使用 JWT 认证。
-        /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="asIdentity">将用户数据转为认证实体</param>
-        /// <returns></returns>
-        public static IAppBuilder UseJwtBearer(this IAppBuilder app, Func<IDictionary<string, object>, ClaimsIdentity> asIdentity)
+        public static IAppBuilder UseJwtBearer(this IAppBuilder app, JwtBearerEvents events)
         {
+            if (events is null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
             return app.Use((context, next) =>
             {
                 //前端请求api时会将token存放在名为"auth"的请求头中
@@ -49,37 +43,32 @@ namespace Owin
                     return next();
                 }
 
-                var serializer = new JsonNetSerializer();
-                var provider = new UtcDateTimeProvider();
-                var validator = new JwtValidator(serializer, provider);
-                var urlEncoder = new JwtBase64UrlEncoder();
-                var decoder = new JwtDecoder(serializer, validator, urlEncoder);
+                var mcontext = new MessageReceivedContext(context);
 
-                try
+                events.MessageReceived(mcontext);
+
+                if (string.IsNullOrEmpty(mcontext.Token))
                 {
-                    var user = decoder.DecodeToObject(token, "jwt-secret".Config(Consts.JwtSecret), false);
-
-                    var identity = asIdentity.Invoke(user);
-
-                    if (!identity.Claims.Any(x => x.Type == ClaimTypes.Name))
-                    {
-                        if (user.Any(x => x.Key.ToLower() == "id"))
-                        {
-                            identity.AddClaim(new Claim(ClaimTypes.Name, user.First(x => x.Key.ToLower() == "id").Value.ToString()));
-                        }
-                        else if (user.Any(x => x.Key.ToLower() == "name"))
-                        {
-                            identity.AddClaim(new Claim(ClaimTypes.Name, user.First(x => x.Key.ToLower() == "name").Value.ToString()));
-                        }
-                        else if (user.Any(x => x.Key.ToLower() == "jti"))
-                        {
-                            identity.AddClaim(new Claim(ClaimTypes.Name, user.First(x => x.Key.ToLower() == "jti").Value.ToString()));
-                        }
-                    }
-
-                    context.Authentication.User = new ClaimsPrincipal(identity);
+                    return next();
                 }
-                catch { }
+
+                var vcontext = new TokenValidateContext(mcontext);
+
+                events.TokenValidate(vcontext);
+
+                if (vcontext.UserData is null || vcontext.UserData.Count == 0)
+                {
+                    return next();
+                }
+
+                var vdcontext = new TokenValidatedContext(vcontext);
+
+                events.TokenValidated(vdcontext);
+
+                if (vdcontext.User?.Identity?.IsAuthenticated ?? false)
+                {
+                    context.Authentication.User = vdcontext.User;
+                }
 
                 return next();
             });
