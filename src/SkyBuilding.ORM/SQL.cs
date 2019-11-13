@@ -729,7 +729,7 @@ namespace SkyBuilding.ORM
         /// 返回分析的SQL结果。
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => PatternTableToken.Replace(sb.ToString(), item => string.Concat("[", item.Groups["name"].Value, "]"));
+        public override string ToString() => sb.ToString();
 
         /// <summary>
         /// 追加sql

@@ -11,9 +11,18 @@ namespace SkyBuilding.ORM
         private readonly string configName;
 
         /// <summary>
-        /// 构造函数（使用默认数据库链接）
+        /// 默认数据库连接配置。
         /// </summary>
-        protected DbConfigAttribute() { }
+#if NETSTANDARD2_0
+        public const string DefaultConfigName = "connectionStrings:default";
+#else
+        public const string DefaultConfigName = "connectionStrings/default";
+#endif
+
+        /// <summary>
+        /// 构造函数（使用默认数据库链接【connectionStrings:default】）
+        /// </summary>
+        public DbConfigAttribute() : this(DefaultConfigName) { }
 
         /// <summary>
         /// 构造函数（使用默认数据库链接）

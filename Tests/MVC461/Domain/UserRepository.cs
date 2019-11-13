@@ -3,7 +3,7 @@ using SkyBuilding.ORM;
 
 namespace Mvc461.Domain
 {
-    [DbConfig("default")]
+    [DbConfig("connectionStrings:default")]
     public class UserRepository : DbRepository<User>
     {
 

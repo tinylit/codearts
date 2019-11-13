@@ -211,19 +211,104 @@ namespace SkyBuilding.Config
         /// <returns></returns>
         public T Get<T>(string key, T defaultValue = default)
         {
-            var type = typeof(T);
+            key = key.Replace(':', '/');
 
-            if (type.IsValueType || type == typeof(string))
+            if (key.IndexOf('/') == -1)
             {
                 if (Configs.TryGetValue(key, out string value))
                 {
                     return value.CastTo(defaultValue);
                 }
+
+                return defaultValue;
             }
-            else if (ConnectionStrings.TryGetValue(key, out ConnectionStringSettings settings))
+
+            var keys = key.Split('/');
+
+            if (keys.Length < 3 && string.Equals(keys[0], "connectionStrings", StringComparison.OrdinalIgnoreCase))
             {
-                return settings.MapTo<T>(defaultValue);
+                if (keys.Length == 1)
+                {
+                    return ConnectionStrings.CastTo(defaultValue);
+                }
+
+                if (ConnectionStrings.TryGetValue(keys[1], out ConnectionStringSettings value))
+                {
+                    return value.CastTo(defaultValue);
+                }
+
+                return defaultValue;
             }
+
+            if (keys.Length == 2 && string.Equals(keys[0], "appStrings", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Configs.TryGetValue(keys[1], out string value))
+                {
+                    return value.CastTo(defaultValue);
+                }
+
+                return defaultValue;
+            }
+
+            try
+            {
+                var sectionGroup = Config.GetSectionGroup(keys[0]);
+
+                if (sectionGroup is null)
+                {
+                    var section = Config.GetSection(key);
+
+                    if (section is null) 
+                        return defaultValue;
+
+                    return (T)(object)section;
+                }
+
+                var index = 1;
+
+                while (keys.Length > index)
+                {
+                    bool flag = false;
+                    foreach (ConfigurationSectionGroup sectionGroupItem in sectionGroup.SectionGroups)
+                    {
+                        if (string.Equals(sectionGroupItem.SectionGroupName, keys[index], StringComparison.OrdinalIgnoreCase))
+                        {
+                            index += 1;
+                            flag = true;
+                            sectionGroup = sectionGroupItem;
+                            break;
+                        }
+                    }
+
+                    if (!flag) break;
+                }
+
+                if (sectionGroup is null) 
+                    return defaultValue;
+
+                if (keys.Length == index)
+                {
+                    if (sectionGroup is T sectionValue)
+                    {
+                        return sectionValue;
+                    }
+
+                    return (T)(object)sectionGroup;
+                }
+
+                if (keys.Length == (index + 1))
+                {
+                    foreach (ConfigurationSection section in sectionGroup.Sections)
+                    {
+                        if (string.Equals(section.SectionInformation.SectionName, keys[index], StringComparison.OrdinalIgnoreCase))
+                        {
+                            return (T)(object)section;
+                        }
+                    }
+                }
+
+            }
+            catch { }
 
             return defaultValue;
         }
