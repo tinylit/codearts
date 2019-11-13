@@ -15,6 +15,8 @@ namespace Mvc4
         protected void Application_Start()
         {
             ApiConfig.Register(GlobalConfiguration.Configuration);
+
+            ApiConfig.DependencyResolver(GlobalConfiguration.Configuration);
         }
     }
 }

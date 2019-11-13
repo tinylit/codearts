@@ -40,11 +40,7 @@ namespace SkyBuilding.Mvc
         /// 服务配置（这个方法被运行时调用。使用此方法向容器添加服务。）
         /// </summary>
         /// <param name="services">服务集合</param>
-#if NETCOREAPP3_0
         public override void ConfigureServices(IServiceCollection services)
-#else
-        public override IServiceProvider ConfigureServices(IServiceCollection services)
-#endif
         {
             services.AddAuthentication(options =>
             {
@@ -71,11 +67,7 @@ namespace SkyBuilding.Mvc
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.JwtSecret)))
                 };
             });
-#if NETCOREAPP3_0
             base.ConfigureServices(services);
-#else
-            return base.ConfigureServices(services);
-#endif
         }
         /// <summary>
         /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道。）

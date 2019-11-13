@@ -2,17 +2,15 @@
 using SkyBuilding.Exceptions;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
 
 namespace SkyBuilding.Mvc
 {
     /// <summary>
-    /// 依赖注入解决器
+    /// 使用依赖注入（注入<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
     /// </summary>
     public class SkyDependencyResolver : IDependencyResolver
     {

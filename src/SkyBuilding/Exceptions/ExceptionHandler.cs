@@ -62,7 +62,7 @@ namespace SkyBuilding.Exceptions
 
                     if (error is WebException web)
                     {
-                        string msg = $"接口({web.Response.ResponseUri.ToString()}-{web.Status})访问失败!";
+                        string msg = $"接口({web.Response?.ResponseUri?.ToString()}-{web.Status})访问失败!";
                         switch (web.Status)
                         {
                             case WebExceptionStatus.RequestCanceled:

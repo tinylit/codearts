@@ -1,5 +1,4 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
-using Autofac;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +16,6 @@ using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
 #else
 using Swashbuckle.AspNetCore.Swagger;
-using Autofac.Extensions.DependencyInjection;
 #endif
 
 namespace SkyBuilding.Mvc
@@ -32,15 +30,12 @@ namespace SkyBuilding.Mvc
         /// </summary>
         /// <param name="services">服务集合</param>
         /// <returns></returns>
-#if NETCOREAPP3_0
+
         public virtual void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
-#else
-        public virtual IServiceProvider ConfigureServices(IServiceCollection services)
-        {
-#endif
 #if NETCOREAPP3_0
+            services.AddControllers();
+
             services
                 .AddMvc(options =>
                 {
@@ -101,76 +96,6 @@ namespace SkyBuilding.Mvc
                     c.IncludeXmlComments(file);
                 }
             });
-
-#if NETSTANDARD2_0
-            var container = new ContainerBuilder();
-
-            container.Populate(services);
-
-            ConfigureContainer(container);
-
-            return new AutofacServiceProvider(container.Build());
-#endif
-        }
-
-        /// <summary>
-        /// 配置容器（依赖注入）
-        /// </summary>
-        /// <param name="builder">容器</param>
-        public virtual void ConfigureContainer(ContainerBuilder builder)
-        {
-            var assemblys = AssemblyFinder.FindAll();
-
-            var assemblyTypes = assemblys
-                .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
-                .ToList();
-
-            var controllerTypes = assemblyTypes
-                .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
-                .ToList();
-
-            var interfaceTypes = controllerTypes
-                .SelectMany(type =>
-                {
-                    return type.GetConstructors()
-                    .Where(x => x.IsPublic)
-                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType));
-
-                }).Distinct()
-                .ToList();
-
-            var types = interfaceTypes
-                .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
-                .ToList();
-
-            var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
-                .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"))
-                .ToList();
-
-            if (repositoryTypes.Count > 0)
-            {
-                var injectionTypes = types.SelectMany(type =>
-                {
-                    return type.GetConstructors()
-                    .Where(x => x.IsPublic)
-                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType))
-                    .Where(x => (x.IsClass || x.IsInterface) && repositoryTypes.Any(y => y.IsAssignableFrom(x)));
-                }).ToList();
-
-                var exactlyTypes = assemblyTypes
-                    .Where(type => type.IsClass && injectionTypes.Any(x => x.IsAssignableFrom(type)))
-                    .ToList();
-
-                builder.RegisterTypes(exactlyTypes.ToArray())
-                    .AsSelf()
-                    .AsImplementedInterfaces()
-                    .SingleInstance();
-            }
-
-            builder.RegisterTypes(types.Union(interfaceTypes).Union(controllerTypes).ToArray())
-                .Where(type => type.IsInterface || type.IsClass)
-                .AsSelf() //自身服务，用于没有接口的类
-                .AsImplementedInterfaces(); //接口服务
         }
 
 #if NETCOREAPP3_0
@@ -213,7 +138,7 @@ namespace SkyBuilding.Mvc
 #else
             //? 跨域
             app.UseStaticFiles()
-                .UseCors("Allow")                
+                .UseCors("Allow")
                 .UseMvc()
                 .UseSwagger()
                 .UseSwaggerUI(c =>

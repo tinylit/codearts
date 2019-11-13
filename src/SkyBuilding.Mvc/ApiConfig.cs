@@ -1,7 +1,5 @@
 ﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 #if NET45 || NET451 || NET452 || NET461
-using Autofac;
-using Autofac.Integration.WebApi;
 using Swashbuckle.Application;
 using System.IO;
 using System.Linq;
@@ -58,7 +56,7 @@ namespace SkyBuilding.Mvc
         }
 #endif
         /// <summary>
-        /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务、依赖注入）
+        /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务）
         /// </summary>
         /// <param name="config">协议配置</param>
         public static void Register(HttpConfiguration config)
@@ -130,10 +128,16 @@ namespace SkyBuilding.Mvc
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+        }
 
+        /// <summary>
+        /// 使用依赖注入（注入<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// </summary>
+        public static void DependencyResolver(HttpConfiguration config)
+        {
 #if NET45 || NET451 || NET452 || NET461
             //? 依赖注入
-            config.DependencyResolver = new AutofacWebApiDependencyResolver(IocRegisters(new ContainerBuilder()));
+            config.UseDependencyResolver();
 #else
             config.DependencyResolver = new SkyDependencyResolver();
 #endif
@@ -179,71 +183,6 @@ namespace SkyBuilding.Mvc
                 c.DocExpansion(DocExpansion.List);
             });
         }
-
-        #region Private
-        /// <summary>
-        /// 依赖注入
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        private static IContainer IocRegisters(ContainerBuilder builder)
-        {
-            var assemblys = AssemblyFinder.FindAll();
-
-            var assemblyTypes = assemblys
-                .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
-                .ToList();
-
-            var controllerTypes = assemblyTypes
-                .Where(type => !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type))
-                .ToList();
-
-            var interfaceTypes = controllerTypes
-                .SelectMany(type =>
-                {
-                    return type.GetConstructors()
-                    .Where(x => x.IsPublic)
-                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType));
-
-                }).Distinct()
-                .ToList();
-
-            var types = interfaceTypes
-                .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
-                .ToList();
-
-            var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
-                .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"))
-                .ToList();
-
-            if (repositoryTypes.Count > 0)
-            {
-                var injectionTypes = types.SelectMany(type =>
-                {
-                    return type.GetConstructors()
-                    .Where(x => x.IsPublic)
-                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType))
-                    .Where(x => (x.IsClass || x.IsInterface) && repositoryTypes.Any(y => y.IsAssignableFrom(x)));
-                }).ToList();
-
-                var exactlyTypes = assemblyTypes
-                    .Where(type => type.IsClass && injectionTypes.Any(x => x.IsAssignableFrom(type)))
-                    .ToList();
-
-                builder.RegisterTypes(exactlyTypes.ToArray())
-                    .AsSelf()
-                    .AsImplementedInterfaces()
-                    .SingleInstance();
-            }
-
-            builder.RegisterTypes(types.Union(interfaceTypes).Union(controllerTypes).ToArray())
-                .Where(type => type.IsInterface || type.IsClass)
-                .AsSelf() //自身服务，用于没有接口的类
-                .AsImplementedInterfaces(); //接口服务
-
-            return builder.Build();
-        }
-        #endregion
 #endif
     }
 }

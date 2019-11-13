@@ -2,30 +2,39 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Autofac.Extras.DynamicProxy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mvc.Core.Domain;
 using SkyBuilding;
+using SkyBuilding.AOP;
 using SkyBuilding.Exceptions;
 using SkyBuilding.Mvc;
 
 namespace Mvc.Core.Controllers
 {
     /// <inheritdoc />
+    [Intercept(typeof(DefaultInterceptor))]
     public interface IDependency
     {
-
+        /// <inheritdoc />
+        bool AopTest();
     }
 
     /// <inheritdoc />
+    [Intercept(typeof(DefaultInterceptor))]
     public class Dependency : IDependency
     {
         private readonly UserRepository user;
 
+        /// <inheritdoc />
         public Dependency(UserRepository user)
         {
             this.user = user;
         }
+
+        /// <inheritdoc />
+        public bool AopTest() => true;
     }
 
 
@@ -36,13 +45,15 @@ namespace Mvc.Core.Controllers
     [Route("api/[controller]")]
     public class ValuesController : BaseController
     {
+        private readonly IDependency dependency;
+
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="dependency">依赖注入</param>
         public ValuesController(IDependency dependency)
         {
-
+            this.dependency = dependency;
         }
 
         /// <summary>
@@ -110,6 +121,7 @@ namespace Mvc.Core.Controllers
         [HttpGet("login")]
         public DResult Login(string account, string password)
         {
+            dependency.AopTest();
             return DResult.Ok(new
             {
                 id = 100000,

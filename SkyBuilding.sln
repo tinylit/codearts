@@ -58,6 +58,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalRServer", "Tests\Sign
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalRClient", "Tests\SignalRClient\SignalRClient.csproj", "{7D72196C-980B-48D3-A830-15709937DEBD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkyBuilding.AOP", "src\SkyBuilding.AOP\SkyBuilding.AOP.csproj", "{C941EBC1-6C5F-4AC9-BD9C-BF37EE402C0C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -144,6 +146,10 @@ Global
 		{7D72196C-980B-48D3-A830-15709937DEBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D72196C-980B-48D3-A830-15709937DEBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D72196C-980B-48D3-A830-15709937DEBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C941EBC1-6C5F-4AC9-BD9C-BF37EE402C0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C941EBC1-6C5F-4AC9-BD9C-BF37EE402C0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C941EBC1-6C5F-4AC9-BD9C-BF37EE402C0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C941EBC1-6C5F-4AC9-BD9C-BF37EE402C0C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -169,6 +175,7 @@ Global
 		{35418940-3EA9-4898-B469-6ACF328A66FB} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 		{9B2A4629-EB54-4635-AF2C-B1BADF1B5170} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
 		{7D72196C-980B-48D3-A830-15709937DEBD} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
+		{C941EBC1-6C5F-4AC9-BD9C-BF37EE402C0C} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D69380D7-DEA5-4884-85A8-1049025CE2EA}

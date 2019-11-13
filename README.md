@@ -265,6 +265,19 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 
     }
     ```
+	+ Using dependency injection.
+    ``` csharp
+    public class Startup : JwtStartup {
+
+	    public override void ConfigureServices(IServiceCollection services)
+        {
+            services.UseDependencyInjection(); //Dependency injection.
+
+            base.ConfigureServices(services);
+        }
+    }
+    ```
+
 * .NET40(Support dependency injection, routing, exception capture, login, and authCode, etc)
     ``` csharp
     public class WebApiApplication : HttpApplication
@@ -272,6 +285,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
         protected void Application_Start()
         {
             ApiConfig.Register(GlobalConfiguration.Configuration); //This is a must.
+
+			ApiConfig.DependencyResolver(GlobalConfiguration.Configuration); //Dependency injection.
         }
     }
     ```
@@ -284,6 +299,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
             GlobalConfiguration.Configure(ApiConfig.Register); //This is a must.
 
             GlobalConfiguration.Configure(ApiConfig.SwaggerUI);
+
+            GlobalConfiguration.Configure(ApiConfig.DependencyResolver); //Dependency injection.
         }
     }
     ```

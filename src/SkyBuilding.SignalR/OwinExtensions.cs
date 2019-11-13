@@ -2,7 +2,6 @@
 using SkyBuilding.SignalR;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 
 namespace Owin
@@ -10,7 +9,6 @@ namespace Owin
     /// <summary>
     /// Owin 扩展
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Owin", Justification = "The owin namespace is for consistentcy.")]
     public static class JwtExtensions
     {
         /// <summary>
@@ -35,14 +33,6 @@ namespace Owin
 
             return app.Use((context, next) =>
             {
-                //前端请求api时会将token存放在名为"auth"的请求头中
-                var token = context.Request.Query.Get("token");
-
-                if (token is null || token.Length == 0)
-                {
-                    return next();
-                }
-
                 var mcontext = new MessageReceivedContext(context);
 
                 events.MessageReceived(mcontext);
