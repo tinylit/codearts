@@ -14,7 +14,7 @@ namespace Mvc45
 
             GlobalConfiguration.Configure(ApiConfig.SwaggerUI);
 
-            GlobalConfiguration.Configure(ApiConfig.DependencyResolver);
+            GlobalConfiguration.Configure(ApiConfig.UseDependencyInjection);
         }
     }
 }

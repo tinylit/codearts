@@ -1,10 +1,6 @@
 using SkyBuilding.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Web;
 using System.Web.Http;
-using System.Web.Routing;
 
 namespace Mvc4
 {
@@ -16,7 +12,7 @@ namespace Mvc4
         {
             ApiConfig.Register(GlobalConfiguration.Configuration);
 
-            ApiConfig.DependencyResolver(GlobalConfiguration.Configuration);
+            ApiConfig.UseDependencyInjection(GlobalConfiguration.Configuration);
         }
     }
 }

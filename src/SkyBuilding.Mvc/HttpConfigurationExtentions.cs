@@ -1,14 +1,10 @@
 ﻿#if NET45 || NET451 || NET452 || NET461
 using Autofac;
 using Autofac.Integration.WebApi;
-using System;
-using System.Collections.Generic;
+using SkyBuilding;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.Http;
 
-namespace SkyBuilding.Mvc
+namespace System.Web.Http
 {
     /// <summary>
     /// 配置拓展
@@ -16,14 +12,14 @@ namespace SkyBuilding.Mvc
     public static class HttpConfigurationExtentions
     {
         /// <summary>
-        /// 使用依赖注入（注入<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
         /// </summary>
-        public static void UseDependencyResolver(this HttpConfiguration config) => config.UseDependencyResolver(IocRegisters);
+        public static void UseDependencyInjection(this HttpConfiguration config) => config.UseDependencyInjection(IocRegisters);
 
         /// <summary>
-        /// 使用依赖注入（注入<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// 使用依赖注入。
         /// </summary>
-        public static void UseDependencyResolver(this HttpConfiguration config, Action<ContainerBuilder> configureContainer)
+        public static void UseDependencyInjection(this HttpConfiguration config, Action<ContainerBuilder> configureContainer)
         {
             var builder = new ContainerBuilder();
 
@@ -94,6 +90,25 @@ namespace SkyBuilding.Mvc
                 .AsImplementedInterfaces(); //接口服务
         }
         #endregion
+    }
+}
+#elif NET40
+using SkyBuilding.Mvc;
+
+namespace System.Web.Http
+{
+    /// <summary>
+    /// 配置拓展
+    /// </summary>
+    public static class HttpConfigurationExtentions
+    {
+        /// <summary>
+        /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// </summary>
+        public static void UseDependencyInjection(this HttpConfiguration config)
+        {
+            config.DependencyResolver = new SkyDependencyResolver();
+        }
     }
 }
 #endif

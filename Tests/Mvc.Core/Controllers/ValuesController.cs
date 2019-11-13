@@ -14,7 +14,7 @@ using SkyBuilding.Mvc;
 namespace Mvc.Core.Controllers
 {
     /// <inheritdoc />
-    [Intercept(typeof(DefaultInterceptor))]
+    [Autofac.Extras.DynamicProxy.Intercept(typeof(DefaultInterceptor))]
     public interface IDependency
     {
         /// <inheritdoc />
@@ -22,7 +22,7 @@ namespace Mvc.Core.Controllers
     }
 
     /// <inheritdoc />
-    [Intercept(typeof(DefaultInterceptor))]
+    [Autofac.Extras.DynamicProxy.Intercept(typeof(DefaultInterceptor))]
     public class Dependency : IDependency
     {
         private readonly UserRepository user;

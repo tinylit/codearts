@@ -31,7 +31,7 @@ namespace Mvc461
 
             GlobalConfiguration.Configure(ApiConfig.SwaggerUI);
 
-            GlobalConfiguration.Configure(ApiConfig.DependencyResolver);
+            GlobalConfiguration.Configure(ApiConfig.UseDependencyInjection);
         }
     }
 }

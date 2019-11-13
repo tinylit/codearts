@@ -7,7 +7,7 @@ using Castle.DynamicProxy;
 using System;
 using System.Linq;
 
-namespace SkyBuilding.AOP
+namespace SkyBuilding
 {
     /// <summary>
     /// 将注册语法添加到Autofac.ContainerBuilder类型。

@@ -133,14 +133,10 @@ namespace SkyBuilding.Mvc
         /// <summary>
         /// 使用依赖注入（注入<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
         /// </summary>
-        public static void DependencyResolver(HttpConfiguration config)
-        {
-#if NET45 || NET451 || NET452 || NET461
+        public static void UseDependencyInjection(HttpConfiguration config)
+        {            
             //? 依赖注入
-            config.UseDependencyResolver();
-#else
-            config.DependencyResolver = new SkyDependencyResolver();
-#endif
+            config.UseDependencyInjection();
         }
 
 #if NET45 || NET451 || NET452 || NET461

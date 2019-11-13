@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class DependencyInjectionServiceCollectionExtentions
     {
         /// <summary>
-        /// 使用依赖注入（注入<see cref="ControllerBase"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
         /// </summary>
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
         {
