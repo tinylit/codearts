@@ -225,27 +225,39 @@ namespace SkyBuilding.Config
 
             var keys = key.Split('/');
 
-            if (keys.Length < 3 && string.Equals(keys[0], "connectionStrings", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(keys[0], "connectionStrings", StringComparison.OrdinalIgnoreCase))
             {
                 if (keys.Length == 1)
-                {
-                    return ConnectionStrings.CastTo(defaultValue);
-                }
+                    return ConnectionStrings.MapTo(defaultValue);
 
                 if (ConnectionStrings.TryGetValue(keys[1], out ConnectionStringSettings value))
                 {
-                    return value.CastTo(defaultValue);
+                    if (keys.Length == 2)
+                        return value.MapTo(defaultValue);
+
+                    if (keys.Length > 3) 
+                        return defaultValue;
+
+                    if (string.Equals(keys[2], "connectionString", StringComparison.OrdinalIgnoreCase))
+                        return value.ConnectionString.CastTo(defaultValue);
+
+                    if (string.Equals(keys[2], "name", StringComparison.OrdinalIgnoreCase))
+                        return value.Name.CastTo(defaultValue);
+
+                    if (string.Equals(keys[2], "providerName", StringComparison.OrdinalIgnoreCase))
+                        return value.ProviderName.CastTo(defaultValue);
                 }
 
                 return defaultValue;
             }
 
-            if (keys.Length == 2 && string.Equals(keys[0], "appStrings", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(keys[0], "appStrings", StringComparison.OrdinalIgnoreCase))
             {
-                if (Configs.TryGetValue(keys[1], out string value))
-                {
+                if (keys.Length == 1)
+                    return Configs.MapTo(defaultValue);
+
+                if (keys.Length == 2 && Configs.TryGetValue(keys[1], out string value))
                     return value.CastTo(defaultValue);
-                }
 
                 return defaultValue;
             }
@@ -258,7 +270,7 @@ namespace SkyBuilding.Config
                 {
                     var section = Config.GetSection(key);
 
-                    if (section is null) 
+                    if (section is null)
                         return defaultValue;
 
                     return (T)(object)section;
@@ -283,7 +295,7 @@ namespace SkyBuilding.Config
                     if (!flag) break;
                 }
 
-                if (sectionGroup is null) 
+                if (sectionGroup is null)
                     return defaultValue;
 
                 if (keys.Length == index)
