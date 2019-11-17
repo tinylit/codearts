@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using SkyBuilding.Cache;
 using SkyBuilding.Config;
-using SkyBuilding.Log;
 using SkyBuilding.Serialize.Json;
 using SkyBuilding.Mvc.Converters;
 using System;
@@ -75,9 +74,6 @@ namespace SkyBuilding.Mvc
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
             RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
 
-            //? 日志服务
-            LogManager.AddAdapter(new Log4NetAdapter());
-
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
@@ -146,6 +142,93 @@ namespace SkyBuilding.Mvc
                     c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
                 });
 #endif
+        }
+    }
+}
+#elif NET45 || NET451 || NET452 || NET461
+using Newtonsoft.Json.Serialization;
+using SkyBuilding.Cache;
+using SkyBuilding.Config;
+using SkyBuilding.Mvc.Builder;
+using SkyBuilding.Mvc.Converters;
+using SkyBuilding.Mvc.DependencyInjection;
+using SkyBuilding.Serialize.Json;
+using System;
+using System.Web.Http;
+using System.Web.Http.Dependencies;
+
+namespace SkyBuilding.Mvc
+{
+    /// <summary>
+    /// 启动基类。
+    /// Configuration: 配置请求内容。（可支持返回值类型:<see cref="void"/>,<see cref="IServiceProvider"/>,<see cref="IDependencyResolver"/>）。
+    /// ConfigureServices:配置依赖注入。（忽略返回值，语法:ConfigureServices(<see cref="IServiceCollection"/>)）。
+    /// Configure:配置请求管道，配置请求中间件。(忽略返回值，语法:Configure(<see cref="IApplicationBuilder"/>))。
+    /// </summary>
+    public class DStartup
+    {
+        /// <summary>
+        /// 属性名称解析规则
+        /// </summary>
+        private class ContractResolver : DefaultContractResolver
+        {
+            protected override string ResolvePropertyName(string propertyName)
+            {
+                return propertyName.ToCamelCase();
+            }
+        }
+
+        /// <summary>
+        /// 配置默认路由规则，解析器等。
+        /// Configuration: 配置请求内容。（可支持返回值类型:<see cref="void"/>,<see cref="IServiceProvider"/>,<see cref="IDependencyResolver"/>）。
+        /// ConfigureServices:配置依赖注入。（忽略返回值，语法:ConfigureServices(<see cref="IServiceCollection"/>)）。
+        /// Configure:配置请求管道，配置请求中间件。(忽略返回值，语法:Configure(<see cref="IApplicationBuilder"/>))。
+        /// </summary>
+        /// <param name="config">配置</param>
+        public virtual void Configuration(HttpConfiguration config)
+        {
+            // Web API 路由
+            config.MapHttpAttributeRoutes();
+
+            config.Routes.IgnoreRoute("ignore", "{resource}.axd/{*pathInfo}");
+
+            //? 注册默认路由
+            config.Routes.Add("route", config.Routes.CreateRoute("api/{controller}/{id}", new { id = RouteParameter.Optional }, new object()));
+
+            //?天空之城JSON转换器（修复长整型前端数据丢失的问题）
+            config.Formatters.Remove(config.Formatters.XmlFormatter);
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.None;
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .DateFormatString = Consts.DateFormatString;
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .Converters
+                .Add(new SkyJsonConverter());
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .ContractResolver = new ContractResolver();
+
+            //?异常捕获
+            config.Filters.Add(new DExceptionFilterAttribute());
+
+            //? JSON解析器
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+
+            //? 缓存服务
+            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
+            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
         }
     }
 }

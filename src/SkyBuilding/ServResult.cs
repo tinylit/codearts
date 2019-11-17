@@ -46,6 +46,16 @@ namespace SkyBuilding
         /// Utc
         /// </summary>
         public DateTime Timestamp { get; set; }
+
+        /// <summary>
+        /// 类型默认转换
+        /// </summary>
+        /// <param name="data">数据</param>
+        public static implicit operator ServResult(DResult data) => data is null ? null : new ServResult
+        {
+            Code = data.Code,
+            Timestamp = data.Timestamp
+        };
     }
 
     /// <summary>
@@ -58,6 +68,17 @@ namespace SkyBuilding
         /// 数据
         /// </summary>
         public T Data { get; set; }
+
+        /// <summary>
+        /// 类型默认转换
+        /// </summary>
+        /// <param name="data">数据</param>
+        public static implicit operator ServResult<T>(DResult<T> data) => data is null ? null : new ServResult<T>
+        {
+            Code = data.Code,
+            Data = data.Data,
+            Timestamp = data.Timestamp
+        };
     }
 
     /// <summary>
@@ -70,5 +91,17 @@ namespace SkyBuilding
         /// 总条数
         /// </summary>
         public int Count { get; set; }
+
+        /// <summary>
+        /// 类型默认转换
+        /// </summary>
+        /// <param name="data">数据</param>
+        public static implicit operator ServResults<T>(DResults<T> data) => data is null ? null : new ServResults<T>
+        {
+            Code = data.Code,
+            Data = data.Data,
+            Count = data.Count,
+            Timestamp = data.Timestamp
+        };
     }
 }

@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if !NET40
 using System;
 
 namespace SkyBuilding.Mvc

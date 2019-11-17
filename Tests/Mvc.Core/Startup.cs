@@ -22,6 +22,7 @@ namespace Mvc.Core
 
             base.ConfigureServices(services);
         }
+
         /// <inheritdoc />
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

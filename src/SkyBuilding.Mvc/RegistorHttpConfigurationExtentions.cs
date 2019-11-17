@@ -1,43 +1,31 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
-#if NET45 || NET451 || NET452 || NET461
-using Swashbuckle.Application;
-using System.IO;
-using System.Linq;
-#else
-using System.Collections.Generic;
-using System.Web.Http.Routing;
-using System.Net.Http;
-using System.Web.Routing;
-using System.Web;
-#endif
-using SkyBuilding.Config;
-using SkyBuilding.Log;
-using SkyBuilding.Serialize.Json;
-using System;
-using System.Web.Http;
+﻿#if NET40
 using Newtonsoft.Json.Serialization;
+using SkyBuilding;
 using SkyBuilding.Cache;
+using SkyBuilding.Config;
+using SkyBuilding.Mvc;
 using SkyBuilding.Mvc.Converters;
+using SkyBuilding.Serialize.Json;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Web.Http.Routing;
+using System.Web.Routing;
 
-namespace SkyBuilding.Mvc
+namespace System.Web.Http
 {
     /// <summary>
-    /// 启动类
+    /// 注册配置
     /// </summary>
-    public static class ApiConfig
+    public static class RegistorHttpConfigurationExtentions
     {
         /// <summary>
         /// 属性名称解析规则
         /// </summary>
         private class ContractResolver : DefaultContractResolver
         {
-            protected override string ResolvePropertyName(string propertyName)
-            {
-                return propertyName.ToCamelCase();
-            }
+            protected override string ResolvePropertyName(string propertyName) => propertyName.ToCamelCase();
         }
 
-#if NET40
         private class HttpRouteConstraint : IHttpRouteConstraint, IRouteConstraint
         {
             public bool Match(HttpRequestMessage request, IHttpRoute route, string parameterName, IDictionary<string, object> values, HttpRouteDirection routeDirection)
@@ -54,19 +42,18 @@ namespace SkyBuilding.Mvc
                 return (string.Equals(path, "login", StringComparison.OrdinalIgnoreCase) || string.Equals(path, "authCode", StringComparison.OrdinalIgnoreCase));
             }
         }
-#endif
+
         /// <summary>
         /// 注册（路由、异常捕获、JSON转换器、JSON解析器、配置文件助手、日志服务）
         /// </summary>
         /// <param name="config">协议配置</param>
-        public static void Register(HttpConfiguration config)
+        public static HttpConfiguration Register(this HttpConfiguration config)
         {
-#if NET40
             //? 注册登录路由
             config.Routes.MapHttpRoute(
                 name: "route",
                 routeTemplate: "{controller}",
-                defaults: new { },
+                defaults: new { debug = RouteParameter.Optional },
                 constraints: new { debug = new HttpRouteConstraint() }
             );
 
@@ -82,15 +69,6 @@ namespace SkyBuilding.Mvc
                 defaults: new { id = RouteParameter.Optional }
             );
 
-#else
-            // Web API 路由
-            config.MapHttpAttributeRoutes();
-
-            config.Routes.IgnoreRoute("ignore", "{resource}.axd/{*pathInfo}");
-
-            //? 注册默认路由
-            config.Routes.Add("route", config.Routes.CreateRoute("api/{controller}/{id}", new { id = RouteParameter.Optional }, new object()));
-#endif
             //?天空之城JSON转换器（修复长整型前端数据丢失的问题）
             config.Formatters.Remove(config.Formatters.XmlFormatter);
 
@@ -122,64 +100,12 @@ namespace SkyBuilding.Mvc
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
             RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
 
-            //? 日志服务
-            LogManager.AddAdapter(new Log4NetAdapter());
-
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+
+            return config;
         }
-
-        /// <summary>
-        /// 使用依赖注入（注入<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
-        /// </summary>
-        public static void UseDependencyInjection(HttpConfiguration config)
-        {            
-            //? 依赖注入
-            config.UseDependencyInjection();
-        }
-
-#if NET45 || NET451 || NET452 || NET461
-
-        /// <summary>
-        /// 配置SwaggerUI
-        /// </summary>
-        /// <param name="config">配置</param>
-        public static void SwaggerUI(HttpConfiguration config)
-        {
-            config.EnableSwagger(c =>
-            {
-                c.Schemes(new[] { "http", "https" });
-
-                c.SingleApiVersion("swagger-version".Config(Consts.SwaggerVersion), "swagger-title".Config(Consts.SwaggerTitle));
-
-                var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                foreach (var file in files)
-                {
-                    c.IncludeXmlComments(file);
-                }
-
-                if (Directory.Exists(AppDomain.CurrentDomain.RelativeSearchPath))
-                {
-                    var relativeFiles = Directory.GetFiles(AppDomain.CurrentDomain.RelativeSearchPath, "*.xml", SearchOption.TopDirectoryOnly);
-                    foreach (var file in relativeFiles)
-                    {
-                        c.IncludeXmlComments(file);
-                    }
-                }
-
-                c.IgnoreObsoleteProperties();
-
-                c.DescribeAllEnumsAsStrings();
-
-                c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
-
-            }).EnableSwaggerUi(c =>
-            {
-                c.DocExpansion(DocExpansion.List);
-            });
-        }
-#endif
     }
 }
 #endif

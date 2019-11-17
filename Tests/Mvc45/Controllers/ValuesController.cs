@@ -58,8 +58,8 @@ namespace Mvc45.Controllers
         }
 
         /// <inheritdoc />
+        [Authorize]
         [HttpDelete]
-        [JwtAuthorize]
         public void Delete(int id)
         {
             throw new BusiException("认证测试成功");

@@ -1,7 +1,12 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if !NET40
+#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
+#else
+using SkyBuilding.Mvc.Builder;
+using System.Web;
+#endif
 using SkyBuilding.Exceptions;
 using System;
 using System.IO;
@@ -21,24 +26,16 @@ namespace SkyBuilding.Mvc
         /// <param name="path">路由地址</param>
         /// <param name="destinationPath">目标地址</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, string destinationPath)
-        {
-            if (destinationPath is null)
-            {
-                throw new ArgumentNullException(nameof(destinationPath));
-            }
-
-            return app.Map(path, _ => destinationPath);
-        }
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, () => destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.Get | HttpVerbs.Post | HttpVerbs.Put | HttpVerbs.Delete | HttpVerbs.Head | HttpVerbs.Patch | HttpVerbs.Options)
         /// </summary>
         /// <param name="app">app</param>
         /// <param name="path">路由地址</param>
-        /// <param name="destinationPath">目标地址</param>
+        /// <param name="destinationPath">获取目标地址</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, Func<PathString, string> destinationPath)
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath)
         {
             if (destinationPath is null)
             {
@@ -56,14 +53,9 @@ namespace SkyBuilding.Mvc
         /// <param name="httpVerbs">请求方式</param>
         /// <param name="destinationPath">目标地址</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, string destinationPath)
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
         {
-            if (destinationPath is null)
-            {
-                throw new ArgumentNullException(nameof(destinationPath));
-            }
-
-            return app.Map(path, httpVerbs, _ => destinationPath);
+            return app.Map(path, httpVerbs, () => destinationPath);
         }
 
         /// <summary>
@@ -72,24 +64,33 @@ namespace SkyBuilding.Mvc
         /// <param name="app">app</param>
         /// <param name="path">路由地址</param>
         /// <param name="httpVerbs">请求方式</param>
-        /// <param name="destinationPath">目标地址</param>
+        /// <param name="destinationPath">获取目标地址</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, Func<PathString, string> destinationPath)
+
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, Func<PathString> destinationPath)
         {
             if (destinationPath is null)
             {
                 throw new ArgumentNullException(nameof(destinationPath));
             }
 
+#if NETSTANDARD2_0 || NETCOREAPP3_0
             return app.Map(path, builder => builder.Run(async context =>
             {
-                if (!Enum.TryParse(context.Request.Method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
+                string method = context.Request.Method;
+#else
+            return app.Map(path, async (HttpContext context) =>
+            {
+                string method = context.Request.HttpMethod;
+#endif
+
+                if (!Enum.TryParse(method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
                 {
                     context.Response.StatusCode = 404;
                     return;
                 }
 
-                string destinationUrl = destinationPath.Invoke(path);
+                string destinationUrl = destinationPath.Invoke();
 
                 if (string.IsNullOrEmpty(destinationUrl))
                 {
@@ -98,26 +99,39 @@ namespace SkyBuilding.Mvc
                     return;
                 }
 
+#if NETSTANDARD2_0 || NETCOREAPP3_0
+
                 if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
                 {
                     await context.Response.WriteJsonAsync(DResult.Error($"不规范的接口({path.Value}=>{destinationUrl})!", StatusCodes.NonstandardServerError));
                     return;
                 }
+#else
+                if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Url.Scheme}://{context.Request.Url.Authority}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
+                {
+                    context.Response.WriteJson(DResult.Error($"不规范的接口({path.Value}=>{destinationUrl})!", StatusCodes.NonstandardServerError));
+                    return;
+                }
+#endif
 
-                var request = uri.AsRequestable().Query(context.Request.QueryString.Value);
+                var request = uri.AsRequestable().Query(context.Request.QueryString.ToString());
 
-                var token = context.Request.Headers[HeaderNames.Authorization];
+                var token = context.Request.Headers["Authorization"];
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    request.Header(HeaderNames.Authorization, token);
+                    request.Header("Authorization", token);
                 }
 
                 if (verbs != HttpVerbs.GET && verbs != HttpVerbs.DELETE)
                 {
                     string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
 
+#if NETSTANDARD2_0 || NETCOREAPP3_0
                     using (var reader = new StreamReader(context.Request.Body))
+#else
+                    using (var reader = new StreamReader(context.Request.GetBufferedInputStream()))
+#endif
                     {
                         if (contentType.Contains("application/json"))
                         {
@@ -138,9 +152,10 @@ namespace SkyBuilding.Mvc
                     }
                 }
 
+#if NETSTANDARD2_0 || NETCOREAPP3_0
                 try
                 {
-                    await context.Response.WriteAsync(await request.RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(10000)));
+                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(10000)));
                 }
                 catch (WebException e)
                 {
@@ -148,6 +163,18 @@ namespace SkyBuilding.Mvc
                 }
 
             }));
+#else
+                try
+                {
+                    context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(10000)));
+                }
+                catch (WebException e)
+                {
+                    context.Response.WriteJson(ExceptionHandler.Handler(e));
+                }
+
+            });
+#endif
         }
     }
 }

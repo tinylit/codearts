@@ -1,5 +1,10 @@
-﻿using SkyBuilding.Log;
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+using Microsoft.Extensions.Logging;
+#else
+using log4net.Core;
+#endif
 using System;
+using System.Collections.Generic;
 using System.Net;
 
 namespace SkyBuilding.Exceptions
@@ -7,8 +12,7 @@ namespace SkyBuilding.Exceptions
     /// <summary> 异常处理类 </summary>
     public static class ExceptionHandler
     {
-        /// <summary> 日志 </summary>
-        private static readonly ILogger Logger = LogManager.Logger(typeof(ExceptionHandler));
+        private static readonly List<ILogger> loggers = new List<ILogger>();
 
         /// <summary> 异常事件 </summary>
         public static event Action<Exception> OnException;
@@ -21,6 +25,27 @@ namespace SkyBuilding.Exceptions
 
         /// <summary> 业务异常事件 </summary>
         public static event Action<BusiException> OnBusiException;
+
+        /// <summary>
+        /// 添加异常捕获日志（日志级别:Error）。
+        /// </summary>
+        /// <param name="logger">日志记录器</param>
+        public static void AddErrorLogger(ILogger logger)
+        {
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
+#if NETSTANDARD2_0 || NETCOREAPP3_0
+            if (logger.IsEnabled(LogLevel.Error))
+#else
+            if (logger.IsEnabledFor(Level.Error))
+#endif
+            {
+                loggers.Add(logger);
+            }
+        }
 
         /// <summary> 异常处理 </summary>
         /// <param name="exception">异常信息</param>
@@ -58,7 +83,11 @@ namespace SkyBuilding.Exceptions
                         return DResult.Error(error.Message);
                     }
 
-                    Logger.Error(error.Message, error);
+#if NETSTANDARD2_0 || NETCOREAPP3_0
+                    loggers.ForEach(logger => logger.LogError(error, error.Message));
+#else
+                    loggers.ForEach(logger => logger.Log(typeof(ExceptionHandler), Level.Error, error.Message, error));
+#endif
 
                     if (error is WebException web)
                     {

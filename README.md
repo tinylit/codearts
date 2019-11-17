@@ -252,7 +252,7 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/MySqlTest.cs)
 
 ### How to use Mvc?
-* .NETCore
+* .NETCore | .NET45+
     + Using normal(Support dependency injection, SwaggerUi, exception capture and other features).
     ``` csharp
     public class Startup : DStartup {
@@ -284,26 +284,13 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     {
         protected void Application_Start()
         {
-            ApiConfig.Register(GlobalConfiguration.Configuration); //This is a must.
-
-			ApiConfig.DependencyResolver(GlobalConfiguration.Configuration); //Dependency injection.
+			GlobalConfiguration.Configuration.Register() //This is a must.
+												 .UseDependencyInjection(); //Dependency injection.
         }
     }
     ```
-* .NET45+(Support dependency injection, SwaggerUi, routing, exception capture, login and authCode,etc)
-    ``` csharp
-    public class WebApiApplication : HttpApplication
-    {
-        protected void Application_Start()
-        {
-            GlobalConfiguration.Configure(ApiConfig.Register); //This is a must.
+* Starting from 3.0, .NET45+ Web use the Startup class to startup, giving up the traditional Global.asax startup mode, with more powerful functions.
 
-            GlobalConfiguration.Configure(ApiConfig.SwaggerUI);
-
-            GlobalConfiguration.Configure(ApiConfig.DependencyResolver); //Dependency injection.
-        }
-    }
-    ```
 ### How to configure MVC?
 * .NETCore
     ``` json
@@ -343,10 +330,6 @@ ORDER BY [x].[uid],[y].[registertime] DESC
         <appSettings>
             <!--jwt 密钥-->
             <!--<add key="jwt-secret" value="">-->
-            <!-- swagger 标题 -->
-            <!--<add key="swagger-title" value="mvc4" />-->
-            <!-- swagger 版本 -->
-            <!--<add key="swagger-version" value="v1"/>-->
             <!-- 登录地址：必须的 -->
             <add key="login" value="api/values/login" />
         </appSettings>

@@ -1,13 +1,13 @@
 ﻿using Mvc461.Domain;
+using Mvc461.Domain.Entities;
 using SkyBuilding;
 using SkyBuilding.Exceptions;
 using SkyBuilding.Mvc;
-using System.Linq;
-using System.Collections.Generic;
-using System.Web.Http;
-using Mvc461.Domain.Entities;
-using System.ComponentModel.DataAnnotations;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Web.Http;
 
 namespace MVC461.Controllers
 {
@@ -115,8 +115,8 @@ namespace MVC461.Controllers
         }
         /// <inheritdoc />
         // DELETE api/values/5
+        [Authorize]
         [HttpDelete]
-        [JwtAuthorize]
         public void Delete(int id)
         {
             throw new BusiException("认证测试成功");

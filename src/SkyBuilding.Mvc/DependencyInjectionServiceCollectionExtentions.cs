@@ -1,19 +1,54 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NET40
+using SkyBuilding.Mvc;
+
+namespace System.Web.Http
+{
+    /// <summary>
+    /// 使用依赖注入
+    /// </summary>
+    public static class DependencyInjectionHttpConfigurationExtentions
+    {
+        /// <summary>
+        /// 使用依赖注入<see cref="SkyDependencyResolver"/>。
+        /// </summary>
+        public static HttpConfiguration UseDependencyInjection(this HttpConfiguration config)
+        {
+            config.DependencyResolver = new SkyDependencyResolver();
+
+            return config;
+        }
+    }
+}
+#else
+#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Mvc;
 using SkyBuilding;
+#else
+using System.Web.Http;
+#endif
 using System;
 using System.Linq;
 
+#if NETSTANDARD2_0 || NETCOREAPP3_0
 namespace Microsoft.Extensions.DependencyInjection
+#else
+namespace SkyBuilding.Mvc.DependencyInjection
+#endif
 {
     /// <summary>
     /// 服务集合扩展
     /// </summary>
     public static class DependencyInjectionServiceCollectionExtentions
     {
+#if NETSTANDARD2_0 || NETCOREAPP3_0
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
         /// </summary>
+#else
+        /// <summary>
+        /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// </summary>
+#endif
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
         {
             var assemblys = AssemblyFinder.FindAll();
@@ -22,9 +57,15 @@ namespace Microsoft.Extensions.DependencyInjection
                 .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
                 .ToList();
 
+#if NETSTANDARD2_0 || NETCOREAPP3_0
             var controllerTypes = assemblyTypes
                 .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
                 .ToList();
+#else
+            var controllerTypes = assemblyTypes
+                .Where(type => !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type))
+                .ToList();
+#endif
 
             var parameterTypes = controllerTypes
                 .SelectMany(type =>

@@ -1,4 +1,3 @@
-using SkyBuilding.Mvc;
 using System.Web;
 using System.Web.Http;
 
@@ -10,9 +9,8 @@ namespace Mvc4
         /// <inheritdoc />
         protected void Application_Start()
         {
-            ApiConfig.Register(GlobalConfiguration.Configuration);
-
-            ApiConfig.UseDependencyInjection(GlobalConfiguration.Configuration);
+            GlobalConfiguration.Configuration.Register()
+                                             .UseDependencyInjection();
         }
     }
 }

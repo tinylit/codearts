@@ -45,19 +45,7 @@ namespace SkyBuilding
         /// </summary>
         /// <param name="propertyName">属性名称</param>
         /// <returns></returns>
-        public string ResolvePropertyName(string propertyName)
-        {
-            switch (_camelCase)
-            {
-                case NamingType.UrlCase:
-                case NamingType.CamelCase:
-                case NamingType.PascalCase:
-                    return propertyName.ToNamingCase(_camelCase);
-                case NamingType.Normal:
-                default:
-                    return propertyName;
-            }
-        }
+        public string ResolvePropertyName(string propertyName) => propertyName.ToNamingCase(_camelCase);
 
         /// <summary>
         /// 数据解决

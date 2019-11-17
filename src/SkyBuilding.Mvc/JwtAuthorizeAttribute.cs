@@ -1,16 +1,11 @@
-﻿
-#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40
 using JWT;
 using JWT.Serializers;
 using SkyBuilding.Serialize.Json;
 using System;
 using System.Net;
 using System.Net.Http;
-#if NET40
 using System.Threading;
-#else
-using System.Security.Claims;
-#endif
 using System.Web.Http;
 using System.Web.Http.Controllers;
 
@@ -63,12 +58,7 @@ namespace SkyBuilding.Mvc
             {
                 var userData = decoder.DecodeToObject(token.Scheme, "jwt-secret".Config(Consts.JwtSecret), true);
 
-#if NET40
                 Thread.CurrentPrincipal = userData.AsPrincipal();
-#else
-                var identity = userData.AsIdentity();
-                context.ControllerContext.RequestContext.Principal = new ClaimsPrincipal(identity);
-#endif
             }
             catch
             {
@@ -85,5 +75,4 @@ namespace SkyBuilding.Mvc
         }
     }
 }
-
 #endif

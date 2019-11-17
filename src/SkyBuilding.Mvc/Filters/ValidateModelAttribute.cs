@@ -9,7 +9,6 @@ using System.Web.Http.Controllers;
 using System.Web.Http.ModelBinding;
 using SkyBuilding.Serialize.Json;
 #endif
-using SkyBuilding.Log;
 using System.Net;
 
 namespace SkyBuilding.Mvc.Filters
@@ -21,8 +20,6 @@ namespace SkyBuilding.Mvc.Filters
     public class ValidateModelAttribute : System.Web.Http.Filters.ActionFilterAttribute
 #endif
     {
-        private readonly ILogger _logger = LogManager.Logger<ValidateModelAttribute>();
-
         /// <summary>
         /// 出错时验证。
         /// </summary>
@@ -53,8 +50,6 @@ namespace SkyBuilding.Mvc.Filters
                         continue;
 
                     message = item.Exception.Message;
-
-                    _logger.Error(message, item.Exception);
 
                     goto label_error;
                 }
@@ -96,8 +91,6 @@ namespace SkyBuilding.Mvc.Filters
                         continue;
 
                     message = item.Exception.Message;
-
-                    _logger.Error(message, item.Exception);
 
                     goto label_error;
                 }

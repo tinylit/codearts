@@ -14,7 +14,7 @@
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/icon.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
-    <Version>2.5.1.8</Version>
+    <Version>3.0.0</Version>
     <RootNamespace>SkyBuilding</RootNamespace>
   </PropertyGroup>  
   
@@ -50,9 +50,12 @@
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
 	<PackageReference Include="Newtonsoft.Json">
-      <Version>11.0.1</Version>
-    </PackageReference>
-	<Reference Include="System.Configuration" />
+		<Version>11.0.1</Version>
+	</PackageReference>
+	<PackageReference Include="log4net">
+      <Version>2.0.8</Version>
+    </PackageReference>	
+	  <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
   </ItemGroup>
   
@@ -63,13 +66,7 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
-	<Reference Include="System.Runtime.Caching">
-      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5\System.Runtime.Caching.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="log4net" Version="2.0.8" />
+	  <Reference Include="System.Runtime.Caching" />
   </ItemGroup>
 
   <ItemGroup>

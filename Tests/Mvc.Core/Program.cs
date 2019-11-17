@@ -16,7 +16,6 @@ namespace Mvc.Core
         /// <inheritdoc />
         public static void Main(string[] args)
         {
-            //? 3.0 相关NuGet包未发布，暂不能使用
             CreateHostBuilder(args).Build().Run();
         }
         /// <inheritdoc />
