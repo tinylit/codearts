@@ -17,9 +17,6 @@ namespace Mvc.Core
 
             services.AddGrpc();
 
-            //? “¿¿µ◊¢»Î
-            services.UseDependencyInjection();
-
             base.ConfigureServices(services);
         }
 

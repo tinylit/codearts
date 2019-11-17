@@ -25,6 +25,16 @@ namespace SkyBuilding.Mvc
     public class DStartup
     {
         /// <summary>
+        /// 是否使用SwaggerUi。（默认：true）
+        /// </summary>
+        protected bool UseSwaggerUi { get; set; } = true;
+
+        /// <summary>
+        /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
+        /// </summary>
+        protected bool UseDependencyInjection { get; set; } = true;
+
+        /// <summary>
         /// 配置服务（这个方法被运行时调用。使用此方法向容器添加服务。）
         /// </summary>
         /// <param name="services">服务集合</param>
@@ -78,20 +88,29 @@ namespace SkyBuilding.Mvc
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
 
-            //增加XML文档解析
-            services.AddSwaggerGen(c =>
+            if (UseDependencyInjection)
             {
-#if NETCOREAPP3_0
-                c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-#else
-                c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-#endif
-                var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                foreach (var file in files)
+                services.UseDependencyInjection();
+            }
+
+            if (UseSwaggerUi)
+            {
+
+                //增加XML文档解析
+                services.AddSwaggerGen(c =>
                 {
-                    c.IncludeXmlComments(file);
-                }
-            });
+#if NETCOREAPP3_0
+                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+#else
+                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+#endif
+                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                    foreach (var file in files)
+                    {
+                        c.IncludeXmlComments(file);
+                    }
+                });
+            }
         }
 
 #if NETCOREAPP3_0
@@ -119,33 +138,43 @@ namespace SkyBuilding.Mvc
 #if NETCOREAPP3_0
             //? 跨域
             app.UseStaticFiles()
-                .UseRouting()
-                .UseMvc()
                 .UseCors("Allow")
-                .UseSwagger()
-                .UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                })
-                .UseEndpoints(endpoints =>
-                {
-                    endpoints.MapControllers();
-                });
+                .UseRouting()
+                .UseMvc();
+
+            if (UseSwaggerUi)
+            {
+                app.UseSwagger()
+                    .UseSwaggerUI(c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+                    })
+                    .UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapControllers();
+                    });
+            }
 #else
             //? 跨域
             app.UseStaticFiles()
                 .UseCors("Allow")
-                .UseMvc()
-                .UseSwagger()
-                .UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                });
+                .UseMvc();
+
+            if (UseSwaggerUi)
+            {
+                app.UseSwagger()
+                    .UseSwaggerUI(c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+                    });
+            }
 #endif
         }
     }
 }
 #elif NET45 || NET451 || NET452 || NET461
+using log4net;
+using log4net.Core;
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
 using SkyBuilding.Config;
@@ -153,7 +182,10 @@ using SkyBuilding.Mvc.Builder;
 using SkyBuilding.Mvc.Converters;
 using SkyBuilding.Mvc.DependencyInjection;
 using SkyBuilding.Serialize.Json;
+using Swashbuckle.Application;
 using System;
+using System.IO;
+using System.Linq;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
 
@@ -161,6 +193,7 @@ namespace SkyBuilding.Mvc
 {
     /// <summary>
     /// 启动基类。
+    /// 运行顺序：
     /// Configuration: 配置请求内容。（可支持返回值类型:<see cref="void"/>,<see cref="IServiceProvider"/>,<see cref="IDependencyResolver"/>）。
     /// ConfigureServices:配置依赖注入。（忽略返回值，语法:ConfigureServices(<see cref="IServiceCollection"/>)）。
     /// Configure:配置请求管道，配置请求中间件。(忽略返回值，语法:Configure(<see cref="IApplicationBuilder"/>))。
@@ -179,10 +212,17 @@ namespace SkyBuilding.Mvc
         }
 
         /// <summary>
+        /// 是否使用SwaggerUi（默认：true）
+        /// </summary>
+        protected bool UseSwaggerUi { get; set; } = true;
+
+        /// <summary>
+        /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
+        /// </summary>
+        protected bool UseDependencyInjection { get; set; } = true;
+
+        /// <summary>
         /// 配置默认路由规则，解析器等。
-        /// Configuration: 配置请求内容。（可支持返回值类型:<see cref="void"/>,<see cref="IServiceProvider"/>,<see cref="IDependencyResolver"/>）。
-        /// ConfigureServices:配置依赖注入。（忽略返回值，语法:ConfigureServices(<see cref="IServiceCollection"/>)）。
-        /// Configure:配置请求管道，配置请求中间件。(忽略返回值，语法:Configure(<see cref="IApplicationBuilder"/>))。
         /// </summary>
         /// <param name="config">配置</param>
         public virtual void Configuration(HttpConfiguration config)
@@ -219,6 +259,42 @@ namespace SkyBuilding.Mvc
                 .SerializerSettings
                 .ContractResolver = new ContractResolver();
 
+            if (UseSwaggerUi)
+            {
+                //? SwaggerUi
+                config.EnableSwagger(c =>
+                {
+                    c.Schemes(new[] { "http", "https" });
+
+                    c.SingleApiVersion("swagger-version".Config(Consts.SwaggerVersion), "swagger-title".Config(Consts.SwaggerTitle));
+
+                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                    foreach (var file in files)
+                    {
+                        c.IncludeXmlComments(file);
+                    }
+
+                    if (Directory.Exists(AppDomain.CurrentDomain.RelativeSearchPath))
+                    {
+                        var relativeFiles = Directory.GetFiles(AppDomain.CurrentDomain.RelativeSearchPath, "*.xml", SearchOption.TopDirectoryOnly);
+                        foreach (var file in relativeFiles)
+                        {
+                            c.IncludeXmlComments(file);
+                        }
+                    }
+
+                    c.IgnoreObsoleteProperties();
+
+                    c.DescribeAllEnumsAsStrings();
+
+                    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
+
+                }).EnableSwaggerUi(c =>
+                {
+                    c.DocExpansion(DocExpansion.List);
+                });
+            }
+
             //?异常捕获
             config.Filters.Add(new DExceptionFilterAttribute());
 
@@ -229,6 +305,20 @@ namespace SkyBuilding.Mvc
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+        }
+
+        /// <summary>
+        /// 配置依赖注入。
+        /// </summary>
+        /// <param name="services">服务集合</param>
+        public virtual void ConfigureServices(IServiceCollection services)
+        {
+            services.AddSingleton(typeof(ILogger), LoggerRepository.Instance.GetLogger("default"));
+
+            if (UseDependencyInjection)
+            {
+                services.UseDependencyInjection();
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 using SkyBuilding.Mvc.Builder;
 using SkyBuilding.Mvc.DependencyInjection;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
@@ -70,38 +71,126 @@ namespace SkyBuilding.Mvc.Hosting
 
             public IEnumerable<object> GetServices(Type serviceType) => Enumerable.Empty<object>();
         }
-        private class MultiResolver : IDependencyResolver, IDependencyScope, IDisposable
+        private class MultiResolver : IDependencyResolver, IServiceProvider, IDependencyScope, IDisposable
         {
-            private readonly IEnumerable<IDependencyResolver> providers;
+            private readonly IEnumerable<ServiceDescriptor> serviceDescriptors;
+            private readonly IDependencyResolver dependencyResolver;
+            private readonly ConcurrentDictionary<ServiceDescriptor, object> singletions = new ConcurrentDictionary<ServiceDescriptor, object>();
+            private readonly ConcurrentDictionary<Type, Func<IServiceProvider, object>> implementations = new ConcurrentDictionary<Type, Func<IServiceProvider, object>>();
+            private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
+            private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
+
+            public MultiResolver(IEnumerable<ServiceDescriptor> serviceDescriptors, IDependencyResolver dependencyResolver)
+            {
+                this.serviceDescriptors = serviceDescriptors;
+                this.dependencyResolver = dependencyResolver;
+            }
+
+            /// <summary>
+            /// Gets the service object of the specified type.
+            /// </summary>
+            /// <param name="serviceType"></param>
+            /// <returns></returns>
+            public object GetService(Type serviceType)
+            {
+                ServiceDescriptor service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
+
+                if (service is null)
+                {
+                    if (serviceType.IsGenericType)
+                    {
+                        if (descriptors.TryGetValue(serviceType, out ServiceDescriptor descriptor))
+                        {
+                            return GetService(descriptor);
+                        }
+
+                        var genericType = serviceType.GetGenericTypeDefinition();
+
+                        service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
+
+                        if (service is null || service.ImplementationType is null)
+                            return null;
+
+                        descriptors.TryAdd(serviceType, descriptor = new ServiceDescriptor(serviceType, service.ImplementationType.MakeGenericType(serviceType.GetGenericArguments()), service.Lifetime));
+
+                        return GetService(descriptor);
+                    }
+
+                    return dependencyResolver.GetService(serviceType);
+                }
+
+                return GetService(service);
+            }
+
+            private object GetService(ServiceDescriptor service)
+            {
+                switch (service.Lifetime)
+                {
+                    case ServiceLifetime.Singleton:
+                        return service.ImplementationInstance ?? singletions.GetOrAdd(service, _ =>
+                        {
+                            if (service.ImplementationFactory is null)
+                            {
+                                return implementations
+                                .GetOrAdd(service.ImplementationType, MakeImplementationFactory)
+                                .Invoke(this);
+                            }
+
+                            return service.ImplementationFactory.Invoke(this);
+                        });
+                    case ServiceLifetime.Scoped:
+                        return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
+                        {
+                            context.AddOnRequestCompleted(context2 =>
+                            {
+                                if (scopes.TryRemove(context2, out ConcurrentDictionary<ServiceDescriptor, object> cache))
+                                {
+                                    cache.Clear();
+                                }
+                            });
+                            return new ConcurrentDictionary<ServiceDescriptor, object>();
+                        }).GetOrAdd(service, service2 =>
+                        {
+                            return service2.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service2.ImplementationType, MakeImplementationFactory).Invoke(this);
+                        });
+                    case ServiceLifetime.Transient:
+                        return service.ImplementationInstance ?? service.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service.ImplementationType, MakeImplementationFactory).Invoke(this);
+                    default:
+                        return null;
+                }
+            }
+
+            private Func<IServiceProvider, object> MakeImplementationFactory(Type implementationType)
+            {
+                var constructor = implementationType
+                    .GetConstructors()
+                    .OrderBy(x => x.GetParameters().Length)
+                    .FirstOrDefault(x => x.IsPublic);
+
+                if (constructor is null)
+                    return null;
+
+                var parameters = constructor.GetParameters();
+
+                if (parameters.Length == 0)
+                {
+                    return provider => constructor.Invoke(new object[0]);
+                }
+
+                if (parameters.All(x => serviceDescriptors.Any(y => x.ParameterType == y.ServiceType)))
+                    return provider => constructor.Invoke(parameters.Select(x => provider.GetService(x.ParameterType)).ToArray());
+
+                return null;
+            }
 
             public IDependencyScope BeginScope() => this;
 
-            public MultiResolver(params IDependencyResolver[] providers)
-            {
-                this.providers = providers;
-            }
+            public IEnumerable<object> GetServices(Type serviceType) => Enumerable.Empty<object>();
 
             public void Dispose()
             {
                 GC.SuppressFinalize(this);
             }
-
-            public object GetService(Type serviceType)
-            {
-                foreach (var provider in providers)
-                {
-                    var service = provider.GetService(serviceType);
-
-                    if (!(service is null))
-                    {
-                        return service;
-                    }
-                }
-
-                return null;
-            }
-
-            public IEnumerable<object> GetServices(Type serviceType) => Enumerable.Empty<object>();
         }
 
         private class Loader
@@ -193,17 +282,18 @@ namespace SkyBuilding.Mvc.Hosting
 
                             configureServices.Invoke(instance, new object[1] { services });
 
-                            var resolverType = config.DependencyResolver.GetType();
-
-                            var resolver = new DefaultResolver(new ServiceProvider(services));
-
-                            if (resolverType.Name == "EmptyResolver" && AssemblyEquels(resolverType.Assembly, "System.Web.Http"))
+                            if (services.Count > 0)
                             {
-                                config.DependencyResolver = resolver;
-                            }
-                            else
-                            {
-                                config.DependencyResolver = new MultiResolver(resolver, config.DependencyResolver);
+                                var resolverType = config.DependencyResolver.GetType();
+
+                                if (resolverType.Name == "EmptyResolver" && AssemblyEquels(resolverType.Assembly, "System.Web.Http"))
+                                {
+                                    config.DependencyResolver = new DefaultResolver(new ServiceProvider(services));
+                                }
+                                else
+                                {
+                                    config.DependencyResolver = new MultiResolver(services, config.DependencyResolver);
+                                }
                             }
                         }
 

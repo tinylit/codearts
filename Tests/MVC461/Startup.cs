@@ -21,9 +21,5 @@ namespace Mvc461
 {
     public class Startup : JwtStartup
     {
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.UseDependencyInjection();
-        }
     }
 }
