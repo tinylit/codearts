@@ -253,7 +253,7 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 
 ### How to use Mvc?
 * .NETCore | .NET45+
-    + Using normal(Support dependency injection, SwaggerUi, exception capture and other features).
+    + Using normal(Support dependency injection, SwaggerUi, dependency injection, exception capture and other features).
     ``` csharp
     public class Startup : DStartup {
 
@@ -263,18 +263,6 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     ``` csharp
     public class Startup : JwtStartup {
 
-    }
-    ```
-	+ Using dependency injection.
-    ``` csharp
-    public class Startup : JwtStartup {
-
-	    public override void ConfigureServices(IServiceCollection services)
-        {
-            services.UseDependencyInjection(); //Dependency injection.
-
-            base.ConfigureServices(services);
-        }
     }
     ```
 
