@@ -14,7 +14,7 @@
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/icon.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
-    <Version>1.1.0.5</Version>
+    <Version>1.1.0.6</Version>
   </PropertyGroup>
 
  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
