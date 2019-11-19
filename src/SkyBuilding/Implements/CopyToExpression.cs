@@ -92,7 +92,7 @@ namespace SkyBuilding.Implements
             {
                 return UnsafeCopyTo(source);
             }
-            catch
+            catch (InvalidCastException)
             {
                 return def;
             }

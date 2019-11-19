@@ -48,7 +48,7 @@ namespace SkyBuilding.Implements
 
                 return value;
             }
-            catch
+            catch (InvalidCastException)
             {
                 return def;
             }
@@ -228,7 +228,18 @@ namespace SkyBuilding.Implements
 
             for (int i = 0; i < dataRecord.FieldCount; i++)
             {
-                results.Add(new KeyValuePair<string, object>(dataRecord.GetName(i), dataRecord.GetValue(i)));
+                string name = dataRecord.GetName(i);
+
+                if (dataRecord.IsDBNull(i))
+                {
+                    if (mapTo.AllowNullPropagationMapping.Value)
+                    {
+                        results.Add(new KeyValuePair<string, object>(name, null));
+                    }
+                    continue;
+                }
+
+                results.Add(new KeyValuePair<string, object>(name, dataRecord.GetValue(i)));
             }
 
             return results;
@@ -1031,22 +1042,17 @@ namespace SkyBuilding.Implements
 
                 list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
 
-                var testExp = GreaterThan(indexExp, negativeExp);
+                var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 
                 if (memberType.IsValueType)
                 {
-                    if (memberType.IsNullable())
+                    if (memberType.IsEnum)
+                    {
+                        memberType = Enum.GetUnderlyingType(memberType);
+                    }
+                    else if (memberType.IsNullable())
                     {
                         memberType = Nullable.GetUnderlyingType(memberType);
-                    }
-                    else
-                    {
-                        if (memberType.IsEnum)
-                        {
-                            memberType = Enum.GetUnderlyingType(memberType);
-                        }
-
-                        testExp = AndAlso(testExp, Not(Call(valueExp, isDBNull, indexExp)));
                     }
                 }
 
@@ -1063,7 +1069,26 @@ namespace SkyBuilding.Implements
                     objExp = Convert(objExp, memberType);
                 }
 
-                if (memberType == info.MemberType)
+                if (AllowNullPropagationMapping.Value)
+                {
+                    if (!AllowNullDestinationValues.Value && memberType == typeof(string))
+                    {
+                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Constant(string.Empty))));
+                    }
+                    else if (memberType == info.MemberType)
+                    {
+                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Default(info.MemberType))));
+                    }
+                    else
+                    {
+                        list.Add(IfThenElse(testExp, Assign(left, Convert(objExp, info.MemberType)), Assign(left, Default(info.MemberType))));
+                    }
+                }
+                else if (!AllowNullDestinationValues.Value && memberType == typeof(string))
+                {
+                    list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Coalesce(left, Constant(string.Empty))))); ;
+                }
+                else if (memberType == info.MemberType)
                 {
                     list.Add(IfThen(testExp, Assign(left, objExp)));
                 }
@@ -1079,22 +1104,17 @@ namespace SkyBuilding.Implements
 
                 list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
 
-                var testExp = GreaterThan(indexExp, negativeExp);
+                var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 
                 if (memberType.IsValueType)
                 {
-                    if (memberType.IsNullable())
+                    if (memberType.IsEnum)
+                    {
+                        memberType = Enum.GetUnderlyingType(memberType);
+                    }
+                    else if (memberType.IsNullable())
                     {
                         memberType = Nullable.GetUnderlyingType(memberType);
-                    }
-                    else
-                    {
-                        if (memberType.IsEnum)
-                        {
-                            memberType = Enum.GetUnderlyingType(memberType);
-                        }
-
-                        testExp = AndAlso(testExp, Not(Call(valueExp, isDBNull, indexExp)));
                     }
                 }
 
@@ -1124,13 +1144,33 @@ namespace SkyBuilding.Implements
                     defaultExp = Default(info.ParameterType);
                 }
 
-                if (memberType == info.ParameterType)
+
+                if (AllowNullPropagationMapping.Value)
                 {
-                    list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, defaultExp)));
+                    if (!AllowNullDestinationValues.Value && memberType == typeof(string))
+                    {
+                        list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Constant(string.Empty))));
+                    }
+                    else if (memberType == info.ParameterType)
+                    {
+                        list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Default(info.ParameterType))));
+                    }
+                    else
+                    {
+                        list.Add(IfThenElse(testExp, Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, Default(info.ParameterType))));
+                    }
+                }
+                else if (!AllowNullDestinationValues.Value && memberType == typeof(string))
+                {
+                    list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Constant(string.Empty))));
+                }
+                else if (memberType == info.ParameterType)
+                {
+                    list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Default(info.ParameterType))));
                 }
                 else
                 {
-                    list.Add(IfThenElse(testExp, Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, defaultExp)));
+                    list.Add(IfThenElse(testExp, Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, Default(info.ParameterType))));
                 }
 
                 variables.Add(nameExp);
@@ -1235,22 +1275,17 @@ namespace SkyBuilding.Implements
 
                 list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
 
-                var testExp = GreaterThan(indexExp, negativeExp);
+                var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 
                 if (memberType.IsValueType)
                 {
-                    if (memberType.IsNullable())
+                    if (memberType.IsEnum)
+                    {
+                        memberType = Enum.GetUnderlyingType(memberType);
+                    }
+                    else if (memberType.IsNullable())
                     {
                         memberType = Nullable.GetUnderlyingType(memberType);
-                    }
-                    else
-                    {
-                        if (memberType.IsEnum)
-                        {
-                            memberType = Enum.GetUnderlyingType(memberType);
-                        }
-
-                        testExp = AndAlso(testExp, Not(Call(valueExp, isDBNull, indexExp)));
                     }
                 }
 
@@ -1267,7 +1302,26 @@ namespace SkyBuilding.Implements
                     objExp = Convert(objExp, memberType);
                 }
 
-                if (memberType == info.MemberType)
+                if (AllowNullPropagationMapping.Value)
+                {
+                    if (!AllowNullDestinationValues.Value && memberType == typeof(string))
+                    {
+                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Constant(string.Empty))));
+                    }
+                    else if (memberType == info.MemberType)
+                    {
+                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Default(info.MemberType))));
+                    }
+                    else
+                    {
+                        list.Add(IfThenElse(testExp, Assign(left, Convert(objExp, info.MemberType)), Assign(left, Default(info.MemberType))));
+                    }
+                }
+                else if (!AllowNullDestinationValues.Value && memberType == typeof(string))
+                {
+                    list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Coalesce(left, Constant(string.Empty))))); ;
+                }
+                else if (memberType == info.MemberType)
                 {
                     list.Add(IfThen(testExp, Assign(left, objExp)));
                 }

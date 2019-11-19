@@ -34,7 +34,7 @@ namespace SkyBuilding.Implements
 
                 return value;
             }
-            catch
+            catch (InvalidCastException)
             {
                 return def;
             }

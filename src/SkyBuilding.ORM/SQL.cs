@@ -40,7 +40,7 @@ namespace SkyBuilding.ORM
         /// <summary>
         /// 提取字符串
         /// </summary>
-        private readonly static Regex PatternCharacter = new Regex("(['\"])(?:\\\\.|[^\\\\])+?\\1", RegexOptions.Compiled);
+        private readonly static Regex PatternCharacter = new Regex("(['\"])(?:\\\\.|[^\\\\])*?\\1", RegexOptions.Compiled);
 
         /// <summary>
         /// 多余的换行符。
@@ -213,8 +213,15 @@ namespace SkyBuilding.ORM
             //? 提取字符串
             sql = PatternCharacter.Replace(sql, item =>
             {
-                Characters.Add(item.Value);
-                return string.Concat("#", Characters.Count, "#");
+                var len = Characters.Count;
+
+                if (item.Length > 2)
+                {
+                    Characters.Add(item.Value);
+                    return string.Concat("\"{=", len, "}\"");
+                }
+
+                return item.Value;
             });
 
             //? 命令检测。
@@ -457,7 +464,7 @@ namespace SkyBuilding.ORM
             //? 还原字符
             Characters.ForEach((item, index) =>
             {
-                sql = sql.Replace($"#{index + 1}#", item);
+                sql = sql.Replace("\"{=" + index + "}\"", item);
             });
 
             return sql;
