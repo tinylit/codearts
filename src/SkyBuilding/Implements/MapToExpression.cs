@@ -81,7 +81,7 @@ namespace SkyBuilding.Implements
             {
                 return UnsafeMapTo(source, conversionType);
             }
-            catch (InvalidCastException)
+            catch (Exception)
             {
                 return null;
             }

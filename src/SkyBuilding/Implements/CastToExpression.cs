@@ -76,11 +76,7 @@ namespace SkyBuilding.Implements
             {
                 return invoke.Invoke(obj);
             }
-            catch (InvalidCastException)
-            {
-                return null;
-            }
-            catch (ApplicationException)
+            catch (Exception)
             {
                 return null;
             }
