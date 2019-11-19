@@ -32,11 +32,6 @@ namespace SkyBuilding.Tests
         /// <param name="host">主机编号</param>
         public KeyGen(byte host = 1) => value = DateGen(host);
 
-        protected KeyGen(long sequenceMax)
-        {
-
-        }
-
         private static long DateGen(byte host)
         {
             long keyGen = TimeGen(host);
