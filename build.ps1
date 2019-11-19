@@ -15,8 +15,7 @@ $projectsToBuild =
     'SkyBuilding.ORM',
     'SkyBuilding.MySql',
 	'SkyBuilding.SignalR',
-    'SkyBuilding.SqlServer',
-    'SkyBuilding.Dapper'
+    'SkyBuilding.SqlServer'
 
 mkdir -Force $packageOutputFolder | Out-Null
 Write-Host "Clearing existing $packageOutputFolder..." -NoNewline

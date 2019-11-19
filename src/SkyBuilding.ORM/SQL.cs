@@ -166,7 +166,7 @@ namespace SkyBuilding.ORM
                 .Append(@"|\bupdate").Append(whitespace).Append(@"+.+?").Append(whitespace).Append("+set").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(check) //? 更新语句SET字段
                 .Append(@"|\bcase").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\bwhen\b)[_a-z]\w*)").Append(check) //? case 函数
                 .Append(@"|\bwhen").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\bthen\b)[_a-z]\w*)").Append(check) //? when 函数
-                .Append(@"|\b(where|and|or|then|else|select|by)").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(check) //? case [name] when [name] then [name] else [name] end; {select|by} [name];
+                .Append(@"|\b(where|and|or|then|else|select|by)").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(@"(?=[^\w\.\]\}\(]|$)") //? case [name] when [name] then [name] else [name] end; {select|by} [name];
                 .Append(@"|\bon").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\bupdate\b)[_a-z]\w*)").Append(check) //? on [name]; -- mysql `modified` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0)
                 .Append(@"|([+/-]|[<=>%])").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(whitespace).Append(@"+(and|or|case|when|then|else|end|select|by|join|on|(left|right|inner|outer)").Append(whitespace).Append(@"+join)") // ? =[name] and
                 .Append(@"|\*").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>((?!\bfrom\b)[_a-z]\w*))").Append(check) //? *[value]
@@ -374,6 +374,14 @@ namespace SkyBuilding.ORM
                         .Append(aliasGrp.Value)
                         .Append("]");
                 }
+                else if (followGrp.Success)
+                {
+                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, followGrp.Index - tableGrp.Index - tableGrp.Length));
+                }
+                else
+                {
+                    sb.Append(value.Substring(tableGrp.Index + tableGrp.Length - item.Index));
+                }
 
                 if (followGrp.Success)
                 {
@@ -443,12 +451,7 @@ namespace SkyBuilding.ORM
             {
                 Group nameGrp = item.Groups["name"];
 
-                string value = string.Concat("[", nameGrp.Value, "]");
-
-                if (nameGrp.Index == item.Index && nameGrp.Length == item.Length)
-                    return value;
-
-                return item.Value.Substring(0, nameGrp.Index - item.Index) + value + item.Value.Substring(nameGrp.Index + nameGrp.Length);
+                return item.Value.Substring(0, nameGrp.Index - item.Index) + string.Concat("[", nameGrp.Value, "]");
             });
 
             //? 还原字符

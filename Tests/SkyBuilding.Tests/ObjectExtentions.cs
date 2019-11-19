@@ -2,6 +2,7 @@
 using SkyBuilding.Implements;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SkyBuilding.Tests
 {
@@ -126,7 +127,24 @@ namespace SkyBuilding.Tests
                 Name = "test",
                 Date = DateTime.Now
             };
-                        
+
+            var list = new List<KeyGen>();
+
+            for (int i = 0; i < 100000; i++)
+            {
+                KeyGen keyGen = new KeyGen(255);
+
+                list.Add(keyGen);
+            }
+
+            var list2 = list.Select(x => (long)x).Distinct().ToList();
+
+            var length = list2.Count;
+
+            var date = new DateTime(2099, 12, 31, 23, 59, 59, 999, DateTimeKind.Utc);
+
+            var keygen = date.Month * 100000000000000000L + date.Day * 1000000000000000L + (date.Year - 2000L) * 10000000000000L + date.Hour * 100000000000L + date.Minute * 1000000000L + date.Second * 10000000L + (date.Millisecond << 16) + (255 << 8) + 255;
+
 
             for (int i = 0; i < 100000; i++)
             {

@@ -19,7 +19,7 @@ namespace SkyBuilding.AOP
         /// <summary>
         /// 拦截的对象
         /// </summary>
-        object Proxy { get; }
+        object Instance { get; }
 
         /// <summary>
         /// 返回值
