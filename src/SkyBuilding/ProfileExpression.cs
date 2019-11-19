@@ -198,23 +198,26 @@ namespace SkyBuilding
         {
             if (conversionType.IsGenericType)
             {
-                var typeDefinition = conversionType.GetGenericTypeDefinition();
+                if (conversionType.IsInterface)
+                {
+                    var typeDefinition = conversionType.GetGenericTypeDefinition();
 
 #if NET40
                 if (typeDefinition == typeof(IDictionary<,>))
 #else
-                if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
+                    if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
 #endif
-                    return ByIEnumarableLikeToIDictionaryLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
+                        return ByIEnumarableLikeToIDictionaryLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
 #if NET40
                 if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
 #else
-                if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
 #endif
-                    return ByIEnumarableLikeToICollectionLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+                        return ByIEnumarableLikeToICollectionLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
 
-                if (typeDefinition == typeof(IEnumerable<>))
-                    return ByIEnumarableLikeToIEnumarableLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+                    if (typeDefinition == typeof(IEnumerable<>))
+                        return ByIEnumarableLikeToIEnumarableLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+                }
 
                 if (conversionType.IsClass && conversionType.IsAbstract)
                     return ByIEnumarableLikeToAbstract<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
@@ -225,20 +228,12 @@ namespace SkyBuilding
 
                     foreach (var type in types.Where(x => x.IsGenericType))
                     {
-                        var typeDefinition2 = type.GetGenericTypeDefinition();
+                        var typeDefinition = type.GetGenericTypeDefinition();
 
-#if NET40
-                        if (typeDefinition2 == typeof(IDictionary<,>))
-#else
-                        if (typeDefinition2 == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
-#endif
+                        if (typeDefinition == typeof(IDictionary<,>))
                             return ByIEnumarableLikeToDictionaryLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
 
-#if NET40
-                        if (typeDefinition2 == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-#else
-                        if (typeDefinition2 == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-#endif
+                        if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
                             return ByIEnumarableLikeToCollectionLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
                     }
                 }
@@ -246,7 +241,7 @@ namespace SkyBuilding
                 return ByIEnumarableLikeToUnknownInterface<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
             }
 
-            if (conversionType.IsAbstract)
+            if (conversionType.IsInterface || conversionType.IsAbstract)
             {
                 return ByIEnumarableLikeToAbstract<TResult>(sourceType, conversionType);
             }

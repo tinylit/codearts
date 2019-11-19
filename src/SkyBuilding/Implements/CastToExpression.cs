@@ -38,6 +38,10 @@ namespace SkyBuilding.Implements
             {
                 return def;
             }
+            catch (ApplicationException)
+            {
+                return def;
+            }
         }
 
         /// <summary>
@@ -72,7 +76,11 @@ namespace SkyBuilding.Implements
             {
                 return invoke.Invoke(obj);
             }
-            catch
+            catch (InvalidCastException)
+            {
+                return null;
+            }
+            catch (ApplicationException)
             {
                 return null;
             }
@@ -128,6 +136,8 @@ namespace SkyBuilding.Implements
 
         #endregion
 
+        private static Func<object, object> CancelClosure(Func<object, object> invoke) => source => invoke.Invoke(source);
+
         /// <summary>
         /// 解决 任意类型 到 可空类型的转换。
         /// </summary>
@@ -142,13 +152,11 @@ namespace SkyBuilding.Implements
             {
                 var parameterExp = Parameter(typeof(object), "source");
 
-                var valueExp = Variable(conversionType, "value");
-
                 var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
                 var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
 
-                var bodyExp = New(ctorInfo.Member, Convert(parameterExp, sourceType));
+                var bodyExp = New(ctorInfo.Member, Convert(parameterExp, typeArgument));
 
                 var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
 
@@ -156,11 +164,9 @@ namespace SkyBuilding.Implements
             }
             else
             {
-                var invoke = Create(sourceType, typeArgument);
+                Func<object, object> invoke = CancelClosure(Create(sourceType, typeArgument));
 
                 var parameterExp = Parameter(typeof(object), "source");
-
-                var valueExp = Variable(conversionType, "value");
 
                 var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
@@ -171,7 +177,7 @@ namespace SkyBuilding.Implements
                     :
                     Call(Constant(invoke.Target), invoke.Method, parameterExp);
 
-                var bodyExp = New(ctorInfo.Member, Convert(coreExp, sourceType));
+                var bodyExp = New(ctorInfo.Member, Convert(coreExp, typeArgument));
 
                 var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
 
@@ -353,7 +359,7 @@ namespace SkyBuilding.Implements
 
             var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(typeArgument);
+            var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
             var bodyExp = Call(methodG, Convert(parameterExp, typeof(IEnumerable)), Constant(this));
 
