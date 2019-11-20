@@ -8,12 +8,22 @@ namespace ConsoleEmit
 {
     public interface IEmit
     {
-        bool Test(int i);
+        void Test(int i);
     }
 
     public class Emit : IEmit
     {
-        public bool Test(int i) => i > 0;
+        public void Test(int i)
+        {
+        }
+    }
+
+    public class BaseProxy
+    {
+        public void Intercept(IInvokeBinder interceptor)
+        {
+
+        }
     }
 
     public class Interceptor : IInterceptor
@@ -21,6 +31,11 @@ namespace ConsoleEmit
         public void Intercept(IInvokeBinder invokeBinder)
         {
             invokeBinder.Invoke();
+        }
+
+        public void Intercept(InvokeBinder invokeBinder)
+        {
+
         }
     }
 
@@ -30,7 +45,7 @@ namespace ConsoleEmit
         {
             Instance = instance;
             Method = method;
-            Arguments = arguments;
+            Arguments = arguments ?? new object[0];
         }
 
         public object[] Arguments { get; }
@@ -76,7 +91,7 @@ namespace ConsoleEmit
             var assemblyName = new AssemblyName("SkyBuilding.Emit");
 
             var assemblyBuilder = AppDomain.CurrentDomain
-                .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+                .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
 
             var moduleBuilder = assemblyBuilder.DefineDynamicModule("SkyBuilding.Module");
 
@@ -88,7 +103,7 @@ namespace ConsoleEmit
 
             var interceptorType = typeof(IInterceptor);
 
-            var typeBuilder = moduleBuilder.DefineType("EmitProxy", TypeAttributes.Class | TypeAttributes.NotPublic, null, new Type[] { interfaceType, interceptorType });
+            var typeBuilder = moduleBuilder.DefineType("EmitProxy", TypeAttributes.Class | TypeAttributes.NotPublic, typeof(BaseProxy), new Type[] { interfaceType });
 
             var instanceField = typeBuilder.DefineField("instance", iEmitType, FieldAttributes.Private | FieldAttributes.InitOnly);
 
@@ -120,36 +135,74 @@ namespace ConsoleEmit
             {
                 var parameters = item.GetParameters().Select(x => x.ParameterType).ToArray();
 
-                var methodBuilder = typeBuilder.DefineMethod(item.Name, MethodAttributes.Public, item.ReturnType, parameters);
+                var methodBuilder = typeBuilder.DefineMethod(item.Name,
+                    MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
+                    item.ReturnType,
+                    parameters);
 
                 var ilGen = methodBuilder.GetILGenerator();
 
-                var invokeBuilder = Create(ilGen, invokeCtor, item, parameters);
+                var local = Create(ilGen, instanceField, invokeCtor, item, parameters);
 
+                ilGen.Emit(OpCodes.Ldarg_0);
+                ilGen.Emit(OpCodes.Ldfld, interceptorField);
+                ilGen.Emit(OpCodes.Ldloc, local);
                 ilGen.Emit(OpCodes.Call, interceptMethod);
 
-                if (item.ReturnType != typeof(void))
+                if (item.ReturnType == typeof(void))
                 {
-                    var result = ilGen.DeclareLocal(item.ReturnType);
+                    ilGen.Emit(OpCodes.Pop);
+                }
+                else
+                {
+                    ilGen.Emit(OpCodes.Callvirt, returnValue.GetMethod);
 
-                    ilGen.Emit(OpCodes.Stloc, result);
+                    if (item.ReturnType.IsValueType)
+                    {
+                        ilGen.Emit(OpCodes.Unbox_Any, item.ReturnType);
+                    }
+                    else
+                    {
+                        ilGen.Emit(OpCodes.Castclass, item.ReturnType);
+                    }
 
-                    ilGen.Emit(OpCodes.Ldloc, invokeBuilder);
-                    ilGen.Emit(OpCodes.Ldloc, result);
-                    ilGen.Emit(OpCodes.Box, item.ReturnType);
-                    ilGen.Emit(OpCodes.Call, returnValue.GetMethod);
+                    ilGen.Emit(OpCodes.Stloc_0);
+                    ilGen.Emit(OpCodes.Ldloc_0);
                 }
 
                 ilGen.Emit(OpCodes.Ret);
+
+                typeBuilder.DefineMethodOverride(methodBuilder, item);
             }
 
+            //assemblyBuilder.Save("SkyBuilding.Emit.dll");
+
             var type = typeBuilder.CreateType();
+
+            assemblyBuilder.Save("SkyBuilding.Emit.dll");
+
+            IEmit emit = (IEmit)Activator.CreateInstance(type, new Emit(), new Interceptor());
+
+            emit.Test(1);
         }
 
-        private static LocalBuilder Create(ILGenerator ilGen, ConstructorInfo invokeCtor, MethodInfo method, Type[] parameters)
+        private static LocalBuilder Create(ILGenerator ilGen, FieldBuilder instanceField, ConstructorInfo invokeCtor, MethodInfo method, Type[] parameters)
         {
+            var local = ilGen.DeclareLocal(typeof(IInvokeBinder));
+
+            ilGen.Emit(OpCodes.Ldarg_0);
+            ilGen.Emit(OpCodes.Ldfld, instanceField);
+
+            ilGen.Emit(OpCodes.Ldtoken, method);
+
+            ilGen.Emit(OpCodes.Ldtoken, method.DeclaringType);
+
+            ilGen.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
+            ilGen.Emit(OpCodes.Castclass, typeof(MethodInfo));
+
+
             //! 声明一个类型为object的局部数组
-            ilGen.DeclareLocal(typeof(object[]));
+            LocalBuilder array = ilGen.DeclareLocal(typeof(object[]));
 
             //? 数组长度入栈
             ilGen.Emit(OpCodes.Ldc_I4, parameters.Length);
@@ -158,12 +211,12 @@ namespace ConsoleEmit
             ilGen.Emit(OpCodes.Newarr, typeof(object));
 
             //? 赋值给局部数组变量
-            ilGen.Emit(OpCodes.Stloc_0);
+            ilGen.Emit(OpCodes.Stloc, array);
 
             for (int i = 0, length = parameters.Length; i < length; i++)
             {
                 //? 数组入栈
-                ilGen.Emit(OpCodes.Ldloc_0);
+                ilGen.Emit(OpCodes.Ldloc, array);
                 //? 数组下标入栈
                 ilGen.Emit(OpCodes.Ldc_I4, i);
                 //? 加载对应下标的参数。（第0个是this。）
@@ -177,25 +230,23 @@ namespace ConsoleEmit
                 ilGen.Emit(OpCodes.Stelem_Ref);
             }
 
-            //? 加载当前对象。
-            ilGen.Emit(OpCodes.Ldarg_0);
-
-            //? 加载执行方法。
-            ilGen.Emit(OpCodes.Ldfld, method);
-
-            //? 上面生成的数组。
-            ilGen.Emit(OpCodes.Ldloc_0);
+            ilGen.Emit(OpCodes.Ldloc, array);
 
             //? 生成对象。
             ilGen.Emit(OpCodes.Newobj, invokeCtor);
 
-            //? 声明一个变量。
-            var invokeBuilder = ilGen.DeclareLocal(invokeCtor.DeclaringType);
+            ilGen.Emit(OpCodes.Stloc, local);
+            ilGen.Emit(OpCodes.Ldloca_S, local);
 
-            //? 将对象放在内存中。
-            ilGen.Emit(OpCodes.Stloc, invokeBuilder);
+            return local;
+        }
+    }
 
-            return invokeBuilder;
+    public class Test
+    {
+        public Test(IInterceptor value)
+        {
+
         }
     }
 }
