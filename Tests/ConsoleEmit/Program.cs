@@ -47,6 +47,11 @@ namespace ConsoleEmit
         {
             return 0;
         }
+
+        public static MethodInfo MakeGenericMethod(MethodInfo method, Type[] types)
+        {
+            return method.MakeGenericMethod(types);
+        }
     }
 
     public class Interceptor : IInterceptor
@@ -174,6 +179,7 @@ namespace ConsoleEmit
 
                         return true;
                     });
+                    method.MakeGenericMethod(new Type[] { typeof(object) });
                 }
 
                 methodBuilder.SetReturnType(method.ReturnType);
@@ -324,7 +330,7 @@ namespace ConsoleEmit
                     //? 加载对应下标的参数。（第0个是this。）
                     ilGen.Emit(OpCodes.Ldtoken, type);
 
-                    ilGen.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("GetTypeFromHandle"));
+                    ilGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
 
                     //! 将参数存入数组。
                     ilGen.Emit(OpCodes.Stelem_Ref);
@@ -336,14 +342,12 @@ namespace ConsoleEmit
 
                 ilGen.Emit(OpCodes.Ldloc, arguments);
 
-                ilGen.Emit(OpCodes.Call, typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) }));
+                ilGen.Emit(OpCodes.Call, typeof(BaseProxy).GetMethod("MakeGenericMethod", BindingFlags.Public | BindingFlags.Static));
+
+
+                //ilGen.Emit(OpCodes.Call, typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) }));
 
                 ilGen.Emit(OpCodes.Stloc, methodLabel);
-
-                ilGen.Emit(OpCodes.Ldarg_0);
-                ilGen.Emit(OpCodes.Ldfld, instanceField);
-                ilGen.Emit(OpCodes.Ldloc, methodLabel);
-
             }
 
             ilGen.Emit(OpCodes.Ldarg_0);
