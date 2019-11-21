@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -16,6 +17,8 @@ namespace ConsoleEmit
         int TestInt32(int i);
 
         T TestG<T>(T i);
+
+        T TestGConstraint<T>(T i) where T : struct;
 
         IEmit TestClas();
     }
@@ -34,6 +37,8 @@ namespace ConsoleEmit
         public IEmit TestClas() => this;
 
         public T TestG<T>(T i) => i;
+
+        public T TestGConstraint<T>(T i) where T : struct => i;
     }
 
     public class BaseProxy
@@ -50,7 +55,7 @@ namespace ConsoleEmit
 
         public static MethodInfo MakeGenericMethod(MethodInfo method, Type[] types)
         {
-            return method.MakeGenericMethod(types);
+            return method;//.MakeGenericMethod(types);
         }
     }
 
@@ -166,20 +171,25 @@ namespace ConsoleEmit
                 var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
 
                 var methodBuilder = typeBuilder.DefineMethod(method.Name,
-                    MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final);
+                    MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
+                    CallingConventions.Standard);
 
                 if (method.IsGenericMethod)
                 {
                     var genericArguments = method.GetGenericArguments();
 
-                    genericArguments.Zip(methodBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray()), (g, t) =>
+                    var newGenericParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
+
+                    foreach (var item in genericArguments.Zip(newGenericParameters, (g, t) =>
                     {
                         t.SetGenericParameterAttributes(g.GenericParameterAttributes);
-                        t.SetInterfaceConstraints(g.GetInterfaces());
+
+                        t.SetInterfaceConstraints(g.GetGenericParameterConstraints());
+
+                        t.SetBaseTypeConstraint(g.BaseType);
 
                         return true;
-                    });
-                    method.MakeGenericMethod(new Type[] { typeof(object) });
+                    })) { }
                 }
 
                 methodBuilder.SetReturnType(method.ReturnType);
@@ -193,7 +203,14 @@ namespace ConsoleEmit
 
                 var ilGen = methodBuilder.GetILGenerator();
 
-                var local = Create(ilGen, instanceField, invokeCtor, method, parameterTypes);
+                MethodInfo methodInfo = method;
+
+                if (method.IsGenericMethod)
+                {
+                    methodInfo = method.MakeGenericMethod(methodBuilder.GetGenericArguments());
+                }
+
+                var local = Create(ilGen, instanceField, invokeCtor, methodInfo, parameterTypes);
 
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldfld, interceptorField);
@@ -237,11 +254,11 @@ namespace ConsoleEmit
                         ilGen.Emit(OpCodes.Ldloc, value);
                     }
 
-                    if (method.ReturnType.IsValueType)
+                    if (method.ReturnType.IsValueType || method.ReturnType.IsGenericParameter)
                     {
                         ilGen.Emit(OpCodes.Unbox_Any, method.ReturnType);
                     }
-                    else if (method.ReturnType != typeof(object))
+                    else
                     {
                         ilGen.Emit(OpCodes.Castclass, method.ReturnType);
                     }
@@ -261,6 +278,10 @@ namespace ConsoleEmit
             emit.Test();
 
             var g1 = emit.TestG(new object());
+
+            var g2 = emit.TestG(8);
+
+            var g3 = emit.TestGConstraint(DateTimeKind.Utc);
 
             var i = emit.TestInt32(8);
 
@@ -300,60 +321,54 @@ namespace ConsoleEmit
 
             ilGen.Emit(OpCodes.Stloc, array);
 
-            var methodLabel = ilGen.DeclareLocal(typeof(MethodInfo));
+            //if (method.IsGenericMethod)
+            //{
+            //    var genericArguments = method.GetGenericArguments();
+
+            //    var arguments = ilGen.DeclareLocal(typeof(Type[]));
+
+            //    //? 数组长度入栈
+            //    ilGen.Emit(OpCodes.Ldc_I4, genericArguments.Length);
+
+            //    ilGen.Emit(OpCodes.Newarr, typeof(Type));
+
+            //    genericArguments.ForEach((type, index) =>
+            //    {
+            //        ilGen.Emit(OpCodes.Dup);
+            //        //? 数组下标入栈
+            //        ilGen.Emit(OpCodes.Ldc_I4, index);
+            //        //? 加载对应下标的参数。（第0个是this。）
+            //        ilGen.Emit(OpCodes.Ldtoken, type);
+
+            //        ilGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+
+            //        //! 将参数存入数组。
+            //        ilGen.Emit(OpCodes.Stelem_Ref);
+            //    });
+
+            //    ilGen.Emit(OpCodes.Stloc, arguments);
+
+            //    ilGen.Emit(OpCodes.Ldloc, methodLabel);
+
+            //    ilGen.Emit(OpCodes.Ldloc, arguments);
+
+            //    ilGen.Emit(OpCodes.Call, typeof(BaseProxy).GetMethod("MakeGenericMethod", BindingFlags.Public | BindingFlags.Static));
+
+            //    //ilGen.Emit(OpCodes.Callvirt, typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) }));
+
+            //    ilGen.Emit(OpCodes.Stloc, methodLabel);
+            //}
+
+            ilGen.Emit(OpCodes.Ldarg_0);
+            ilGen.Emit(OpCodes.Ldfld, instanceField);
 
             ilGen.Emit(OpCodes.Ldtoken, method);
 
             ilGen.Emit(OpCodes.Ldtoken, method.DeclaringType);
 
             ilGen.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
+
             ilGen.Emit(OpCodes.Castclass, typeof(MethodInfo));
-
-            ilGen.Emit(OpCodes.Stloc, methodLabel);
-
-            if (method.IsGenericMethod)
-            {
-                var genericArguments = method.GetGenericArguments();
-
-                var arguments = ilGen.DeclareLocal(typeof(Type[]));
-
-                //? 数组长度入栈
-                ilGen.Emit(OpCodes.Ldc_I4, genericArguments.Length);
-
-                ilGen.Emit(OpCodes.Newarr, typeof(Type));
-
-                genericArguments.ForEach((type, index) =>
-                {
-                    ilGen.Emit(OpCodes.Dup);
-                    //? 数组下标入栈
-                    ilGen.Emit(OpCodes.Ldc_I4, index);
-                    //? 加载对应下标的参数。（第0个是this。）
-                    ilGen.Emit(OpCodes.Ldtoken, type);
-
-                    ilGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
-
-                    //! 将参数存入数组。
-                    ilGen.Emit(OpCodes.Stelem_Ref);
-                });
-
-                ilGen.Emit(OpCodes.Stloc, arguments);
-
-                ilGen.Emit(OpCodes.Ldloc, methodLabel);
-
-                ilGen.Emit(OpCodes.Ldloc, arguments);
-
-                ilGen.Emit(OpCodes.Call, typeof(BaseProxy).GetMethod("MakeGenericMethod", BindingFlags.Public | BindingFlags.Static));
-
-
-                //ilGen.Emit(OpCodes.Call, typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) }));
-
-                ilGen.Emit(OpCodes.Stloc, methodLabel);
-            }
-
-            ilGen.Emit(OpCodes.Ldarg_0);
-            ilGen.Emit(OpCodes.Ldfld, instanceField);
-
-            ilGen.Emit(OpCodes.Ldloc, methodLabel);
 
             ilGen.Emit(OpCodes.Ldloc, array);
 
@@ -365,10 +380,74 @@ namespace ConsoleEmit
 
             return local;
         }
+        private static Type[] AdjustGenericConstraints(MethodInfo methodToCopyGenericsFrom,
+                                               GenericTypeParameterBuilder[] newGenericParameters,
+                                               Type[] originalGenericArguments,
+                                               Type[] constraints)
+        {
+            // HACK: the mono runtime has a strange bug where assigning to the constraints
+            //       parameter and returning it throws, so we'll create a new array.
+            //       System.ArrayTypeMismatchException : Source array type cannot be assigned to destination array type.
+            Type[] adjustedConstraints = new Type[constraints.Length];
+            for (var i = 0; i < constraints.Length; i++)
+            {
+                adjustedConstraints[i] = AdjustConstraintToNewGenericParameters(constraints[i],
+                    methodToCopyGenericsFrom, originalGenericArguments, newGenericParameters);
+            }
+            return adjustedConstraints;
+        }
+        private static Type AdjustConstraintToNewGenericParameters(
+            Type constraint, MethodInfo methodToCopyGenericsFrom, Type[] originalGenericParameters,
+            GenericTypeParameterBuilder[] newGenericParameters)
+        {
+            if (constraint.IsGenericType)
+            {
+                var genericArgumentsOfConstraint = constraint.GetGenericArguments();
+
+                for (var i = 0; i < genericArgumentsOfConstraint.Length; ++i)
+                {
+                    genericArgumentsOfConstraint[i] =
+                        AdjustConstraintToNewGenericParameters(genericArgumentsOfConstraint[i], methodToCopyGenericsFrom,
+                                                               originalGenericParameters, newGenericParameters);
+                }
+                return constraint.GetGenericTypeDefinition().MakeGenericType(genericArgumentsOfConstraint);
+            }
+            else if (constraint.IsGenericParameter)
+            {
+                // Determine the source of the parameter
+                if (constraint.DeclaringMethod != null)
+                {
+                    // constraint comes from the method
+                    var index = Array.IndexOf(originalGenericParameters, constraint);
+                    Trace.Assert(index != -1,
+                                 "When a generic method parameter has a constraint on another method parameter, both parameters must be declared on the same method.");
+                    return newGenericParameters[index].AsType();
+                }
+                else // parameter from surrounding type
+                {
+                    Trace.Assert(constraint.DeclaringType.IsGenericTypeDefinition);
+                    Trace.Assert(methodToCopyGenericsFrom.DeclaringType.IsGenericType
+                                 && constraint.DeclaringType == methodToCopyGenericsFrom.DeclaringType.GetGenericTypeDefinition(),
+                                 "When a generic method parameter has a constraint on a generic type parameter, the generic type must be the declaring typer of the method.");
+
+                    var index = Array.IndexOf(constraint.DeclaringType.GetGenericArguments(), constraint);
+                    Trace.Assert(index != -1, "The generic parameter comes from the given type.");
+                    return methodToCopyGenericsFrom.DeclaringType.GetGenericArguments()[index]; // these are the actual, concrete types
+                }
+            }
+            else
+            {
+                return constraint;
+            }
+        }
     }
 
     public class Test
     {
+        public Test()
+        {
+
+        }
         public Test(object value)
         {
 
