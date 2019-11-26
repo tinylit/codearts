@@ -164,7 +164,7 @@ PM> Install-Package SkyBuilding
 ```
 
 ### How to use Proxy?
-#### Method proxies with "out" or "ref" arguments are not supported!
+##### The method proxies with "out" or "ref" arguments are not supported!
 * Using the interface proxy.
 ``` csharp
 	var of = ProxyGenerator.Of<IEmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate interface proxy.
