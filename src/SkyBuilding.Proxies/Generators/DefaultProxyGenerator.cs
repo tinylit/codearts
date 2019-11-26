@@ -115,6 +115,9 @@ namespace SkyBuilding.Proxies.Generators
 
                 ilGen.Emit(OpCodes.Callvirt, returnValueMethod);
 
+                if (method.ReturnType == typeof(object))
+                    goto return_label;
+
                 if (method.ReturnType.IsValueType && !method.ReturnType.IsNullable())
                 {
                     var value = ilGen.DeclareLocal(typeof(object));
@@ -433,7 +436,7 @@ namespace SkyBuilding.Proxies.Generators
 
             var moduleBuilder = Scope.Create(interfaceType);
 
-            var typeBuilder = moduleBuilder.DefineType(interfaceType.Name + "Proxy" + options.MetadataToken, TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit, null, new Type[] { interfaceType });
+            var typeBuilder = moduleBuilder.DefineType(interfaceType.Name + "Proxy" + options.MetadataToken, TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit, typeof(object), new Type[] { interfaceType });
 
             var instanceField = typeBuilder.DefineField("instance", interfaceType, FieldAttributes.Private | FieldAttributes.InitOnly);
 
