@@ -1,4 +1,4 @@
-﻿#if NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 using SkyBuilding.Mvc.Builder;
 using SkyBuilding.Mvc.DependencyInjection;
 using System;
@@ -6,12 +6,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Compilation;
+using System.Web.Configuration;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
 
@@ -77,9 +79,10 @@ namespace SkyBuilding.Mvc.Hosting
             private readonly IDependencyResolver dependencyResolver;
             private readonly ConcurrentDictionary<ServiceDescriptor, object> singletions = new ConcurrentDictionary<ServiceDescriptor, object>();
             private readonly ConcurrentDictionary<Type, Func<IServiceProvider, object>> implementations = new ConcurrentDictionary<Type, Func<IServiceProvider, object>>();
-            private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
             private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
-
+#if NET45 || NET451 || NET452 || NET461
+            private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
+#endif
             public MultiResolver(IEnumerable<ServiceDescriptor> serviceDescriptors, IDependencyResolver dependencyResolver)
             {
                 this.serviceDescriptors = serviceDescriptors;
@@ -138,6 +141,7 @@ namespace SkyBuilding.Mvc.Hosting
 
                             return service.ImplementationFactory.Invoke(this);
                         });
+#if NET45 || NET451 || NET452 || NET461
                     case ServiceLifetime.Scoped:
                         return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
                         {
@@ -153,6 +157,7 @@ namespace SkyBuilding.Mvc.Hosting
                         {
                             return service2.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service2.ImplementationType, MakeImplementationFactory).Invoke(this);
                         });
+#endif
                     case ServiceLifetime.Transient:
                         return service.ImplementationInstance ?? service.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service.ImplementationType, MakeImplementationFactory).Invoke(this);
                     default:
@@ -429,16 +434,36 @@ namespace SkyBuilding.Mvc.Hosting
 
             public void Initialize(HttpApplication context)
             {
+#if !NET40
                 pipeline.Configuration.EnsureInitialized();
+#endif
 
                 if (!(pipeline.Builder is null))
                 {
                     context.AddOnAuthorizeRequestAsync(BeginEvent, EndEvent);
                 }
             }
+#if NET40
+            private IAsyncResult BeginEvent(object sender, EventArgs e, AsyncCallback cb, object extraData)
+            {
+                var result = new AsyncResult(cb, extraData);
 
-            private static readonly Task Empty = Task.Run(() => { });
+                var request = pipeline.Builder.Build(context => result.TryComplete());
 
+                var appliction = (HttpApplication)sender;
+
+                request.Invoke(appliction.Context);
+
+                if (!result.IsCompleted)
+                {
+                    result.TryComplete();
+
+                    appliction.CompleteRequest();
+                }
+
+                return result;
+            }
+#else
             private async Task<IAsyncResult> BeginEvent(object sender, EventArgs e, AsyncCallback cb, object extraData)
             {
                 var result = new AsyncResult(cb, extraData);
@@ -458,7 +483,7 @@ namespace SkyBuilding.Mvc.Hosting
 
                 return result;
             }
-
+#endif
             private void EndEvent(IAsyncResult result)
             {
                 if (!result.IsCompleted)
@@ -518,7 +543,33 @@ namespace SkyBuilding.Mvc.Hosting
             Justification = "Initialize must never throw on server startup path")]
         public static void Initialize()
         {
+#if NET40
+
+            var _dynamicModuleRegistryField = typeof(HttpApplication).GetField("_dynamicModuleRegistry", BindingFlags.Static | BindingFlags.NonPublic);
+
+            if (_dynamicModuleRegistryField is null)
+                return;
+
+            var _dynamicModuleRegistry = _dynamicModuleRegistryField.GetValue(null);
+
+            if (_dynamicModuleRegistry is null)
+                return;
+
+            var moduleType = _dynamicModuleRegistry.GetType();
+
+            var addMethod = moduleType.GetMethod("Add", new Type[] { typeof(Type) });
+
+            addMethod.Invoke(_dynamicModuleRegistry, new object[] { typeof(HttpModule) });
+#else
             HttpApplication.RegisterModule(typeof(HttpModule));
+#endif
+        }
+
+        private const string _moduleNameFormat = "__DynamicModule_{0}_{1}";
+        private static string MakeUniqueModuleName(Type moduleType)
+        {
+            // returns a unique name for this module
+            return string.Format(CultureInfo.InvariantCulture, _moduleNameFormat, moduleType.AssemblyQualifiedName, Guid.NewGuid());
         }
     }
 }

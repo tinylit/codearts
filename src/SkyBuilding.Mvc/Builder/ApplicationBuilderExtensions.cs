@@ -1,4 +1,4 @@
-﻿#if NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 using System;
 
 namespace SkyBuilding.Mvc.Builder
@@ -30,9 +30,18 @@ namespace SkyBuilding.Mvc.Builder
 
                     if (path.Equals(absolutePath, StringComparison.OrdinalIgnoreCase) || absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase))
                     {
+#if NET40
+                        request.Invoke(context);
+                    }
+                    else
+                    {
+                        next.Invoke(context);
+                    }
+#else
                         return request.Invoke(context);
                     }
                     return next.Invoke(context);
+#endif
                 };
             });
         }

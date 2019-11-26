@@ -1,26 +1,4 @@
-﻿#if NET40
-using SkyBuilding.Mvc;
-
-namespace System.Web.Http
-{
-    /// <summary>
-    /// 使用依赖注入
-    /// </summary>
-    public static class DependencyInjectionHttpConfigurationExtentions
-    {
-        /// <summary>
-        /// 使用依赖注入<see cref="SkyDependencyResolver"/>。
-        /// </summary>
-        public static HttpConfiguration UseDependencyInjection(this HttpConfiguration config)
-        {
-            config.DependencyResolver = new SkyDependencyResolver();
-
-            return config;
-        }
-    }
-}
-#else
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Mvc;
 using SkyBuilding;
 #else
@@ -133,4 +111,3 @@ namespace SkyBuilding.Mvc.DependencyInjection
         }
     }
 }
-#endif

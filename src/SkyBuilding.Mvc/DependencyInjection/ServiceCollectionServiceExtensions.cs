@@ -1,4 +1,4 @@
-﻿#if NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 using System;
 
 namespace SkyBuilding.Mvc.DependencyInjection
@@ -167,7 +167,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
             }
             return services.AddTransient(typeof(TService), implementationFactory);
         }
-
+#if NET45 || NET451 || NET452 || NET461
         /// <summary>
         /// Adds a scoped service of the type specified in <paramref name="serviceType" /> with an
         /// implementation of the type specified in <paramref name="implementationType" /> to the
@@ -326,7 +326,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
             }
             return services.AddScoped(typeof(TService), implementationFactory);
         }
-
+#endif
         /// <summary>
         /// Adds a singleton service of the type specified in <paramref name="serviceType" /> with an
         /// implementation of the type specified in <paramref name="implementationType" /> to the

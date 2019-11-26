@@ -283,7 +283,7 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/MySqlTest.cs)
 
 ### How to use Mvc?
-* .NETCore | .NET45+
+* .NETCore | .NET
     + Using normal(Support dependency injection, SwaggerUi, exception capture and other features).
     ``` csharp
     public class Startup : DStartup {
@@ -297,18 +297,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
     }
     ```
 
-* .NET40(Support dependency injection, routing, exception capture, login, and authCode, etc)
-    ``` csharp
-    public class WebApiApplication : HttpApplication
-    {
-        protected void Application_Start()
-        {
-			GlobalConfiguration.Configuration.Register() //This is a must.
-				 .UseDependencyInjection(); //Dependency injection.
-        }
-    }
-    ```
-* Starting from 3.0, .NET45+ Web use the Startup class to startup, giving up the traditional Global.asax startup mode, with more powerful functions.
+* .NET40(Reflection-based implementation)!
+* Starting from 3.2, .NET Web use the Startup class to startup, giving up the traditional Global.asax startup mode, with more powerful functions.
 
 ### How to configure MVC?
 * .NETCore

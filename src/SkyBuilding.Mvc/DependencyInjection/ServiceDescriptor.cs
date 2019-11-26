@@ -1,4 +1,4 @@
-﻿#if NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 using System;
 using System.Diagnostics;
 
@@ -97,23 +97,6 @@ namespace SkyBuilding.Mvc.DependencyInjection
             ServiceType = serviceType;
         }
 
-        internal Type GetImplementationType()
-        {
-            if (ImplementationType != null)
-            {
-                return ImplementationType;
-            }
-            if (ImplementationInstance != null)
-            {
-                return ImplementationInstance.GetType();
-            }
-            if (ImplementationFactory != null)
-            {
-                return ImplementationFactory.GetType().GenericTypeArguments[1];
-            }
-            return null;
-        }
-
         /// <summary>
         /// Creates an instance of <see cref="ServiceDescriptor" /> with the specified
         /// <typeparamref name="TService" />, <typeparamref name="TImplementation" />,
@@ -204,7 +187,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
             }
             return Describe(service, implementationFactory, ServiceLifetime.Transient);
         }
-
+#if NET45 || NET451 || NET452 || NET461
         /// <summary>
         /// Creates an instance of <see cref="ServiceDescriptor" /> with the specified
         /// <typeparamref name="TService" />, <typeparamref name="TImplementation" />,
@@ -287,7 +270,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
             }
             return Describe(service, implementationFactory, ServiceLifetime.Scoped);
         }
-
+#endif
         /// <summary>
         /// Creates an instance of <see cref="ServiceDescriptor" /> with the specified
         /// <typeparamref name="TService" />, <typeparamref name="TImplementation" />,

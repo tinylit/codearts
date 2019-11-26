@@ -1,5 +1,4 @@
-﻿#if !NET40
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -142,9 +141,15 @@ namespace SkyBuilding.Mvc.Builder
 
                 AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
 
+#if NET40
+                context.Response.WriteImage(bytes);
+
+            }).Map("/login", context =>
+#else
                 return Task.Run(() => context.Response.WriteImage(bytes));
 
             }).Map("/login", async context =>
+#endif
             {
                 var debug = context.Request.QueryString.Get("debug");
 
@@ -194,10 +199,18 @@ namespace SkyBuilding.Mvc.Builder
                     return;
                 }
 
+#if NET40
+                var result = loginUri.AsRequestable()
+                    .Query(context.Request.QueryString.ToString())
+                    .ByJson<ServResult<Dictionary<string, object>>>()
+                    .Get();
+#else
                 var result = await loginUri.AsRequestable()
-                .Query(context.Request.QueryString.ToString())
-                .ByJson<ServResult<Dictionary<string, object>>>()
-                .GetAsync();
+                    .Query(context.Request.QueryString.ToString())
+                    .ByJson<ServResult<Dictionary<string, object>>>()
+                    .GetAsync();
+#endif
+
 
                 if (result.Success)
                 {
@@ -210,7 +223,6 @@ namespace SkyBuilding.Mvc.Builder
             });
         }
 #endif
-
         #region Private
         /// <summary>
         /// 生成随机的字符串
@@ -279,6 +291,7 @@ namespace SkyBuilding.Mvc.Builder
                 image.Dispose();
             }
         }
+
 #if NETSTANDARD2_0 || NETCOREAPP3_0
         /// <summary>
         /// 写入Token
@@ -328,4 +341,3 @@ namespace SkyBuilding.Mvc.Builder
         #endregion
     }
 }
-#endif

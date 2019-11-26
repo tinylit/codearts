@@ -44,7 +44,7 @@ namespace SkyBuilding.Mvc
         /// </summary>
         /// <param name="userData">用户数据</param>
         /// <returns></returns>
-        public static IPrincipal AsPrincipal(this IDictionary<string, object> userData)
+        public static GenericPrincipal AsPrincipal(this IDictionary<string, object> userData)
         {
             return new GenericPrincipal(userData.AsIdentity(), userData.Where(x => x.Key.ToLower() == "role").Select(x => x.Value.ToString()).ToArray());
         }

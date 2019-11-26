@@ -1,9 +1,11 @@
-﻿#if NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+#if NET45 || NET451 || NET452 || NET461
 using System.Web;
+#endif
 
 namespace SkyBuilding.Mvc.DependencyInjection
 {
@@ -16,9 +18,10 @@ namespace SkyBuilding.Mvc.DependencyInjection
 
         private readonly ConcurrentDictionary<ServiceDescriptor, object> singletions = new ConcurrentDictionary<ServiceDescriptor, object>();
         private readonly ConcurrentDictionary<Type, Func<IServiceProvider, object>> implementations = new ConcurrentDictionary<Type, Func<IServiceProvider, object>>();
-        private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
         private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
-
+#if NET45 || NET451 || NET452 || NET461
+        private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
+#endif
         internal ServiceProvider(IEnumerable<ServiceDescriptor> serviceDescriptors)
         {
             this.serviceDescriptors = serviceDescriptors;
@@ -101,6 +104,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
 
                         return service.ImplementationFactory.Invoke(this);
                     });
+#if NET45 || NET451 || NET452 || NET461
                 case ServiceLifetime.Scoped:
                     return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
                     {
@@ -116,6 +120,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
                     {
                         return service2.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service2.ImplementationType, MakeImplementationFactory).Invoke(this);
                     });
+#endif
                 case ServiceLifetime.Transient:
                     return service.ImplementationInstance ?? service.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service.ImplementationType, MakeImplementationFactory).Invoke(this);
                 default:

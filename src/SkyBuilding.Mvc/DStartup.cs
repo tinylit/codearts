@@ -172,9 +172,7 @@ namespace SkyBuilding.Mvc
         }
     }
 }
-#elif NET45 || NET451 || NET452 || NET461
-using log4net;
-using log4net.Core;
+#else
 using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
 using SkyBuilding.Config;
@@ -182,10 +180,12 @@ using SkyBuilding.Mvc.Builder;
 using SkyBuilding.Mvc.Converters;
 using SkyBuilding.Mvc.DependencyInjection;
 using SkyBuilding.Serialize.Json;
+#if NET45 || NET451 || NET452 || NET461
 using Swashbuckle.Application;
-using System;
 using System.IO;
 using System.Linq;
+#endif
+using System;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
 
@@ -210,11 +210,12 @@ namespace SkyBuilding.Mvc
                 return propertyName.ToCamelCase();
             }
         }
-
+#if NET45 || NET451 || NET452 || NET461
         /// <summary>
         /// 是否使用SwaggerUi（默认：true）
         /// </summary>
         protected bool UseSwaggerUi { get; set; } = true;
+#endif
 
         /// <summary>
         /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
@@ -227,10 +228,12 @@ namespace SkyBuilding.Mvc
         /// <param name="config">配置</param>
         public virtual void Configuration(HttpConfiguration config)
         {
+#if NET45 || NET451 || NET452 || NET461
             // Web API 路由
             config.MapHttpAttributeRoutes();
 
             config.Routes.IgnoreRoute("ignore", "{resource}.axd/{*pathInfo}");
+#endif
 
             //? 注册默认路由
             config.Routes.Add("route", config.Routes.CreateRoute("api/{controller}/{id}", new { id = RouteParameter.Optional }, new object()));
@@ -258,7 +261,7 @@ namespace SkyBuilding.Mvc
                 .JsonFormatter
                 .SerializerSettings
                 .ContractResolver = new ContractResolver();
-
+#if NET45 || NET451 || NET452 || NET461
             if (UseSwaggerUi)
             {
                 //? SwaggerUi
@@ -294,6 +297,7 @@ namespace SkyBuilding.Mvc
                     c.DocExpansion(DocExpansion.List);
                 });
             }
+#endif
 
             //?异常捕获
             config.Filters.Add(new DExceptionFilterAttribute());
@@ -313,8 +317,6 @@ namespace SkyBuilding.Mvc
         /// <param name="services">服务集合</param>
         public virtual void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton(typeof(ILogger), LoggerRepository.Instance.GetLogger("default"));
-
             if (UseDependencyInjection)
             {
                 services.UseDependencyInjection();

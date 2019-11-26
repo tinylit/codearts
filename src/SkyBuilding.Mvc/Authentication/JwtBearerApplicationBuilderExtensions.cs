@@ -1,6 +1,9 @@
-﻿#if NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET45 || NET451 || NET452 || NET461
 using SkyBuilding.Mvc.Authentication;
 using System;
+#if NET40
+using System.Threading;
+#endif
 
 namespace SkyBuilding.Mvc.Builder
 {
@@ -32,7 +35,12 @@ namespace SkyBuilding.Mvc.Builder
 
                     if (string.IsNullOrEmpty(receivedContext.Token))
                     {
+#if NET40
+                        next.Invoke(context);
+                        return;
+#else
                         return next.Invoke(context);
+#endif
                     }
 
                     var tokenValidateContext = new TokenValidateContext(receivedContext);
@@ -41,7 +49,12 @@ namespace SkyBuilding.Mvc.Builder
 
                     if (tokenValidateContext.UserData is null || tokenValidateContext.UserData.Count == 0)
                     {
+#if NET40
+                        next.Invoke(context);
+                        return;
+#else
                         return next.Invoke(context);
+#endif
                     }
 
                     var tokenValidatedContext = new TokenValidatedContext(tokenValidateContext);
@@ -51,9 +64,17 @@ namespace SkyBuilding.Mvc.Builder
                     if (tokenValidatedContext.User?.Identity?.IsAuthenticated ?? false)
                     {
                         context.User = tokenValidatedContext.User;
+#if NET40
+                        Thread.CurrentPrincipal = tokenValidatedContext.User;
+#endif
                     }
 
+#if NET40
+                    next.Invoke(context);
+                    return;
+#else
                     return next.Invoke(context);
+#endif
                 };
             });
         }

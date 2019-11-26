@@ -74,13 +74,11 @@ namespace MVC461.Controllers
     public class ValuesController : BaseController
     {
         private readonly IDependency dependency;
-        private readonly ILogger logger;
 
         /// <inheritdoc />
-        public ValuesController(IDependency dependency, ILogger logger)
+        public ValuesController(IDependency dependency)
         {
             this.dependency = dependency;
-            this.logger = logger;
         }
         /// <inheritdoc />
         // GET api/values
@@ -129,8 +127,6 @@ namespace MVC461.Controllers
         [ActionName("login")]
         public DResult Login(string account, string password)
         {
-            logger.Log(typeof(ValuesController), Level.Info, "登录成功", null);
-
             return DResult.Ok(new
             {
                 id = 100000,

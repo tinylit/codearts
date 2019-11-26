@@ -58,7 +58,7 @@ namespace Mvc4.Controllers
         /// <inheritdoc />
         // DELETE api/values/5
         [HttpDelete]
-        [JwtAuthorize]
+        [Authorize]
         public void Delete(int id)
         {
             throw new BusiException("认证测试成功");

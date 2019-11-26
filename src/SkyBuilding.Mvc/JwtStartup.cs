@@ -73,7 +73,7 @@ namespace SkyBuilding.Mvc
         }
     }
 }
-#elif NET45 || NET451 || NET452 || NET461
+#else
 using SkyBuilding.Mvc.Authentication;
 using SkyBuilding.Mvc.Builder;
 

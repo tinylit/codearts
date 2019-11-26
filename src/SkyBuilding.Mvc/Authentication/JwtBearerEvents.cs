@@ -1,4 +1,4 @@
-﻿#if NET45 || NET451 || NET452 ||NET461
+﻿#if NET40 || NET45 || NET451 || NET452 ||NET461
 using System;
 
 namespace SkyBuilding.Mvc.Authentication

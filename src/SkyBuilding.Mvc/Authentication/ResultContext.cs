@@ -1,10 +1,14 @@
-﻿#if NET45 || NET451 || NET452 ||NET461
+﻿#if NET40 || NET45 || NET451 || NET452 ||NET461
 using JWT;
 using JWT.Serializers;
 using System;
 using System.Collections.Generic;
 using System.IO;
+#if NET40
+using System.Security.Principal;
+#else
 using System.Security.Claims;
+#endif
 using System.Web;
 
 namespace SkyBuilding.Mvc.Authentication
@@ -126,6 +130,27 @@ namespace SkyBuilding.Mvc.Authentication
         /// </summary>
         public IDictionary<string, object> UserData { get; }
 
+#if NET40
+
+
+        private GenericPrincipal user = null;
+
+        /// <summary>
+        /// 用户信息
+        /// </summary>
+        public GenericPrincipal User
+        {
+            get
+            {
+                if (user is null)
+                {
+                    user = UserData.AsPrincipal();
+                }
+                return user;
+            }
+            set => user = value;
+        }
+#else
         private ClaimsPrincipal user = null;
 
         /// <summary>
@@ -143,6 +168,7 @@ namespace SkyBuilding.Mvc.Authentication
             }
             set => user = value;
         }
+#endif
     }
 }
 #endif
