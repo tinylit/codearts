@@ -1,17 +1,109 @@
-﻿using SkyBuilding.AOP;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
+namespace System.Collections.Generic
+{
+    /// <summary>
+    /// 迭代扩展
+    /// </summary>
+    public static class IEnumerableExtentions
+    {
+        /// <summary>
+        /// 对数据中的每个元素执行指定操作
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">数据源</param>
+        /// <param name="action">要对数据源的每个元素执行的委托。</param>
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            foreach (T item in source)
+            {
+                action.Invoke(item);
+            }
+        }
+
+        /// <summary>
+        /// 对数据中的每个元素执行指定操作
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">数据源</param>
+        /// <param name="action">要对数据源的每个元素执行的委托。</param>
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+        {
+            int index = -1;
+            foreach (T item in source)
+            {
+                action.Invoke(item, index += 1);
+            }
+        }
+    }
+}
+
 namespace ConsoleEmit
 {
+    /// <summary>
+    /// 拦截器
+    /// </summary>
+    public interface IInterceptor
+    {
+        /// <summary>
+        /// 拦截
+        /// </summary>
+        void Intercept(IIntercept intercept);
+    }
+
+    /// <summary>
+    /// 调用者数据信息
+    /// </summary>
+    public interface IIntercept
+    {
+        /// <summary>
+        /// 调用参数
+        /// </summary>
+        object[] Arguments { get; }
+
+        /// <summary>
+        /// 调用函数
+        /// </summary>
+        MethodInfo Method { get; }
+
+        /// <summary>
+        /// 拦截的对象
+        /// </summary>
+        object Instance { get; }
+
+        /// <summary>
+        /// 返回值
+        /// </summary>
+        object ReturnValue { get; set; }
+
+        /// <summary>
+        /// 执行方法
+        /// </summary>
+        void Proceed();
+
+        /// <summary>
+        /// 获取参数值
+        /// </summary>
+        /// <param name="index">索引</param>
+        /// <returns></returns>
+        object GetArgumentValue(int index);
+
+        /// <summary>
+        /// 重设参数值
+        /// </summary>
+        /// <param name="index">索引</param>
+        /// <param name="value">参数值</param>
+        void SetArgumentValue(int index, object value);
+    }
     public interface IEmit
     {
         void Test();
+
         bool TestValueType(int i);
 
         int TestInt32(int i);
@@ -39,44 +131,31 @@ namespace ConsoleEmit
         public T TestG<T>(T i) => i;
 
         public T TestGConstraint<T>(T i) where T : struct => i;
-    }
 
-    public class BaseProxy
-    {
-        public void Intercept(IInvokeBinder interceptor)
+        public IEmit TestClas(int i, out int b)
         {
-
+            b = i;
+            return this;
         }
 
-        public object GetReturnValue()
-        {
-            return 0;
-        }
-
-        public static MethodInfo MakeGenericMethod(MethodInfo method, Type[] types)
-        {
-            return method;//.MakeGenericMethod(types);
-        }
+        public object ReturnValue { get; set; }
     }
 
     public class Interceptor : IInterceptor
     {
-        public void Intercept(IInvokeBinder invokeBinder)
+        public void Intercept(IIntercept invokeBinder)
         {
-            invokeBinder.Invoke();
+            invokeBinder.Proceed();
         }
     }
 
-    public class InvokeBinder : IInvokeBinder
+    public class InvokeBinder : IIntercept
     {
-        private readonly ParameterInfo[] parameters;
         public InvokeBinder(object instance, MethodInfo method, object[] arguments)
         {
             Instance = instance;
             Method = method;
             Arguments = arguments;
-
-            parameters = method.GetParameters();
         }
 
         public object[] Arguments { get; }
@@ -85,34 +164,17 @@ namespace ConsoleEmit
 
         public object Instance { get; }
 
-        private object returnValue = null;
-
         public object ReturnValue
         {
-            get => returnValue;
-            set
-            {
-                if (Valid(value, Method.ReturnType))
-                {
-                    returnValue = value;
-                }
-            }
+            get;
+            set;
         }
 
         public object GetArgumentValue(int index) => Arguments[index < 0 ? Arguments.Length + index : index];
 
-        public void Invoke() => returnValue = Method.Invoke(Instance, Arguments);
+        public void Proceed() => ReturnValue = Method.Invoke(Instance, Arguments);
 
-        public void SetArgumentValue(int index, object value) => Arguments[index < 0 ? Arguments.Length + index : index] = Valid(value, parameters[index < 0 ? Arguments.Length + index : index].ParameterType) ? value : throw new ArgumentException("参数类型不匹配!");
-
-        private static bool Valid(object value, Type conversionType)
-        {
-            if (value is null) return true;
-
-            var sourceType = value.GetType();
-
-            return sourceType == conversionType || conversionType.IsAssignableFrom(sourceType);
-        }
+        public void SetArgumentValue(int index, object value) => Arguments[index < 0 ? Arguments.Length + index : index] = value;
     }
 
     class Program
@@ -124,17 +186,13 @@ namespace ConsoleEmit
             var assemblyBuilder = AppDomain.CurrentDomain
                 .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
 
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule("SkyBuilding.Module", @"SkyBuilding.Emit.dll");
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("SkyBuilding.Module", "SkyBuilding.Emit.dll");
 
             var iEmitType = typeof(IEmit);
 
-            var interfaceBuilder = moduleBuilder.DefineType("IEmitProxy", TypeAttributes.Interface | TypeAttributes.Abstract | TypeAttributes.NotPublic, null, new Type[] { iEmitType });
-
-            var interfaceType = interfaceBuilder.CreateType();
-
             var interceptorType = typeof(IInterceptor);
 
-            var typeBuilder = moduleBuilder.DefineType("EmitProxy", TypeAttributes.Class | TypeAttributes.NotPublic, typeof(BaseProxy), new Type[] { interfaceType });
+            var typeBuilder = moduleBuilder.DefineType("EmitProxy", TypeAttributes.Class | TypeAttributes.NotPublic, null, new Type[] { iEmitType });
 
             var instanceField = typeBuilder.DefineField("instance", iEmitType, FieldAttributes.Private | FieldAttributes.InitOnly);
 
@@ -157,21 +215,25 @@ namespace ConsoleEmit
             ilOfCtor.Emit(OpCodes.Ldarg_0);
             ilOfCtor.Emit(OpCodes.Ldarg_2);
             ilOfCtor.Emit(OpCodes.Stfld, interceptorField);
+
             ilOfCtor.Emit(OpCodes.Ret);
 
+            var constructorStaticBuilder = typeBuilder.DefineConstructor(MethodAttributes.Static, CallingConventions.Standard, Type.EmptyTypes);
+
+            var ilOfStaticCtor = constructorStaticBuilder.GetILGenerator();
+
             var invokeType = typeof(InvokeBinder);
-            var returnValue = typeof(IInvokeBinder).GetProperty("ReturnValue");
+            var returnValue = typeof(IIntercept).GetProperty("ReturnValue");
             var invokeCtor = invokeType.GetConstructor(new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) });
 
-            var interceptMethod = interceptorType.GetMethod("Intercept", new Type[] { typeof(IInvokeBinder) });
+            var interceptMethod = interceptorType.GetMethod("Intercept", new Type[] { typeof(IIntercept) });
 
             foreach (var method in iEmitType.GetMethods())
             {
                 var parameters = method.GetParameters();
                 var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
-
                 var methodBuilder = typeBuilder.DefineMethod(method.Name,
-                    MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
+                    MethodAttributes.Public | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                     CallingConventions.Standard);
 
                 if (method.IsGenericMethod)
@@ -203,14 +265,9 @@ namespace ConsoleEmit
 
                 var ilGen = methodBuilder.GetILGenerator();
 
-                MethodInfo methodInfo = method;
-
-                if (method.IsGenericMethod)
-                {
-                    methodInfo = method.MakeGenericMethod(methodBuilder.GetGenericArguments());
-                }
-
-                var local = Create(ilGen, instanceField, invokeCtor, methodInfo, parameterTypes);
+                LocalBuilder local = method.IsGenericMethod
+                    ? CreateInvokeBinder(typeBuilder, ilOfStaticCtor, ilGen, instanceField, invokeCtor, method.MakeGenericMethod(methodBuilder.GetGenericArguments()), parameterTypes)
+                    : CreateInvokeBinder(typeBuilder, ilOfStaticCtor, ilGen, instanceField, invokeCtor, method, parameterTypes);
 
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldfld, interceptorField);
@@ -225,7 +282,7 @@ namespace ConsoleEmit
                 {
                     ilGen.Emit(OpCodes.Callvirt, returnValue.GetMethod);
 
-                    if (method.ReturnType.IsValueType && !method.ReturnType.IsNullable())
+                    if (method.ReturnType.IsValueType && !(method.ReturnType.IsGenericType && method.ReturnType.GetGenericTypeDefinition() == typeof(Nullable<>)))
                     {
                         var value = ilGen.DeclareLocal(typeof(object));
 
@@ -269,6 +326,8 @@ namespace ConsoleEmit
                 typeBuilder.DefineMethodOverride(methodBuilder, method);
             }
 
+            ilOfStaticCtor.Emit(OpCodes.Ret);
+
             var type = typeBuilder.CreateType();
 
             assemblyBuilder.Save("SkyBuilding.Emit.dll");
@@ -279,7 +338,7 @@ namespace ConsoleEmit
 
             var g1 = emit.TestG(new object());
 
-            var g2 = emit.TestG(8);
+            var g2 = emit.TestG(18);
 
             var g3 = emit.TestGConstraint(DateTimeKind.Utc);
 
@@ -290,12 +349,13 @@ namespace ConsoleEmit
             var c = emit.TestClas();
         }
 
-        private static LocalBuilder Create(ILGenerator ilGen, FieldBuilder instanceField, ConstructorInfo invokeCtor, MethodInfo method, Type[] parameters)
+        private static LocalBuilder CreateInvokeBinder(TypeBuilder typeBuilder, ILGenerator ilOfStaticCtor, ILGenerator ilGen, FieldBuilder instanceField, ConstructorInfo invokeCtor, MethodInfo method, Type[] parameters)
         {
-            var local = ilGen.DeclareLocal(typeof(IInvokeBinder));
-
             //! 声明一个类型为object的局部数组
             LocalBuilder array = ilGen.DeclareLocal(typeof(object[]));
+
+            //? 上下文
+            var local = ilGen.DeclareLocal(typeof(IIntercept));
 
             //? 数组长度入栈
             ilGen.Emit(OpCodes.Ldc_I4, parameters.Length);
@@ -312,63 +372,54 @@ namespace ConsoleEmit
                 ilGen.Emit(OpCodes.Ldarg, index + 1);
 
                 //! 值类型参数装箱。
-                if (type.IsValueType)
+                if (type.IsValueType || type.IsGenericParameter)
+                {
                     ilGen.Emit(OpCodes.Box, type);
+                }
 
                 //! 将参数存入数组。
                 ilGen.Emit(OpCodes.Stelem_Ref);
             });
 
+            //? 
             ilGen.Emit(OpCodes.Stloc, array);
-
-            //if (method.IsGenericMethod)
-            //{
-            //    var genericArguments = method.GetGenericArguments();
-
-            //    var arguments = ilGen.DeclareLocal(typeof(Type[]));
-
-            //    //? 数组长度入栈
-            //    ilGen.Emit(OpCodes.Ldc_I4, genericArguments.Length);
-
-            //    ilGen.Emit(OpCodes.Newarr, typeof(Type));
-
-            //    genericArguments.ForEach((type, index) =>
-            //    {
-            //        ilGen.Emit(OpCodes.Dup);
-            //        //? 数组下标入栈
-            //        ilGen.Emit(OpCodes.Ldc_I4, index);
-            //        //? 加载对应下标的参数。（第0个是this。）
-            //        ilGen.Emit(OpCodes.Ldtoken, type);
-
-            //        ilGen.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
-
-            //        //! 将参数存入数组。
-            //        ilGen.Emit(OpCodes.Stelem_Ref);
-            //    });
-
-            //    ilGen.Emit(OpCodes.Stloc, arguments);
-
-            //    ilGen.Emit(OpCodes.Ldloc, methodLabel);
-
-            //    ilGen.Emit(OpCodes.Ldloc, arguments);
-
-            //    ilGen.Emit(OpCodes.Call, typeof(BaseProxy).GetMethod("MakeGenericMethod", BindingFlags.Public | BindingFlags.Static));
-
-            //    //ilGen.Emit(OpCodes.Callvirt, typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) }));
-
-            //    ilGen.Emit(OpCodes.Stloc, methodLabel);
-            //}
 
             ilGen.Emit(OpCodes.Ldarg_0);
             ilGen.Emit(OpCodes.Ldfld, instanceField);
 
-            ilGen.Emit(OpCodes.Ldtoken, method);
+            if (method.IsGenericMethod)
+            {
+                ilGen.Emit(OpCodes.Ldtoken, method);
 
-            ilGen.Emit(OpCodes.Ldtoken, method.DeclaringType);
+                ilGen.Emit(OpCodes.Ldtoken, method.DeclaringType);
 
-            ilGen.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
+                ilGen.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
 
-            ilGen.Emit(OpCodes.Castclass, typeof(MethodInfo));
+                ilGen.Emit(OpCodes.Castclass, typeof(MethodInfo));
+            }
+            else
+            {
+                var token = string.Empty;
+
+                foreach (var item in method.GetParameters())
+                {
+                    token += "_" + item.MetadataToken.GetHashCode();
+                }
+
+                var tokenField = typeBuilder.DefineField("token_" + method.Name + token, typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+                ilOfStaticCtor.Emit(OpCodes.Ldtoken, method);
+
+                ilOfStaticCtor.Emit(OpCodes.Ldtoken, method.DeclaringType);
+
+                ilOfStaticCtor.Emit(OpCodes.Call, typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) }));
+
+                ilOfStaticCtor.Emit(OpCodes.Castclass, typeof(MethodInfo));
+
+                ilOfStaticCtor.Emit(OpCodes.Stsfld, tokenField);
+
+                ilGen.Emit(OpCodes.Ldsfld, tokenField);
+            }
 
             ilGen.Emit(OpCodes.Ldloc, array);
 
@@ -379,66 +430,6 @@ namespace ConsoleEmit
             ilGen.Emit(OpCodes.Ldloc, local);
 
             return local;
-        }
-        private static Type[] AdjustGenericConstraints(MethodInfo methodToCopyGenericsFrom,
-                                               GenericTypeParameterBuilder[] newGenericParameters,
-                                               Type[] originalGenericArguments,
-                                               Type[] constraints)
-        {
-            // HACK: the mono runtime has a strange bug where assigning to the constraints
-            //       parameter and returning it throws, so we'll create a new array.
-            //       System.ArrayTypeMismatchException : Source array type cannot be assigned to destination array type.
-            Type[] adjustedConstraints = new Type[constraints.Length];
-            for (var i = 0; i < constraints.Length; i++)
-            {
-                adjustedConstraints[i] = AdjustConstraintToNewGenericParameters(constraints[i],
-                    methodToCopyGenericsFrom, originalGenericArguments, newGenericParameters);
-            }
-            return adjustedConstraints;
-        }
-        private static Type AdjustConstraintToNewGenericParameters(
-            Type constraint, MethodInfo methodToCopyGenericsFrom, Type[] originalGenericParameters,
-            GenericTypeParameterBuilder[] newGenericParameters)
-        {
-            if (constraint.IsGenericType)
-            {
-                var genericArgumentsOfConstraint = constraint.GetGenericArguments();
-
-                for (var i = 0; i < genericArgumentsOfConstraint.Length; ++i)
-                {
-                    genericArgumentsOfConstraint[i] =
-                        AdjustConstraintToNewGenericParameters(genericArgumentsOfConstraint[i], methodToCopyGenericsFrom,
-                                                               originalGenericParameters, newGenericParameters);
-                }
-                return constraint.GetGenericTypeDefinition().MakeGenericType(genericArgumentsOfConstraint);
-            }
-            else if (constraint.IsGenericParameter)
-            {
-                // Determine the source of the parameter
-                if (constraint.DeclaringMethod != null)
-                {
-                    // constraint comes from the method
-                    var index = Array.IndexOf(originalGenericParameters, constraint);
-                    Trace.Assert(index != -1,
-                                 "When a generic method parameter has a constraint on another method parameter, both parameters must be declared on the same method.");
-                    return newGenericParameters[index].AsType();
-                }
-                else // parameter from surrounding type
-                {
-                    Trace.Assert(constraint.DeclaringType.IsGenericTypeDefinition);
-                    Trace.Assert(methodToCopyGenericsFrom.DeclaringType.IsGenericType
-                                 && constraint.DeclaringType == methodToCopyGenericsFrom.DeclaringType.GetGenericTypeDefinition(),
-                                 "When a generic method parameter has a constraint on a generic type parameter, the generic type must be the declaring typer of the method.");
-
-                    var index = Array.IndexOf(constraint.DeclaringType.GetGenericArguments(), constraint);
-                    Trace.Assert(index != -1, "The generic parameter comes from the given type.");
-                    return methodToCopyGenericsFrom.DeclaringType.GetGenericArguments()[index]; // these are the actual, concrete types
-                }
-            }
-            else
-            {
-                return constraint;
-            }
         }
     }
 

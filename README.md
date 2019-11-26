@@ -163,6 +163,37 @@ First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). 
 PM> Install-Package SkyBuilding
 ```
 
+### How to use Proxy?
+#### Method proxies with "out" or "ref" arguments are not supported!
+* Using the interface proxy.
+``` csharp
+	var of = ProxyGenerator.Of<IEmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate interface proxy.
+	
+	var instance = new EmitTest(); // Interface implementation class.
+	
+	var interceptor = new Interceptor(); // The interceptor.
+
+	var proxy = of.Of(instance, interceptor); //Gets the interface proxy instance for the specified instance.
+```
+
+* Use a proxy class with a default constructor.
+``` csharp
+	var of = ProxyGenerator.New<EmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate class proxy.
+	
+	var interceptor = new Interceptor(); // The interceptor.
+
+	var proxy = of.New(interceptor); // Gets an instance of a proxy.
+```
+
+* Using the class proxy.
+``` csharp
+	var of = ProxyGenerator.CreateInstance<EmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate class proxy.
+
+	var interceptor = new Interceptor(); // The interceptor.
+
+	var proxy = of.CreateInstance(interceptor, ...args/* The constructor parameter of the proscribed class. */); // Gets an instance of a proxy.
+```
+
 ### How to use ORM?
 * Entities defined.
 ``` csharp

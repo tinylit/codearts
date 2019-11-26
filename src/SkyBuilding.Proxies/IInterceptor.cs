@@ -1,4 +1,4 @@
-﻿namespace SkyBuilding.AOP
+﻿namespace SkyBuilding.Proxies
 {
     /// <summary>
     /// 拦截器
@@ -8,6 +8,6 @@
         /// <summary>
         /// 拦截
         /// </summary>
-        void Intercept(IInvokeBinder invokeBinder);
+        void Intercept(IIntercept intercept);
     }
 }

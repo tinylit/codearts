@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Autofac.Extras.DynamicProxy;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mvc.Core.Domain;
 using SkyBuilding;
-using SkyBuilding.AOP;
 using SkyBuilding.Exceptions;
 using SkyBuilding.Mvc;
+using System.Collections.Generic;
 
 namespace Mvc.Core.Controllers
 {
     /// <inheritdoc />
-    [Autofac.Extras.DynamicProxy.Intercept(typeof(DefaultInterceptor))]
     public interface IDependency
     {
         /// <inheritdoc />
@@ -22,7 +16,6 @@ namespace Mvc.Core.Controllers
     }
 
     /// <inheritdoc />
-    [Autofac.Extras.DynamicProxy.Intercept(typeof(DefaultInterceptor))]
     public class Dependency : IDependency
     {
         private readonly UserRepository user;

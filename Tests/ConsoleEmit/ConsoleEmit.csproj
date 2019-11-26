@@ -50,15 +50,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\SkyBuilding.AOP\SkyBuilding.AOP.csproj">
-      <Project>{c941ebc1-6c5f-4ac9-bd9c-bf37ee402c0c}</Project>
-      <Name>SkyBuilding.AOP</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\SkyBuilding\SkyBuilding.csproj">
-      <Project>{e12dd9b0-64a0-4bca-9d4c-151f45fd5678}</Project>
-      <Name>SkyBuilding</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

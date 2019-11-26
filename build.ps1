@@ -11,6 +11,7 @@ $packageOutputFolder = "$PSScriptRoot\.nupkgs"
 $projectsToBuild =
     'SkyBuilding',
     'SkyBuilding.Defaults',
+	'SkyBuilding.Proxies',
     'SkyBuilding.Mvc',
     'SkyBuilding.ORM',
     'SkyBuilding.MySql',

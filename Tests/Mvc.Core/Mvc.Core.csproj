@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SkyBuilding.AOP\SkyBuilding.AOP.csproj" />
     <ProjectReference Include="..\..\src\SkyBuilding.Mvc\SkyBuilding.Mvc.csproj" />
     <ProjectReference Include="..\..\src\SkyBuilding.MySql\SkyBuilding.MySql.csproj" />
     <ProjectReference Include="..\..\src\SkyBuilding.ORM\SkyBuilding.ORM.csproj" />

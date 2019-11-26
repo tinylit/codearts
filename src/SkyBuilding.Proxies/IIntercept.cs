@@ -1,16 +1,17 @@
 ﻿using System.Reflection;
 
-namespace SkyBuilding.AOP
+namespace SkyBuilding.Proxies
 {
     /// <summary>
     /// 调用者数据信息
     /// </summary>
-    public interface IInvokeBinder
+    public interface IIntercept
     {
         /// <summary>
         /// 调用参数
         /// </summary>
         object[] Arguments { get; }
+
         /// <summary>
         /// 调用函数
         /// </summary>
@@ -29,7 +30,7 @@ namespace SkyBuilding.AOP
         /// <summary>
         /// 执行方法
         /// </summary>
-        void Invoke();
+        void Proceed();
 
         /// <summary>
         /// 获取参数值
