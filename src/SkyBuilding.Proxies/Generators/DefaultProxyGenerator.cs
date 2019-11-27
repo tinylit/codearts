@@ -48,7 +48,7 @@ namespace SkyBuilding.Proxies.Generators
                 var parameters = method.GetParameters();
                 var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
                 var methodBuilder = typeBuilder.DefineMethod(method.Name,
-                    MethodAttributes.Public | MethodAttributes.NewSlot | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.Final,
+                    MethodAttributes.Public | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                     CallingConventions.Standard);
 
                 if (method.IsGenericMethod)
@@ -96,6 +96,8 @@ namespace SkyBuilding.Proxies.Generators
 
                 if (parameters.Any(x => x.ParameterType.IsByRef))
                     throw new NotSupportedException("不支持包含“out”、“ref”参数的方法代理!");
+
+
 
                 LocalBuilder local = method.IsGenericMethod
                 ? CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, instanceField, method.MakeGenericMethod(methodBuilder.GetGenericArguments()), parameterTypes)
@@ -157,10 +159,11 @@ namespace SkyBuilding.Proxies.Generators
                 }
 
             return_label:
+                {
+                    ilGen.Emit(OpCodes.Ret);
 
-                ilGen.Emit(OpCodes.Ret);
-
-                typeBuilder.DefineMethodOverride(methodBuilder, method);
+                    typeBuilder.DefineMethodOverride(methodBuilder, method);
+                }
             }
         }
 
@@ -173,7 +176,7 @@ namespace SkyBuilding.Proxies.Generators
                 var parameters = method.GetParameters();
                 var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
                 var methodBuilder = typeBuilder.DefineMethod(method.Name,
-                    MethodAttributes.Public | MethodAttributes.NewSlot | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.Final,
+                    MethodAttributes.Public | MethodAttributes.NewSlot | MethodAttributes.HideBySig | MethodAttributes.Final,
                     CallingConventions.Standard);
 
                 if (method.IsGenericMethod)
@@ -302,7 +305,7 @@ namespace SkyBuilding.Proxies.Generators
                 ilGen.Emit(OpCodes.Stelem_Ref);
             });
 
-            //? 
+            //? 给数组赋值。
             ilGen.Emit(OpCodes.Stloc, array);
 
             ilGen.Emit(OpCodes.Ldarg_0);
@@ -482,6 +485,11 @@ namespace SkyBuilding.Proxies.Generators
             if (!classType.IsClass || classType.IsAbstract)
             {
                 throw new ArgumentException("指定类型不是可实例化的类!", nameof(classType));
+            }
+
+            if (classType.IsNested)
+            {
+                throw new ArgumentException("不支持密封类的代理!", nameof(classType));
             }
 
             var moduleBuilder = Scope.Create(classType);

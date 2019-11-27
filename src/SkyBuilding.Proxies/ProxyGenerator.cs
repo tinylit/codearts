@@ -137,7 +137,7 @@ namespace SkyBuilding.Proxies
 
                     var constructor = interfaceType.GetConstructor(new Type[] { typeof(T), typeof(IInterceptor) });
 
-                    var lamdaExp = Expression.Lambda<Func<T, IInterceptor, T>>(Expression.New(constructor, Expression.Convert(instanceExp, typeof(T)), interceptorExp), instanceExp, interceptorExp);
+                    var lamdaExp = Expression.Lambda<Func<T, IInterceptor, T>>(Expression.Convert(Expression.New(constructor, Expression.Convert(instanceExp, typeof(T)), interceptorExp), typeof(T)), instanceExp, interceptorExp);
 
                     return lamdaExp.Compile();
                 });
