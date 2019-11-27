@@ -162,7 +162,9 @@ namespace SkyBuilding.Proxies.Generators
                 {
                     ilGen.Emit(OpCodes.Ret);
 
+#if NET40 || NETSTANDARD2_0
                     typeBuilder.DefineMethodOverride(methodBuilder, method);
+#endif
                 }
             }
         }

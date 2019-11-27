@@ -59,34 +59,6 @@ namespace SkyBuilding.Proxies.Tests
         }
     }
 
-    public interface IEmitTest2
-    {
-        void Test();
-
-        //bool TestValueType(int i);
-
-        //T Test<T>(T i);
-    }
-
-    public class EmitTest2 : IEmitTest2
-    {
-
-        public void Test()
-        {
-
-        }
-
-        //public T Test<T>(T i)
-        //{
-        //    return i;
-        //}
-
-        //public bool TestValueType(int i)
-        //{
-        //    return i > 0;
-        //}
-    }
-
     public class Interceptor : IInterceptor
     {
         public void Intercept(IIntercept intercept)
@@ -100,39 +72,30 @@ namespace SkyBuilding.Proxies.Tests
         [Fact]
         public void TestInterface()
         {
-#if NET461
-            var module = new ModuleScope { SaveAssembly = true };
+            var of = ProxyGenerator.Of<IEmitTest>(new ProxyOptions(new NonIsByRefMethodsHook()));
 
-            RuntimeServManager.TryAddSingleton<IProxyGenerator>(() => new DefaultProxyGenerator(module));
-#endif
-
-            var of = ProxyGenerator.Of<IEmitTest2>(new ProxyOptions(new NonIsByRefMethodsHook()));
-
-            var instance = new EmitTest2();
+            var instance = new EmitTest();
             var interceptor = new Interceptor();
 
             var proxy = of.Of(instance, interceptor);
 
             proxy.Test();
 
-            //var i = 6;
-            //var x = proxy.TestRef(ref i);
+            var i = 6;
+            var x = proxy.TestRef(ref i);
 
-            //var x2 = proxy.TestConstraint(15);
+            var x2 = proxy.TestConstraint(15);
 
-            //var x3 = proxy.Test(16);
+            var x3 = proxy.Test(16);
 
-            //var x4 = proxy.TestValueType(17);
+            var x4 = proxy.TestValueType(17);
 
-#if NET461
-            module.Save();
-#endif
         }
 
         [Fact]
         public void TestByNew()
         {
-            var of = ProxyGenerator.New<EmitTest>(new ProxyOptions(new NonIsByRefMethodsHook()));
+            var of = ProxyGenerator.New<EmitTest>(ProxyOptions.Default);
 
             var interceptor = new Interceptor();
 
@@ -149,7 +112,7 @@ namespace SkyBuilding.Proxies.Tests
         [Fact]
         public void TestByCreateInstance()
         {
-            var of = ProxyGenerator.CreateInstance<EmitTest>(new ProxyOptions(new NonIsByRefMethodsHook()));
+            var of = ProxyGenerator.CreateInstance<EmitTest>(ProxyOptions.Default);
 
             var interceptor = new Interceptor();
 

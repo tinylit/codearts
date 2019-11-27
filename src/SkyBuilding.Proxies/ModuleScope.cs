@@ -13,20 +13,35 @@ namespace SkyBuilding.Proxies
     {
         private static readonly ConcurrentDictionary<Assembly, ModuleBuilder> ModuleCache = new ConcurrentDictionary<Assembly, ModuleBuilder>();
 
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        public ModuleScope()
+        {
+
+        }
+
 #if NET45 || NET451 || NET452 || NET461
-        private static readonly List<AssemblyBuilder> builders = new List<AssemblyBuilder>();
+        private readonly bool saveAssembly = false;
+        private readonly List<AssemblyBuilder> builders;
 
         /// <summary>
-        /// 是否保存程序集。
+        /// 构造函数。
         /// </summary>
-        public bool SaveAssembly { get; set; }
+        /// <param name="savePhysicalAssembly">保存程序集物理文件</param>
+        public ModuleScope(bool savePhysicalAssembly)
+        {
+            if (saveAssembly = savePhysicalAssembly)
+            {
+                builders = new List<AssemblyBuilder>();
+            }
+        }
 #endif
-
         /// <summary>
         /// 创建模块。
         /// </summary>
         /// <returns></returns>
-        public virtual ModuleBuilder Create(Type type) => ModuleCache.GetOrAdd(type.Assembly, assembly =>
+        public ModuleBuilder Create(Type type) => ModuleCache.GetOrAdd(type.Assembly, assembly =>
         {
             var name = assembly.GetName().Name;
 
@@ -35,9 +50,9 @@ namespace SkyBuilding.Proxies
 #if NET40
             var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
 #elif NET45 || NET451 || NET452 || NET461
-            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, SaveAssembly ? AssemblyBuilderAccess.RunAndSave : AssemblyBuilderAccess.Run);
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, saveAssembly ? AssemblyBuilderAccess.RunAndSave : AssemblyBuilderAccess.Run);
 
-            if (SaveAssembly)
+            if (saveAssembly)
             {
                 builders.Add(assemblyBuilder);
 
@@ -54,9 +69,15 @@ namespace SkyBuilding.Proxies
         /// <summary>
         /// 保存程序集。
         /// </summary>
-        public void Save()
+        public void SaveAssembly()
         {
-            builders.ForEach(builder => builder.Save(builder.GetName().Name + ".dll"));
+            if (saveAssembly)
+            {
+                builders.ForEach(builder =>
+                {
+                    builder.Save(builder.GetName().Name + ".dll");
+                });
+            }
         }
 #endif
     }
