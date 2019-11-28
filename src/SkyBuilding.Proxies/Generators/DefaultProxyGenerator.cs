@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Collections.Concurrent;
 using System.Reflection.Emit;
 
 namespace SkyBuilding.Proxies.Generators
@@ -40,6 +38,21 @@ namespace SkyBuilding.Proxies.Generators
         /// 模块范围。
         /// </summary>
         public ModuleScope Scope { get; }
+
+#if NETSTANDARD2_1
+        /// <summary>
+        /// 仅用作内部使用（解决.NETCOREAPP3.0下，运行时“Bad Il format.”异常）。
+        /// </summary>
+        /// <param name="interceptor">拦截器</param>
+        /// <param name="intercept">拦截信息</param>
+        /// <returns>拦截方法的返回值<see cref="IIntercept.ReturnValue"/></returns>
+        public static object Intercept(IInterceptor interceptor, IIntercept intercept)
+        {
+            interceptor.Intercept(intercept);
+
+            return intercept.ReturnValue;
+        }
+#endif
 
         private static void ProxyInterfaceMethods(TypeBuilder typeBuilder, ILGenerator ilOfStaticCtor, FieldBuilder interceptorField, FieldBuilder instanceField, MethodInfo[] methods, ProxyOptions options)
         {
@@ -97,16 +110,16 @@ namespace SkyBuilding.Proxies.Generators
                 if (parameters.Any(x => x.ParameterType.IsByRef))
                     throw new NotSupportedException("不支持包含“out”、“ref”参数的方法代理!");
 
-
-
-                LocalBuilder local = method.IsGenericMethod
-                ? CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, instanceField, method.MakeGenericMethod(methodBuilder.GetGenericArguments()), parameterTypes)
-                : CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, instanceField, method, parameterTypes);
+                LocalBuilder local = CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, instanceField, method.IsGenericMethod ? method.MakeGenericMethod(methodBuilder.GetGenericArguments()) : method, parameterTypes);
 
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldfld, interceptorField);
                 ilGen.Emit(OpCodes.Ldloc, local);
+#if NETSTANDARD2_1
+                ilGen.Emit(OpCodes.Call, typeof(DefaultProxyGenerator).GetMethod(nameof(Intercept), BindingFlags.Public | BindingFlags.Static));
+#else
                 ilGen.Emit(OpCodes.Call, interceptMethod);
+#endif
 
                 if (method.ReturnType == typeof(void))
                 {
@@ -115,10 +128,9 @@ namespace SkyBuilding.Proxies.Generators
                     goto return_label;
                 }
 
+#if !NETSTANDARD2_1
                 ilGen.Emit(OpCodes.Callvirt, returnValueMethod);
-
-                if (method.ReturnType == typeof(object))
-                    goto return_label;
+#endif
 
                 if (method.ReturnType.IsValueType && !method.ReturnType.IsNullable())
                 {
@@ -162,7 +174,7 @@ namespace SkyBuilding.Proxies.Generators
                 {
                     ilGen.Emit(OpCodes.Ret);
 
-#if NET40 || NETSTANDARD2_0
+#if NET40 || NETSTANDARD2_0 || NETSTANDARD2_1
                     typeBuilder.DefineMethodOverride(methodBuilder, method);
 #endif
                 }
@@ -213,9 +225,7 @@ namespace SkyBuilding.Proxies.Generators
                 if (parameters.Any(x => x.ParameterType.IsByRef))
                     throw new NotSupportedException("不支持包含“out”、“ref”参数方法的代理!");
 
-                LocalBuilder local = method.IsGenericMethod
-                ? CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, method.MakeGenericMethod(methodBuilder.GetGenericArguments()), parameterTypes)
-                : CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, method, parameterTypes);
+                LocalBuilder local = CreateIntercept(typeBuilder, ilOfStaticCtor, ilGen, method.IsGenericMethod ? method.MakeGenericMethod(methodBuilder.GetGenericArguments()) : method, parameterTypes);
 
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldfld, interceptorField);
@@ -277,11 +287,11 @@ namespace SkyBuilding.Proxies.Generators
 
         private static LocalBuilder CreateIntercept(TypeBuilder typeBuilder, ILGenerator ilOfStaticCtor, ILGenerator ilGen, FieldBuilder instanceField, MethodInfo method, Type[] parameters)
         {
-            //! 声明一个类型为object的局部数组
-            LocalBuilder array = ilGen.DeclareLocal(typeof(object[]));
-
             //? 上下文
             var local = ilGen.DeclareLocal(typeof(IIntercept));
+
+            //! 声明一个类型为object的局部数组
+            LocalBuilder array = ilGen.DeclareLocal(typeof(object[]));
 
             //? 数组长度入栈
             ilGen.Emit(OpCodes.Ldc_I4, parameters.Length);
@@ -346,7 +356,10 @@ namespace SkyBuilding.Proxies.Generators
             ilGen.Emit(OpCodes.Newobj, interceptConstructor);
 
             ilGen.Emit(OpCodes.Stloc, local);
+
+#if !NETSTANDARD2_1
             ilGen.Emit(OpCodes.Ldloc, local);
+#endif
 
             return local;
         }
