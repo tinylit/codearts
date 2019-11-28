@@ -10,6 +10,7 @@ using SkyBuilding.Mvc.Converters;
 using System;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 #if NETCOREAPP3_0
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
@@ -140,7 +141,8 @@ namespace SkyBuilding.Mvc
             app.UseStaticFiles()
                 .UseCors("Allow")
                 .UseRouting()
-                .UseMvc();
+                .UseMvc()
+                .UseLoggerManager();
 
             if (UseSwaggerUi)
             {

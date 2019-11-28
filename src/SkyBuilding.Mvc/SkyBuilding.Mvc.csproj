@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;netcoreapp3.0</TargetFrameworks>
+  	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Authors>Tiny Lit</Authors>
+	  <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
     <Description>An Mvc infrastructure.</Description>
     <PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
@@ -14,7 +14,7 @@
     <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/icon.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
-    <Version>3.2.0</Version>
+    <Version>3.1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netcoreapp3.0'">
@@ -28,91 +28,88 @@
       <Version>4.3.0</Version>
     </PackageReference>
   </ItemGroup>
-
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.AspNetCore.Mvc">
       <Version>2.2.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer">
+	<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer">
       <Version>2.2.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics">
-      <Version>2.2.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core">
-      <Version>2.2.5</Version>
-    </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen">
+	<PackageReference Include="Microsoft.AspNetCore.Diagnostics">
+	  <Version>2.2.0</Version>
+	</PackageReference>	
+	<PackageReference Include="Microsoft.AspNetCore.Mvc.Core">
+	  <Version>2.2.5</Version>
+	</PackageReference>
+	<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen">
       <Version>4.0.1</Version>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUi">
       <Version>4.0.1</Version>
     </PackageReference>
-    <PackageReference Include="System.Drawing.Common">
+	<PackageReference Include="System.Drawing.Common">
       <Version>4.6.0</Version>
     </PackageReference>
   </ItemGroup>
-
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer">
+	<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer">
       <Version>3.0.0</Version>
     </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen">
+	<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen">
       <Version>5.0.0-rc4</Version>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUi">
       <Version>5.0.0-rc4</Version>
     </PackageReference>
   </ItemGroup>
-
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
-    <Reference Include="System.Configuration" />
+	<Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Http" />
     <Reference Include="System.Management" />
-    <PackageReference Include="log4net">
+	<PackageReference Include="log4net">
       <Version>2.0.8</Version>
     </PackageReference>
   </ItemGroup>
-
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452'">
     <PackageReference Include="JWT">
       <Version>3.0.1</Version>
     </PackageReference>
   </ItemGroup>
-
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
-    <PackageReference Include="Microsoft.AspNet.WebApi.Core">
+	<PackageReference Include="Microsoft.AspNet.WebApi.Core">
       <Version>5.2.7</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNet.WebApi.WebHost">
+	<PackageReference Include="Microsoft.AspNet.WebApi.WebHost">
       <Version>5.2.7</Version>
     </PackageReference>
-    <PackageReference Include="Swashbuckle">
+	<PackageReference Include="Swashbuckle">
       <Version>5.6.0</Version>
-    </PackageReference>
+    </PackageReference>	
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
-    <PackageReference Include="Microsoft.AspNet.WebApi.Core">
+ 
+   <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
+	<PackageReference Include="Microsoft.AspNet.WebApi.Core">
       <Version>4.0.30506</Version>
-    </PackageReference>
-    <Reference Include="System.Runtime.Caching" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.WebHost">
-      <Version>4.0.30506.0</Version>
-    </PackageReference>
+    </PackageReference>	
+	<Reference Include="System.Runtime.Caching" />
+	<PackageReference Include="Microsoft.AspNet.WebApi.WebHost">
+	  <Version>4.0.30506.0</Version>
+	</PackageReference>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <PackageReference Include="JWT">
       <Version>5.3.1</Version>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Controllers\**" />
-    <EmbeddedResource Remove="Controllers\**" />
-    <None Remove="Controllers\**" />
+	<PackageReference Include="Microsoft.Extensions.DependencyInjection">
+      <Version>3.0.0</Version>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
