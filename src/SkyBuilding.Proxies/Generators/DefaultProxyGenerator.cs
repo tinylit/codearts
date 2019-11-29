@@ -15,6 +15,7 @@ namespace SkyBuilding.Proxies.Generators
         private static readonly Type interceptType = typeof(IIntercept);
         private static readonly Type interceptorType = typeof(IInterceptor);
         private static readonly MethodInfo interceptMethod = interceptorType.GetMethod("Intercept", new Type[] { interceptType });
+        private static readonly MethodInfo interceptStaticMethod = typeof(DefaultProxyGenerator).GetMethod(nameof(Intercept), BindingFlags.Public | BindingFlags.Static);
         private static readonly ConstructorInfo interceptConstructor = typeof(Intercept).GetConstructor(new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) });
         private static readonly ConstructorInfo objectConstructor = typeof(object).GetConstructor(Type.EmptyTypes);
         private static readonly MethodInfo returnValueMethod = interceptType.GetMethod("get_ReturnValue", Type.EmptyTypes);
@@ -116,7 +117,7 @@ namespace SkyBuilding.Proxies.Generators
                 ilGen.Emit(OpCodes.Ldfld, interceptorField);
                 ilGen.Emit(OpCodes.Ldloc, local);
 #if NETSTANDARD2_1
-                ilGen.Emit(OpCodes.Call, typeof(DefaultProxyGenerator).GetMethod(nameof(Intercept), BindingFlags.Public | BindingFlags.Static));
+                ilGen.Emit(OpCodes.Call, interceptStaticMethod);
 #else
                 ilGen.Emit(OpCodes.Call, interceptMethod);
 #endif
