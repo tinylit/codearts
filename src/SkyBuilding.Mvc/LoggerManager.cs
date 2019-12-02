@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Logging
 {
     /// <summary>
     /// 日志管理器。
-    /// 使用<see cref="UseLoggerManager(IApplicationBuilder)"/>、<see cref="UseLoggerManager(ILoggingBuilder)"/>或<see cref="UseLoggerManager(IServiceCollection)"/>初始化后，可用；否则返回<see cref="NullLogger"/>或<see cref="NullLogger{T}"/>日志实例。
+    /// 使用<see cref="UseLoggerManager(IApplicationBuilder)"/>或<see cref="UseLoggerManager(IServiceCollection)"/>初始化后，可用；否则返回<see cref="NullLogger"/>或<see cref="NullLogger{T}"/>日志实例。
     /// </summary>
     public static class LoggerManager
     {
