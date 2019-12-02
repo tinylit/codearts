@@ -9,7 +9,6 @@ using SkyBuilding.Serialize.Json;
 using SkyBuilding.Mvc.Converters;
 using System;
 using System.IO;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 #if NETCOREAPP3_0
 using Microsoft.OpenApi.Models;
@@ -46,30 +45,13 @@ namespace SkyBuilding.Mvc
 #if NETCOREAPP3_0
             services.AddControllers();
 
-            services
-                .AddMvc(options =>
-                {
-                    options.EnableEndpointRouting = false;
-                    //自定义异常捕获
-                    options.Filters.Add<DExceptionFilter>();
-                }).AddJsonOptions(options =>
-                {
-                    options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
-                })
+            ConfigureMvc(services)
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 #else
-            services
-                .AddMvc(options =>
-                {
-                    //自定义异常捕获
-                    options.Filters.Add<DExceptionFilter>();
-                }).AddJsonOptions(options =>
-                {
-                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
-                    options.SerializerSettings.Converters.Add(new SkyJsonConverter());
-                })
+            ConfigureMvc(services)
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 #endif
+
             services.AddCors(options =>
             {
                 options.AddPolicy("Allow",
@@ -96,7 +78,6 @@ namespace SkyBuilding.Mvc
 
             if (UseSwaggerUi)
             {
-
                 //增加XML文档解析
                 services.AddSwaggerGen(c =>
                 {
@@ -112,6 +93,38 @@ namespace SkyBuilding.Mvc
                     }
                 });
             }
+        }
+
+        /// <summary>
+        /// 配置<see cref="IMvcBuilder"/>通道。
+        /// </summary>
+        /// <param name="services">服务集合</param>
+        protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services)
+        {
+#if NETCOREAPP3_0
+            return services
+                  .AddMvc(options =>
+                  {
+                      options.EnableEndpointRouting = false;
+                      //自定义异常捕获
+                      options.Filters.Add<DExceptionFilter>();
+                  }).AddJsonOptions(options =>
+                  {
+                      options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
+                  });
+#else
+            return services
+                 .AddMvc(options =>
+                 {
+                     //自定义异常捕获
+                     options.Filters.Add<DExceptionFilter>();
+                 })
+                .AddJsonOptions(options =>
+                {
+                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
+                    options.SerializerSettings.Converters.Add(new SkyJsonConverter());
+                });
+#endif
         }
 
 #if NETCOREAPP3_0
@@ -263,6 +276,7 @@ namespace SkyBuilding.Mvc
                 .JsonFormatter
                 .SerializerSettings
                 .ContractResolver = new ContractResolver();
+
 #if NET45 || NET451 || NET452 || NET461
             if (UseSwaggerUi)
             {
