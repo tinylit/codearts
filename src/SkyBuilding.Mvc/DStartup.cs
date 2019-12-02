@@ -45,11 +45,31 @@ namespace SkyBuilding.Mvc
 #if NETCOREAPP3_0
             services.AddControllers();
 
-            ConfigureMvc(services)
-                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            ConfigureMvc(services
+                  .AddMvc(options =>
+                  {
+                      options.EnableEndpointRouting = false;
+                      //自定义异常捕获
+                      options.Filters.Add<DExceptionFilter>();
+                  })
+                  .AddJsonOptions(options =>
+                  {
+                      options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
+                  })
+                  .SetCompatibilityVersion(CompatibilityVersion.Version_3_0));
 #else
-            ConfigureMvc(services)
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            ConfigureMvc(services
+                 .AddMvc(options =>
+                 {
+                     //自定义异常捕获
+                     options.Filters.Add<DExceptionFilter>();
+                 })
+                .AddJsonOptions(options =>
+                {
+                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
+                    options.SerializerSettings.Converters.Add(new SkyJsonConverter());
+                })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2));
 #endif
 
             services.AddCors(options =>
@@ -96,36 +116,10 @@ namespace SkyBuilding.Mvc
         }
 
         /// <summary>
-        /// 配置<see cref="IMvcBuilder"/>通道。
+        /// 配置<see cref="IMvcBuilder"/>通道，可添加Xml等支持。
         /// </summary>
-        /// <param name="services">服务集合</param>
-        protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services)
-        {
-#if NETCOREAPP3_0
-            return services
-                  .AddMvc(options =>
-                  {
-                      options.EnableEndpointRouting = false;
-                      //自定义异常捕获
-                      options.Filters.Add<DExceptionFilter>();
-                  }).AddJsonOptions(options =>
-                  {
-                      options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
-                  });
-#else
-            return services
-                 .AddMvc(options =>
-                 {
-                     //自定义异常捕获
-                     options.Filters.Add<DExceptionFilter>();
-                 })
-                .AddJsonOptions(options =>
-                {
-                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
-                    options.SerializerSettings.Converters.Add(new SkyJsonConverter());
-                });
-#endif
-        }
+        /// <param name="builder">MVC构造器</param>
+        protected virtual IMvcBuilder ConfigureMvc(IMvcBuilder builder) => builder;
 
 #if NETCOREAPP3_0
         /// <summary>
