@@ -1,8 +1,8 @@
 ﻿#if NETSTANDARD2_0 ||NETSTANDARD2_1
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace SkyBuilding.Config
 {
@@ -19,7 +19,17 @@ namespace SkyBuilding.Config
         /// <returns></returns>
         static IConfigurationBuilder ConfigurationBuilder()
         {
-            string currentDir = Directory.GetCurrentDirectory();
+            string currentDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            Debug(() =>
+            {
+                string dir = Directory.GetCurrentDirectory();
+
+                if (File.Exists(Path.Combine(dir, "appsettings.json")))
+                {
+                    currentDir = dir;
+                }
+            });
 
             var builder = new ConfigurationBuilder()
                  .SetBasePath(currentDir);
@@ -33,6 +43,9 @@ namespace SkyBuilding.Config
 
             return builder;
         }
+
+        [Conditional("DEBUG")]
+        static void Debug(Action action) => action.Invoke();
 
         /// <summary>
         /// 构造函数
