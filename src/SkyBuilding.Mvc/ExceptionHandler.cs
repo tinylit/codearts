@@ -12,9 +12,11 @@ namespace SkyBuilding.Exceptions
     public static class ExceptionHandler
     {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-        private static readonly ILogger logger = LoggerManager.GetLogger(typeof(ExceptionHandler));
+        private static ILogger logger;
+        private static ILogger Logger => logger ?? (logger = LoggerManager.GetLogger(typeof(ExceptionHandler)));
 #else
-        private static readonly ILog logger = LogManager.GetLogger(typeof(ExceptionHandler));
+        private static ILog logger;
+        private static ILog Logger => logger ?? (logger = LogManager.GetLogger(typeof(ExceptionHandler)));
 #endif
 
 
@@ -67,9 +69,9 @@ namespace SkyBuilding.Exceptions
                     }
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-                    logger.LogError(error, error.Message);
+                    Logger.LogError(error, error.Message);
 #else
-                    logger.Error(error.Message, error);
+                    Logger.Error(error.Message, error);
 #endif
 
                     if (error is WebException web)

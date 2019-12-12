@@ -7,8 +7,8 @@ using SkyBuilding.Cache;
 using SkyBuilding.Config;
 using SkyBuilding.Serialize.Json;
 using SkyBuilding.Mvc.Converters;
-#if NETCOREAPP3_1
 using Microsoft.Extensions.Logging;
+#if NETCOREAPP3_1
 using Microsoft.Extensions.Hosting;
 #else
 using System;
@@ -166,7 +166,8 @@ namespace SkyBuilding.Mvc
             //? 跨域
             app.UseStaticFiles()
                 .UseCors("Allow")
-                .UseMvc();
+                .UseMvc()
+                .UseLoggerManager();
 
             app.UseSwagger()
                 .UseSwaggerUI(c =>

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SkyBuilding.Mvc\SkyBuilding.Mvc.csproj" />
+    <ProjectReference Include="..\..\src\SkyBuilding.ORM\SkyBuilding.ORM.csproj" />
   </ItemGroup>
 
   <ItemGroup>

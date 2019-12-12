@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Mvc.Core2_2.Domain;
 using SkyBuilding;
 using SkyBuilding.Exceptions;
 using SkyBuilding.Mvc;
@@ -13,13 +14,23 @@ namespace Mvc.Core2_2.Controllers
     /// <inheritdoc />
     public interface IDependency
     {
-
+        /// <inheritdoc />
+        bool AopTest();
     }
 
     /// <inheritdoc />
     public class Dependency : IDependency
     {
+        private readonly UserRepository user;
 
+        /// <inheritdoc />
+        public Dependency(UserRepository user)
+        {
+            this.user = user;
+        }
+
+        /// <inheritdoc />
+        public bool AopTest() => true;
     }
 
     /// <summary>
