@@ -20,11 +20,11 @@ namespace SkyBuilding.Mvc.DependencyInjection
     {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
         /// <summary>
-        /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，也会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】）
         /// </summary>
 #else
         /// <summary>
-        /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
+        /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，也会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】）
         /// </summary>
 #endif
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
@@ -61,49 +61,49 @@ namespace SkyBuilding.Mvc.DependencyInjection
                 .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
                 .ToList();
 
-            var repositoryTypes = assemblys.Where(x => x.FullName.StartsWith("SkyBuilding.ORM"))
-                .SelectMany(x => x.GetTypes().Where(y => y.IsClass && y.IsAbstract && y.FullName == "SkyBuilding.ORM.Repository"))
-                .ToList();
-
-            if (repositoryTypes.Count > 0)
-            {
-                var injectionTypes = types.SelectMany(type =>
-                {
-                    return type.GetConstructors()
-                        .Where(x => x.IsPublic)
-                        .SelectMany(x => x.GetParameters().Select(y => y.ParameterType))
-                        .Where(x => (x.IsClass || x.IsInterface) && repositoryTypes.Any(y => y.IsAssignableFrom(x)));
-                }).ToList();
-
-                var exactlyTypes = assemblyTypes
-                    .Where(type => type.IsClass && !type.IsAbstract && !type.IsGenericType && injectionTypes.Any(x => x.IsAssignableFrom(type)))
-                    .ToList();
-
-                exactlyTypes.ForEach(type =>
-                {
-                    var implementationType = type;
-
-                    foreach (Type interfaceType in type.GetInterfaces())
-                    {
-                        services.AddSingleton(interfaceType, implementationType);
-                    }
-
-                    do
-                    {
-                        services.AddSingleton(type, implementationType);
-
-                    } while ((type = type.BaseType) != null && !repositoryTypes.Contains(type));
-
-                });
-            }
-
             parameterTypes.ForEach(type =>
             {
+                if (services.Any(x => x.ServiceType == type))
+                    return;
+
                 if (type.IsInterface || type.IsAbstract)
                 {
                     foreach (var implementationType in types.Where(x => type.IsAssignableFrom(x)))
                     {
-                        services.AddTransient(type, implementationType);
+                        var ctor = implementationType.GetConstructors()
+                        .Where(x => x.IsPublic)
+                        .OrderBy(x => x.GetParameters().Length)
+                        .FirstOrDefault() ?? throw new NotSupportedException($"类型“{implementationType.FullName}”不包含公共构造函数!");
+
+                        var parameters = ctor.GetParameters();
+
+                        if (parameters.Length == 0)
+                        {
+                            services.AddTransient(type, implementationType);
+
+                            continue;
+                        }
+
+                        services.AddTransient(type, provider =>
+                        {
+                            return Activator.CreateInstance(implementationType, parameters.Select(x =>
+                            {
+                                var value = provider.GetService(x.ParameterType);
+
+                                if (!(value is null)) return value;
+#if NET40
+                                if (x.DefaultValue != DBNull.Value)
+#else
+                                if (x.HasDefaultValue)
+#endif
+                                {
+                                    return x.DefaultValue;
+                                }
+
+                                return Activator.CreateInstance(x.ParameterType);
+
+                            }).ToArray());
+                        });
                     }
                 }
                 else
