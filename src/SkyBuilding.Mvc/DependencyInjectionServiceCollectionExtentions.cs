@@ -76,17 +76,24 @@ namespace SkyBuilding.Mvc.DependencyInjection
                 }).ToList();
 
                 var exactlyTypes = assemblyTypes
-                    .Where(type => type.IsClass && injectionTypes.Any(x => x.IsAssignableFrom(type)))
+                    .Where(type => type.IsClass && !type.IsAbstract && !type.IsGenericType && injectionTypes.Any(x => x.IsAssignableFrom(type)))
                     .ToList();
 
                 exactlyTypes.ForEach(type =>
                 {
-                    services.AddSingleton(type);
+                    var implementationType = type;
 
                     foreach (Type interfaceType in type.GetInterfaces())
                     {
-                        services.AddSingleton(interfaceType, type);
+                        services.AddSingleton(interfaceType, implementationType);
                     }
+
+                    do
+                    {
+                        services.AddSingleton(type, implementationType);
+
+                    } while ((type = type.BaseType) != null && !repositoryTypes.Contains(type));
+
                 });
             }
 
@@ -96,31 +103,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
                 {
                     foreach (var implementationType in types.Where(x => type.IsAssignableFrom(x)))
                     {
-                        var constructor = implementationType.GetConstructors()
-                            .Where(x => x.IsPublic)
-                            .OrderBy(x => x.GetParameters().Length)
-                            .FirstOrDefault();
-
-                        if (constructor is null)
-                            continue;
-
-                        var parameters = constructor.GetParameters();
-
-                        if (parameters.Length == 0)
-                        {
-                            services.AddTransient(type, implementationType);
-
-                            break;
-                        }
-
-                        services.AddTransient(type, p =>
-                        {
-                            var args = parameters.Select(x => p.GetService(x.ParameterType)).ToArray();
-
-                            return Activator.CreateInstance(implementationType, args);
-                        });
-
-                        break;
+                        services.AddTransient(type, implementationType);
                     }
                 }
                 else
