@@ -96,7 +96,29 @@ namespace SkyBuilding.Mvc.DependencyInjection
                 {
                     foreach (var implementationType in types.Where(x => type.IsAssignableFrom(x)))
                     {
-                        services.AddTransient(type, implementationType);
+                        var constructor = implementationType.GetConstructors()
+                            .Where(x => x.IsPublic)
+                            .OrderBy(x => x.GetParameters().Length)
+                            .FirstOrDefault();
+
+                        if (constructor is null)
+                            continue;
+
+                        var parameters = constructor.GetParameters();
+
+                        if (parameters.Length == 0)
+                        {
+                            services.AddTransient(type, implementationType);
+
+                            break;
+                        }
+
+                        services.AddTransient(type, p =>
+                        {
+                            var args = parameters.Select(x => p.GetService(x.ParameterType)).ToArray();
+
+                            return Activator.CreateInstance(implementationType, args);
+                        });
 
                         break;
                     }
