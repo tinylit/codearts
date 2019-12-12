@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,9 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Security.Claims;
 using System.Text;
-#if NETCOREAPP3_0
-using Microsoft.Extensions.Hosting;
-#endif
 
 namespace SkyBuilding.Mvc
 {
@@ -58,7 +55,7 @@ namespace SkyBuilding.Mvc
         /// </summary>
         /// <param name="app">项目构建器</param>
         /// <param name="env">环境变量</param>
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
 #else

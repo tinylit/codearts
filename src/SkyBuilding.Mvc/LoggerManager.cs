@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging
             return services;
         }
 
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
         /// <summary>
         /// 使用日志管理器。
         /// </summary>

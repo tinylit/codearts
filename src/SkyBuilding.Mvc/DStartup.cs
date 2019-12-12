@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -7,13 +7,12 @@ using SkyBuilding.Cache;
 using SkyBuilding.Config;
 using SkyBuilding.Serialize.Json;
 using SkyBuilding.Mvc.Converters;
-using System;
-using System.IO;
+#if NETCOREAPP3_1
 using Microsoft.Extensions.Logging;
-#if NETCOREAPP3_0
-using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
 #else
+using System;
+using System.IO;
 using Swashbuckle.AspNetCore.Swagger;
 #endif
 
@@ -24,11 +23,6 @@ namespace SkyBuilding.Mvc
     /// </summary>
     public class DStartup
     {
-        /// <summary>
-        /// 是否使用SwaggerUi。（默认：true）
-        /// </summary>
-        protected bool UseSwaggerUi { get; set; } = true;
-
         /// <summary>
         /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
         /// </summary>
@@ -42,7 +36,7 @@ namespace SkyBuilding.Mvc
 
         public virtual void ConfigureServices(IServiceCollection services)
         {
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
             services.AddControllers();
 
             ConfigureMvc(services
@@ -96,23 +90,31 @@ namespace SkyBuilding.Mvc
                 services.UseDependencyInjection();
             }
 
-            if (UseSwaggerUi)
-            {
-                //增加XML文档解析
-                services.AddSwaggerGen(c =>
-                {
-#if NETCOREAPP3_0
-                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+#if NETCOREAPP3_1
+            //增加XML文档解析
+            //services.AddSwaggerGen(c =>
+            //{
+            //    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+            //
+            //    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+            //    foreach (var file in files)
+            //    {
+            //        c.IncludeXmlComments(file);
+            //    }
+            //});
 #else
-                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+            //增加XML文档解析
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+
+                var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                foreach (var file in files)
+                {
+                    c.IncludeXmlComments(file);
+                }
+            });
 #endif
-                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                    foreach (var file in files)
-                    {
-                        c.IncludeXmlComments(file);
-                    }
-                });
-            }
         }
 
         /// <summary>
@@ -121,7 +123,7 @@ namespace SkyBuilding.Mvc
         /// <param name="builder">MVC构造器</param>
         protected virtual IMvcBuilder ConfigureMvc(IMvcBuilder builder) => builder;
 
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
         /// <summary>
         /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道。）
         /// </summary>
@@ -143,7 +145,7 @@ namespace SkyBuilding.Mvc
                 app.UseDeveloperExceptionPage();
             }
 
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
             //? 跨域
             app.UseStaticFiles()
                 .UseCors("Allow")
@@ -151,38 +153,32 @@ namespace SkyBuilding.Mvc
                 .UseMvc()
                 .UseLoggerManager();
 
-            if (UseSwaggerUi)
-            {
-                app.UseSwagger()
-                    .UseSwaggerUI(c =>
-                    {
-                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                    })
-                    .UseEndpoints(endpoints =>
-                    {
-                        endpoints.MapControllers();
-                    });
-            }
+            //app.UseSwagger()
+            //    .UseSwaggerUI(c =>
+            //    {
+            //        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+            //    })
+            //    .UseEndpoints(endpoints =>
+            //    {
+            //        endpoints.MapControllers();
+            //    });
 #else
             //? 跨域
             app.UseStaticFiles()
                 .UseCors("Allow")
                 .UseMvc();
 
-            if (UseSwaggerUi)
-            {
-                app.UseSwagger()
-                    .UseSwaggerUI(c =>
-                    {
-                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                    });
-            }
+            app.UseSwagger()
+                .UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+                });
 #endif
         }
     }
 }
 #else
-using Newtonsoft.Json.Serialization;
+            using Newtonsoft.Json.Serialization;
 using SkyBuilding.Cache;
 using SkyBuilding.Config;
 using SkyBuilding.Mvc.Builder;

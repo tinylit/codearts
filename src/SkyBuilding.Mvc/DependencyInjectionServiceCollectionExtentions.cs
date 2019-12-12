@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc;
 using SkyBuilding;
 #else
@@ -7,7 +7,7 @@ using System.Web.Http;
 using System;
 using System.Linq;
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.Extensions.DependencyInjection
 #else
 namespace SkyBuilding.Mvc.DependencyInjection
@@ -18,7 +18,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
     /// </summary>
     public static class DependencyInjectionServiceCollectionExtentions
     {
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，若引入了【SkyBuilding.ORM】，将会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】中使用到的【数据仓库类型】）
         /// </summary>
@@ -35,7 +35,7 @@ namespace SkyBuilding.Mvc.DependencyInjection
                 .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
                 .ToList();
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
             var controllerTypes = assemblyTypes
                 .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
                 .ToList();

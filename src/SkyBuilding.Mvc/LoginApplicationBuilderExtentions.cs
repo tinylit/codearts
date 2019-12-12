@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -20,7 +20,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.AspNetCore.Builder
 #else
 namespace SkyBuilding.Mvc.Builder
@@ -48,7 +48,7 @@ namespace SkyBuilding.Mvc.Builder
         /// </summary>
         /// <param name="app">配置</param>
         /// <returns></returns>
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         public static IApplicationBuilder UseJwtLogin(this IApplicationBuilder app)
         {
             return app.Map("/authCode", builder => builder.Run(async context =>
@@ -292,7 +292,7 @@ namespace SkyBuilding.Mvc.Builder
             }
         }
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         /// <summary>
         /// 写入Token
         /// </summary>

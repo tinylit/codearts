@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -14,7 +14,7 @@ using System.Net;
 namespace SkyBuilding.Mvc.Filters
 {
     /// <summary> 模型验证过滤器 </summary>
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
     public class ValidateModelAttribute : Microsoft.AspNetCore.Mvc.Filters.ActionFilterAttribute
 #else
     public class ValidateModelAttribute : System.Web.Http.Filters.ActionFilterAttribute
@@ -24,7 +24,7 @@ namespace SkyBuilding.Mvc.Filters
         /// 出错时验证。
         /// </summary>
         /// <param name="context">异常上下文</param>
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             //? 验证是否通过

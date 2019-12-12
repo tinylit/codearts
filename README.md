@@ -299,6 +299,7 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 
 * .NET40(Reflection-based implementation)!
 * Starting from 3.2, .NET Web use the Startup class to startup, giving up the traditional Global.asax startup mode, with more powerful functions.
+* NETCore 3.1 temporarily drops support for SwaggerUi due to the instability of SwaggerUi.
 
 ### How to configure MVC?
 * .NETCore

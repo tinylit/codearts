@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_0
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.Extensions.Logging;
 #else
 using log4net;
@@ -11,7 +11,7 @@ namespace SkyBuilding.Exceptions
     /// <summary> 异常处理类 </summary>
     public static class ExceptionHandler
     {
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         private static readonly ILogger logger = LoggerManager.GetLogger(typeof(ExceptionHandler));
 #else
         private static readonly ILog logger = LogManager.GetLogger(typeof(ExceptionHandler));
@@ -66,7 +66,7 @@ namespace SkyBuilding.Exceptions
                         return DResult.Error(error.Message);
                     }
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
                     logger.LogError(error, error.Message);
 #else
                     logger.Error(error.Message, error);

@@ -1,5 +1,5 @@
 ﻿#if !NET40
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
@@ -74,7 +74,7 @@ namespace SkyBuilding.Mvc
                 throw new ArgumentNullException(nameof(destinationPath));
             }
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
             return app.Map(path, builder => builder.Run(async context =>
             {
                 string method = context.Request.Method;
@@ -99,7 +99,7 @@ namespace SkyBuilding.Mvc
                     return;
                 }
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 
                 if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
                 {
@@ -127,7 +127,7 @@ namespace SkyBuilding.Mvc
                 {
                     string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
                     using (var reader = new StreamReader(context.Request.Body))
 #else
                     using (var reader = new StreamReader(context.Request.GetBufferedInputStream()))
@@ -152,7 +152,7 @@ namespace SkyBuilding.Mvc
                     }
                 }
 
-#if NETSTANDARD2_0 || NETCOREAPP3_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
                 {
                     await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(10000)));
