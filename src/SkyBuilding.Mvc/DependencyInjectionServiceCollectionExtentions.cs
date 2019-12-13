@@ -6,6 +6,7 @@ using System.Web.Http;
 #endif
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.Extensions.DependencyInjection
@@ -61,32 +62,38 @@ namespace SkyBuilding.Mvc.DependencyInjection
                 .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
                 .ToList();
 
+            var dic = new Dictionary<Type, object>();
+
             parameterTypes.ForEach(type =>
             {
-                if (services.Any(x => x.ServiceType == type))
-                    return;
-
                 if (type.IsInterface || type.IsAbstract)
                 {
                     foreach (var implementationType in types.Where(x => type.IsAssignableFrom(x)))
                     {
-                        var ctor = implementationType.GetConstructors()
+                        var constructor = implementationType.GetConstructors()
                         .Where(x => x.IsPublic)
                         .OrderBy(x => x.GetParameters().Length)
                         .FirstOrDefault() ?? throw new NotSupportedException($"类型“{implementationType.FullName}”不包含公共构造函数!");
 
-                        var parameters = ctor.GetParameters();
+                        var parameters = constructor.GetParameters();
 
                         if (parameters.Length == 0)
                         {
-                            services.AddTransient(type, implementationType);
+                            services.AddTransient(type, _ => constructor.Invoke(new object[0]));
 
                             continue;
                         }
 
+                        var coreTypes = parameters.Where(x => x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
+                            .Select(x => assemblyTypes
+                                .Where(y => y.IsClass && !y.IsAbstract && x.ParameterType.IsAssignableFrom(y))
+                                .First()
+                            ).ToList();
+
+
                         services.AddTransient(type, provider =>
                         {
-                            return Activator.CreateInstance(implementationType, parameters.Select(x =>
+                            return constructor.Invoke(parameters.Select(x =>
                             {
                                 var value = provider.GetService(x.ParameterType);
 
@@ -100,7 +107,24 @@ namespace SkyBuilding.Mvc.DependencyInjection
                                     return x.DefaultValue;
                                 }
 
-                                return Activator.CreateInstance(x.ParameterType);
+                                if (dic.TryGetValue(x.ParameterType, out object instance))
+                                {
+                                    return instance;
+                                }
+
+                                if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
+                                {
+                                    var coreType = coreTypes.First(y => x.ParameterType.IsAssignableFrom(y));
+
+                                    if (!dic.TryGetValue(coreType, out instance))
+                                    {
+                                        dic.Add(coreType, instance = Activator.CreateInstance(coreType));
+                                    }
+                                }
+
+                                dic.Add(x.ParameterType, instance ?? (instance = Activator.CreateInstance(x.ParameterType)));
+
+                                return instance;
 
                             }).ToArray());
                         });

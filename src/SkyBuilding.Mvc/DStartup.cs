@@ -24,6 +24,11 @@ namespace SkyBuilding.Mvc
     public class DStartup
     {
         /// <summary>
+        /// 是否使用SwaggerUi。（默认：true）
+        /// </summary>
+        protected bool UseSwaggerUi { get; set; } = true;
+
+        /// <summary>
         /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
         /// </summary>
         protected bool UseDependencyInjection { get; set; } = true;
@@ -89,32 +94,34 @@ namespace SkyBuilding.Mvc
             {
                 services.UseDependencyInjection();
             }
-
-#if NETCOREAPP3_1
-            //增加XML文档解析
-            //services.AddSwaggerGen(c =>
-            //{
-            //    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-            //
-            //    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-            //    foreach (var file in files)
-            //    {
-            //        c.IncludeXmlComments(file);
-            //    }
-            //});
-#else
-            //增加XML文档解析
-            services.AddSwaggerGen(c =>
+            if (UseSwaggerUi)
             {
-                c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-
-                var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                foreach (var file in files)
+#if NETCOREAPP3_1
+                //增加XML文档解析
+                //services.AddSwaggerGen(c =>
+                //{
+                //    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+                //
+                //    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                //    foreach (var file in files)
+                //    {
+                //        c.IncludeXmlComments(file);
+                //    }
+                //});
+#else
+                //增加XML文档解析
+                services.AddSwaggerGen(c =>
                 {
-                    c.IncludeXmlComments(file);
-                }
-            });
+                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+
+                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                    foreach (var file in files)
+                    {
+                        c.IncludeXmlComments(file);
+                    }
+                });
 #endif
+            }
         }
 
         /// <summary>
@@ -153,15 +160,18 @@ namespace SkyBuilding.Mvc
                 .UseMvc()
                 .UseLoggerManager();
 
-            //app.UseSwagger()
-            //    .UseSwaggerUI(c =>
-            //    {
-            //        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-            //    })
-            //    .UseEndpoints(endpoints =>
-            //    {
-            //        endpoints.MapControllers();
-            //    });
+            if (UseSwaggerUi)
+            {
+                //app.UseSwagger()
+                //    .UseSwaggerUI(c =>
+                //    {
+                //        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+                //    })
+                //    .UseEndpoints(endpoints =>
+                //    {
+                //        endpoints.MapControllers();
+                //    });
+            }
 #else
             //? 跨域
             app.UseStaticFiles()
@@ -169,11 +179,14 @@ namespace SkyBuilding.Mvc
                 .UseMvc()
                 .UseLoggerManager();
 
-            app.UseSwagger()
-                .UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                });
+            if (UseSwaggerUi)
+            {
+                app.UseSwagger()
+                    .UseSwaggerUI(c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+                    });
+            }
 #endif
         }
     }
