@@ -8,12 +8,12 @@
     <Authors>Tiny Lit</Authors>
     <Company>Tiny Lit</Company>
     <Description>The default implementation.</Description>
-    <PackageLicenseUrl>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/CodeArts</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Copyright>https://github.com/tinylit/skybuilding/blob/master/LICENSE.txt</Copyright>
-    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/skybuilding/master/icon.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/tinylit/skybuilding</PackageProjectUrl>
+    <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/icon.png</PackageIconUrl>
+    <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
     <Version>3.0.0</Version>
     <RootNamespace>CodeArts</RootNamespace>
   </PropertyGroup>

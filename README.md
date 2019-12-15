@@ -1,10 +1,10 @@
-![CodeArts](https://raw.githubusercontent.com/tinylit/skybuilding/master/skybuilding.png '')
+![CodeArts](https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png '')
 
-![GitHub](https://img.shields.io/github/license/tinylit/skybuilding.svg)
-![language](https://img.shields.io/github/languages/top/tinylit/skybuilding.svg)
-![codeSize](https://img.shields.io/github/languages/code-size/tinylit/skybuilding.svg)
+![GitHub](https://img.shields.io/github/license/tinylit/codearts.svg)
+![language](https://img.shields.io/github/languages/top/tinylit/codearts.svg)
+![codeSize](https://img.shields.io/github/languages/code-size/tinylit/codearts.svg)
 ![appveyor-ci](https://ci.appveyor.com/api/projects/status/hojhf5erylaap05b?svg=true)
-![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/skybuilding.svg?compact_message)
+![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/codearts.svg?compact_message)
 
 ### What is CodeArts?
 CodeArts is a lightweight, simple, and efficient infrastructure (including type cast, copy, mapping, and ORM support).
@@ -279,8 +279,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 > - Support for most common string properties and functions as well as Nullable<T> type support. See unit testing for details.
 
 * Unit testing.
-    [SqlServer](https://github.com/tinylit/skybuilding/blob/master/Tests/CodeArts.ORM.Tests/SqlServerTest.cs)
-    [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/CodeArts.ORM.Tests/MySqlTest.cs)
+    [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.ORM.Tests/SqlServerTest.cs)
+    [MySQL](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.ORM.Tests/MySqlTest.cs)
 
 ### How to use Mvc?
 * .NETCore | .NET
