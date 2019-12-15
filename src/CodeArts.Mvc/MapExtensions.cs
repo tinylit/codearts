@@ -114,13 +114,13 @@ namespace CodeArts.Mvc
                 }
 #endif
 
-                var request = uri.AsRequestable().Query(context.Request.QueryString.ToString());
+                var request = uri.AsRequestable().ByQueryString(context.Request.QueryString.ToString());
 
                 var token = context.Request.Headers["Authorization"];
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    request.Header("Authorization", token);
+                    request.AppendHeader("Authorization", token);
                 }
 
                 if (verbs != HttpVerbs.GET && verbs != HttpVerbs.DELETE)
@@ -135,15 +135,15 @@ namespace CodeArts.Mvc
                     {
                         if (contentType.Contains("application/json"))
                         {
-                            request.Json(reader.ReadToEnd());
+                            request.ByJson(reader.ReadToEnd());
                         }
                         else if (contentType.Contains("application/xml"))
                         {
-                            request.Xml(reader.ReadToEnd());
+                            request.ByXml(reader.ReadToEnd());
                         }
                         else if (contentType.Contains("application/x-www-form-urlencoded"))
                         {
-                            request.Form(reader.ReadToEnd());
+                            request.ByForm(reader.ReadToEnd());
                         }
                         else
                         {

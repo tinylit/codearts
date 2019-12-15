@@ -121,81 +121,81 @@ namespace CodeArts.Net
         /// <param name="header">协议头</param>
         /// <param name="value">内容</param>
         /// <returns></returns>
-        IRequestable Header(string header, string value);
+        IRequestable AppendHeader(string header, string value);
 
         /// <summary>
         /// 添加包含与请求或响应相关联的协议头。
         /// </summary>
         /// <param name="headers">协议头</param>
         /// <returns></returns>
-        IRequestable Headers(IEnumerable<KeyValuePair<string, string>> headers);
+        IRequestable AppendHeaders(IEnumerable<KeyValuePair<string, string>> headers);
 
         /// <summary>
         /// content-type = "application/json"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Json(string param);
+        IRequestable ByJson(string param);
         /// <summary>
         ///  content-type = "application/json"
         /// </summary>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
+        IRequestable ByJson<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// content-type = "application/xml";
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Xml(string param);
+        IRequestable ByXml(string param);
         /// <summary>
         /// content-type = "application/xml";
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Xml<T>(T param) where T : class;
+        IRequestable ByXml<T>(T param) where T : class;
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Form(string param);
+        IRequestable ByForm(string param);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable Form<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
+        IRequestable ByForm<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
 
         /// <summary>
         /// 请求参数。
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Query(string param);
+        IRequestable ByQueryString(string param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Query(IEnumerable<string> param);
+        IRequestable ByQueryString(IEnumerable<string> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Query(IEnumerable<KeyValuePair<string, string>> param);
+        IRequestable ByQueryString(IEnumerable<KeyValuePair<string, string>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Query(IEnumerable<KeyValuePair<string, DateTime>> param);
+        IRequestable ByQueryString(IEnumerable<KeyValuePair<string, DateTime>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
@@ -203,7 +203,7 @@ namespace CodeArts.Net
         /// <typeparam name="T">类型</typeparam>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable Query<T>(IEnumerable<KeyValuePair<string, T>> param);
+        IRequestable ByQueryString<T>(IEnumerable<KeyValuePair<string, T>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
@@ -212,7 +212,7 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable Query<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class;
+        IRequestable ByQueryString<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class;
 
         /// <summary>
         /// 数据返回JSON格式的结果，将转为指定类型
@@ -220,13 +220,13 @@ namespace CodeArts.Net
         /// <typeparam name="T">类型</typeparam>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.CamelCase);
+        IJsonRequestable<T> ToJson<T>(NamingType namingType = NamingType.CamelCase);
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <returns></returns>
-        IXmlRequestable<T> ByXml<T>();
+        IXmlRequestable<T> ToXml<T>();
 
         /// <summary>
         /// 数据返回JSON格式的结果，将转为指定类型(匿名对象)
@@ -235,14 +235,14 @@ namespace CodeArts.Net
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <param name="namingType">命名规范</param>
         /// <returns></returns>
-        IJsonRequestable<T> ByJson<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
+        IJsonRequestable<T> ToJson<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型(匿名对象)
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <returns></returns>
-        IXmlRequestable<T> ByXml<T>(T anonymousTypeObject) where T : class;
+        IXmlRequestable<T> ToXml<T>(T anonymousTypeObject) where T : class;
     }
 
     /// <summary>
@@ -261,8 +261,5 @@ namespace CodeArts.Net
     /// 请求能力
     /// </summary>
     /// <typeparam name="T">结果数据</typeparam>
-    public interface IXmlRequestable<T> : IRequestable<T>
-    {
-
-    }
+    public interface IXmlRequestable<T> : IRequestable<T> { }
 }

@@ -86,7 +86,7 @@ namespace System
             /// <param name="header">头</param>
             /// <param name="value">头信息</param>
             /// <returns></returns>
-            public IRequestable Header(string header, string value)
+            public IRequestable AppendHeader(string header, string value)
             {
                 __headers.Add(header, value);
 
@@ -98,7 +98,7 @@ namespace System
             /// </summary>
             /// <param name="headers">请求头集合</param>
             /// <returns></returns>
-            public IRequestable Headers(IEnumerable<KeyValuePair<string, string>> headers)
+            public IRequestable AppendHeaders(IEnumerable<KeyValuePair<string, string>> headers)
             {
                 foreach (var kv in headers)
                 {
@@ -113,11 +113,11 @@ namespace System
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Form(string param)
+            public IRequestable ByForm(string param)
             {
                 __data = param;
 
-                return Header("Content-Type", "application/x-www-form-urlencoded");
+                return AppendHeader("Content-Type", "application/x-www-form-urlencoded");
             }
 
             /// <summary>
@@ -126,18 +126,18 @@ namespace System
             /// <param name="param">参数</param>
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
-            public IRequestable Form<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class => Form(JsonHelper.ToJson(param, namingType));
+            public IRequestable ByForm<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class => ByForm(JsonHelper.ToJson(param, namingType));
 
             /// <summary>
             /// content-type = "application/json"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Json(string param)
+            public IRequestable ByJson(string param)
             {
                 __data = param;
 
-                return Header("Content-Type", "application/json");
+                return AppendHeader("Content-Type", "application/json");
             }
 
             /// <summary>
@@ -146,15 +146,15 @@ namespace System
             /// <param name="param">参数</param>
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
-            public IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
-                => Json(JsonHelper.ToJson(param, namingType));
+            public IRequestable ByJson<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
+                => ByJson(JsonHelper.ToJson(param, namingType));
 
             /// <summary>
             /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Query(string param)
+            public IRequestable ByQueryString(string param)
             {
                 if (string.IsNullOrEmpty(param)) return this;
 
@@ -172,24 +172,24 @@ namespace System
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Query(IEnumerable<string> param)
-              => Query(string.Join("&", param));
+            public IRequestable ByQueryString(IEnumerable<string> param)
+              => ByQueryString(string.Join("&", param));
 
             /// <summary>
             /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Query(IEnumerable<KeyValuePair<string, string>> param)
-                 => Query(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value))));
+            public IRequestable ByQueryString(IEnumerable<KeyValuePair<string, string>> param)
+                 => ByQueryString(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value))));
 
             /// <summary>
             /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Query(IEnumerable<KeyValuePair<string, DateTime>> param)
-                 => Query(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value.ToString("yyyy-MM-dd HH:mm:ss")))));
+            public IRequestable ByQueryString(IEnumerable<KeyValuePair<string, DateTime>> param)
+                 => ByQueryString(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value.ToString("yyyy-MM-dd HH:mm:ss")))));
 
             /// <summary>
             /// 请求参数。?id=1&amp;name="yep"
@@ -197,8 +197,8 @@ namespace System
             /// <typeparam name="T">类型</typeparam>
             /// <param name="param">参数</param>
             /// <returns></returns>
-            public IRequestable Query<T>(IEnumerable<KeyValuePair<string, T>> param)
-                  => Query(string.Join("&", param.Select(kv =>
+            public IRequestable ByQueryString<T>(IEnumerable<KeyValuePair<string, T>> param)
+                  => ByQueryString(string.Join("&", param.Select(kv =>
                   {
                       if (kv.Value is DateTime date)
                       {
@@ -215,13 +215,13 @@ namespace System
             /// <param name="param">参数</param>
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
-            public IRequestable Query<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class
+            public IRequestable ByQueryString<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class
             {
                 if (param is null) return this;
 
                 var typeStore = RuntimeTypeCache.Instance.GetCache<T>();
 
-                return Query(string.Join("&", typeStore.PropertyStores
+                return ByQueryString(string.Join("&", typeStore.PropertyStores
                     .Where(x => x.CanRead)
                     .Select(info =>
                     {
@@ -295,17 +295,17 @@ namespace System
                 }
             }
 #endif
-            public IRequestable Xml(string param)
+            public IRequestable ByXml(string param)
             {
                 __data = param;
-                return Header("Content-Type", "application/xml");
+                return AppendHeader("Content-Type", "application/xml");
             }
 
-            public IRequestable Xml<T>(T param) where T : class => Xml(XmlHelper.XmlSerialize(param));
+            public IRequestable ByXml<T>(T param) where T : class => ByXml(XmlHelper.XmlSerialize(param));
 
-            public IJsonRequestable<T> ByJson<T>(NamingType namingType = NamingType.CamelCase) => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> ToJson<T>(NamingType namingType = NamingType.CamelCase) => new JsonRequestable<T>(this, namingType);
 
-            public IXmlRequestable<T> ByXml<T>() => new XmlRequestable<T>(this);
+            public IXmlRequestable<T> ToXml<T>() => new XmlRequestable<T>(this);
 
             /// <summary>
             /// 数据返回JSON格式的结果，将转为指定类型
@@ -314,14 +314,14 @@ namespace System
             /// <param name="_">匿名对象</param>
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
-            public IJsonRequestable<T> ByJson<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> ToJson<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
             /// <summary>
             /// 数据返回XML格式的结果，将转为指定类型
             /// </summary>
             /// <typeparam name="T">类型</typeparam>
             /// <param name="_">匿名对象</param>
             /// <returns></returns>
-            public IXmlRequestable<T> ByXml<T>(T _) where T : class => new XmlRequestable<T>(this);
+            public IXmlRequestable<T> ToXml<T>(T _) where T : class => new XmlRequestable<T>(this);
         }
 
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>

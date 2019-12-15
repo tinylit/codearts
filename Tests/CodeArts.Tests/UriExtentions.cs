@@ -13,7 +13,7 @@ namespace CodeArts.Tests
         public void Get()
         {
             var value = "http://www.baidu.com".AsRequestable()
-                 .Query(new
+                 .ByQueryString(new
                  {
                      wd = "sql",
                      rsv_spt = 1,
