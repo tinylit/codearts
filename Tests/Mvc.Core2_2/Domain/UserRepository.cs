@@ -1,5 +1,5 @@
 ﻿using Mvc.Core2_2.Domain.Entities;
-using SkyBuilding.ORM;
+using CodeArts.ORM;
 
 namespace Mvc.Core2_2.Domain
 {

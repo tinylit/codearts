@@ -1,5 +1,5 @@
-﻿using SkyBuilding;
-using SkyBuilding.ORM;
+﻿using CodeArts;
+using CodeArts.ORM;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;

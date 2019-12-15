@@ -181,12 +181,12 @@ namespace ConsoleEmit
     {
         static void Main(string[] args)
         {
-            var assemblyName = new AssemblyName("SkyBuilding.Emit");
+            var assemblyName = new AssemblyName("CodeArts.Emit");
 
             var assemblyBuilder = AppDomain.CurrentDomain
                 .DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
 
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule("SkyBuilding.Module", "SkyBuilding.Emit.dll");
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("CodeArts.Module", "CodeArts.Emit.dll");
 
             var iEmitType = typeof(IEmit);
 
@@ -330,7 +330,7 @@ namespace ConsoleEmit
 
             var type = typeBuilder.CreateType();
 
-            assemblyBuilder.Save("SkyBuilding.Emit.dll");
+            assemblyBuilder.Save("CodeArts.Emit.dll");
 
             IEmit emit = (IEmit)Activator.CreateInstance(type, new Emit(), new Interceptor());
 

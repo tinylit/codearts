@@ -1,5 +1,5 @@
 ﻿using Mvc461.Domain.Entities;
-using SkyBuilding.ORM;
+using CodeArts.ORM;
 
 namespace Mvc461.Domain
 {

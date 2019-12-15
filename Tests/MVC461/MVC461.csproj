@@ -140,25 +140,25 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SkyBuilding.Defaults\SkyBuilding.Defaults.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.Defaults\CodeArts.Defaults.csproj">
       <Project>{8dd6eac1-5f61-4072-8150-6d3df72dae65}</Project>
-      <Name>SkyBuilding.Defaults</Name>
+      <Name>CodeArts.Defaults</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\SkyBuilding.Mvc\SkyBuilding.Mvc.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj">
       <Project>{9b087ff3-37b9-4477-a2cb-c44f1388758d}</Project>
-      <Name>SkyBuilding.Mvc</Name>
+      <Name>CodeArts.Mvc</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\SkyBuilding.MySql\SkyBuilding.MySql.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj">
       <Project>{5fa94b22-171d-44bb-8b5c-6ca79f626787}</Project>
-      <Name>SkyBuilding.MySql</Name>
+      <Name>CodeArts.MySql</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\SkyBuilding.ORM\SkyBuilding.ORM.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.ORM\CodeArts.ORM.csproj">
       <Project>{1ecbbdc3-672c-495f-aed6-60124eb9fb76}</Project>
-      <Name>SkyBuilding.ORM</Name>
+      <Name>CodeArts.ORM</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\SkyBuilding\SkyBuilding.csproj">
+    <ProjectReference Include="..\..\src\CodeArts\CodeArts.csproj">
       <Project>{e12dd9b0-64a0-4bca-9d4c-151f45fd5678}</Project>
-      <Name>SkyBuilding</Name>
+      <Name>CodeArts</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

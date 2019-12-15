@@ -9,14 +9,14 @@ Write-Host "  dotnet --version:" (dotnet --version)
 
 $packageOutputFolder = "$PSScriptRoot\.nupkgs"
 $projectsToBuild =
-    'SkyBuilding',
-    'SkyBuilding.Defaults',
-	'SkyBuilding.Proxies',
-    'SkyBuilding.Mvc',
-    'SkyBuilding.ORM',
-    'SkyBuilding.MySql',
-	'SkyBuilding.SignalR',
-    'SkyBuilding.SqlServer'
+    'CodeArts',
+    'CodeArts.Defaults',
+	'CodeArts.Proxies',
+    'CodeArts.Mvc',
+    'CodeArts.ORM',
+    'CodeArts.MySql',
+	'CodeArts.SignalR',
+    'CodeArts.SqlServer'
 
 mkdir -Force $packageOutputFolder | Out-Null
 Write-Host "Clearing existing $packageOutputFolder..." -NoNewline

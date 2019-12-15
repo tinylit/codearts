@@ -18,9 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SkyBuilding.Mvc\SkyBuilding.Mvc.csproj" />
-    <ProjectReference Include="..\..\src\SkyBuilding.MySql\SkyBuilding.MySql.csproj" />
-    <ProjectReference Include="..\..\src\SkyBuilding.ORM\SkyBuilding.ORM.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.ORM\CodeArts.ORM.csproj" />
   </ItemGroup>
 
 </Project>

@@ -122,9 +122,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SkyBuilding.SignalR\SkyBuilding.SignalR.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.SignalR\CodeArts.SignalR.csproj">
       <Project>{35418940-3ea9-4898-b469-6acf328a66fb}</Project>
-      <Name>SkyBuilding.SignalR</Name>
+      <Name>CodeArts.SignalR</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

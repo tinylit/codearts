@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SkyBuilding.Mvc;
+using CodeArts.Mvc;
 
 namespace Mvc.Core2_2
 {

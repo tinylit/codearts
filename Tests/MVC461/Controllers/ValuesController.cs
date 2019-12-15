@@ -1,9 +1,9 @@
 ﻿using log4net.Core;
 using Mvc461.Domain;
 using Mvc461.Domain.Entities;
-using SkyBuilding;
-using SkyBuilding.Exceptions;
-using SkyBuilding.Mvc;
+using CodeArts;
+using CodeArts.Exceptions;
+using CodeArts.Mvc;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

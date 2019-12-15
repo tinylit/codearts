@@ -1,4 +1,4 @@
-![SkyBuilding](https://raw.githubusercontent.com/tinylit/skybuilding/master/skybuilding.png '')
+![CodeArts](https://raw.githubusercontent.com/tinylit/skybuilding/master/skybuilding.png '')
 
 ![GitHub](https://img.shields.io/github/license/tinylit/skybuilding.svg)
 ![language](https://img.shields.io/github/languages/top/tinylit/skybuilding.svg)
@@ -6,8 +6,8 @@
 ![appveyor-ci](https://ci.appveyor.com/api/projects/status/hojhf5erylaap05b?svg=true)
 ![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/skybuilding.svg?compact_message)
 
-### What is SkyBuilding?
-SkyBuilding is a lightweight, simple, and efficient infrastructure (including type cast, copy, mapping, and ORM support).
+### What is CodeArts?
+CodeArts is a lightweight, simple, and efficient infrastructure (including type cast, copy, mapping, and ORM support).
 
 ### How do I use it?
 An extension method that has been embedded into an object. For simple use, you can use it without any configuration.
@@ -157,10 +157,10 @@ The cast, copy, and mapping are customized in the same way.
 ```
 
 ### Where can I get it?
-First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). Then, install [SkyBuilding](https://www.nuget.org/packages/SkyBuilding/) from the package manager console:
+First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). Then, install [CodeArts](https://www.nuget.org/packages/CodeArts/) from the package manager console:
 
 ```
-PM> Install-Package SkyBuilding
+PM> Install-Package CodeArts
 ```
 
 ### How to use Proxy?
@@ -279,8 +279,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 > - Support for most common string properties and functions as well as Nullable<T> type support. See unit testing for details.
 
 * Unit testing.
-    [SqlServer](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/SqlServerTest.cs)
-    [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/SkyBuilding.ORM.Tests/MySqlTest.cs)
+    [SqlServer](https://github.com/tinylit/skybuilding/blob/master/Tests/CodeArts.ORM.Tests/SqlServerTest.cs)
+    [MySQL](https://github.com/tinylit/skybuilding/blob/master/Tests/CodeArts.ORM.Tests/MySqlTest.cs)
 
 ### How to use Mvc?
 * .NETCore | .NET

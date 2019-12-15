@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using SkyBuilding.Mvc;
-using SkyBuilding.MySql;
-using SkyBuilding.ORM;
+using CodeArts.Mvc;
+using CodeArts.MySql;
+using CodeArts.ORM;
 
 namespace Mvc.Core
 {

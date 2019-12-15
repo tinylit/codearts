@@ -1,5 +1,5 @@
-﻿using SkyBuilding.Mvc;
-using SkyBuilding.Mvc.DependencyInjection;
+﻿using CodeArts.Mvc;
+using CodeArts.Mvc.DependencyInjection;
 
 namespace Mvc45
 {
