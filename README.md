@@ -1,4 +1,4 @@
-![CodeArts](https://raw.githubusercontent.com/tinylit/codearts/blob/master/codearts.png '')
+![CodeArts](https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png '')
 
 ![GitHub](https://img.shields.io/github/license/tinylit/codearts.svg)
 ![language](https://img.shields.io/github/languages/top/tinylit/codearts.svg)
