@@ -9,12 +9,12 @@
     <Company>Tiny Lit</Company>
     <Description>A simple SignalR extension framework.</Description>
     <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/tinylit/CodeArts</RepositoryUrl>
+    <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
-    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/icon.png</PackageIconUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
   </PropertyGroup>
 
  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">

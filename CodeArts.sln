@@ -25,11 +25,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
 		build.ps1 = build.ps1
+		codearts.png = codearts.png
 		icon.png = icon.png
 		LICENSE.txt = LICENSE.txt
 		project.json = project.json
 		README.md = README.md
-		CodeArts.png = CodeArts.png
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.NPOI.Tests", "Tests\CodeArts.NPOI.Tests\CodeArts.NPOI.Tests.csproj", "{700279E4-EBE8-4F2F-83D6-C7990EA67496}"
