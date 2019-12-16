@@ -3,7 +3,7 @@
 ![GitHub](https://img.shields.io/github/license/tinylit/codearts.svg)
 ![language](https://img.shields.io/github/languages/top/tinylit/codearts.svg)
 ![codeSize](https://img.shields.io/github/languages/code-size/tinylit/codearts.svg)
-![appveyor-ci](https://ci.appveyor.com/api/projects/status/hojhf5erylaap05b?svg=true)
+![appveyor-ci](https://img.shields.io/appveyor/ci/tinylit/codearts.svg)
 ![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/codearts.svg?compact_message)
 
 ### What is CodeArts?
