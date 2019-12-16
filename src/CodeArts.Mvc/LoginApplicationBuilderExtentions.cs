@@ -112,8 +112,8 @@ namespace CodeArts.Mvc.Builder
                 }
 
                 var result = await loginUri.AsRequestable()
-                .ByQueryString(context.Request.QueryString.Value)
-                .ToJson<ServResult<Dictionary<string, object>>>()
+                .ToQueryString(context.Request.QueryString.Value)
+                .Json<ServResult<Dictionary<string, object>>>()
                 .GetAsync();
 
                 if (result.Success)
@@ -201,13 +201,13 @@ namespace CodeArts.Mvc.Builder
 
 #if NET40
                 var result = loginUri.AsRequestable()
-                    .ByQueryString(context.Request.QueryString.ToString())
-                    .ToJson<ServResult<Dictionary<string, object>>>()
+                    .ToQueryString(context.Request.QueryString.ToString())
+                    .Json<ServResult<Dictionary<string, object>>>()
                     .Get();
 #else
                 var result = await loginUri.AsRequestable()
-                    .ByQueryString(context.Request.QueryString.ToString())
-                    .ToJson<ServResult<Dictionary<string, object>>>()
+                    .ToQueryString(context.Request.QueryString.ToString())
+                    .Json<ServResult<Dictionary<string, object>>>()
                     .GetAsync();
 #endif
 

@@ -114,7 +114,7 @@ namespace CodeArts.Mvc
                 }
 #endif
 
-                var request = uri.AsRequestable().ByQueryString(context.Request.QueryString.ToString());
+                var request = uri.AsRequestable().ToQueryString(context.Request.QueryString.ToString());
 
                 var token = context.Request.Headers["Authorization"];
 
@@ -127,27 +127,31 @@ namespace CodeArts.Mvc
                 {
                     string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
 
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-                    using (var reader = new StreamReader(context.Request.Body))
-#else
-                    using (var reader = new StreamReader(context.Request.GetBufferedInputStream()))
-#endif
+                    if (contentType.Contains("application/x-www-form-urlencoded"))
                     {
-                        if (contentType.Contains("application/json"))
+                        request.ToForm(context.Request.Form);
+                    }
+                    else
+                    {
+
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                        using (var reader = new StreamReader(context.Request.Body))
+#else
+                        using (var reader = new StreamReader(context.Request.GetBufferedInputStream()))
+#endif
                         {
-                            request.ByJson(reader.ReadToEnd());
-                        }
-                        else if (contentType.Contains("application/xml"))
-                        {
-                            request.ByXml(reader.ReadToEnd());
-                        }
-                        else if (contentType.Contains("application/x-www-form-urlencoded"))
-                        {
-                            request.ByForm(reader.ReadToEnd());
-                        }
-                        else
-                        {
-                            throw new NotImplementedException($"未实现({contentType})类型传输!");
+                            if (contentType.Contains("application/json"))
+                            {
+                                request.ToJson(reader.ReadToEnd());
+                            }
+                            else if (contentType.Contains("application/xml"))
+                            {
+                                request.ToXml(reader.ReadToEnd());
+                            }
+                            else
+                            {
+                                throw new NotImplementedException($"未实现({contentType})类型传输!");
+                            }
                         }
                     }
                 }

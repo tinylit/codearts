@@ -1,19 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Serialization;
 
 namespace CodeArts
 {
     /// <summary>
     /// 数据结果
     /// </summary>
-    public class DResult: IResult
+    [XmlRoot("xml")]
+    public class DResult : IResult
     {
         /// <summary>
         /// 错误信息实体
         /// </summary>
+        [XmlRoot("xml")]
         private class ErrorResult : DResult, IResult
         {
+            /// <summary>
+            /// 用作Xml解析
+            /// </summary>
+            private ErrorResult() { }
+
             /// <summary>
             /// 构造函数
             /// </summary>
@@ -24,8 +32,15 @@ namespace CodeArts
             /// <summary>
             /// 错误信息
             /// </summary>
-            public string Msg { get; }
+            [XmlElement("msg")]
+            public string Msg { get; private set; }
         }
+
+        /// <summary>
+        /// 用作Xml解析
+        /// </summary>
+        private DResult() { }
+
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -35,17 +50,20 @@ namespace CodeArts
         /// <summary>
         /// 状态码
         /// </summary>
-        public int Code { get; }
+        [XmlElement("code")]
+        public int Code { get; private set; }
 
         /// <summary>
         /// 是否成功
         /// </summary>
+        [XmlIgnore]
         public bool Success => Code == StatusCodes.OK;
 
         /// <summary>
         /// Utc
         /// </summary>
-        public DateTime Timestamp => DateTime.UtcNow;
+        [XmlElement("timestamp")]
+        public DateTime Timestamp { get; private set; } = DateTime.UtcNow;
 
         /// <summary>
         /// 成功
@@ -87,8 +105,14 @@ namespace CodeArts
     /// 数据结果
     /// </summary>
     /// <typeparam name="T">数据</typeparam>
+    [XmlRoot("xml")]
     public class DResult<T> : DResult, IResult<T>, IResult
     {
+        /// <summary>
+        /// 用于Xml解析
+        /// </summary>
+        private DResult() { }
+
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -98,7 +122,8 @@ namespace CodeArts
         /// <summary>
         /// 数据
         /// </summary>
-        public T Data { get; }
+        [XmlElement("data")]
+        public T Data { get; private set; }
 
         /// <summary>
         /// 类型默认转换
@@ -111,6 +136,7 @@ namespace CodeArts
     /// 数据结果
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [XmlRoot("xml")]
     public class DResults<T> : DResult<List<T>>, IResults<T>, IResult<List<T>>, IResult
     {
         /// <summary>
@@ -129,7 +155,8 @@ namespace CodeArts
         /// <summary>
         /// 总条数
         /// </summary>
-        public int Count { get; }
+        [XmlElement("count")]
+        public int Count { get; private set; }
 
         /// <summary>
         /// 类型默认转换

@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace CodeArts
 {
     /// <summary>
     /// 服务调用数据结果
     /// </summary>
+    [XmlRoot("xml")]
     public class ServResult : IResult
     {
         /// <summary>
         /// 状态码
         /// </summary>
+        [XmlElement("code")]
         public int Code { get; set; }
 
         private bool? success = null;
@@ -21,6 +21,7 @@ namespace CodeArts
         /// <summary>
         /// 是否成功
         /// </summary>
+        [XmlIgnore]
         public bool Success
         {
             get
@@ -40,11 +41,13 @@ namespace CodeArts
         /// <summary>
         /// 错误信息
         /// </summary>
+        [XmlElement("msg")]
         public string Msg { get; set; }
 
         /// <summary>
         /// Utc
         /// </summary>
+        [XmlElement("timestamp")]
         public DateTime Timestamp { get; set; }
 
         /// <summary>
@@ -62,11 +65,13 @@ namespace CodeArts
     /// 服务调用数据结果
     /// </summary>
     /// <typeparam name="T">数据</typeparam>
+    [XmlRoot("xml")]
     public class ServResult<T> : ServResult, IResult<T>, IResult
     {
         /// <summary>
         /// 数据
         /// </summary>
+        [XmlElement("data")]
         public T Data { get; set; }
 
         /// <summary>
@@ -85,11 +90,13 @@ namespace CodeArts
     /// 服务调用数据结果
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [XmlRoot("xml")]
     public class ServResults<T> : ServResult<List<T>>, IResults<T>, IResult<List<T>>, IResult
     {
         /// <summary>
         /// 总条数
         /// </summary>
+        [XmlElement("count")]
         public int Count { get; set; }
 
         /// <summary>
