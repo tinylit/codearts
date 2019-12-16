@@ -56,9 +56,6 @@ namespace System
 #endif
         }
 
-        /// <summary>
-        /// 默认请求
-        /// </summary>
         private class Requestable : Requestable<string>, IRequestable
         {
             private string __data;
@@ -66,28 +63,14 @@ namespace System
             private NameValueCollection __form;
             private readonly Dictionary<string, string> __headers;
 
-            /// <summary>
-            /// 建立请求
-            /// </summary>
-            /// <param name="uriString">请求连接</param>
             public Requestable(string uriString) : this(new Uri(uriString)) { }
 
-            /// <summary>
-            /// 建立请求
-            /// </summary>
-            /// <param name="uri">请求连接</param>
             public Requestable(Uri uri)
             {
                 __uri = uri ?? throw new ArgumentNullException(nameof(uri));
                 __headers = new Dictionary<string, string>();
             }
 
-            /// <summary>
-            /// 添加请求头
-            /// </summary>
-            /// <param name="header">头</param>
-            /// <param name="value">头信息</param>
-            /// <returns></returns>
             public IRequestable AppendHeader(string header, string value)
             {
                 __headers.Add(header, value);
@@ -95,11 +78,6 @@ namespace System
                 return this;
             }
 
-            /// <summary>
-            /// 批量添加请求头
-            /// </summary>
-            /// <param name="headers">请求头集合</param>
-            /// <returns></returns>
             public IRequestable AppendHeaders(IEnumerable<KeyValuePair<string, string>> headers)
             {
                 foreach (var kv in headers)
@@ -110,22 +88,10 @@ namespace System
                 return this;
             }
 
-            /// <summary>
-            /// content-type = "application/x-www-form-urlencoded";
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IRequestable ToForm(string param, NamingType namingType = NamingType.Normal)
                 => ToForm(JsonHelper.Json<Dictionary<string, string>>(param, namingType));
 
-            /// <summary>
-            /// content-type = "application/x-www-form-urlencoded";
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
-            public IRequestable ToForm(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal)
+            public IRequestable ToForm<T>(T param, NamingType namingType = NamingType.Normal) where T : IEnumerable<KeyValuePair<string, string>>
             {
                 __form = __form ?? new NameValueCollection();
 
@@ -137,30 +103,12 @@ namespace System
                 return AppendHeader("Content-Type", "application/x-www-form-urlencoded");
             }
 
-            /// <summary>
-            /// content-type = "application/x-www-form-urlencoded";
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IRequestable ToForm(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal)
                 => ToForm(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"))), namingType);
 
-            /// <summary>
-            /// content-type = "application/x-www-form-urlencoded";
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IRequestable ToForm<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal)
                 => ToForm(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value?.ToString())), namingType);
 
-            /// <summary>
-            /// content-type = "application/x-www-form-urlencoded";
-            /// </summary>
-            /// <param name="param">参数(对象的属性作为Key，值作为Value)</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IRequestable ToForm(object param, NamingType namingType = NamingType.Normal)
             {
                 if (param is null) return this;
@@ -185,11 +133,6 @@ namespace System
                     }), namingType);
             }
 
-            /// <summary>
-            /// content-type = "application/json"
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
             public IRequestable ToJson(string param)
             {
                 __data = param;
@@ -197,20 +140,9 @@ namespace System
                 return AppendHeader("Content-Type", "application/json");
             }
 
-            /// <summary>
-            /// content-type = "application/json"
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IRequestable ToJson<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
                 => ToJson(JsonHelper.ToJson(param, namingType));
 
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
             public IRequestable ToQueryString(string param)
             {
                 if (string.IsNullOrEmpty(param)) return this;
@@ -224,45 +156,18 @@ namespace System
                 return this;
             }
 
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
             public IRequestable ToQueryString(IEnumerable<string> param)
               => ToQueryString(string.Join("&", param));
 
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
-            public IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param)
+            public IRequestable ToQueryString<T>(T param) where T : IEnumerable<KeyValuePair<string, string>>
                  => ToQueryString(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value))));
 
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
             public IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param)
                   => ToQueryString(string.Join("&", param.Select(x => string.Concat(x.Key, "=", x.Value.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK")))));
 
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
-            /// <typeparam name="T">类型</typeparam>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
             public IRequestable ToQueryString<T>(IEnumerable<KeyValuePair<string, T>> param)
                   => ToQueryString(string.Join("&", param.Select(x => string.Concat(x.Key, "=", x.Value?.ToString() ?? string.Empty))));
 
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
-            /// <param name="param">参数(对象的属性作为Key，值作为Value)</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase)
             {
                 if (param is null) return this;
@@ -285,12 +190,6 @@ namespace System
                     })));
             }
 
-            /// <summary>
-            /// 请求
-            /// </summary>
-            /// <param name="method">请求方式</param>
-            /// <param name="timeout">超时 时间</param>
-            /// <returns></returns>
             public override string Request(string method, int timeout = 5)
             {
                 using (var client = new SkyWebClient
@@ -319,12 +218,6 @@ namespace System
             }
 
 #if !NET40
-            /// <summary>
-            /// 请求
-            /// </summary>
-            /// <param name="method">请求方式</param>
-            /// <param name="timeout">超时时间</param>
-            /// <returns></returns>
             public override async Task<string> RequestAsync(string method, int timeout = 5)
             {
                 using (var client = new SkyWebClient
@@ -365,20 +258,8 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
 
-            /// <summary>
-            /// 数据返回JSON格式的结果，将转为指定类型
-            /// </summary>
-            /// <typeparam name="T">类型</typeparam>
-            /// <param name="_">匿名对象</param>
-            /// <param name="namingType">命名规则</param>
-            /// <returns></returns>
             public IJsonRequestable<T> Json<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-            /// <summary>
-            /// 数据返回XML格式的结果，将转为指定类型
-            /// </summary>
-            /// <typeparam name="T">类型</typeparam>
-            /// <param name="_">匿名对象</param>
-            /// <returns></returns>
+
             public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
         }
 
