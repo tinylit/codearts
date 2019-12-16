@@ -17,9 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="Microsoft.AspNetCore.Routing">
-      <Version>2.2.2</Version>
-    </PackageReference>
     <PackageReference Include="System.Drawing.Common">
       <Version>4.6.0</Version>
     </PackageReference>
@@ -29,6 +26,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+	<PackageReference Include="Microsoft.AspNetCore.Routing">
+      <Version>2.2.2</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Mvc">
       <Version>2.2.0</Version>
     </PackageReference>
