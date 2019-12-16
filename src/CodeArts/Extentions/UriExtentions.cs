@@ -152,7 +152,14 @@ namespace System
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
             public IRequestable ToForm<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal)
-                => ToForm(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value?.ToString())), namingType);
+                => ToForm(param.Select(x =>
+                {
+                    if (x.Value is DateTime date)
+                    {
+                        return new KeyValuePair<string, string>(x.Key, date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"));
+                    }
+                    return new KeyValuePair<string, string>(x.Key, x.Value?.ToString());
+                }), namingType);
 
             /// <summary>
             /// content-type = "application/x-www-form-urlencoded";
@@ -160,9 +167,9 @@ namespace System
             /// <param name="param">参数</param>
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
-            public IRequestable ToForm<T>(T param, NamingType namingType = NamingType.Normal) where T : class
+            public IRequestable ToForm(object param, NamingType namingType = NamingType.Normal)
             {
-                var typeStore = RuntimeTypeCache.Instance.GetCache<T>();
+                var typeStore = RuntimeTypeCache.Instance.GetCache(param.GetType());
 
                 return ToForm(typeStore.PropertyStores
                     .Where(x => x.CanRead)
@@ -174,7 +181,7 @@ namespace System
 
                         if (item is DateTime date)
                         {
-                            return new KeyValuePair<string, string>(info.Name, date.ToString("yyyy-MM-dd HH:mm:ss"));
+                            return new KeyValuePair<string, string>(info.Name, date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"));
                         }
 
                         return new KeyValuePair<string, string>(info.Name, item.ToString());
@@ -240,14 +247,6 @@ namespace System
             /// <summary>
             /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
-            /// <param name="param">参数</param>
-            /// <returns></returns>
-            public IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param)
-                 => ToQueryString(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value.ToString("yyyy-MM-dd HH:mm:ss")))));
-
-            /// <summary>
-            /// 请求参数。?id=1&amp;name="yep"
-            /// </summary>
             /// <typeparam name="T">类型</typeparam>
             /// <param name="param">参数</param>
             /// <returns></returns>
@@ -259,21 +258,18 @@ namespace System
                           return string.Concat(kv.Key, "=", date.ToString("yyyy-MM-dd HH:mm:ss"));
                       }
 
-                      return string.Concat(kv.Key, "=", kv.Value?.ToString());
+                      return string.Concat(kv.Key, "=", kv.Value?.ToString() ?? string.Empty);
                   })));
 
             /// <summary>
             /// 请求参数。?id=1&amp;name="yep"
             /// </summary>
-            /// <typeparam name="T">类型</typeparam>
             /// <param name="param">参数</param>
             /// <param name="namingType">命名规则</param>
             /// <returns></returns>
-            public IRequestable ToQueryString<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class
+            public IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase)
             {
-                if (param is null) return this;
-
-                var typeStore = RuntimeTypeCache.Instance.GetCache<T>();
+                var typeStore = RuntimeTypeCache.Instance.GetCache(param.GetType());
 
                 return ToQueryString(string.Join("&", typeStore.PropertyStores
                     .Where(x => x.CanRead)

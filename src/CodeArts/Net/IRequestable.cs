@@ -174,13 +174,6 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal);
-        /// <summary>
-        /// content-type = "application/x-www-form-urlencoded";
-        /// </summary>
-        /// <param name="param">参数</param>
-        /// <param name="namingType">命名规则</param>
-        /// <returns></returns>
         IRequestable ToForm<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
@@ -188,7 +181,7 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm<T>(T param, NamingType namingType = NamingType.Normal) where T : class;
+        IRequestable ToForm(object param, NamingType namingType = NamingType.Normal);
 
         /// <summary>
         /// 请求参数。
@@ -214,13 +207,6 @@ namespace CodeArts.Net
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
-        /// <param name="param">参数</param>
-        /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param);
-
-        /// <summary>
-        /// 请求参数。?id=1&amp;name="yep"
-        /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <param name="param">参数</param>
         /// <returns></returns>
@@ -229,11 +215,10 @@ namespace CodeArts.Net
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
-        /// <typeparam name="T">类型</typeparam>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToQueryString<T>(T param, NamingType namingType = NamingType.UrlCase) where T : class;
+        IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase);
 
         /// <summary>
         /// 数据返回JSON格式的结果，将转为指定类型
