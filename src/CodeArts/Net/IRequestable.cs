@@ -159,8 +159,9 @@ namespace CodeArts.Net
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm(string param);
+        IRequestable ToForm(string param, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
@@ -168,6 +169,13 @@ namespace CodeArts.Net
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         IRequestable ToForm(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal);
+        /// <summary>
+        /// content-type = "application/x-www-form-urlencoded";
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <param name="namingType">命名规则</param>
+        /// <returns></returns>
+        IRequestable ToForm(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
@@ -203,6 +211,13 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <returns></returns>
         IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
