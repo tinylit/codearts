@@ -3,6 +3,7 @@ using CodeArts.Config;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using static System.Linq.Expressions.Expression;
@@ -107,13 +108,20 @@ namespace System
         /// <returns></returns>
         public static T Config<T>(this string configName, T defaultValue = default) => ConfigHelper.Instance.Get(configName, defaultValue);
 
+        private static MethodInfo GetMethodInfo(Func<string, string, string, string> func) => func.Method;
+
+        private static readonly MethodInfo ChangeTypeMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
+        private static readonly MethodInfo ConcatMethod = GetMethodInfo(string.Concat);
+        private static readonly Type SettingsType = typeof(DefaultSettings);
+        private static readonly MethodInfo ResolvePropertyNameMethod = SettingsType.GetMethod("ResolvePropertyName");
+        private static readonly MethodInfo ConvertMethod = SettingsType.GetMethod("Convert");
+
         /// <summary>
         /// 内嵌的
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         private static class Nested<T>
         {
-            private static MethodInfo GetMethodInfo(Func<string, string, string, string> func) => func.Method;
 
             /// <summary>
             /// 静态构造函数
@@ -130,17 +138,11 @@ namespace System
 
                 var nameExp = Parameter(typeof(string), "name");
 
-                var settingsType = typeof(DefaultSettings);
-
-                var settingsExp = Parameter(settingsType, "settings");
-
-                var resolvePropertyNameMethod = settingsType.GetMethod("ResolvePropertyName");
-
-                var convertMethod = settingsType.GetMethod("Convert");
+                var settingsExp = Parameter(SettingsType, "settings");
 
                 var preserveUnknownExp = Property(settingsExp, "PreserveUnknownPropertyToken");
 
-                var concatExp = GetMethodInfo(string.Concat);
+                var sysConvertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
 
                 var namingMethod = typeof(StringExtentions).GetMethod(nameof(ToNamingCase), BindingFlags.Public | BindingFlags.Static);
 
@@ -150,7 +152,7 @@ namespace System
 
                       var propertyExp = Property(parameterExp, info.Name);
 
-                      var namingCst = Call(settingsExp, resolvePropertyNameMethod, nameCst);
+                      var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
 
                       var propSugarAttr = info.GetCustomAttribute<PropSugarAttribute>();
 
@@ -163,12 +165,23 @@ namespace System
                           return SwitchCase(method.IsStatic ? Call(null, method, propertyExp) : Call(Constant(factory.Target), method, propertyExp), namingCst);
                       }
 
-                      return SwitchCase(Call(settingsExp, convertMethod, nameCst, Constant(info.MemberType), Convert(propertyExp, typeof(object))), namingCst);
+                      Type memberType = info.MemberType;
+
+                      Expression valueExp = Convert(propertyExp, typeof(object));
+
+                      if (info.MemberType.IsEnum)
+                      {
+                          memberType = Enum.GetUnderlyingType(info.MemberType);
+
+                          valueExp = Call(ChangeTypeMethod, valueExp, Constant(memberType));
+                      }
+
+                      return SwitchCase(Call(settingsExp, ConvertMethod, nameCst, Constant(memberType), valueExp), namingCst);
                   });
 
-                var bodyExp = Call(null, concatExp, Constant("{"), nameExp, Constant("}"));
+                var bodyExp = Call(null, ConcatMethod, Constant("{"), nameExp, Constant("}"));
 
-                var switchExp = Switch(Call(settingsExp, resolvePropertyNameMethod, nameExp), Condition(Equal(preserveUnknownExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
+                var switchExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Condition(Equal(preserveUnknownExp, Constant(true)), bodyExp, defaultCst), null, enumerCase);
 
                 var lamda = Lambda<Func<T, string, DefaultSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
 
@@ -230,19 +243,19 @@ namespace System
                 {
                     string text = Nested<T>.Invoke(source, ((Capture)nameCap.Current).Value, settings);
 
-                    if(!(text is null))
+                    if (!(text is null))
                     {
                         valueStr += text;
                     }
 
-                    if (!tokenCap.MoveNext()) 
+                    if (!tokenCap.MoveNext())
                         return valueStr;
 
                     string token = ((Capture)tokenCap.Current).Value;
 
                     if (valueStr.Length > 0)
                     {
-                        if (token == "?" || token == "??") 
+                        if (token == "?" || token == "??")
                             return valueStr;
                     }
                     else if (token == "?+")

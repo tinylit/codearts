@@ -12,7 +12,7 @@ namespace CodeArts.Tests
         {
             for (int i = 0; i < 100000; i++)
             {
-                string value = $"{i}xxx{{x ?? z}}-{{y?+z}}-{{z}}--{{xyz+sb}}-{{sb}}-{{abc}}".PropSugar(new { x = 1, y = DateTime.Now, z = "测试", xyz = new int[] { 1, 2, 3 }, sb = new StringBuilder("sb") }, new JsonSettings(NamingType.Normal));
+                string value = $"{i}xxx{{x ?? z}}-{{y?+z}}-{{z}}--{{xyz+sb}}-{{sb}}-{{abc}}".PropSugar(new { x = DateTimeKind.Utc, y = DateTime.Now, z = "测试", xyz = new int[] { 1, 2, 3 }, sb = new StringBuilder("sb") }, new JsonSettings(NamingType.Normal));
             }
         }
     }
