@@ -20,7 +20,7 @@ namespace CodeArts
             /// <summary>
             /// 用作Xml解析
             /// </summary>
-            private ErrorResult() { }
+            private ErrorResult() { Code = StatusCodes.OK; }
 
             /// <summary>
             /// 构造函数
@@ -39,7 +39,7 @@ namespace CodeArts
         /// <summary>
         /// 用作Xml解析
         /// </summary>
-        private DResult() { }
+        private DResult() { Code = StatusCodes.OK; }
 
         /// <summary>
         /// 构造函数
@@ -68,7 +68,7 @@ namespace CodeArts
         /// <summary>
         /// 成功
         /// </summary>
-        public static DResult Ok() => new DResult();
+        public static DResult Ok() => new DResult(StatusCodes.OK);
 
         /// <summary>
         /// 成功
@@ -117,7 +117,7 @@ namespace CodeArts
         /// 构造函数
         /// </summary>
         /// <param name="data">数据</param>
-        public DResult(T data) : base() => Data = data;
+        public DResult(T data) : base(StatusCodes.OK) => Data = data;
 
         /// <summary>
         /// 数据

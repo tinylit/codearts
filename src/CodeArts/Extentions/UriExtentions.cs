@@ -210,7 +210,7 @@ namespace System
 
                     if (__form is null)
                     {
-                        client.UploadString(__uri, method.ToUpper(), __data ?? string.Empty);
+                        return client.UploadString(__uri, method.ToUpper(), __data ?? string.Empty);
                     }
 
                     return Encoding.UTF8.GetString(client.UploadValues(__uri, method.ToUpper(), __form));
