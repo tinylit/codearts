@@ -15,7 +15,6 @@ namespace CodeArts.Proxies.Generators
         private static readonly Type interceptType = typeof(IIntercept);
         private static readonly Type interceptorType = typeof(IInterceptor);
         private static readonly MethodInfo interceptMethod = interceptorType.GetMethod("Intercept", new Type[] { interceptType });
-        private static readonly MethodInfo interceptStaticMethod = typeof(DefaultProxyGenerator).GetMethod(nameof(Intercept), BindingFlags.Public | BindingFlags.Static);
         private static readonly ConstructorInfo interceptConstructor = typeof(Intercept).GetConstructor(new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) });
         private static readonly ConstructorInfo objectConstructor = typeof(object).GetConstructor(Type.EmptyTypes);
         private static readonly MethodInfo returnValueMethod = interceptType.GetMethod("get_ReturnValue", Type.EmptyTypes);
@@ -39,21 +38,6 @@ namespace CodeArts.Proxies.Generators
         /// 模块范围。
         /// </summary>
         public ModuleScope Scope { get; }
-
-#if NETSTANDARD2_1
-        /// <summary>
-        /// 仅用作内部使用（解决.NETCOREAPP3.0下，运行时“Bad Il format.”异常）。
-        /// </summary>
-        /// <param name="interceptor">拦截器</param>
-        /// <param name="intercept">拦截信息</param>
-        /// <returns>拦截方法的返回值<see cref="IIntercept.ReturnValue"/></returns>
-        public static object Intercept(IInterceptor interceptor, IIntercept intercept)
-        {
-            interceptor.Intercept(intercept);
-
-            return intercept.ReturnValue;
-        }
-#endif
 
         private static void ProxyInterfaceMethods(TypeBuilder typeBuilder, ILGenerator ilOfStaticCtor, FieldBuilder interceptorField, FieldBuilder instanceField, MethodInfo[] methods, ProxyOptions options)
         {
@@ -116,11 +100,9 @@ namespace CodeArts.Proxies.Generators
                 ilGen.Emit(OpCodes.Ldarg_0);
                 ilGen.Emit(OpCodes.Ldfld, interceptorField);
                 ilGen.Emit(OpCodes.Ldloc, local);
-#if NETSTANDARD2_1
-                ilGen.Emit(OpCodes.Call, interceptStaticMethod);
-#else
-                ilGen.Emit(OpCodes.Call, interceptMethod);
-#endif
+
+                ilGen.Emit(OpCodes.Callvirt, interceptMethod);
+
 
                 if (method.ReturnType == typeof(void))
                 {
@@ -129,9 +111,7 @@ namespace CodeArts.Proxies.Generators
                     goto return_label;
                 }
 
-#if !NETSTANDARD2_1
                 ilGen.Emit(OpCodes.Callvirt, returnValueMethod);
-#endif
 
                 if (method.ReturnType.IsValueType && !method.ReturnType.IsNullable())
                 {
@@ -175,9 +155,7 @@ namespace CodeArts.Proxies.Generators
                 {
                     ilGen.Emit(OpCodes.Ret);
 
-#if NET40 || NETSTANDARD2_0 || NETSTANDARD2_1
                     typeBuilder.DefineMethodOverride(methodBuilder, method);
-#endif
                 }
             }
         }
@@ -289,7 +267,7 @@ namespace CodeArts.Proxies.Generators
         private static LocalBuilder CreateIntercept(TypeBuilder typeBuilder, ILGenerator ilOfStaticCtor, ILGenerator ilGen, FieldBuilder instanceField, MethodInfo method, Type[] parameters)
         {
             //? 上下文
-            var local = ilGen.DeclareLocal(typeof(IIntercept));
+            var local = ilGen.DeclareLocal(interceptType);
 
             //! 声明一个类型为object的局部数组
             LocalBuilder array = ilGen.DeclareLocal(typeof(object[]));
@@ -358,9 +336,7 @@ namespace CodeArts.Proxies.Generators
 
             ilGen.Emit(OpCodes.Stloc, local);
 
-#if !NETSTANDARD2_1
             ilGen.Emit(OpCodes.Ldloc, local);
-#endif
 
             return local;
         }
@@ -371,7 +347,7 @@ namespace CodeArts.Proxies.Generators
             LocalBuilder array = ilGen.DeclareLocal(typeof(object[]));
 
             //? 上下文
-            var local = ilGen.DeclareLocal(typeof(IIntercept));
+            var local = ilGen.DeclareLocal(interceptType);
 
             //? 数组长度入栈
             ilGen.Emit(OpCodes.Ldc_I4, parameters.Length);
