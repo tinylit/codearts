@@ -177,9 +177,24 @@ namespace CodeArts.ORM.Tests
         [TestMethod]
         public void Test()
         {
+            var insert = "insert into dzfphx VALUES('invoiceNo',@requestId);";
+
+            SQL insert2 = new SQL(insert);
+
             string sql = "select * from fei_users a , fei_data , fei_userdetails b on a.uid=b.uid where a.uid < 100";
 
             SQL sQL = sql;
+
+            var sql2 = @"select  
+replace(ywdjid,' ','') as ddbh
+from  [dbo].[xsfp] 
+where ywrq >dateadd(day,-5,getdate()) 
+ and  ywdjid>'FPXLSY00071582'
+ and not exists(select  ywdjid from cwk where yikaifp!='是')
+group by ywdjid
+having sum(spje)!=0 ";
+
+            SQL sQL2 = new SQL(sql2);
 
             SQL sQL1 = new SQL(@"
             /*

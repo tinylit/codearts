@@ -25,7 +25,7 @@ namespace CodeArts
             if (page < 1)
                 throw new IndexOutOfRangeException("页码不能小于1。");
             Page = page;
-            if (Size < 1)
+            if (size < 1)
                 throw new IndexOutOfRangeException("分页条目不能小于1。");
             Size = size;
         }
