@@ -41,7 +41,7 @@ namespace CodeArts.Tests.Serialize.Json
         /// </summary>
         /// <typeparam name="T">结果类型</typeparam>
         /// <param name="json">JSON字符串</param>
-        /// <param name="namingType">命名风格</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         public T Json<T>(string json, NamingType namingType = NamingType.Normal)
         {
@@ -88,7 +88,7 @@ namespace CodeArts.Tests.Serialize.Json
         /// </summary>
         /// <typeparam name="T">数据类型</typeparam>
         /// <param name="jsonObj">对象</param>
-        /// <param name="namingType">命名风格</param>
+        /// <param name="namingType">命名规则</param>
         /// <param name="indented">是否缩进</param>
         /// <returns></returns>
         public string ToJson<T>(T jsonObj, NamingType namingType = NamingType.Normal, bool indented = false)

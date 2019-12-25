@@ -135,7 +135,7 @@ namespace CodeArts
     /// <summary>
     /// 数据结果
     /// </summary>
-    /// <typeparam name="T">数据集合类型</typeparam>
+    /// <typeparam name="T">元素类型</typeparam>
     [XmlRoot("xml")]
     public class DResults<T> : DResult<List<T>>, IResults<T>, IResult<List<T>>, IResult
     {

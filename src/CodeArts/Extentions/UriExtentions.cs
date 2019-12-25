@@ -245,7 +245,7 @@ namespace System
                 {
                     __catchs.ForEach(action => action.Invoke(e));
 
-                    return string.Empty;
+                    return default;
                 }
                 finally
                 {
@@ -291,7 +291,7 @@ namespace System
                 {
                     __catchs.ForEach(action => action.Invoke(e));
 
-                    return string.Empty;
+                    return default;
                 }
                 finally
                 {

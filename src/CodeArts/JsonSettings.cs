@@ -14,7 +14,7 @@ namespace CodeArts
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="namingCase">命名风格</param>
+        /// <param name="namingCase">命名规则</param>
         public JsonSettings(NamingType namingCase) : base(namingCase)
         {
         }
