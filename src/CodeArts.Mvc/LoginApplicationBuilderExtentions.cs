@@ -1,5 +1,4 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
@@ -113,6 +112,7 @@ namespace CodeArts.Mvc.Builder
 
                 var result = await loginUri.AsRequestable()
                 .ToQueryString(context.Request.QueryString.Value)
+                .Catch(e => throw e)
                 .Json<ServResult<Dictionary<string, object>>>()
                 .GetAsync();
 
@@ -202,11 +202,13 @@ namespace CodeArts.Mvc.Builder
 #if NET40
                 var result = loginUri.AsRequestable()
                     .ToQueryString(context.Request.QueryString.ToString())
+                    .Catch(e => throw e)
                     .Json<ServResult<Dictionary<string, object>>>()
                     .Get();
 #else
                 var result = await loginUri.AsRequestable()
                     .ToQueryString(context.Request.QueryString.ToString())
+                    .Catch(e => throw e)
                     .Json<ServResult<Dictionary<string, object>>>()
                     .GetAsync();
 #endif

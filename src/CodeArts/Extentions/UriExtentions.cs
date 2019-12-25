@@ -322,18 +322,18 @@ namespace System
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>
         {
             private readonly IRequestable requestable;
-            private readonly List<Action<Exception>> __catchs;
+            private readonly List<Action<string, Exception>> __catchs;
 
             public JsonRequestable(IRequestable requestable, NamingType namingType)
             {
                 NamingType = namingType;
                 this.requestable = requestable;
-                __catchs = new List<Action<Exception>>();
+                __catchs = new List<Action<string, Exception>>();
             }
 
             public NamingType NamingType { get; }
 
-            public IJsonRequestable<T> JsonCatch(Action<Exception> catchError)
+            public IJsonRequestable<T> Catch(Action<string, Exception> catchError)
             {
                 __catchs.Add(catchError ?? throw new ArgumentNullException(nameof(catchError)));
 
@@ -367,7 +367,7 @@ namespace System
                 }
                 catch (Exception e)
                 {
-                    __catchs.ForEach(action => action.Invoke(e));
+                    __catchs.ForEach(action => action.Invoke(value, e));
 
                     return default;
                 }
@@ -386,9 +386,9 @@ namespace System
                 {
                     return JsonHelper.Json<T>(value, NamingType);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    __catchs.ForEach(action => action.Invoke(e));
+                    __catchs.ForEach(action => action.Invoke(value, e));
 
                     return default;
                 }
@@ -399,15 +399,15 @@ namespace System
         private class XmlRequestable<T> : Requestable<T>, IXmlRequestable<T>
         {
             private readonly IRequestable requestable;
-            private readonly List<Action<XmlException>> __catchs;
+            private readonly List<Action<string, XmlException>> __catchs;
 
             public XmlRequestable(IRequestable requestable)
             {
                 this.requestable = requestable;
-                __catchs = new List<Action<XmlException>>();
+                __catchs = new List<Action<string, XmlException>>();
             }
 
-            public IXmlRequestable<T> XmlCatch(Action<XmlException> catchError)
+            public IXmlRequestable<T> Catch(Action<string, XmlException> catchError)
             {
                 __catchs.Add(catchError);
 
@@ -440,7 +440,7 @@ namespace System
                 }
                 catch (XmlException xml)
                 {
-                    __catchs.ForEach(action => action.Invoke(xml));
+                    __catchs.ForEach(action => action.Invoke(value, xml));
 
                     return default;
                 }
@@ -464,7 +464,7 @@ namespace System
                 }
                 catch (XmlException xml)
                 {
-                    __catchs.ForEach(action => action.Invoke(xml));
+                    __catchs.ForEach(action => action.Invoke(value, xml));
 
                     return default;
                 }
