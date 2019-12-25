@@ -1,8 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using CodeArts.Serialize.Json;
-using CodeArts.Tests.Serialize.Json;
+﻿using CodeArts.Serialize.Json;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace CodeArts.Tests
 {
@@ -23,7 +23,7 @@ namespace CodeArts.Tests
                      rsv_idx = 2,
                      ie = "utf8"
                  })
-                 .ToForm(new Dictionary<string, string>())
+                 .Json(new Dictionary<string, string>())
                  .Get();
         }
 
@@ -83,6 +83,22 @@ namespace CodeArts.Tests
             //    .Json(json)
             //    .ByJson(json)
             //    .Post();
+        }
+
+        [TestMethod]
+        public async Task PostForm()
+        {
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+
+            var value = await "http://localhost:49683/weatherforecast".AsRequestable()
+             .ToForm(new
+             {
+                 Date = DateTime.Now,
+                 TemperatureC = 1,
+                 Summary = 50
+             })
+             .Json(new Dictionary<string, string>())
+             .PostAsync();
         }
     }
 }

@@ -33,8 +33,14 @@ namespace Mvc.Core.Controllers
         }
         /// <inheritdoc />
         [HttpPut]
-        [Authorize]
         public DResult<WeatherForecast> Put([FromBody]WeatherForecast weather)
+        {
+            return weather;
+        }
+
+        /// <inheritdoc />
+        [HttpPost]
+        public DResult<WeatherForecast> Post([FromForm]WeatherForecast weather)
         {
             return weather;
         }

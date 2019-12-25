@@ -116,7 +116,7 @@ namespace CodeArts.Mvc.Builder
                 .Json<ServResult<Dictionary<string, object>>>()
                 .GetAsync();
 
-                if (result.Success)
+                if (result?.Success ?? false)
                 {
                     await WriteToken(context, result.Data);
                 }
@@ -212,7 +212,7 @@ namespace CodeArts.Mvc.Builder
 #endif
 
 
-                if (result.Success)
+                if (result?.Success ?? false)
                 {
                     context.Response.WriteJson(DResult.Ok(GetJwtToken(result.Data)));
                 }

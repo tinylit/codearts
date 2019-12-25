@@ -10,6 +10,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace System
 {
@@ -95,7 +96,7 @@ namespace System
             public IRequestable ToForm(string param, NamingType namingType = NamingType.Normal)
                 => ToForm(JsonHelper.Json<Dictionary<string, string>>(param, namingType));
 
-            public IRequestable ToForm<T>(T param, NamingType namingType = NamingType.Normal) where T : IEnumerable<KeyValuePair<string, string>>
+            public IRequestable ToForm(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal)
             {
                 __form = __form ?? new NameValueCollection();
 
@@ -163,7 +164,7 @@ namespace System
             public IRequestable ToQueryString(IEnumerable<string> param)
               => ToQueryString(string.Join("&", param));
 
-            public IRequestable ToQueryString<T>(T param) where T : IEnumerable<KeyValuePair<string, string>>
+            public IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param)
                  => ToQueryString(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value))));
 
             public IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param)
@@ -223,7 +224,7 @@ namespace System
 
                     if (method.ToUpper() == "GET")
                     {
-                        return Encoding.UTF8.GetString(client.DownloadData(__uri));
+                        return client.DownloadString(__uri);
                     }
 
                     if (__form is null)
@@ -235,7 +236,7 @@ namespace System
                 }
             }
 
-            public override string Request(string method, int timeout = 5)
+            public override string Request(string method, int timeout = 5000)
             {
                 try
                 {
@@ -270,7 +271,7 @@ namespace System
 
                     if (method.ToUpper() == "GET")
                     {
-                        return Encoding.UTF8.GetString(await client.DownloadDataTaskAsync(__uri));
+                        return await client.DownloadStringTaskAsync(__uri);
                     }
 
                     if (__form is null)
@@ -281,7 +282,7 @@ namespace System
                     return Encoding.UTF8.GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form));
                 }
             }
-            public override async Task<string> RequestAsync(string method, int timeout = 5)
+            public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
                 try
                 {
@@ -321,14 +322,37 @@ namespace System
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>
         {
             private readonly IRequestable requestable;
+            private readonly List<Action<Exception>> __catchs;
 
             public JsonRequestable(IRequestable requestable, NamingType namingType)
             {
-                this.requestable = requestable;
                 NamingType = namingType;
+                this.requestable = requestable;
+                __catchs = new List<Action<Exception>>();
             }
 
             public NamingType NamingType { get; }
+
+            public IJsonRequestable<T> JsonCatch(Action<Exception> catchError)
+            {
+                __catchs.Add(catchError ?? throw new ArgumentNullException(nameof(catchError)));
+
+                return this;
+            }
+
+            public IJsonRequestable<T> Catch(Action<WebException> catchError)
+            {
+                requestable.Catch(catchError);
+
+                return this;
+            }
+
+            public IJsonRequestable<T> Finally(Action always)
+            {
+                requestable.Finally(always);
+
+                return this;
+            }
 
             public override T Request(string method, int timeout = 5000)
             {
@@ -336,12 +360,15 @@ namespace System
 
                 if (string.IsNullOrEmpty(value))
                     return default;
+
                 try
                 {
                     return JsonHelper.Json<T>(value, NamingType);
                 }
-                catch
+                catch (Exception e)
                 {
+                    __catchs.ForEach(action => action.Invoke(e));
+
                     return default;
                 }
             }
@@ -359,8 +386,10 @@ namespace System
                 {
                     return JsonHelper.Json<T>(value, NamingType);
                 }
-                catch
+                catch(Exception e)
                 {
+                    __catchs.ForEach(action => action.Invoke(e));
+
                     return default;
                 }
             }
@@ -370,10 +399,33 @@ namespace System
         private class XmlRequestable<T> : Requestable<T>, IXmlRequestable<T>
         {
             private readonly IRequestable requestable;
+            private readonly List<Action<XmlException>> __catchs;
 
             public XmlRequestable(IRequestable requestable)
             {
                 this.requestable = requestable;
+                __catchs = new List<Action<XmlException>>();
+            }
+
+            public IXmlRequestable<T> XmlCatch(Action<XmlException> catchError)
+            {
+                __catchs.Add(catchError);
+
+                return this;
+            }
+
+            public IXmlRequestable<T> Catch(Action<WebException> catchError)
+            {
+                requestable.Catch(catchError);
+
+                return this;
+            }
+
+            public IXmlRequestable<T> Finally(Action always)
+            {
+                requestable.Finally(always);
+
+                return this;
             }
 
             public override T Request(string method, int timeout = 5000)
@@ -385,6 +437,12 @@ namespace System
                 try
                 {
                     return XmlHelper.XmlDeserialize<T>(value);
+                }
+                catch (XmlException xml)
+                {
+                    __catchs.ForEach(action => action.Invoke(xml));
+
+                    return default;
                 }
                 catch
                 {
@@ -403,6 +461,12 @@ namespace System
                 try
                 {
                     return XmlHelper.XmlDeserialize<T>(value);
+                }
+                catch (XmlException xml)
+                {
+                    __catchs.ForEach(action => action.Invoke(xml));
+
+                    return default;
                 }
                 catch
                 {

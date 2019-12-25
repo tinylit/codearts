@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace CodeArts.Net
 {
@@ -168,11 +169,10 @@ namespace CodeArts.Net
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
-        /// <typeparam name="T">参数类型</typeparam>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm<T>(T param, NamingType namingType = NamingType.Normal) where T : IEnumerable<KeyValuePair<string, string>>;
+        IRequestable ToForm(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
@@ -213,10 +213,9 @@ namespace CodeArts.Net
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
-        /// <typeparam name="T">参数类型</typeparam>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable ToQueryString<T>(T param) where T : IEnumerable<KeyValuePair<string, string>>;
+        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
@@ -272,7 +271,7 @@ namespace CodeArts.Net
         IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class;
 
         /// <summary>
-        /// 异常捕获
+        /// 捕获Web异常
         /// </summary>
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
@@ -296,11 +295,54 @@ namespace CodeArts.Net
         /// 命名规则
         /// </summary>
         NamingType NamingType { get; }
+
+        /// <summary>
+        /// 捕获Json解析异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IJsonRequestable<T> JsonCatch(Action<Exception> catchError);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IJsonRequestable<T> Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="always">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IJsonRequestable<T> Finally(Action always);
     }
 
     /// <summary>
     /// 请求能力
     /// </summary>
     /// <typeparam name="T">结果数据</typeparam>
-    public interface IXmlRequestable<T> : IRequestable<T> { }
+    public interface IXmlRequestable<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 捕获Xm解析异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IXmlRequestable<T> XmlCatch(Action<XmlException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IXmlRequestable<T> Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="always">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IXmlRequestable<T> Finally(Action always);
+    }
 }
