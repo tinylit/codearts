@@ -983,7 +983,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// Queryable 拓展方法
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         /// <returns></returns>
         protected virtual Expression VisitQueryableExtentionsMethodCall(MethodCallExpression node)
         {
@@ -1118,7 +1118,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// Lamda 分析
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">元素类型</typeparam>
         /// <param name="node">节点</param>
         /// <param name="addPrefixCache">添加前缀缓存</param>
         /// <returns></returns>

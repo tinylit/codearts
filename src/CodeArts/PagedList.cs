@@ -8,7 +8,7 @@ namespace CodeArts
     /// <summary>
     /// 分页的列表
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">元素类型</typeparam>
     public class PagedList<T> : IEnumerable<T>, IEnumerable
     {
         private readonly IQueryable<T> list;

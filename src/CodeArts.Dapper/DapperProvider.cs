@@ -13,7 +13,7 @@ namespace CodeArts.Dapper
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="settings"></param>
+        /// <param name="settings">SQL矫正配置</param>
         public DapperProvider(ISQLCorrectSettings settings) : base(settings)
         {
 

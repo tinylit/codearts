@@ -197,7 +197,7 @@ namespace System
         /// <summary>
         /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为空或空字符串时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非空字符串合并【空字符串试探合并符(A?+B)，当属性A为空或空字符串时，返回A内容，否则返回A和B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <param name="value">字符串</param>
         /// <param name="source">资源</param>
         /// <param name="namingType">比较的命名方式</param>
@@ -207,7 +207,7 @@ namespace System
         /// <summary>
         /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为空或空字符串时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非空字符串合并【空字符串试探合并符(A?+B)，当属性A为空或空字符串时，返回A内容，否则返回A和B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <param name="value">字符串</param>
         /// <param name="source">资源</param>
         /// <param name="settings">属性配置</param>

@@ -82,7 +82,7 @@ namespace CodeArts
         /// <summary>
         /// 提供隐式转换
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="value">值</param>
         public static implicit operator UppercaseString(string value) => new UppercaseString(value);
 
         /// <summary>

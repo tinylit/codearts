@@ -132,7 +132,7 @@ namespace CodeArts.Cache
         /// <summary>
         /// 清除缓存
         /// </summary>
-        /// <param name="keys"></param>
+        /// <param name="keys">键集合</param>
         /// <returns></returns>
         public override void Remove(IEnumerable<string> keys)
         {

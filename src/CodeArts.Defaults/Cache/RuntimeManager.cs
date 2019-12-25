@@ -28,7 +28,7 @@ namespace CodeArts.Cache
         /// <summary>
         /// 删除内存缓存
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="name">缓存名称</param>
         /// <returns></returns>
         public void RemoveDataBase(string name) => _connections.TryRemove(name, out _);
     }
@@ -61,7 +61,7 @@ namespace CodeArts.Cache
         /// <summary>
         /// 删除内存缓存
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="name">缓存名称</param>
         /// <returns></returns>
         public void RemoveDataBase(string name) => _connections.TryRemove(name, out _);
     }

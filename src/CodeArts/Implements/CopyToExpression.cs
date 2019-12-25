@@ -654,7 +654,7 @@ namespace CodeArts.Implements
         /// 解决类似 IEnumerable 到 IEnumerable 的数据转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType"></param>
+        /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
         protected virtual Func<object, TResult> ByLikeEnumarableToEnumarable<TResult>(Type sourceType, Type conversionType)

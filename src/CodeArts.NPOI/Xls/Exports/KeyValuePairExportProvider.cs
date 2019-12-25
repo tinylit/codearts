@@ -22,8 +22,8 @@ namespace CodeArts.NPOI.Xls.Exports
         /// <summary>
         /// 导出表册方法
         /// </summary>
-        /// <param name="action"></param>
-        /// <param name="value"></param>
+        /// <param name="action">工厂</param>
+        /// <param name="value">数据</param>
         public override void Export(Func<string, ICell> action, Dictionary<string, object> value)
         {
             foreach (var kv in value)

@@ -39,7 +39,7 @@ namespace CodeArts.Tests.Serialize.Json
         /// <summary>
         /// 将JSON反序列化为对象
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">结果类型</typeparam>
         /// <param name="json">JSON字符串</param>
         /// <param name="namingType">命名风格</param>
         /// <returns></returns>
@@ -49,10 +49,10 @@ namespace CodeArts.Tests.Serialize.Json
         }
 
         /// <summary> 将JSON反序列化到匿名对象 </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="json"></param>
-        /// <param name="anonymousTypeObject"></param>
-        /// <param name="namingType"></param>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="json">JSON字符串</param>
+        /// <param name="anonymousTypeObject">匿名对象</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         public T Json<T>(string json, T anonymousTypeObject, NamingType namingType = NamingType.Normal)
         {
@@ -60,9 +60,9 @@ namespace CodeArts.Tests.Serialize.Json
         }
 
         /// <summary> 将JSON反序列化json为列表 </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="json"></param>
-        /// <param name="namingType"></param>
+        /// <typeparam name="T">元素类型</typeparam>
+        /// <param name="json">JSON字符串</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         public IEnumerable<T> JsonList<T>(string json, NamingType namingType = NamingType.Normal)
         {
@@ -86,7 +86,7 @@ namespace CodeArts.Tests.Serialize.Json
         /// <summary>
         /// 对象序列化为JSON
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <param name="jsonObj">对象</param>
         /// <param name="namingType">命名风格</param>
         /// <param name="indented">是否缩进</param>

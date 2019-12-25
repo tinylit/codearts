@@ -10,7 +10,8 @@ namespace CodeArts.NPOI.Xls
         /// <summary>
         /// 设置值
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="cell">单元格</param>
+        /// <param name="value">数据</param>
         void SetValue(ICell cell, object value);
     }
 }

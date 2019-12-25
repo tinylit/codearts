@@ -19,7 +19,7 @@ namespace CodeArts.SignalR
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">上下文</param>
         public ResultContext(IOwinContext context)
         {
             Context = context;

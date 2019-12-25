@@ -142,8 +142,8 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置管道
         /// </summary>
-        /// <param name="app"></param>
-        /// <param name="env"></param>
+        /// <param name="app">程序构建器</param>
+        /// <param name="env">环境变量</param>
         public virtual void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
 #endif

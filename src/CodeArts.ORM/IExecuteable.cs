@@ -30,7 +30,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 路由执行力
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">实体类型</typeparam>
     public interface IRouteExecuteable<T> : IEnumerable<T>, IEnumerable
     {
         /// <summary>
@@ -53,7 +53,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 删除能力
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">实体类型</typeparam>
     public interface IDeleteable<T> : IRouteExecuteable<T>
     {
         /// <summary>
@@ -81,7 +81,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 插入能力
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">实体类型</typeparam>
     public interface IInsertable<T> : IRouteExecuteable<T>
     {
         /// <summary>
@@ -123,7 +123,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 更新能力
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">实体类型</typeparam>
     public interface IUpdateable<T> : IRouteExecuteable<T>
     {
         /// <summary>

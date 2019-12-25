@@ -11,7 +11,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 适配器格式化基类
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     public abstract class AdapterFormatter<T> where T : AdapterFormatter<T>, IFormatter
     {
         /// <summary>

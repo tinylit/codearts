@@ -47,7 +47,7 @@ namespace CodeArts.Proxies
         /// <summary>
         /// 获取构造函数的代理。
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <param name="options">代理选项</param>
         /// <returns></returns>
         public static IConstructorProxyOf<T> CreateInstance<T>(ProxyOptions options) where T : class => new ConstructorProxyOf<T>(TypeCache.GetOrAdd(CreateToken(typeof(T), options), _ => CreateType(proxyGenerator.New(typeof(T), options))));

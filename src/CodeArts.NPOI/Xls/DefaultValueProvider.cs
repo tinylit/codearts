@@ -16,8 +16,8 @@ namespace CodeArts.NPOI.Xls
         /// <summary>
         /// 设置值
         /// </summary>
-        /// <param name="cell"></param>
-        /// <param name="value"></param>
+        /// <param name="cell">单元格</param>
+        /// <param name="value">值</param>
         public void SetValue(ICell cell, object value)
         {
             if (value == null)

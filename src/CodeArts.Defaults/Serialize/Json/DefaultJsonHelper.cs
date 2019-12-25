@@ -24,7 +24,7 @@ namespace CodeArts.Serialize.Json
             /// <summary>
             /// 属性名解析
             /// </summary>
-            /// <param name="propertyName"></param>
+            /// <param name="propertyName">属性名称</param>
             /// <returns></returns>
             protected override string ResolvePropertyName(string propertyName)
             {
@@ -100,9 +100,9 @@ namespace CodeArts.Serialize.Json
         /// <summary>
         /// 将JSON反序列化为对象
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">结果类型</typeparam>
         /// <param name="json">JSON字符串</param>
-        /// <param name="namingType">命名风格</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         public T Json<T>(string json, NamingType namingType = NamingType.CamelCase)
         {
@@ -110,10 +110,10 @@ namespace CodeArts.Serialize.Json
         }
 
         /// <summary> 将JSON反序列化到匿名对象 </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="json"></param>
-        /// <param name="anonymousTypeObject"></param>
-        /// <param name="namingType"></param>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="json">JSON字符串</param>
+        /// <param name="anonymousTypeObject">匿名对象</param>
+        /// <param name="namingType">命名规则</param>
         /// <returns></returns>
         public T Json<T>(string json, T anonymousTypeObject, NamingType namingType = NamingType.CamelCase)
         {
@@ -123,9 +123,9 @@ namespace CodeArts.Serialize.Json
         /// <summary>
         /// 对象序列化为JSON
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <param name="jsonObj">对象</param>
-        /// <param name="namingType">命名风格</param>
+        /// <param name="namingType">命名规则</param>
         /// <param name="indented">是否缩进</param>
         /// <returns></returns>
         public string ToJson<T>(T jsonObj, NamingType namingType = NamingType.CamelCase, bool indented = false)

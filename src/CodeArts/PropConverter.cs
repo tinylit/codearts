@@ -27,7 +27,7 @@ namespace CodeArts
     /// <summary>
     /// 属性转换器
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     public abstract class PropConverter<T> : PropConverter
     {
         /// <summary>

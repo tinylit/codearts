@@ -21,7 +21,7 @@ namespace CodeArts.Mvc.Authentication
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">上下文</param>
         public ResultContext(HttpContext context)
         {
             Context = context;

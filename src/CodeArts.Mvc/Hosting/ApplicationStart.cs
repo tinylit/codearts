@@ -92,7 +92,7 @@ namespace CodeArts.Mvc.Hosting
             /// <summary>
             /// Gets the service object of the specified type.
             /// </summary>
-            /// <param name="serviceType"></param>
+            /// <param name="serviceType">服务类型</param>
             /// <returns></returns>
             public object GetService(Type serviceType)
             {

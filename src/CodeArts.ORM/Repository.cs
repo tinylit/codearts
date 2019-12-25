@@ -81,7 +81,7 @@ namespace CodeArts.ORM
         public Repository(IReadOnlyConnectionConfig connectionConfig) => ConnectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
 
         /// <summary> 执行数据库事务 </summary>
-        /// <typeparam name="TResult"></typeparam>
+        /// <typeparam name="TResult">结果类型</typeparam>
         /// <param name="factory">事件工厂</param>
         /// <param name="level">指定连接的事务锁定行为。</param>
         /// <returns></returns>
@@ -118,7 +118,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 数据仓储
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">实体类型</typeparam>
     public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IEnumerable, IQueryProvider
     {
         private static ITableRegions tableRegions;
@@ -208,7 +208,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 执行表达式
         /// </summary>
-        /// <param name="expression"></param>
+        /// <param name="expression">表达式</param>
         /// <returns></returns>
         object IQueryProvider.Execute(Expression expression) => Execute<T>(expression);
 

@@ -88,7 +88,7 @@ namespace CodeArts.Config
         /// <summary>
         /// 配置变更事件
         /// </summary>
-        /// <param name="state"></param>
+        /// <param name="state">状态</param>
         private void ConfigChanged(object state)
         {
             OnConfigChanged?.Invoke(state);

@@ -17,7 +17,7 @@ namespace CodeArts.NPOI
         /// <summary>
         /// 转byte字节流
         /// </summary>
-        /// <param name="workbook"></param>
+        /// <param name="workbook">办公文件</param>
         /// <returns></returns>
         public static byte[] ToBytes(this IWorkbook workbook)
         {

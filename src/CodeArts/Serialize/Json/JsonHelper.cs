@@ -22,7 +22,7 @@
             => _jsonHelper.ToJson(jsonObj, namingType, indented);
 
         /// <summary> Json反序列化 </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">结果类型</typeparam>
         /// <param name="json">JSON 字符串</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
@@ -30,7 +30,7 @@
             => _jsonHelper.Json<T>(json, namingType);
 
         /// <summary> 匿名对象反序列化 </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">结果类型</typeparam>
         /// <param name="json">JSON 字符串</param>
         /// <param name="anonymousTypeObject">匿名对象类型</param>
         /// <param name="namingType">命名规则</param>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace CodeArts.Net
@@ -269,6 +270,20 @@ namespace CodeArts.Net
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <returns></returns>
         IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class;
+
+        /// <summary>
+        /// 异常捕获
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="always">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IRequestable Finally(Action always);
     }
 
     /// <summary>

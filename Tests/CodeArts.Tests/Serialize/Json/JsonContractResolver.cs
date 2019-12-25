@@ -16,7 +16,7 @@ namespace CodeArts.Tests.Serialize.Json
         /// <summary>
         /// 构造定义命名解析风格
         /// </summary>
-        /// <param name="camelCase"></param>
+        /// <param name="camelCase">命名规则</param>
         public JsonContractResolver(NamingType camelCase)
         {
             _camelCase = camelCase;
@@ -25,18 +25,16 @@ namespace CodeArts.Tests.Serialize.Json
         /// <summary>
         /// 属性名解析
         /// </summary>
-        /// <param name="propertyName"></param>
+        /// <param name="propertyName">属性名称</param>
         /// <returns></returns>
         protected override string ResolvePropertyName(string propertyName)
         {
             switch (_camelCase)
             {
                 case NamingType.CamelCase:
-                    return propertyName.ToCamelCase();
                 case NamingType.UrlCase:
-                    return propertyName.ToUrlCase();
                 case NamingType.PascalCase:
-                    return propertyName.ToPascalCase();
+                    return propertyName.ToNamingCase(_camelCase);
                 default:
                     return base.ResolvePropertyName(propertyName);
             }

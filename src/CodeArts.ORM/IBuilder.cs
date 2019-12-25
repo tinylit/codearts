@@ -12,7 +12,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 表达式分析
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         void Evaluate(Expression node);
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 增删改
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">实体类型</typeparam>
     public interface IBuilder<T> : IBuilder
     {
         /// <summary>

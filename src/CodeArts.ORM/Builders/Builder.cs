@@ -200,12 +200,12 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// 写入表名称
         /// </summary>
-        /// <param name="tableType"></param>
+        /// <param name="tableType">表类型</param>
         public void WriteTable(Type tableType) => WriteTable(MakeTableRegions(tableType));
         /// <summary>
         /// 写入表名称
         /// </summary>
-        /// <param name="tableRegions"></param>
+        /// <param name="tableRegions">表信息</param>
         public void WriteTable(ITableRegions tableRegions) => SQLWriter.TableName(GetTableName(tableRegions), GetOrAddTablePrefix(tableRegions.TableType));
 
         private string GetTableName(ITableRegions regions) => tableFactory?.Invoke(regions) ?? regions.TableName;
@@ -241,7 +241,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// 生成Like方法
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         /// <returns></returns>
         private Expression VisitLike(MethodCallExpression node)
         {
@@ -655,7 +655,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// System.Linq.Enumerable 的函数
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         /// <returns></returns>
         protected virtual Expression VisitEnumerableMethodCall(MethodCallExpression node)
         {
@@ -698,7 +698,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// System.Linq.Enumerable 的函数
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         /// <returns></returns>
         protected virtual Expression VisitIEnumerableMethodCall(MethodCallExpression node)
         {

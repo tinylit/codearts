@@ -44,7 +44,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 参数名称
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="name">名称</param>
         /// <returns></returns>
         string ParamterName(string name);
     }

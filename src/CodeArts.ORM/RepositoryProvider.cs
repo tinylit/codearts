@@ -39,7 +39,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 创建执行器
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">实体类型</typeparam>
         /// <returns></returns>
         public virtual IBuilder<T> Create<T>() => new ExecuteBuilder<T>(Settings);
 

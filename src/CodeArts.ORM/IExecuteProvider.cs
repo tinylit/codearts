@@ -5,7 +5,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 执行器
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">结果类型</typeparam>
     public interface IExecuteProvider<T>
     {
         /// <summary>

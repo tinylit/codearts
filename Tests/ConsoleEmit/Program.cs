@@ -15,7 +15,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// 对数据中的每个元素执行指定操作
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">元素类型</typeparam>
         /// <param name="source">数据源</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
@@ -29,7 +29,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// 对数据中的每个元素执行指定操作
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">元素类型</typeparam>
         /// <param name="source">数据源</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)

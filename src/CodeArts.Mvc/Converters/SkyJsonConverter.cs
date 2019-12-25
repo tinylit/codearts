@@ -14,7 +14,7 @@ namespace CodeArts.Mvc.Converters
         /// <summary>
         /// 是否可以调整
         /// </summary>
-        /// <param name="objectType"></param>
+        /// <param name="objectType">数据类型</param>
         /// <returns></returns>
         public override bool CanConvert(Type objectType) => objectType.IsValueType || typeof(string) == objectType;
 
@@ -127,13 +127,15 @@ namespace CodeArts.Mvc.Converters
         /// <summary>
         /// 是否可以调整
         /// </summary>
-        /// <param name="objectType"></param>
+        /// <param name="objectType">数据类型</param>
         /// <returns></returns>
         public override bool CanConvert(Type objectType) => objectType.IsValueType || typeof(string) == objectType;
 
         /// <summary>
         /// 改变数据
         /// </summary>
+        /// <param name="source">源类型</param>
+        /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
         private object ChangeType(object source, Type conversionType)
         {

@@ -61,6 +61,8 @@ namespace System
             private string __data;
             private Uri __uri;
             private NameValueCollection __form;
+            private readonly List<Action> __finallys;
+            private readonly List<Action<WebException>> __catchs;
             private readonly Dictionary<string, string> __headers;
 
             public Requestable(string uriString) : this(new Uri(uriString)) { }
@@ -68,6 +70,8 @@ namespace System
             public Requestable(Uri uri)
             {
                 __uri = uri ?? throw new ArgumentNullException(nameof(uri));
+                __finallys = new List<Action>();
+                __catchs = new List<Action<WebException>>();
                 __headers = new Dictionary<string, string>();
             }
 
@@ -190,7 +194,21 @@ namespace System
                     })));
             }
 
-            public override string Request(string method, int timeout = 5)
+            public IRequestable Catch(Action<WebException> catchError)
+            {
+                __catchs.Add(catchError ?? throw new ArgumentNullException(nameof(catchError)));
+
+                return this;
+            }
+
+            public IRequestable Finally(Action always)
+            {
+                __finallys.Add(always ?? throw new ArgumentNullException(nameof(always)));
+
+                return this;
+            }
+
+            private string RequestCore(string method, int timeout)
             {
                 using (var client = new SkyWebClient
                 {
@@ -217,8 +235,27 @@ namespace System
                 }
             }
 
+            public override string Request(string method, int timeout = 5)
+            {
+                try
+                {
+                    return RequestCore(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    __catchs.ForEach(action => action.Invoke(e));
+
+                    return string.Empty;
+                }
+                finally
+                {
+                    __finallys.ForEach(action => action.Invoke());
+                }
+            }
+
 #if !NET40
-            public override async Task<string> RequestAsync(string method, int timeout = 5)
+
+            private async Task<string> RequestAsyncCore(string method, int timeout)
             {
                 using (var client = new SkyWebClient
                 {
@@ -244,6 +281,23 @@ namespace System
                     return Encoding.UTF8.GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form));
                 }
             }
+            public override async Task<string> RequestAsync(string method, int timeout = 5)
+            {
+                try
+                {
+                    return await RequestAsyncCore(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    __catchs.ForEach(action => action.Invoke(e));
+
+                    return string.Empty;
+                }
+                finally
+                {
+                    __finallys.ForEach(action => action.Invoke());
+                }
+            }
 #endif
             public IRequestable ToXml(string param)
             {
@@ -261,6 +315,7 @@ namespace System
             public IJsonRequestable<T> Json<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
             public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
+
         }
 
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>

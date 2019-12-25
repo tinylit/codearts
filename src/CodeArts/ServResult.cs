@@ -89,7 +89,7 @@ namespace CodeArts
     /// <summary>
     /// 服务调用数据结果
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">元素类型</typeparam>
     [XmlRoot("xml")]
     public class ServResults<T> : ServResult<List<T>>, IResults<T>, IResult<List<T>>, IResult
     {

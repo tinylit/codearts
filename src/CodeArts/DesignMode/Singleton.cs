@@ -5,7 +5,7 @@ namespace CodeArts.DesignMode
     /// <summary>
     /// 单例基类
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">单例类型</typeparam>
     public class Singleton<T> where T : Singleton<T>
     {
         /// <summary>

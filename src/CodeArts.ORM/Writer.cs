@@ -294,7 +294,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 别名
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="name">名称</param>
         public void Alias(string name) => Write(_writer.Name(name));
 
         /// <summary>

@@ -27,9 +27,9 @@ namespace CodeArts.ORM
             /// <summary>
             /// 链接管理
             /// </summary>
-            /// <param name="connectionString"></param>
-            /// <param name="adapter"></param>
-            /// <param name="useCache"></param>
+            /// <param name="connectionString">数据库连接字符串</param>
+            /// <param name="adapter">适配器</param>
+            /// <param name="useCache">是否使用缓存</param>
             /// <returns></returns>
             public IDbConnection Create(string connectionString, IDbConnectionAdapter adapter, bool useCache = true)
             {

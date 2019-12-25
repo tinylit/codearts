@@ -7,7 +7,7 @@ namespace CodeArts.NPOI.Xls.Exports
     /// <summary>
     /// 实体输出
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">数据类型</typeparam>
     public class EntryExportProvider<T> : ExportProvider<T>
     {
         /// <summary>

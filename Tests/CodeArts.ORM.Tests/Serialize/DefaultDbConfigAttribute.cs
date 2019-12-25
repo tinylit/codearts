@@ -12,7 +12,6 @@ namespace UnitTest.Serialize
         /// <summary>
         /// 获取链接配置
         /// </summary>
-        /// <param name="repository"></param>
         /// <returns></returns>
         public override ConnectionConfig GetConfig()
         {

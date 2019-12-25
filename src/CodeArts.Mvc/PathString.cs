@@ -579,7 +579,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// Implicitly creates a new PathString from the given string.
         /// </summary>
-        /// <param name="s"></param>
+        /// <param name="s">string.</param>
         public static implicit operator PathString(string s)
         {
             return ConvertFromString(s);
@@ -588,7 +588,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// Implicitly calls ToString().
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="path">path.</param>
         public static implicit operator string(PathString path)
         {
             return path.ToString();

@@ -181,7 +181,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// Where条件（不包含And或Or）
         /// </summary>
-        /// <param name="nodeType"></param>
+        /// <param name="nodeType">节点类型</param>
         /// <returns></returns>
         internal static ExpressionType ReverseWhere(this ExpressionType nodeType)
         {

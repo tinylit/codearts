@@ -111,7 +111,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// 重写函数调用
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         /// <returns></returns>
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
@@ -131,7 +131,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// 重写变量分析
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点</param>
         /// <returns></returns>
         protected override Expression VisitConstant(ConstantExpression node)
         {

@@ -12,7 +12,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 实体基类
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">主键类型</typeparam>
     public class BaseEntity<T> : BaseEntity
     {
         /// <summary>

@@ -28,7 +28,7 @@ namespace CodeArts.NPOI.Xls
         /// <summary>
         /// 创建表头
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <param name="sheet">表</param>
         /// <param name="collection">集合</param>
         /// <param name="factory">工厂</param>

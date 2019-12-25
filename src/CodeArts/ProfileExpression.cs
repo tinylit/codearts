@@ -688,7 +688,7 @@ namespace CodeArts
         /// <summary>
         /// 路由
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
+        /// <typeparam name="TResult">结果类型</typeparam>
         private class MapRouter<TResult>
         {
             /// <summary>
@@ -705,7 +705,7 @@ namespace CodeArts
         /// <summary>
         /// 静态内部类
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
+        /// <typeparam name="TResult">结果类型</typeparam>
         private static class Nested<TResult>
         {
             private static readonly AsyncLocal<bool> ThreadSecurity = new AsyncLocal<bool>();

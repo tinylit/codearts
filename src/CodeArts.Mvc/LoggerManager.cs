@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// 使用日志管理器。
         /// </summary>
-        /// <param name="app"></param>
+        /// <param name="app">程序构造器</param>
         /// <returns></returns>
         public static IApplicationBuilder UseLoggerManager(this IApplicationBuilder app)
         {
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// 获取一个日志记录器。
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name="type">类型</param>
         /// <returns></returns>
         public static ILogger GetLogger(Type type) => Factory?.CreateLogger(type) ?? NullLogger.Instance;
     }

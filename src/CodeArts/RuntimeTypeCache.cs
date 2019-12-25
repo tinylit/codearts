@@ -19,13 +19,14 @@ namespace CodeArts
         /// <summary>
         /// 获取类型缓存
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">数据类型</typeparam>
         /// <returns></returns>
         public TypeStoreItem GetCache<T>() => GetCache(typeof(T));
 
         /// <summary>
         /// 获取类型缓存
         /// </summary>
+        /// <param name="type">数据类型</param>
         /// <returns></returns>
         public TypeStoreItem GetCache(Type type) => Cache.GetOrAdd(type.TypeHandle, _ => new TypeStoreItem(type));
     }

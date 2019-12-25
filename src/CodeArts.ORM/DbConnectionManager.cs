@@ -29,7 +29,7 @@ namespace CodeArts.ORM
         }
 
         /// <summary> 添加适配器 </summary>
-        /// <param name="adapter"></param>
+        /// <param name="adapter">适配器</param>
         public static void AddAdapter(IDbConnectionAdapter adapter)
         {
             if (adapter == null)
@@ -119,7 +119,7 @@ namespace CodeArts.ORM
         }
 
         /// <summary> 创建数据库适配器 </summary>
-        /// <param name="providerName"></param>
+        /// <param name="providerName">供应商名称</param>
         /// <returns></returns>
         public static IDbConnectionAdapter Create(string providerName)
         {
@@ -143,7 +143,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 获取数据仓促供应器
         /// </summary>
-        /// <param name="adapter"></param>
+        /// <param name="adapter">适配器</param>
         /// <returns></returns>
         public static RepositoryProvider Create(IDbConnectionAdapter adapter)
         {
