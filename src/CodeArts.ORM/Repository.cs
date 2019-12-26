@@ -15,7 +15,6 @@ namespace CodeArts.ORM
     /// <summary>
     /// 数据仓库
     /// </summary>
-    [DbConfig]
     public abstract class Repository
     {
         private readonly static ConcurrentDictionary<Type, DbConfigAttribute> mapperCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
@@ -120,6 +119,7 @@ namespace CodeArts.ORM
     /// 数据仓储
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
+    [DbConfig]
     public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IEnumerable, IQueryProvider
     {
         private static ITableRegions tableRegions;
