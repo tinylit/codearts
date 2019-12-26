@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 
 namespace CodeArts.ORM
 {
@@ -13,6 +14,7 @@ namespace CodeArts.ORM
     /// 实体基类
     /// </summary>
     /// <typeparam name="T">主键类型</typeparam>
+    [DebuggerDisplay("{Id}")]
     public class BaseEntity<T> : BaseEntity
     {
         /// <summary>

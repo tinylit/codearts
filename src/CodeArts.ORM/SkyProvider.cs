@@ -10,13 +10,16 @@ namespace CodeArts.ORM
     /// </summary>
     public class SkyProvider : RepositoryProvider
     {
+        private readonly ISQLCorrectSettings settings;
         private static readonly Dictionary<Type, DbType> typeMap;
+
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="settings">SQL矫正配置</param>
         public SkyProvider(ISQLCorrectSettings settings) : base(settings)
         {
+            this.settings = settings;
         }
 
         static SkyProvider()
@@ -68,9 +71,9 @@ namespace CodeArts.ORM
             return DbType.Object;
         }
 
-        private static void AddParameterAuto(IDbCommand command, Dictionary<string, object> parameters)
+        private void AddParameterAuto(IDbCommand command, Dictionary<string, object> parameters)
         {
-            if (parameters is null)
+            if (parameters is null || parameters.Count == 0)
                 return;
 
             foreach (var kv in parameters)
@@ -79,12 +82,17 @@ namespace CodeArts.ORM
             }
         }
 
-        private static void AddParameterAuto(IDbCommand command, string key, object value)
+        private void AddParameterAuto(IDbCommand command, string key, object value)
         {
+            if (key[0] == '@' || key[0] == '?' || key[0] == ':')
+            {
+                key = key.Substring(1);
+            }
+
             var dbParameter = command.CreateParameter();
 
             dbParameter.Value = value ?? DBNull.Value;
-            dbParameter.ParameterName = key;
+            dbParameter.ParameterName = settings.ParamterName(key);
             dbParameter.Direction = ParameterDirection.Input;
             dbParameter.DbType = value == null ? DbType.Object : LookupDbType(value.GetType());
 

@@ -214,12 +214,11 @@ namespace CodeArts.ORM
             //? 提取字符串
             sql = PatternCharacter.Replace(sql, item =>
             {
-                var len = Characters.Count;
-
                 if (item.Length > 2)
                 {
                     Characters.Add(item.Value);
-                    return string.Concat("\"{=", len, "}\"");
+
+                    return string.Concat("\"{=", (Characters.Count - 1).ToString(), "}\"");
                 }
 
                 return item.Value;

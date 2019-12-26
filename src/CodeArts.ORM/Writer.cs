@@ -26,7 +26,9 @@ namespace CodeArts.ORM
         {
             get
             {
-                return string.Concat("__variable_", ParameterIndex += 1);
+                ParameterIndex++;
+
+                return string.Concat("__variable_", ParameterIndex.ToString());
             }
         }
 
@@ -162,9 +164,9 @@ namespace CodeArts.ORM
                 return;
             }
 
-            string paramterName = settings.ParamterName(ParameterName);
+            string paramterName = ParameterName;
 
-            Write(paramterName);
+            Write(settings.ParamterName(paramterName));
 
             Parameters.Add(paramterName, value);
         }
@@ -190,11 +192,11 @@ namespace CodeArts.ORM
 
             string paramterName = settings.ParamterName(name);
 
-            if (!Parameters.TryGetValue(paramterName, out object data))
+            if (!Parameters.TryGetValue(name, out object data))
             {
                 Write(paramterName);
 
-                Parameters.Add(paramterName, value);
+                Parameters.Add(name, value);
 
                 return;
             }
@@ -206,11 +208,11 @@ namespace CodeArts.ORM
                 return;
             }
 
-            paramterName = settings.ParamterName(string.Concat(name, ParameterIndex += 1));
+            ParameterIndex++;
 
-            Write(paramterName);
+            Write(settings.ParamterName(string.Concat(name, "_", ParameterIndex.ToString())));
 
-            Parameters.Add(paramterName, value);
+            Parameters.Add(name, value);
         }
 
         /// <summary>
@@ -378,7 +380,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 长度函数
         /// </summary>
-        public void LengthMethod()=> Write(settings.Length);
+        public void LengthMethod() => Write(settings.Length);
 
         /// <summary>
         /// 索引函数

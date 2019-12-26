@@ -9,6 +9,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Transactions;
 
 namespace CodeArts.ORM
 {
@@ -16,7 +17,7 @@ namespace CodeArts.ORM
     /// 数据仓储（支持增删查改）
     /// </summary>
     /// <typeparam name="T">元素类型</typeparam>
-    public class DbRepository<T> : Repository<T>, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class
+    public class DbRepository<T> : Repository<T>, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class, IEntiy
     {
         private IDbRepositoryExecuter _DbExecuter = null;
 
@@ -135,42 +136,136 @@ namespace CodeArts.ORM
                     return wheres.Length == 1 ? Simple() : Complex();
                 }
 
-                var parameters = new Dictionary<string, object>();
+                var list = this.ToList();
 
-                string sql = string.Join(";", this.GroupBy(item =>
+                var dicRoot = new List<KeyValuePair<T, List<KeyValuePair<string, string>>>>();
+
+                int parameter_count = 0;
+
+                var listRoot = list.GroupBy(item =>
                 {
-                    var limits = where.Invoke(item);
+                    var wheres = where.Invoke(item);
 
-                    if (limits.Length == 0)
+                    if (wheres.Length == 0)
                         throw new DException("未指定删除条件!");
 
                     var columns = typeRegions.ReadWrites
-                    .Where(x => limits.Any(y => y == x.Key) || limits.Any(y => y == x.Value))
-                    .ToList();
+                        .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
+                        .OrderBy(x => x.Key)
+                        .ToList();
 
                     if (columns.Count == 0)
                         throw new DException("未指定删除条件!");
 
-                    return columns;
-                }).Select((item, index) =>
-                {
-                    return item.Key.Count == 1 ? Simple(item.Key.First(), item, index, parameters) : Complex(item.Key, item, index, parameters);
-                }));
+                    parameter_count += columns.Count;
 
-                return Editable.Excute(sql, parameters);
+                    return columns;
+
+                }).ToList();
+
+                if (parameter_count < 256)
+                {
+                    var parameters = new Dictionary<string, object>();
+
+                    string sql = string.Join(";", listRoot.Select((item, index) =>
+                    {
+                        return item.Key.Count == 1 ? Simple(item.Key.First(), item, index, parameters) : Complex(item.Key, item, index, parameters);
+                    }));
+
+                    return Editable.Excute(sql, parameters);
+                }
+
+                int group_index = 0;
+                int affected_rows = 0;
+
+                parameter_count = 0;
+                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                {
+                    StringBuilder sb = new StringBuilder();
+                    var parameters = new Dictionary<string, object>();
+
+                    foreach (var item in listRoot)
+                    {
+                        parameter_count += item.Key.Count;
+
+                        if (parameter_count > 255)
+                        {
+                            affected_rows += Editable.Excute(sb.ToString(), parameters);
+
+                            sb.Clear();
+
+                            group_index = 0;
+
+                            parameter_count = item.Key.Count;
+
+                            parameters = new Dictionary<string, object>();
+                        }
+
+                        if (sb.Length > 0)
+                        {
+                            sb.Append(';');
+                        }
+
+                        sb.Append(item.Key.Count == 1 ? Simple(item.Key.First(), item, group_index, parameters) : Complex(item.Key, item, group_index, parameters));
+
+                        group_index++;
+                    }
+
+                    affected_rows += Editable.Excute(sb.ToString(), parameters);
+
+                    transaction.Complete();
+                }
+
+                return affected_rows;
             }
 
             private int Simple()
             {
-                var column = typeRegions.ReadWrites
-                      .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
-                      .First();
+                bool flag = true;
+                string value = wheres[0];
+                KeyValuePair<string, string> column = default;
 
-                var parameters = new Dictionary<string, object>();
+                foreach (var kv in typeRegions.ReadWrites)
+                {
+                    if (kv.Key == value || kv.Value == value)
+                    {
+                        flag = false;
+                        column = kv;
+                        break;
+                    }
+                }
 
-                var sql = Simple(column, this, 0, parameters);
+                if (flag)
+                    throw new DException("未指定删除条件!");
 
-                return Editable.Excute(sql, parameters);
+                var list = this.ToList();
+
+                if (list.Count < 256)
+                {
+                    var parameters = new Dictionary<string, object>();
+
+                    var sql = Simple(column, list, 0, parameters);
+
+                    return Editable.Excute(sql, parameters);
+                }
+
+                int affected_rows = 0;
+
+                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                {
+                    for (int i = 0; i < list.Count; i += 255)
+                    {
+                        var parameters = new Dictionary<string, object>();
+
+                        var sql = Simple(column, list.Skip(i).Take(255), 0, parameters);
+
+                        affected_rows += Editable.Excute(sql, parameters);
+                    }
+
+                    transaction.Complete();
+                }
+
+                return affected_rows;
             }
 
             private int Complex()
@@ -179,11 +274,35 @@ namespace CodeArts.ORM
                         .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
                         .ToList();
 
-                var parameters = new Dictionary<string, object>();
+                var list = this.ToList();
 
-                var sql = Complex(columns, this, 0, parameters);
+                if (list.Count * columns.Count < 256)
+                {
+                    var parameters = new Dictionary<string, object>();
 
-                return Editable.Excute(sql, parameters);
+                    var sql = Complex(columns, list, 0, parameters);
+
+                    return Editable.Excute(sql, parameters);
+                }
+
+                int affected_rows = 0;
+                int offset = 255 / columns.Count;
+
+                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                {
+                    for (int i = 0; i < list.Count; i += offset)
+                    {
+                        var parameters = new Dictionary<string, object>();
+
+                        var sql = Complex(columns, list.Skip(i).Take(offset), 0, parameters);
+
+                        affected_rows += Editable.Excute(sql, parameters);
+                    }
+
+                    transaction.Complete();
+                }
+
+                return affected_rows;
             }
 
             private string Simple(KeyValuePair<string, string> column, IEnumerable<T> collect, int group, Dictionary<string, object> parameters)
@@ -211,13 +330,13 @@ namespace CodeArts.ORM
                      ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
                      var parameterKey = group == 0 && index == 0 ?
-                     Settings.ParamterName(name)
-                     :
-                     Settings.ParamterName($"{name}_{group}_{index}");
+                         name
+                         :
+                         $"{name}_{group}_{index}";
 
                      parameters.Add(parameterKey, value);
 
-                     return parameterKey;
+                     return Settings.ParamterName(parameterKey);
                  }).ToList();
 
                 if (list.Count == 1)
@@ -329,13 +448,45 @@ namespace CodeArts.ORM
                 if (!columns.Any())
                     throw new DException("未指定插入字段!");
 
+                var list = this.ToList();
+
+                var insert_columns = columns.ToList();
+
+                int parameter_count = list.Count * insert_columns.Count;
+
+                if (parameter_count < 256) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
+                {
+                    return Execute(list, insert_columns);
+                }
+
+                int affected_rows = 0;
+                int offset = 255 / insert_columns.Count;
+
+                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                {
+                    for (int i = 0; i < parameter_count; i += offset)
+                    {
+                        affected_rows += Execute(list.Skip(i).Take(offset).ToList(), insert_columns);
+                    }
+
+                    transaction.Complete();
+                }
+
+                return affected_rows;
+            }
+
+            private int Execute(List<T> list, List<KeyValuePair<string, string>> columns)
+            {
+                var sb = new StringBuilder();
+                var paramters = new Dictionary<string, object>();
+
                 sb.Append("INSERT INTO ")
                     .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
                     .Append("(")
                     .Append(string.Join(",", columns.Select(x => Settings.Name(x.Value))))
                     .Append(")")
                     .Append(" VALUES ")
-                    .Append(string.Join(",", this.Select((item, index) =>
+                    .Append(string.Join(",", list.Select((item, index) =>
                     {
                         var context = new ValidationContext(item, null, null);
 
@@ -344,15 +495,15 @@ namespace CodeArts.ORM
                             var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
                             var parameterKey = index == 0 ?
-                            Settings.ParamterName(kv.Key.ToUrlCase())
-                            :
-                            Settings.ParamterName($"{kv.Key.ToUrlCase()}_{index}");
+                                kv.Key.ToUrlCase()
+                                :
+                                $"{kv.Key.ToUrlCase()}_{index}";
 
                             var value = storeItem.Member.GetValue(item, null);
 
-                            if (typeRegions.Tokens.TryGetValue(kv.Key, out TokenAttribute token))
+                            if (value is null || storeItem.MemberType.IsValueType && Equals(value, DefaultCache.GetOrAdd(storeItem.MemberType, type => Activator.CreateInstance(type))))
                             {
-                                if (value is null || storeItem.MemberType.IsValueType && Equals(value, DefaultCache.GetOrAdd(storeItem.MemberType, type => Activator.CreateInstance(type))))
+                                if (typeRegions.Tokens.TryGetValue(kv.Key, out TokenAttribute token))
                                 {
                                     value = token.Create();
 
@@ -369,9 +520,8 @@ namespace CodeArts.ORM
 
                             paramters.Add(parameterKey, value);
 
-                            return parameterKey;
+                            return Settings.ParamterName(parameterKey);
                         })), ")");
-
                     })));
 
                 return Editable.Excute(sb.ToString(), paramters);
@@ -436,27 +586,101 @@ namespace CodeArts.ORM
 
                 columns = columns.Union(typeRegions.ReadWrites.Where(x => typeRegions.Tokens.Any(y => x.Key == y.Key)));
 
-                this.ForEach((item, index) =>
+                int parameter_count = 0;
+
+                var list = this.ToList();
+
+                var dicRoot = new List<KeyValuePair<T, string[]>>();
+
+                list.ForEach(item =>
                 {
                     var wheres = where.Invoke(item) ?? defaultWhere;
 
-                    if (!wheres.Any())
+                    if (wheres.Length == 0)
                         throw new DException("未指定更新条件");
 
-                    var context = new ValidationContext(item, null, null);
+                    var where_columns = typeRegions.ReadWrites
+                            .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
+                            .OrderBy(x => x.Key)
+                            .Select(x => x.Key)
+                            .ToArray();
+
+                    if (where_columns.Length == 0)
+                        throw new DException("未指定删除条件!");
+
+                    parameter_count += where_columns.Length;
+
+                    dicRoot.Add(new KeyValuePair<T, string[]>(item, where_columns));
+                });
+
+                int token_count = typeRegions.Tokens.Count;
+
+                var insert_columns = columns.Union(typeRegions.ReadWrites.Where(x => typeRegions.Tokens.Any(y => x.Key == y.Key))).ToList();
+
+                parameter_count += (insert_columns.Count + token_count) * list.Count;
+
+                if (parameter_count < 256) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
+                {
+                    return Execute(dicRoot, insert_columns);
+                }
+
+                int affected_rows = 0;
+
+                parameter_count = 0;
+
+                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                {
+                    var dic = new List<KeyValuePair<T, string[]>>();
+
+                    foreach (var item in dicRoot)
+                    {
+                        parameter_count += insert_columns.Count + token_count + item.Value.Length;
+
+                        if (parameter_count > 255)
+                        {
+                            affected_rows += Execute(dic, insert_columns);
+
+                            dic = new List<KeyValuePair<T, string[]>>();
+
+                            parameter_count = insert_columns.Count + token_count + item.Value.Length;
+                        }
+
+                        dic.Add(new KeyValuePair<T, string[]>(item.Key, item.Value));
+                    }
+
+                    affected_rows += Execute(dic, insert_columns);
+
+                    transaction.Complete();
+                }
+
+                return affected_rows;
+            }
+
+            private int Execute(List<KeyValuePair<T, string[]>> list, List<KeyValuePair<string, string>> columns)
+            {
+                var sb = new StringBuilder();
+                var paramters = new Dictionary<string, object>();
+
+                list.ForEach((kvr, index) =>
+                {
+                    var entry = kvr.Key;
+
+                    var wheres = kvr.Value;
+
+                    var context = new ValidationContext(entry, null, null);
 
                     string whereStr = string.Join(" AND ", typeRegions.ReadWrites
                     .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value) || typeRegions.Tokens.Any(y => x.Key == y.Key))
                     .Select(kv =>
                     {
                         string parameterKey = index == 0 ?
-                        Settings.ParamterName(kv.Key.ToUrlCase())
-                        :
-                        Settings.ParamterName($"{kv.Key.ToUrlCase()}_{index}");
+                            kv.Key.ToUrlCase()
+                            :
+                            $"{kv.Key.ToUrlCase()}_{index}";
 
                         var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
-                        var value = storeItem.Member.GetValue(item, null);
+                        var value = storeItem.Member.GetValue(entry, null);
 
                         ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
@@ -469,33 +693,34 @@ namespace CodeArts.ORM
                             if (value is null)
                                 throw new NoNullAllowedException("令牌不允许为空!");
 
-                            storeItem.Member.SetValue(item, value, null);
+                            storeItem.Member.SetValue(entry, value, null);
                         }
 
-                        return string.Concat(Settings.Name(kv.Value), "=", parameterKey);
+                        return string.Concat(Settings.Name(kv.Value), "=", Settings.ParamterName(parameterKey));
                     }));
 
                     sb.Append("UPDATE ")
-                        .Append(Settings.Name(from?.Invoke(typeRegions, item) ?? typeRegions.TableName))
+                        .Append(Settings.Name(from?.Invoke(typeRegions, entry) ?? typeRegions.TableName))
                         .Append(" SET ")
                         .Append(string.Join(",", columns.Select(kv =>
                         {
                             var name = typeRegions.Tokens.ContainsKey(kv.Key) ? $"__token_{kv.Key.ToUrlCase()}" : kv.Key.ToUrlCase();
 
                             string parameterKey = index == 0 ?
-                                Settings.ParamterName(name)
+                                name
                                 :
-                                Settings.ParamterName($"{name}_{index}");
+                                $"{name}_{index}";
 
                             var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
-                            var value = storeItem.Member.GetValue(item, null);
+                            var value = storeItem.Member.GetValue(entry, null);
 
                             ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
                             paramters.Add(parameterKey, value);
 
-                            return string.Concat(Settings.Name(kv.Value), "=", parameterKey);
+                            return string.Concat(Settings.Name(kv.Value), "=", Settings.ParamterName(parameterKey));
+
                         })))
                         .Append(" WHERE ")
                         .Append(whereStr)
@@ -708,7 +933,7 @@ namespace CodeArts.ORM
         /// 执行SQL验证
         /// </summary>
         /// <returns></returns>
-        protected virtual bool ExcuteAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
+        protected virtual bool ExcuteAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase)) && sql.Tables.Any(x => string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// 执行
@@ -752,21 +977,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            var dic = new Dictionary<string, object>();
-
-            foreach (var kv in parameters)
-            {
-                string key = kv.Key;
-
-                if (key[0] == '?' || key[0] == '@' || key[0] == ':')
-                {
-                    key = key.Substring(1);
-                }
-
-                dic.Add(Settings.ParamterName(key), kv.Value);
-            }
-
-            return DbExecuter.Execute(Connection, sql.ToString(Settings), dic);
+            return DbExecuter.Execute(Connection, sql.ToString(Settings), parameters);
         }
     }
 }

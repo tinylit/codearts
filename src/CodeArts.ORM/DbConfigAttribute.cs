@@ -27,7 +27,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 构造函数（使用默认数据库链接）
         /// </summary>
-        public DbConfigAttribute(string configName) => this.configName = configName;
+        public DbConfigAttribute(string configName) => this.configName = configName ?? throw new ArgumentNullException(nameof(configName));
         /// <summary>
         /// 获取数据库链接配置
         /// </summary>

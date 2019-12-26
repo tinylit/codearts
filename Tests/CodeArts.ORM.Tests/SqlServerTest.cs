@@ -1378,11 +1378,18 @@ namespace UnitTest
                 ModifiedTime = DateTime.Now
             };
 
-            var i = user.AsDeleteable(entry)
+            var list = new List<FeiUsers>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                list.Add(entry);
+            }
+
+            var x1 = user.AsDeleteable(list)
                 .Where(x => x.Username)
                 .ExecuteCommand();
 
-            var j = user.AsExecuteable()
+            var x2 = user.AsExecuteable()
                 .Delete(x => x.Username == "admi");
         }
     }

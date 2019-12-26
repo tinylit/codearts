@@ -15,6 +15,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 数据仓库
     /// </summary>
+    [DbConfig]
     public abstract class Repository
     {
         private readonly static ConcurrentDictionary<Type, DbConfigAttribute> mapperCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
@@ -43,11 +44,11 @@ namespace CodeArts.ORM
         /// <returns></returns>
         private DbConfigAttribute GetAttribute() => mapperCache.GetOrAdd(GetType(), type =>
         {
-            var attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+            var attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), false);
 
             if (attr == null)
             {
-                attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type.BaseType, typeof(DbConfigAttribute));
+                attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type.BaseType, typeof(DbConfigAttribute), true);
             }
 
             return attr ?? throw new NotImplementedException("仓库类未指定数据库链接属性!");
@@ -305,21 +306,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            var dic = new Dictionary<string, object>();
-
-            foreach (var kv in parameters)
-            {
-                string key = kv.Key;
-
-                if (key[0] == '?' || key[0] == '@' || key[0] == ':')
-                {
-                    key = key.Substring(1);
-                }
-
-                dic.Add(Settings.ParamterName(key), kv.Value);
-            }
-
-            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), dic, required);
+            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), parameters, required);
         }
 
         /// <summary>
@@ -353,7 +340,7 @@ namespace CodeArts.ORM
 
                 return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
-                    [Settings.ParamterName(token.Name)] = param
+                    [token.Name] = param
                 });
             }
 
@@ -365,21 +352,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            var dic = new Dictionary<string, object>();
-
-            foreach (var kv in parameters)
-            {
-                string key = kv.Key;
-
-                if (key[0] == '?' || key[0] == '@' || key[0] == ':')
-                {
-                    key = key.Substring(1);
-                }
-
-                dic.Add(Settings.ParamterName(key), kv.Value);
-            }
-
-            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), dic);
+            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters);
 
         }
 
