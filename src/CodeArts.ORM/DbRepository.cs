@@ -493,9 +493,6 @@ namespace CodeArts.ORM
 
             public override int Execute()
             {
-                var sb = new StringBuilder();
-                var paramters = new Dictionary<string, object>();
-
                 IEnumerable<KeyValuePair<string, string>> columns = typeRegions.ReadWrites;
 
                 if (!(limits is null))
@@ -527,7 +524,7 @@ namespace CodeArts.ORM
 
                 using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
                 {
-                    for (int i = 0; i < parameter_count; i += offset)
+                    for (int i = 0; i < list.Count; i += offset)
                     {
                         affected_rows += Execute(list.Skip(i).Take(offset).ToList(), insert_columns);
                     }
@@ -587,7 +584,7 @@ namespace CodeArts.ORM
                         })), ")");
                     })));
 
-                return Editable.Excute(sb.ToString(), paramters);
+                return Editable.Excute(sb.Append(";").ToString(), paramters);
             }
 
             public IInsertable<T> From(Func<ITableRegions, string> table)
