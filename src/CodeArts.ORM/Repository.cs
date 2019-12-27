@@ -118,7 +118,6 @@ namespace CodeArts.ORM
     /// 数据仓储
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
-    [DbConfig]
     public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IEnumerable, IQueryProvider
     {
         private static ITableRegions tableRegions;

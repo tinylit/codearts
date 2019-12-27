@@ -331,14 +331,35 @@ namespace CodeArts.ORM.Builders
 
                   if (enumerator.MoveNext())
                   {
+                      int parameterCount = 0;
+
                       SQLWriter.Contains();
                       SQLWriter.OpenBrace();
                       SQLWriter.Parameter(enumerator.Current);
                       while (enumerator.MoveNext())
                       {
-                          SQLWriter.Delimiter();
+                          if (parameterCount < 256)
+                          {
+                              SQLWriter.Delimiter();
+                          }
+                          else
+                          {
+                              parameterCount = 0;
+
+                              SQLWriter.CloseBrace();
+                              SQLWriter.WhiteSpace();
+                              SQLWriter.Write("OR");
+                              SQLWriter.WhiteSpace();
+
+                              base.Visit(node.Arguments[node.Object == null ? 1 : 0]);
+
+                              SQLWriter.Contains();
+                              SQLWriter.OpenBrace();
+                          }
+
                           SQLWriter.Parameter(enumerator.Current);
                       }
+
                       SQLWriter.CloseBrace();
 
                       whereIsNotEmpty = true;
