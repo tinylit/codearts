@@ -65,7 +65,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 修改命令。
         /// </summary>
-        private readonly static Regex PatternChange = new Regex(@"\b((?<type>delete)[\x20\t\r\n\f]+from|(?<type>update))[\x20\t\r\n\f]+([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        private readonly static Regex PatternChange = new Regex(@"\b((?<type>delete)[\x20\t\r\n\f]+from|(?<type>update))[\x20\t\r\n\f]+([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+set[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
         /// <summary>
         /// 复杂修改命令。
@@ -75,7 +75,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 创建表命令。
         /// </summary>
-        private readonly static Regex PatternCreate = new Regex(@"\bcreate[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)?([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        private readonly static Regex PatternCreate = new Regex(@"\bcreate[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)?([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
         /// <summary>
         /// 删除表命令。
@@ -163,14 +163,20 @@ namespace CodeArts.ORM
                 .Append(@"(?<alias>\w+)\.(?<name>\w+)").Append(check)
                 .Append("|,").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>([_a-z]\w*))").Append(whitespace).Append(@"*[=,]") //? ,[name], ,[name]=[value]
                 .Append(@"|\bcolumn").Append(whitespace).Append(@"+(?<name>[_a-z]\w*)") //? 字段 column [name]
+                .Append(@"|\bafter").Append(whitespace).Append(@"+(?<name>[_a-z]\w*)").Append(whitespace).Append("*(?=(;|$))") //? after [name] --mysql alter table `yep_developers` add column `level` int default 0 after `status`;
                 .Append(@"|\bupdate").Append(whitespace).Append(@"+.+?").Append(whitespace).Append("+set").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(check) //? 更新语句SET字段
                 .Append(@"|\bcase").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\bwhen\b)[_a-z]\w*)").Append(check) //? case 函数
-                .Append(@"|\bwhen").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\b(then|not)\b)[_a-z]\w*)").Append(check) //? when 函数
-                .Append(@"|\b(then|else|select|by)").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(@"(?=[^\w\.\]\}\(]|$)") //? case [name] when [name] then [name] else [name] end; {select|by} [name];
-                .Append(@"|\b(where|and|or)").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\b(not)\b)[_a-z]\w*)").Append(@"(?=[^\w\.\]\}\(]|$)") //? case [name] when [name] then [name] else [name] end; {select|by} [name];
-                .Append(@"|\bon").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\bupdate\b)[_a-z]\w*)").Append(check) //? on [name]; -- mysql `modified` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0)
+                .Append(@"|\bwhen").Append(whitespace)
+                    .Append(@"+((not").Append(whitespace).Append("+)?exists").Append(whitespace).Append("*\\(").Append(whitespace).Append("*select").Append(whitespace).Append("+)?")
+                    .Append(@"((?<alias>\w+)\.)?(?<name>(?!\bthen\b)[_a-z]\w*)").Append(check) //? when 函数
+                .Append(@"|\b(then|else|select|by)").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(@"(?=[\x20\t\r\n\f]*[^\w\.\]\}\(]|$)") //? case [name] when [name] then [name] else [name] end; {select|by} [name];
+                .Append(@"|\b(where|and|or)").Append(whitespace)
+                    .Append(@"+((not").Append(whitespace).Append("+)?exists").Append(whitespace).Append("*\\(").Append(whitespace).Append("*select").Append(whitespace).Append("+)?")
+                    .Append(@"((?<alias>\w+)\.)?(?<name>[_a-z]\w*)")
+                    .Append(whitespace).Append(@"*(?=[^\w\.\]\}\(]|$)") //? where not exists() where [name];
+                .Append(@"|\bon").Append(whitespace).Append(@"+((?<alias>\w+)\.)?(?<name>(?!\b(update|delete)\b)[_a-z]\w*)").Append(whitespace).Append("*").Append(check) //? on [name]; -- mysql `modified` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0)
                 .Append(@"|([+/-]|[<=>%])").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>[_a-z]\w*)").Append(whitespace).Append(@"+(and|or|case|when|then|else|end|select|by|join|on|(left|right|inner|outer)").Append(whitespace).Append(@"+join)") // ? =[name] and
-                .Append(@"|\*").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>((?!\bfrom\b)[_a-z]\w*))").Append(check) //? *[value]
+                .Append(@"|\*").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>((?!\bfrom\b)[_a-z]\w*))").Append(whitespace).Append("*").Append(check) //? *[value]
                 .Append(@"|\(").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>([_a-z]\w*))").Append(whitespace).Append(@"*,") //? ([name],
                 .Append(@"|,").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>([_a-z]\w*))").Append(whitespace).Append(@"*\)") //? [name])
                 .Append(@"|\(").Append(whitespace).Append(@"*((?<alias>\w+)\.)?(?<name>(?!\bmax\b)[_a-z]\w*)").Append(whitespace).Append(@"*\)") //? ([name])
@@ -180,9 +186,10 @@ namespace CodeArts.ORM
 
             PatternField = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-            sb = new StringBuilder()
-                .Append(@"\(").Append(whitespace).Append(@"*(?<name>(?!\b(max)\b)[_a-z]\w*)").Append(check) //? ([name]
-                .Append("|,").Append(whitespace).Append(@"*(?<name>(?!\b(key|primary|unique|foreign)\b)[_a-z]\w*)").Append(check);
+            sb = new StringBuilder();
+
+            sb.Append("^").Append(whitespace).Append(@"*\(").Append(whitespace).Append(@"*(?<name>[_a-z]\w*)").Append(check) //? ([name]
+            .Append("|(,").Append(whitespace).Append(@"*(?<name>(?!\b(key|primary|unique|foreign|constraint)\b)[_a-z]\w*)").Append(check).Append(")");
 
             PatternFieldCreate = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
@@ -408,6 +415,10 @@ namespace CodeArts.ORM
             sql = PatternField.Replace(sql, item =>
             {
                 Group nameGrp = item.Groups["name"];
+
+                if (!nameGrp.Success)
+                    return item.Value;
+
                 Group aliasGrp = item.Groups["alias"];
 
                 if (!aliasGrp.Success && (nameGrp.Value == nameGrp.Value.ToUpper()))

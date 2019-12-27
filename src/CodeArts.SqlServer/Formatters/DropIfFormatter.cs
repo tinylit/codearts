@@ -53,15 +53,14 @@ namespace CodeArts.SqlServer.Formatters
                     throw new NotSupportedException();
             }
 
-            sb.Append(" BEGIN")
-            .AppendLine()
-            .Append(value.Substring(0, @if.Index - item.Index))
-            .Append(value.Substring(@if.Index - item.Index + @if.Length))
-            .AppendLine()
-            .Append("END GO")
-            .AppendLine();
-
-            return sb.ToString();
+            return sb.Append(" BEGIN")
+              .AppendLine()
+              .Append(value.Substring(0, @if.Index - item.Index))
+              .Append(value.Substring(@if.Index - item.Index + @if.Length))
+              .AppendLine()
+              .Append("END GO")
+              .AppendLine()
+              .ToString();
         }
     }
 }

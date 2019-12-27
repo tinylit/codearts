@@ -10,7 +10,7 @@ namespace CodeArts.SqlServer.Formatters
     /// </summary>
     public class CreateIfFormatter : AdapterFormatter<CreateIfFormatter>, IFormatter
     {
-        private readonly static Regex PatternCreateIf = new Regex(@"\bcreate[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\w\[\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set)\b)[^;]+);?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly static Regex PatternCreateIf = new Regex(@"\bcreate[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\w\[\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 构造函数
@@ -66,14 +66,14 @@ namespace CodeArts.SqlServer.Formatters
                     throw new NotSupportedException();
             }
 
-            sb.Append(" BEGIN")
+           return sb.Append(" BEGIN")
             .AppendLine()
             .Append(value.Substring(0, @if.Index - item.Index))
             .Append(value.Substring(@if.Index - item.Index + @if.Length))
             .AppendLine()
-            .Append("END GO");
-
-            return sb.ToString();
+            .Append("END GO")
+            .AppendLine()
+            .ToString();
         }
     }
 }

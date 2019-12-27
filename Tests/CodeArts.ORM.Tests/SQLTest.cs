@@ -186,13 +186,15 @@ namespace CodeArts.ORM.Tests
             SQL sQL = sql;
 
             var sql2 = @"select  
-replace(ywdjid,' ','') as ddbh
-from  [dbo].[xsfp] 
-where ywrq >dateadd(day,-5,getdate()) 
- and  ywdjid>'FPXLSY00071582'
- and not exists(select  ywdjid from cwk where yikaifp!='是')
-group by ywdjid
-having sum(spje)!=0 ";
+                replace(ywdjid,' ','') as ddbh
+                case when not=1 then status else not end
+                from  [dbo].[xsfp] 
+                where ywrq >dateadd(day,-5,getdate()) 
+                 and  ywdjid>'FPXLSY00071582'
+                 and not = 1
+                 and not exists (select  ywdjid from cwk where yikaifp!='是')
+                group by ywdjid
+                having sum(spje)!=0 ";
 
             SQL sQL2 = new SQL(sql2);
 
@@ -231,8 +233,11 @@ having sum(spje)!=0 ";
                 status int(11) NOT NULL,
                 created timestamp(0) NULL,
                 modified timestamp(0) NULL DEFAULT NULL,
-                PRIMARY KEY (id) USING BTREE
-            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+                PRIMARY KEY (id) USING BTREE,
+                CONSTRAINT FK_yep_companys_id FOREIGN KEY (owner_id) REFERENCES yep_companys (id) ON DELETE SET NULL ON UPDATE CASCADE 
+            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic
+
+            DELETE FROM yep_auth_ship;
 
             -- ----------------------------
             -- Table structure for yep_auth_tree
