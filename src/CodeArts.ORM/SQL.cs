@@ -30,7 +30,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 注解
         /// </summary>
-        private readonly static Regex PatternAnnotate = new Regex(@"--.+|/\*[\s\S]+?\*/", RegexOptions.Compiled);
+        private readonly static Regex PatternAnnotate = new Regex(@"--.*|/\*[\s\S]*?\*/", RegexOptions.Compiled);
 
         /// <summary>
         /// 关键字检测。

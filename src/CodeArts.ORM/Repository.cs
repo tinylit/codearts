@@ -73,7 +73,6 @@ namespace CodeArts.ORM
         /// 链接
         /// </summary>
         protected Repository() => ConnectionConfig = GetDbConfig() ?? throw new NoNullAllowedException("未找到数据链接配置信息!");
-
         /// <summary>
         /// 链接
         /// </summary>

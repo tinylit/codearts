@@ -22,6 +22,15 @@ namespace CodeArts.ORM
         private IDbRepositoryExecuter _DbExecuter = null;
 
         /// <summary>
+        /// 最大参数长度
+        /// </summary>
+        public const int MAX_PARAMETERS_COUNT = 1000;
+        /// <summary>
+        /// 最大IN SQL 参数长度（取自 Oracle 9I）
+        /// </summary>
+        public const int MAX_IN_SQL_PARAMETERS_COUNT = 256;
+
+        /// <summary>
         /// 数据验证
         /// </summary>
         /// <param name="value">值</param>
@@ -138,7 +147,7 @@ namespace CodeArts.ORM
 
                 var list = this.ToList();
 
-                var dicRoot = new List<KeyValuePair<T, List<KeyValuePair<string, string>>>>();
+                var dicRoot = new List<KeyValuePair<T, string>>();
 
                 int parameter_count = 0;
 
@@ -152,24 +161,32 @@ namespace CodeArts.ORM
                     var columns = typeRegions.ReadWrites
                         .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
                         .OrderBy(x => x.Key)
-                        .ToList();
+                        .Select(x => x.Key)
+                        .ToArray();
 
-                    if (columns.Count == 0)
+                    if (columns.Length == 0)
                         throw new DException("未指定删除条件!");
 
-                    parameter_count += columns.Count;
+                    parameter_count += columns.Length;
 
-                    return columns;
+                    return string.Join(",", columns);
 
                 }).ToList();
 
-                if (parameter_count < 256)
+                if (parameter_count <= MAX_PARAMETERS_COUNT)
                 {
                     var parameters = new Dictionary<string, object>();
 
                     string sql = string.Join(";", listRoot.Select((item, index) =>
                     {
-                        return item.Key.Count == 1 ? Simple(item.Key.First(), item, index, parameters) : Complex(item.Key, item, index, parameters);
+                        if (item.Key.IndexOf(',') > -1)
+                        {
+                            var keys = item.Key.Split(',');
+
+                            return Complex(TableRegions.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, index, parameters);
+                        }
+
+                        return Simple(TableRegions.ReadWrites.First(x => x.Key == item.Key), item, index, parameters);
                     }));
 
                     return Editable.Excute(sql, parameters);
@@ -186,9 +203,7 @@ namespace CodeArts.ORM
 
                     foreach (var item in listRoot)
                     {
-                        parameter_count += item.Key.Count;
-
-                        if (parameter_count > 255)
+                        if (parameter_count >= MAX_PARAMETERS_COUNT)
                         {
                             affected_rows += Editable.Excute(sb.ToString(), parameters);
 
@@ -196,7 +211,7 @@ namespace CodeArts.ORM
 
                             group_index = 0;
 
-                            parameter_count = item.Key.Count;
+                            parameter_count = 0;
 
                             parameters = new Dictionary<string, object>();
                         }
@@ -206,7 +221,33 @@ namespace CodeArts.ORM
                             sb.Append(';');
                         }
 
-                        sb.Append(item.Key.Count == 1 ? Simple(item.Key.First(), item, group_index, parameters) : Complex(item.Key, item, group_index, parameters));
+                        if (item.Key.IndexOf(',') > -1)
+                        {
+                            string[] keys = item.Key.Split(',');
+
+                            parameter_count += keys.Length;
+
+                            if (parameter_count > MAX_PARAMETERS_COUNT)
+                            {
+                                affected_rows += Editable.Excute(sb.ToString(), parameters);
+
+                                sb.Clear();
+
+                                group_index = 0;
+
+                                parameter_count = keys.Length;
+
+                                parameters = new Dictionary<string, object>();
+                            }
+
+                            sb.Append(Complex(TableRegions.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, group_index, parameters));
+                        }
+                        else
+                        {
+                            parameter_count++;
+
+                            sb.Append(Simple(TableRegions.ReadWrites.First(x => x.Key == item.Key), item, group_index, parameters));
+                        }
 
                         group_index++;
                     }
@@ -240,7 +281,7 @@ namespace CodeArts.ORM
 
                 var list = this.ToList();
 
-                if (list.Count < 256)
+                if (list.Count <= MAX_PARAMETERS_COUNT)
                 {
                     var parameters = new Dictionary<string, object>();
 
@@ -253,11 +294,11 @@ namespace CodeArts.ORM
 
                 using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
                 {
-                    for (int i = 0; i < list.Count; i += 255)
+                    for (int i = 0; i < list.Count; i += MAX_PARAMETERS_COUNT)
                     {
                         var parameters = new Dictionary<string, object>();
 
-                        var sql = Simple(column, list.Skip(i).Take(255), 0, parameters);
+                        var sql = Simple(column, list.Skip(i).Take(MAX_PARAMETERS_COUNT), 0, parameters);
 
                         affected_rows += Editable.Excute(sql, parameters);
                     }
@@ -276,7 +317,7 @@ namespace CodeArts.ORM
 
                 var list = this.ToList();
 
-                if (list.Count * columns.Count < 256)
+                if (list.Count * columns.Count <= MAX_PARAMETERS_COUNT)
                 {
                     var parameters = new Dictionary<string, object>();
 
@@ -286,7 +327,7 @@ namespace CodeArts.ORM
                 }
 
                 int affected_rows = 0;
-                int offset = 255 / columns.Count;
+                int offset = MAX_PARAMETERS_COUNT / columns.Count;
 
                 using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
                 {
@@ -310,11 +351,12 @@ namespace CodeArts.ORM
                 var sb = new StringBuilder();
 
                 string name = column.Key.ToUrlCase();
+                string tableName = Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName);
 
                 var storeItem = typeStore.PropertyStores.First(x => x.Name == column.Key);
 
                 sb.Append("DELETE FROM ")
-                .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
+                .Append(tableName)
                 .Append(" WHERE ")
                 .Append(column.Value);
 
@@ -346,10 +388,31 @@ namespace CodeArts.ORM
                         .ToString();
                 }
 
-                return sb.Append(" IN (")
-                 .Append(string.Join(",", list))
-                 .Append(")")
-                 .ToString();
+                if (list.Count <= MAX_IN_SQL_PARAMETERS_COUNT)
+                {
+                    return sb.Append(" IN (")
+                     .Append(string.Join(",", list))
+                     .Append(")")
+                     .ToString();
+                }
+
+                for (int i = 0; i < list.Count; i += MAX_IN_SQL_PARAMETERS_COUNT)
+                {
+                    if (i > 0)
+                    {
+                        sb.AppendLine(";")
+                            .Append("DELETE FROM ")
+                            .Append(tableName)
+                            .Append(" WHERE ")
+                            .Append(column.Value);
+                    }
+
+                    sb.Append(" IN (")
+                     .Append(string.Join(",", list.Skip(i).Take(MAX_IN_SQL_PARAMETERS_COUNT)))
+                     .Append(")");
+                }
+
+                return sb.ToString();
             }
 
             private string Complex(List<KeyValuePair<string, string>> columns, IEnumerable<T> collect, int group, Dictionary<string, object> parameters)
@@ -454,13 +517,13 @@ namespace CodeArts.ORM
 
                 int parameter_count = list.Count * insert_columns.Count;
 
-                if (parameter_count < 256) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
+                if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
                     return Execute(list, insert_columns);
                 }
 
                 int affected_rows = 0;
-                int offset = 255 / insert_columns.Count;
+                int offset = MAX_PARAMETERS_COUNT / insert_columns.Count;
 
                 using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
                 {
@@ -619,7 +682,7 @@ namespace CodeArts.ORM
 
                 parameter_count += (insert_columns.Count + token_count) * list.Count;
 
-                if (parameter_count < 256) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
+                if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
                     return Execute(dicRoot, insert_columns);
                 }
@@ -636,7 +699,7 @@ namespace CodeArts.ORM
                     {
                         parameter_count += insert_columns.Count + token_count + item.Value.Length;
 
-                        if (parameter_count > 255)
+                        if (parameter_count > MAX_PARAMETERS_COUNT)
                         {
                             affected_rows += Execute(dic, insert_columns);
 
