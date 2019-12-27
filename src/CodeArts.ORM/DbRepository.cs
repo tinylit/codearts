@@ -400,8 +400,7 @@ namespace CodeArts.ORM
                 {
                     if (i > 0)
                     {
-                        sb.AppendLine(";")
-                            .Append("DELETE FROM ")
+                        sb.Append("DELETE FROM ")
                             .Append(tableName)
                             .Append(" WHERE ")
                             .Append(column.Value);
@@ -409,7 +408,8 @@ namespace CodeArts.ORM
 
                     sb.Append(" IN (")
                      .Append(string.Join(",", list.Skip(i).Take(MAX_IN_SQL_PARAMETERS_COUNT)))
-                     .Append(")");
+                     .Append(")")
+                     .AppendLine(";");
                 }
 
                 return sb.ToString();
