@@ -1060,25 +1060,37 @@ namespace CodeArts.ORM.Builders
 
                 if (declaringType == typeof(Queryable) || declaringType == typeof(QueryableStrengthen))
                 {
-                    if (methodCall.Method.Name == MethodCall.Contains && methodCall.Arguments[1] is MemberExpression member && member.Expression?.NodeType == ExpressionType.Parameter)
+                    switch (methodCall.Method.Name)
                     {
-                        base.Visit(member.Expression);
+                        case MethodCall.Any:
+                        case MethodCall.All:
 
-                        VisitParameterMember(member);
+                            VisitBuilder(node);
+                            break;
+                        case MethodCall.Contains when methodCall.Arguments[1] is MemberExpression member && member.Expression?.NodeType == ExpressionType.Parameter:
 
-                        SQLWriter.Contains();
+                            base.Visit(member.Expression);
 
+                            VisitParameterMember(member);
 
-                        SQLWriter.OpenBrace();
+                            SQLWriter.Contains();
 
-                        VisitBuilder(methodCall.Arguments[0]);
+                            SQLWriter.OpenBrace();
 
-                        SQLWriter.CloseBrace();
+                            VisitBuilder(methodCall.Arguments[0]);
 
-                        return;
+                            SQLWriter.CloseBrace();
+
+                            break;
+                        default:
+
+                            SQLWriter.OpenBrace();
+
+                            VisitBuilder(node);
+
+                            SQLWriter.CloseBrace();
+                            break;
                     }
-
-                    VisitBuilder(node);
 
                     return;
                 }
