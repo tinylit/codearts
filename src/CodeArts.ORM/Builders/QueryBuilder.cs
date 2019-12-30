@@ -639,7 +639,7 @@ namespace CodeArts.ORM.Builders
 
                     if (Parent?.BuildWhere ?? BuildWhere) return VisitExists(node);
 
-                    if (buildSelect)
+                    if (buildSelect && Parent is null)
                     {
                         SQLWriter.Select();
                     }
@@ -667,7 +667,7 @@ namespace CodeArts.ORM.Builders
                     }
                     else
                     {
-                        if (buildSelect)
+                        if (buildSelect && Parent is null)
                         {
                             SQLWriter.Select();
                         }
@@ -1114,7 +1114,7 @@ namespace CodeArts.ORM.Builders
 
             return node;
         }
-        
+
         /// <summary>
         /// Lamda 分析
         /// </summary>
@@ -1174,7 +1174,7 @@ namespace CodeArts.ORM.Builders
 
             return base.VisitParameter(node);
         }
-        
+
         /// <summary>
         /// 创建构造器
         /// </summary>

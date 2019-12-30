@@ -207,7 +207,6 @@ namespace CodeArts.ORM.Builders
         /// </summary>
         /// <param name="tableRegions">表信息</param>
         public void WriteTable(ITableRegions tableRegions) => SQLWriter.TableName(GetTableName(tableRegions), GetOrAddTablePrefix(tableRegions.TableType));
-
         private string GetTableName(ITableRegions regions) => tableFactory?.Invoke(regions) ?? regions.TableName;
         /// <summary>
         /// Not 取反
@@ -582,7 +581,7 @@ namespace CodeArts.ORM.Builders
         }
 
         #region 重写
-        
+
         /// <summary>
         /// 过滤成员
         /// </summary>
@@ -620,7 +619,7 @@ namespace CodeArts.ORM.Builders
                     SQLWriter.Delimiter();
                 }
 
-                base.Visit(node.Arguments[index]);
+                VisitEvaluate(node.Arguments[index]);
 
                 SQLWriter.As(member.Name);
             });
@@ -1042,6 +1041,7 @@ namespace CodeArts.ORM.Builders
 
             return node;
         }
+
         /// <inheritdoc />
         protected void VisitBuilder(Expression node)
         {
@@ -1067,14 +1067,18 @@ namespace CodeArts.ORM.Builders
                         VisitParameterMember(member);
 
                         SQLWriter.Contains();
-                        node = methodCall.Arguments[0];
+
+
+                        SQLWriter.OpenBrace();
+
+                        VisitBuilder(methodCall.Arguments[0]);
+
+                        SQLWriter.CloseBrace();
+
+                        return;
                     }
 
-                    SQLWriter.OpenBrace();
-
                     VisitBuilder(node);
-
-                    SQLWriter.CloseBrace();
 
                     return;
                 }

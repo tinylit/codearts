@@ -245,7 +245,7 @@ namespace UnitTest
             string id = "*";
             bool isLevel = string.IsNullOrEmpty(id) || id == "*";
             var list = taxCodeSingleton.Where(x => isLevel ? x.Level == 1 : x.ParentId == id)
-                .Select(x => new TaxCodeTreeSimDto
+                .Select(x => new
                 {
                     Id = Convert.ToString(x.Id),
                     Name = x.Name,
