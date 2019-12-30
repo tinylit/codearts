@@ -128,18 +128,19 @@ namespace CodeArts.ORM.Builders
 
         private void UnWrap(Action action) => _fromSwitch.UnWrap(() => _whereSwitch.UnWrap(() => _orderBySwitch.UnWrap(action)));
 
-        private Expression VisitExists(MethodCallExpression node, bool isNotWrap = false)
+        private Expression VisitExists(MethodCallExpression node)
         {
             SQLWriter.Exists();
 
             SQLWriter.OpenBrace();
 
             bool join = isJoin;
+            bool isNot = SQLWriter.Not;
 
             isJoin = false;
             buildSelect = buildFrom = true;
 
-            if (isNotWrap || node.Arguments.Count == 1)
+            if (node.Arguments.Count == 1)
             {
                 UnWrap(() =>
                 {
@@ -148,16 +149,6 @@ namespace CodeArts.ORM.Builders
                     base.Visit(node.Arguments[0]);
 
                     buildExists = false;
-
-                    if (node.Arguments.Count > 1)
-                    {
-                        _whereSwitch.Execute();
-
-                        WrapNot(() =>
-                        {
-                            base.Visit(node.Arguments[1]);
-                        });
-                    }
                 });
             }
             else
@@ -192,11 +183,12 @@ namespace CodeArts.ORM.Builders
             SQLWriter.CloseBrace();
 
             isJoin = join;
+            SQLWriter.Not = isNot;
 
             return node;
         }
 
-        private Expression VisitMethodAll(MethodCallExpression node)
+        private void VisitMethodAll(MethodCallExpression node)
         {
             if (node.Method.DeclaringType == typeof(Queryable))
             {
@@ -204,17 +196,15 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.WriteAnd();
 
-                return WrapNot(() =>
+                WrapNot(() => _fromSwitch.UnWrap(() => _whereSwitch.UnWrap(() => _orderBySwitch.UnWrap(() =>
                 {
-                    _fromSwitch.UnWrap(() => _whereSwitch.UnWrap(() => _orderBySwitch.UnWrap(() =>
-                    {
-                        VisitExists(node, true);
-                    })));
-
-                    return node;
-                });
+                    VisitExists(node);
+                }))));
             }
-            throw new ExpressionNotSupportedException($"仅支持“System.Linq.Queryable”中的{node.Method.Name}函数!");
+            else
+            {
+                throw new ExpressionNotSupportedException($"仅支持“System.Linq.Queryable”中的{node.Method.Name}函数!");
+            }
         }
 
         private void BuildSingleField(string methodName, string prefix, ITableRegions regions)
