@@ -9,7 +9,7 @@ namespace CodeArts
     /// </summary>
     public class JsonSettings : DefaultSettings
     {
-        private readonly static Regex Pattern = new Regex("^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?$", RegexOptions.Singleline | RegexOptions.Compiled);
+        private readonly static Regex NumberPattern = new Regex("^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?$", RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// 构造函数
@@ -26,59 +26,17 @@ namespace CodeArts
         /// <returns></returns>
         protected override string Convert(object value)
         {
-            if (value is string text)
-                return string.Concat("\"", text, "\"");
+            string text = base.Convert(value);
 
-            if (value is DateTime date)
-            {
-                return string.Concat("\"", date.ToString(DateFormatString), "\"");
-            }
+            if (text is null || value is null || value is IEnumerable)
+                return text;
 
-            if (value is IEnumerable enumerable)
-            {
-                return base.Convert(enumerable);
-            }
+            var typeToConvert = value.GetType();
 
-            text = value.ToString();
-
-            if (Pattern.IsMatch(text))
+            if (typeToConvert.IsValueType && NumberPattern.IsMatch(text))
                 return text;
 
             return string.Concat("\"", text, "\"");
-        }
-
-        /// <summary>
-        /// 替换内容
-        /// </summary>
-        /// <param name="propertyName">属性名称</param>
-        /// <param name="typeToConvert">属性类型</param>
-        /// <param name="value">属性值</param>
-        /// <returns></returns>
-        public override string Convert(string propertyName, Type typeToConvert, object value)
-        {
-            if (value is null) return null;
-
-            foreach (PropConverter converter in Converters)
-            {
-                if (converter.CanConvert(typeToConvert))
-                {
-                    string text = converter.Convert(propertyName, typeToConvert, value);
-
-                    if (text is null || Pattern.IsMatch(text))
-                        return text;
-
-                    return string.Concat("\"", text, "\"");
-                }
-            }
-
-            try
-            {
-                return Convert(value);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
     }
 }

@@ -246,12 +246,26 @@ namespace CodeArts.Runtime
 
                 if (namingAttr is null)
                 {
-                    var typeStore = RuntimeTypeCache.Instance.GetCache(Member.DeclaringType);
+                    var declaringType = Member.DeclaringType;
+                    var reflectedType = Member.ReflectedType;
 
-                    namingAttr = typeStore.NamingAttribute;
+                    if (declaringType == reflectedType)
+                    {
+                        namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute));
+                    }
+                    else
+                    {
+                        namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute), false);
+
+                        if (namingAttr is null)
+                        {
+                            namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(reflectedType, typeof(NamingAttribute));
+                        }
+                    }
                 }
 
-                if (namingAttr is null) return _Naming = name;
+                if (namingAttr is null)
+                    return _Naming = name;
 
                 return _Naming = name.ToNamingCase(namingAttr.NamingType);
             }

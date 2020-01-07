@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class LoggerManager
     {
+        private static IServiceCollection _services;
         private static IServiceProvider _serviceProvider;
 
         /// <summary>
@@ -31,12 +32,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="services">服务集合</param>
         /// <returns></returns>
-        public static IServiceCollection UseLoggerManager(this IServiceCollection services)
-        {
-            _serviceProvider = services.BuildServiceProvider();
-
-            return services;
-        }
+        public static IServiceCollection UseLoggerManager(this IServiceCollection services) => _services = services;
 
 #if NETCOREAPP3_1
         /// <summary>
@@ -46,14 +42,14 @@ namespace Microsoft.Extensions.Logging
         /// <returns></returns>
         public static ILoggingBuilder UseLoggerManager(this ILoggingBuilder builder)
         {
-            _serviceProvider = builder.Services.BuildServiceProvider();
+            _services = builder.Services;
 
             return builder;
         }
 #endif
 
         private static ILoggerFactory factory;
-        private static ILoggerFactory Factory => factory ?? (factory = _serviceProvider?.GetRequiredService<ILoggerFactory>());
+        private static ILoggerFactory Factory => factory ?? (factory = (_serviceProvider ?? (_serviceProvider = _services?.BuildServiceProvider()))?.GetRequiredService<ILoggerFactory>());
 
         /// <summary>
         /// 获取一个日志记录器。

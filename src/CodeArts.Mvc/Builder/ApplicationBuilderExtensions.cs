@@ -40,6 +40,7 @@ namespace CodeArts.Mvc.Builder
 #else
                         return request.Invoke(context);
                     }
+
                     return next.Invoke(context);
 #endif
                 };

@@ -87,7 +87,8 @@ namespace CodeArts.Serialize.Json
         /// <returns></returns>
         private static JsonSerializerSettings LoadSetting(JsonSerializerSettings settings, NamingType namingType, bool indented = false)
         {
-            if (settings is null) return LoadSetting(namingType, indented);
+            if (settings is null) 
+                return LoadSetting(namingType, indented);
 
             settings.ContractResolver = new JsonContractResolver(namingType);
 

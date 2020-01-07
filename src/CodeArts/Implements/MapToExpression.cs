@@ -131,10 +131,7 @@ namespace CodeArts.Implements
 
         private static MethodInfo GetMethodInfo<T1, T2, T3>(Func<T1, T2, T3> func) => func.Method;
 
-        private static bool EqaulsString(string a, string b)
-        {
-            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
-        }
+        private static bool EqaulsString(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
         private static Dictionary<TKey, TValue> ByDataRowToDictionary<TKey, TValue>(DataRow dr, MapToExpression mapTo)
         => ByDataRowToDictionaryLike<TKey, TValue, Dictionary<TKey, TValue>>(dr, mapTo);
@@ -749,6 +746,11 @@ namespace CodeArts.Implements
                 typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>
                 {
                     list.Add(SwitchCase(Constant(info.Name), Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType))));
+
+                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                    {
+                        list.Add(SwitchCase(Constant(info.Naming), Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType))));
+                    }
                 });
             }
 
@@ -757,6 +759,11 @@ namespace CodeArts.Implements
                 typeStore.FieldStores.Where(x => x.CanWrite).ForEach(info =>
                 {
                     list.Add(SwitchCase(Constant(info.Name), Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType))));
+
+                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                    {
+                        list.Add(SwitchCase(Constant(info.Naming), Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType))));
+                    }
                 });
             }
 
@@ -1042,6 +1049,11 @@ namespace CodeArts.Implements
 
                 list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
 
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming)))));
+                }
+
                 var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 
                 if (memberType.IsValueType)
@@ -1274,6 +1286,11 @@ namespace CodeArts.Implements
                 var memberType = info.MemberType;
 
                 list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
+
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming)))));
+                }
 
                 var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 

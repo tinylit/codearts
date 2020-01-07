@@ -1,7 +1,7 @@
 ﻿namespace CodeArts.Exceptions
 {
     /// <summary> 业务执行中，业务逻辑不满足返回异常 </summary>
-    public class BusiException : SkyException
+    public class BusiException : CodeException
     {
         /// <summary>
         /// 构造函数

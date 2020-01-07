@@ -67,12 +67,12 @@ namespace CodeArts
                 var enumerator = enumerable.GetEnumerator();
 
                 if (!enumerator.MoveNext())
-                    return string.Empty;
+                    return null;
 
                 while (enumerator.Current is null)
                 {
                     if (!enumerator.MoveNext())
-                        return string.Empty;
+                        return null;
                 }
 
                 var sb = new StringBuilder();
@@ -105,7 +105,8 @@ namespace CodeArts
         /// <returns></returns>
         public virtual string Convert(string propertyName, Type typeToConvert, object value)
         {
-            if (value is null) return null;
+            if (value is null) 
+                return null;
 
             foreach (PropConverter converter in Converters)
             {

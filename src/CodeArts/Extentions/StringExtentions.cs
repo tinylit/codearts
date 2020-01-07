@@ -1,6 +1,5 @@
 ﻿using CodeArts;
 using CodeArts.Config;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Linq.Expressions;
@@ -237,20 +236,24 @@ namespace System
 
                 var tokenCap = tokenGrp.Captures.GetEnumerator();
 
+                bool flag = true;
                 string valueStr = string.Empty;
 
                 while (nameCap.MoveNext())
                 {
                     string text = Nested<T>.Invoke(source, ((Capture)nameCap.Current).Value, settings);
 
-                    if (!(text is null))
+                    if(!(text is null))
                     {
+                        flag = false;
                         valueStr += text;
                     }
 
                     if (!tokenCap.MoveNext())
-                        return valueStr;
-
+                    {
+                        break;
+                    }
+                    
                     string token = ((Capture)tokenCap.Current).Value;
 
                     if (valueStr.Length > 0)
@@ -262,6 +265,11 @@ namespace System
                     {
                         return valueStr;
                     }
+                }
+
+                if (flag)
+                {
+                    return "null";
                 }
 
                 return valueStr;

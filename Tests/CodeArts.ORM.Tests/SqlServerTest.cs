@@ -20,7 +20,7 @@ namespace UnitTest
     [TestClass]
     public class SqlServerTest
     {
-        private static bool isCompleted;
+        private static bool isCompleted = true;
 
         [TestInitialize]
         public void Initialize()

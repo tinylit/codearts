@@ -3,7 +3,7 @@
     /// <summary>
     /// 各服务层异常
     /// </summary>
-    public class ServException : SkyException
+    public class ServException : CodeException
     {
         /// <summary>
         /// 构造函数

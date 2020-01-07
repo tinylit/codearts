@@ -434,6 +434,7 @@ namespace System
 
                 if (string.IsNullOrEmpty(value))
                     return default;
+
                 try
                 {
                     return XmlHelper.XmlDeserialize<T>(value);

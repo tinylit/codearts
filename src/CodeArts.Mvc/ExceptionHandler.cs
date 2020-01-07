@@ -24,7 +24,7 @@ namespace CodeArts.Exceptions
         public static event Action<Exception> OnException;
 
         /// <summary> 服务异常事件 </summary>
-        public static event Action<SkyException> OnSkyException;
+        public static event Action<CodeException> OnCodeException;
 
         /// <summary> 服务异常事件 </summary>
         public static event Action<ServException> OnServException;
@@ -39,9 +39,9 @@ namespace CodeArts.Exceptions
             var error = exception.GetBaseException();
             switch (error)
             {
-                case SkyException sky:
+                case CodeException code:
 
-                    switch (sky)
+                    switch (code)
                     {
                         case ServException serv:
                             OnServException?.Invoke(serv);
@@ -50,11 +50,11 @@ namespace CodeArts.Exceptions
                             OnBusiException?.Invoke(busi);
                             break;
                         default:
-                            OnSkyException?.Invoke(sky);
+                            OnCodeException?.Invoke(code);
                             break;
                     }
 
-                    return DResult.Error(sky.Message, sky.ErrorCode);
+                    return DResult.Error(code.Message, code.ErrorCode);
                 case OperationCanceledException _:
                     //操作取消
                     return null;
