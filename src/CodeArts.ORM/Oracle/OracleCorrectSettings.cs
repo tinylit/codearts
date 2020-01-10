@@ -66,7 +66,7 @@ namespace CodeArts.ORM.Oracle
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
-        public string Name(string name) => string.Concat("\"", name, "\"");
+        public string Name(string name) => name;
 
         /// <summary>
         /// 参数名称

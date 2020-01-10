@@ -352,6 +352,25 @@ namespace CodeArts.ORM.Tests
 
             var sql3 = new SQL("SELECT ywdjid as requestid FROM dzfp  GROUP BY ywdjid");
         }
+
+        [TestMethod]
+        public void TestGroupBy()
+        {
+            string sqlstr = @"select
+            a.invoice_id  as ddbh
+            from BEK_AR_INVOICE_NEW a
+            where a.amt<>0  and  a.it_id not in ('30769','99999')
+            and to_char(ct,'yyyy-mm-dd')>to_char(sysdate-5,'yyyy-mm-dd')
+            and not exists(select  t.invoice_id  from AR_INVOICE t where t.invoice_id=a.invoice_id and REALINVOICE_NO is not null)
+            group by a.invoice_id";
+
+            var sql = new SQL(sqlstr);
+
+            var settings = new Oracle.OracleCorrectSettings();
+
+            var scalar = sql.ToString(settings);
+        }
+
         //[TestMethod]
         public void TestMapTo()
         {
