@@ -443,5 +443,20 @@ namespace CodeArts.ORM.Tests
 
             var scalar = sql.ToString(settings);
         }
+
+        [TestMethod]
+        public void TestOracle()
+        {
+            var sqlstr = @"update  AR_INVOICE 
+            set REALINVOICE_NO=replace(replace(REALINVOICE_NO,'~'||@invoiceNo||'~','~'),' ','')||'~'||@invoiceNo
+            ,invoice_time=to_date(@kprq,'yyyy-mm-dd hh24:mi:ss')
+             where invoice_id=@ddbh";
+
+            var sql = new SQL(sqlstr);
+
+            var settings = new Oracle.OracleCorrectSettings();
+
+            var scalar = sql.ToString(settings);
+        }
     }
 }

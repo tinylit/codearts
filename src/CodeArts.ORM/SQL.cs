@@ -326,9 +326,9 @@ namespace CodeArts.ORM
                 .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, nameGrp.Index - aliasGrp.Index))
                 .Append("{")
                 .Append(type)
-                .Append(":")
+                .Append("#")
                 .Append(nameGrp.Value)
-                .Append(")");
+                .Append("}");
 
                 value = value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
 
@@ -354,7 +354,7 @@ namespace CodeArts.ORM
                 .Append(type)
                 .Append("#")
                 .Append(nameGrp.Value)
-                .Append(")");
+                .Append("}");
 
                 value = value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
 
