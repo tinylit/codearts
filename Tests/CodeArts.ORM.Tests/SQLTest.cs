@@ -417,5 +417,31 @@ namespace CodeArts.ORM.Tests
 
             var applyDto = provider.QueryFirst<ApplyDto>(connection, sql.ToString(adapter.Settings), param);
         }
+
+        [TestMethod]
+        public void TestOracleSubstring()
+        {
+            var sqlstr = @"select 
+            '0' as fphxz,
+            replace(itname,' ','') as spmc,
+            replace(amt,' ','') as spsl ,
+            replace(sale_price,' ','') as dj,
+            nvl(invoicemny,0) as je ,
+            CASE WHEN SALE_TAX=0.17 THEN 0.16
+               WHEN SALE_TAX=0.11 THEN 0.10
+               ELSE SALE_TAX END as sl ,
+            replace(unit,' ','') as dw,
+            rpad(it_taxcode,19,'0') as spbm,
+            replace(spec,' ','') as ggxh,
+            CASE WHEN substr(DSDH,1,2)='SS' THEN '' ELSE DSDH end as dsddh
+            from   BEK_AR_INVOICE_NEW 
+            where invoice_id=@ddbh";
+
+            var sql = new SQL(sqlstr);
+
+            var settings = new Oracle.OracleCorrectSettings();
+
+            var scalar = sql.ToString(settings);
+        }
     }
 }

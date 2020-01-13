@@ -31,9 +31,9 @@ namespace CodeArts.ORM.Oracle
         public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
 
         /// <summary>
-        /// 字符串截取。 SUBSTRING
+        /// 字符串截取。 SUBSTR
         /// </summary>
-        public string Substring => "SUBSTRING";
+        public string Substring => "SUBSTR";
 
         /// <summary>
         /// 字符串索引。 INSTR
