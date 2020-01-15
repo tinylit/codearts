@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -48,7 +49,7 @@ namespace CodeArts.Implements
 
                 return value;
             }
-            catch (InvalidCastException)
+            catch (NotSupportedException)
             {
                 return def;
             }
@@ -555,7 +556,10 @@ namespace CodeArts.Implements
                 {
                     if (source is DataRow dr)
                     {
-                        return dr.IsNull(0) ? default : (TResult)System.Convert.ChangeType(dr[0], conversionType);
+                        if (!dr.IsNull(0))
+                        {
+                            return (TResult)System.Convert.ChangeType(dr[0], conversionType);
+                        }
                     }
 
                     return default;

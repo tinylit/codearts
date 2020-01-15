@@ -22,8 +22,8 @@ namespace CodeArts
         public PagedList(IQueryable<T> queryable, int page, int size)
         {
             list = queryable ?? throw new ArgumentNullException(nameof(queryable));
-            if (page < 1)
-                throw new IndexOutOfRangeException("页码不能小于1。");
+            if (page < 0)
+                throw new IndexOutOfRangeException("页码不能小于0。");
             Page = page;
             if (size < 1)
                 throw new IndexOutOfRangeException("分页条目不能小于1。");
@@ -31,7 +31,7 @@ namespace CodeArts
         }
 
         /// <summary>
-        /// 当前页码
+        /// 当前页码（索引从0开始）
         /// </summary>
         public int Page { get; }
         /// <summary>
@@ -48,7 +48,7 @@ namespace CodeArts
         /// 获取迭代器
         /// </summary>
         /// <returns></returns>
-        public IEnumerator<T> GetEnumerator() => list.Skip(Size * (Page - 1)).Take(Size).GetEnumerator();
+        public IEnumerator<T> GetEnumerator() => list.Skip(Size * Page).Take(Size).GetEnumerator();
 
         /// <summary>
         /// 获取迭代器

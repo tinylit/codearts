@@ -119,7 +119,7 @@ namespace CodeArts.Tests
                 };
             });
 
-            RuntimeServManager.TryAddSingleton<IMapToExpression>(() => mapTo);
+            RuntimeServManager.TryAddSingleton(() => mapTo);
 
             var value = new CopyToTest
             {

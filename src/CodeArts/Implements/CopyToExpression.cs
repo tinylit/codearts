@@ -92,7 +92,7 @@ namespace CodeArts.Implements
             {
                 return UnsafeCopyTo(source);
             }
-            catch (InvalidCastException)
+            catch (NotSupportedException)
             {
                 return def;
             }

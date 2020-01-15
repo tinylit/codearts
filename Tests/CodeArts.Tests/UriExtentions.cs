@@ -45,7 +45,7 @@ namespace CodeArts.Tests
             //    .Get();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()
-            //    .Header("Authorization", token.data.type + " " + token.data.token)
+            //    .AppendHeader("Authorization", token.data.type + " " + token.data.token)
             //    .ByJson<List<string>>()
             //    .Get();
         }

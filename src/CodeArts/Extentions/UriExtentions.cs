@@ -59,8 +59,8 @@ namespace System
 
         private class Requestable : Requestable<string>, IRequestable
         {
-            private string __data;
             private Uri __uri;
+            private string __data;
             private NameValueCollection __form;
             private readonly List<Action> __finallys;
             private readonly List<Action<WebException>> __catchs;
