@@ -56,8 +56,8 @@ namespace CodeArts.Tests
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             //var token = "http://localhost:56324/login".AsRequestable()
-            //    .Query("?account=ljl&password=liujialin&debug=true")
-            //    .ByJson(new
+            //    .ToQueryString("?account=ljl&password=liujialin&debug=true")
+            //    .Json(new
             //    {
             //        data = new { type = string.Empty, token = string.Empty },
             //        status = true,
@@ -65,6 +65,17 @@ namespace CodeArts.Tests
             //        message = string.Empty,
             //        timestamp = DateTime.Now
             //    }, NamingType.CamelCase)
+            //    .Catch(e =>
+            //    {
+            //        return new
+            //        {
+            //            data = new { type = string.Empty, token = string.Empty },
+            //            status = true,
+            //            code = 0,
+            //            message = string.Empty,
+            //            timestamp = DateTime.Now
+            //        };
+            //    })
             //    .Get();
 
             //var json = new

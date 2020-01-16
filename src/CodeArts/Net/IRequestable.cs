@@ -278,6 +278,13 @@ namespace CodeArts.Net
         IRequestable Catch(Action<WebException> catchError);
 
         /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IRequestable Catch(Func<WebException, string> catchError);
+
+        /// <summary>
         /// 始终执行的动作
         /// </summary>
         /// <param name="always">请求始终会执行的方法</param>
@@ -312,6 +319,14 @@ namespace CodeArts.Net
         /// <returns></returns>
         IJsonRequestable<T> Catch(Action<WebException> catchError);
 
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IJsonRequestable<T> Catch(Func<WebException, T> catchError);
+
         /// <summary>
         /// 始终执行的动作
         /// </summary>
@@ -341,6 +356,13 @@ namespace CodeArts.Net
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
         IXmlRequestable<T> Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IXmlRequestable<T> Catch(Func<WebException, T> catchError);
 
         /// <summary>
         /// 始终执行的动作

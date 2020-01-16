@@ -10,7 +10,6 @@ using CodeArts.Config;
 using CodeArts.Serialize.Json;
 using CodeArts.Mvc.Converters;
 using Microsoft.Extensions.Logging;
-using CodeArts.Exceptions;
 #if NETCOREAPP3_1
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
@@ -154,22 +153,6 @@ namespace CodeArts.Mvc
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Use(next => async context =>
-            {
-                try
-                {
-                    await next(context);
-                }
-                catch (Exception e)
-                {
-                    var result = ExceptionHandler.Handler(e);
-
-                    if (result is null) return;
-
-                    await context.Response.WriteJsonAsync(JsonHelper.ToJson(result));
-                }
-            });
-
 #if NETCOREAPP3_1
             //? 跨域
             app.UseStaticFiles()
@@ -225,7 +208,6 @@ using System.Linq;
 using System;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
-using CodeArts.Exceptions;
 
 namespace CodeArts.Mvc
 {
@@ -348,47 +330,6 @@ namespace CodeArts.Mvc
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
-        }
-
-        /// <summary>
-        /// 配置中间件。
-        /// </summary>
-        /// <param name="builder">方案构造器</param>
-        public virtual void Configure(IApplicationBuilder builder)
-        {
-#if NET40
-            builder.Use(next => context =>
-           {
-               try
-               {
-                   next(context);
-               }
-               catch (Exception e)
-               {
-                   var result = ExceptionHandler.Handler(e);
-
-                   if (result is null) return;
-
-                   context.Response.WriteJson(JsonHelper.ToJson(result));
-               }
-           });
-#else
-            builder.Use(next => async context =>
-            {
-                try
-                {
-                    await next(context);
-                }
-                catch (Exception e)
-                {
-                    var result = ExceptionHandler.Handler(e);
-
-                    if (result is null) return;
-
-                    context.Response.WriteJson(JsonHelper.ToJson(result));
-                }
-            });
-#endif
         }
 
         /// <summary>

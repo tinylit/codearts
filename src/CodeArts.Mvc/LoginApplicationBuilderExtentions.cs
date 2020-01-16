@@ -19,6 +19,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using CodeArts.Exceptions;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.AspNetCore.Builder
 #else
@@ -110,19 +111,26 @@ namespace CodeArts.Mvc.Builder
                     return;
                 }
 
-                var result = await loginUri.AsRequestable()
-                .ToQueryString(context.Request.QueryString.Value)
-                .Catch(e => throw e)
-                .Json<ServResult<Dictionary<string, object>>>()
-                .GetAsync();
+                try
+                {
+                    var result = await loginUri.AsRequestable()
+                    .ToQueryString(context.Request.QueryString.Value)
+                    .Catch(e => throw e)
+                    .Json<ServResult<Dictionary<string, object>>>()
+                    .GetAsync();
 
-                if (result?.Success ?? false)
-                {
-                    await WriteToken(context, result.Data);
+                    if (result?.Success ?? false)
+                    {
+                        await WriteToken(context, result.Data);
+                    }
+                    else
+                    {
+                        await context.Response.WriteJsonAsync(result);
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    await context.Response.WriteJsonAsync(result);
+                    await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e));
                 }
             }));
         }
@@ -199,28 +207,36 @@ namespace CodeArts.Mvc.Builder
                     return;
                 }
 
+                try
+                {
+
 #if NET40
-                var result = loginUri.AsRequestable()
-                    .ToQueryString(context.Request.QueryString.ToString())
-                    .Catch(e => throw e)
-                    .Json<ServResult<Dictionary<string, object>>>()
-                    .Get();
+                    var result = loginUri.AsRequestable()
+                        .ToQueryString(context.Request.QueryString.ToString())
+                        .Catch(e => throw e)
+                        .Json<ServResult<Dictionary<string, object>>>()
+                        .Get();
 #else
-                var result = await loginUri.AsRequestable()
-                    .ToQueryString(context.Request.QueryString.ToString())
-                    .Catch(e => throw e)
-                    .Json<ServResult<Dictionary<string, object>>>()
-                    .GetAsync();
+                    var result = await loginUri.AsRequestable()
+                        .ToQueryString(context.Request.QueryString.ToString())
+                        .Catch(e => throw e)
+                        .Json<ServResult<Dictionary<string, object>>>()
+                        .GetAsync();
 #endif
 
 
-                if (result?.Success ?? false)
-                {
-                    context.Response.WriteJson(DResult.Ok(GetJwtToken(result.Data)));
+                    if (result?.Success ?? false)
+                    {
+                        context.Response.WriteJson(DResult.Ok(GetJwtToken(result.Data)));
+                    }
+                    else
+                    {
+                        context.Response.WriteJson(result);
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    context.Response.WriteJson(result);
+                    context.Response.WriteJson(ExceptionHandler.Handler(e));
                 }
             });
         }

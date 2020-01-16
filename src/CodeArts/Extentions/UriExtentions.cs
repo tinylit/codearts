@@ -64,6 +64,7 @@ namespace System
             private NameValueCollection __form;
             private readonly List<Action> __finallys;
             private readonly List<Action<WebException>> __catchs;
+            private readonly List<Func<WebException, string>> __2catchs;
             private readonly Dictionary<string, string> __headers;
 
             public Requestable(string uriString) : this(new Uri(uriString)) { }
@@ -73,6 +74,7 @@ namespace System
                 __uri = uri ?? throw new ArgumentNullException(nameof(uri));
                 __finallys = new List<Action>();
                 __catchs = new List<Action<WebException>>();
+                __2catchs = new List<Func<WebException, string>>();
                 __headers = new Dictionary<string, string>();
             }
 
@@ -244,16 +246,34 @@ namespace System
                 }
                 catch (WebException e)
                 {
+                    bool flag = false;
+                    Exception exception = null;
+                    string value = default;
+
+                    try
+                    {
+                        __2catchs.ForEach(action => value = action.Invoke(e));
+                    }
+                    catch(Exception error)
+                    {
+                        flag = true;
+                        exception = error;
+                    }
+
                     __catchs.ForEach(action => action.Invoke(e));
 
-                    return default;
+                    if (flag)
+                    {
+                        throw exception;
+                    }
+
+                    return value;
                 }
                 finally
                 {
                     __finallys.ForEach(action => action.Invoke());
                 }
             }
-
 #if !NET40
 
             private async Task<string> RequestAsyncCore(string method, int timeout)
@@ -290,9 +310,28 @@ namespace System
                 }
                 catch (WebException e)
                 {
+                    bool flag = false;
+                    string value = default;
+                    Exception exception = null;
+
+                    try
+                    {
+                        __2catchs.ForEach(action => value = action.Invoke(e));
+                    }
+                    catch (Exception error)
+                    {
+                        flag = true;
+                        exception = error;
+                    }
+
                     __catchs.ForEach(action => action.Invoke(e));
 
-                    return default;
+                    if (flag)
+                    {
+                        throw exception;
+                    }
+
+                    return value;
                 }
                 finally
                 {
@@ -317,6 +356,12 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
 
+            public IRequestable Catch(Func<WebException, string> catchError)
+            {
+                __2catchs.Add(catchError ?? throw new ArgumentNullException(nameof(catchError)));
+
+                return this;
+            }
         }
 
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>
@@ -343,6 +388,28 @@ namespace System
             public IJsonRequestable<T> Catch(Action<WebException> catchError)
             {
                 requestable.Catch(catchError);
+
+                return this;
+            }
+
+            public IJsonRequestable<T> Catch(Func<WebException, T> catchError)
+            {
+                if (catchError is null)
+                {
+                    throw new ArgumentNullException(nameof(catchError));
+                }
+
+                requestable.Catch(e =>
+                {
+                    T value = catchError.Invoke(e);
+
+                    if (value == null)
+                    {
+                        return null;
+                    }
+
+                    return JsonHelper.ToJson(value);
+                });
 
                 return this;
             }
@@ -417,6 +484,21 @@ namespace System
             public IXmlRequestable<T> Catch(Action<WebException> catchError)
             {
                 requestable.Catch(catchError);
+
+                return this;
+            }
+
+            public IXmlRequestable<T> Catch(Func<WebException, T> catchError)
+            {
+                if (catchError is null)
+                {
+                    throw new ArgumentNullException(nameof(catchError));
+                }
+
+                requestable.Catch(e =>
+                {
+                    return XmlHelper.XmlSerialize(catchError.Invoke(e));
+                });
 
                 return this;
             }

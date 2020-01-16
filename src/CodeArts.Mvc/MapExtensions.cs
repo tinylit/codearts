@@ -189,6 +189,11 @@ namespace CodeArts.Mvc
                     }
                 }
 
+                request.Catch(e =>
+                {
+                    throw e;
+                });
+
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
                 {
@@ -198,7 +203,6 @@ namespace CodeArts.Mvc
                 {
                     await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e));
                 }
-
             }));
 #else
                 try
@@ -209,7 +213,6 @@ namespace CodeArts.Mvc
                 {
                     context.Response.WriteJson(ExceptionHandler.Handler(e));
                 }
-
             });
 #endif
         }
