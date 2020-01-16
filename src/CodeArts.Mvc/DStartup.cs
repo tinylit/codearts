@@ -1,4 +1,6 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+using System;
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -8,11 +10,11 @@ using CodeArts.Config;
 using CodeArts.Serialize.Json;
 using CodeArts.Mvc.Converters;
 using Microsoft.Extensions.Logging;
+using CodeArts.Exceptions;
 #if NETCOREAPP3_1
+using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
 #else
-using System;
-using System.IO;
 using Swashbuckle.AspNetCore.Swagger;
 #endif
 
@@ -53,7 +55,7 @@ namespace CodeArts.Mvc
                   })
                   .AddJsonOptions(options =>
                   {
-                      options.JsonSerializerOptions.Converters.Add(new SkyJsonConverter());
+                      options.JsonSerializerOptions.Converters.Add(new MyJsonConverter());
                   })
                   .SetCompatibilityVersion(CompatibilityVersion.Version_3_0));
 #else
@@ -66,7 +68,7 @@ namespace CodeArts.Mvc
                 .AddJsonOptions(options =>
                 {
                     options.SerializerSettings.DateFormatString = Consts.DateFormatString;
-                    options.SerializerSettings.Converters.Add(new SkyJsonConverter());
+                    options.SerializerSettings.Converters.Add(new MyJsonConverter());
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2));
 #endif
@@ -98,16 +100,16 @@ namespace CodeArts.Mvc
             {
 #if NETCOREAPP3_1
                 //增加XML文档解析
-                //services.AddSwaggerGen(c =>
-                //{
-                //    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-                //
-                //    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                //    foreach (var file in files)
-                //    {
-                //        c.IncludeXmlComments(file);
-                //    }
-                //});
+                services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+
+                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                    foreach (var file in files)
+                    {
+                        c.IncludeXmlComments(file);
+                    }
+                });
 #else
                 //增加XML文档解析
                 services.AddSwaggerGen(c =>
@@ -152,6 +154,22 @@ namespace CodeArts.Mvc
                 app.UseDeveloperExceptionPage();
             }
 
+            app.Use(next => async context =>
+            {
+                try
+                {
+                    await next(context);
+                }
+                catch (Exception e)
+                {
+                    var result = ExceptionHandler.Handler(e);
+
+                    if (result is null) return;
+
+                    await context.Response.WriteJsonAsync(JsonHelper.ToJson(result));
+                }
+            });
+
 #if NETCOREAPP3_1
             //? 跨域
             app.UseStaticFiles()
@@ -162,15 +180,15 @@ namespace CodeArts.Mvc
 
             if (UseSwaggerUi)
             {
-                //app.UseSwagger()
-                //    .UseSwaggerUI(c =>
-                //    {
-                //        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                //    })
-                //    .UseEndpoints(endpoints =>
-                //    {
-                //        endpoints.MapControllers();
-                //    });
+                app.UseSwagger()
+                    .UseSwaggerUI(c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
+                    })
+                    .UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapControllers();
+                    });
             }
 #else
             //? 跨域
@@ -192,7 +210,7 @@ namespace CodeArts.Mvc
     }
 }
 #else
-            using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json.Serialization;
 using CodeArts.Cache;
 using CodeArts.Config;
 using CodeArts.Mvc.Builder;
@@ -207,6 +225,7 @@ using System.Linq;
 using System;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
+using CodeArts.Exceptions;
 
 namespace CodeArts.Mvc
 {
@@ -274,7 +293,7 @@ namespace CodeArts.Mvc
                 .JsonFormatter
                 .SerializerSettings
                 .Converters
-                .Add(new SkyJsonConverter());
+                .Add(new MyJsonConverter());
 
             config.Formatters
                 .JsonFormatter
@@ -329,6 +348,47 @@ namespace CodeArts.Mvc
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+        }
+
+        /// <summary>
+        /// 配置中间件。
+        /// </summary>
+        /// <param name="builder">方案构造器</param>
+        public virtual void Configure(IApplicationBuilder builder)
+        {
+#if NET40
+            builder.Use(next => context =>
+           {
+               try
+               {
+                   next(context);
+               }
+               catch (Exception e)
+               {
+                   var result = ExceptionHandler.Handler(e);
+
+                   if (result is null) return;
+
+                   context.Response.WriteJson(JsonHelper.ToJson(result));
+               }
+           });
+#else
+            builder.Use(next => async context =>
+            {
+                try
+                {
+                    await next(context);
+                }
+                catch (Exception e)
+                {
+                    var result = ExceptionHandler.Handler(e);
+
+                    if (result is null) return;
+
+                    context.Response.WriteJson(JsonHelper.ToJson(result));
+                }
+            });
+#endif
         }
 
         /// <summary>

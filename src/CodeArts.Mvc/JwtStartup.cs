@@ -85,7 +85,12 @@ namespace CodeArts.Mvc
         /// 配置中间件。
         /// </summary>
         /// <param name="builder">方案构造器</param>
-        public virtual void Configure(IApplicationBuilder builder) => builder.UseJwtLogin().UseJwtBearer(JwtBearerEvents.Authorization);
+        public override void Configure(IApplicationBuilder builder)
+        {
+            base.Configure(builder);
+
+            builder.UseJwtLogin().UseJwtBearer(JwtBearerEvents.Authorization);
+        }
     }
 }
 #endif

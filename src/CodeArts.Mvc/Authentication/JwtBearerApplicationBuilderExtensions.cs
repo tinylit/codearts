@@ -71,6 +71,7 @@ namespace CodeArts.Mvc.Builder
 
 #if NET40
                     next.Invoke(context);
+
                     return;
 #else
                     return next.Invoke(context);

@@ -9,7 +9,7 @@ namespace CodeArts.Mvc.Converters
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
     /// </summary>
-    public class SkyJsonConverter : JsonConverter<object>
+    public class MyJsonConverter : JsonConverter<object>
     {
         /// <summary>
         /// 是否可以调整
@@ -122,7 +122,7 @@ namespace CodeArts.Mvc.Converters
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
     /// </summary>
-    public class SkyJsonConverter : JsonConverter
+    public class MyJsonConverter : JsonConverter
     {
         /// <summary>
         /// 是否可以调整

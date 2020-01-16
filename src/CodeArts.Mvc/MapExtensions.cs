@@ -20,6 +20,42 @@ namespace CodeArts.Mvc
     public static class MapExtensions
     {
         /// <summary>
+        /// 路由(HttpVerbs.Get)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">获取目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.GET, destinationPath);
+
+        /// <summary>
+        /// 路由(HttpVerbs.POST)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">获取目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapPost(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.POST, destinationPath);
+
+        /// <summary>
+        /// 路由(HttpVerbs.PUT)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">获取目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.PUT, destinationPath);
+
+        /// <summary>
+        /// 路由(HttpVerbs.DELETE)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">获取目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapDelete(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.DELETE, destinationPath);
+
+        /// <summary>
         /// 路由(HttpVerbs.Get | HttpVerbs.Post | HttpVerbs.Put | HttpVerbs.Delete | HttpVerbs.Head | HttpVerbs.Patch | HttpVerbs.Options)
         /// </summary>
         /// <param name="app">app</param>
@@ -53,10 +89,7 @@ namespace CodeArts.Mvc
         /// <param name="httpVerbs">请求方式</param>
         /// <param name="destinationPath">目标地址</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
-        {
-            return app.Map(path, httpVerbs, () => destinationPath);
-        }
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath) => app.Map(path, httpVerbs, () => destinationPath);
 
         /// <summary>
         /// 路由

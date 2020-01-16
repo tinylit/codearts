@@ -76,7 +76,13 @@ namespace CodeArts.Exceptions
 
                     if (error is WebException web)
                     {
+                        if (web.Response is HttpWebResponse response)
+                        {
+                            return response.StatusCode.CodeResult();
+                        }
+
                         string msg = $"接口({web.Response?.ResponseUri?.ToString()}-{web.Status})访问失败!";
+
                         switch (web.Status)
                         {
                             case WebExceptionStatus.RequestCanceled:
