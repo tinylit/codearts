@@ -27,7 +27,7 @@ namespace CodeArts.Tests
                  .Get();
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void GetJson()
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
@@ -50,7 +50,7 @@ namespace CodeArts.Tests
             //    .Get();
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void PostJson()
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
@@ -96,7 +96,7 @@ namespace CodeArts.Tests
             //    .Post();
         }
 
-        [TestMethod]
+        //[TestMethod]
         public async Task PostForm()
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
