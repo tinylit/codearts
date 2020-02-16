@@ -189,11 +189,6 @@ namespace CodeArts.Mvc
                     }
                 }
 
-                request.Catch(e =>
-                {
-                    throw e;
-                });
-
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
                 {

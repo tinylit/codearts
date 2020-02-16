@@ -62,9 +62,10 @@ namespace System
             private Uri __uri;
             private string __data;
             private NameValueCollection __form;
+            private Func<WebException, string> __catch_web_error;
+
             private readonly List<Action> __finallys;
             private readonly List<Action<WebException>> __catchs;
-            private readonly List<Func<WebException, string>> __2catchs;
             private readonly Dictionary<string, string> __headers;
 
             public Requestable(string uriString) : this(new Uri(uriString)) { }
@@ -74,7 +75,6 @@ namespace System
                 __uri = uri ?? throw new ArgumentNullException(nameof(uri));
                 __finallys = new List<Action>();
                 __catchs = new List<Action<WebException>>();
-                __2catchs = new List<Func<WebException, string>>();
                 __headers = new Dictionary<string, string>();
             }
 
@@ -246,28 +246,12 @@ namespace System
                 }
                 catch (WebException e)
                 {
-                    bool flag = false;
-                    Exception exception = null;
-                    string value = default;
-
-                    try
-                    {
-                        __2catchs.ForEach(action => value = action.Invoke(e));
-                    }
-                    catch(Exception error)
-                    {
-                        flag = true;
-                        exception = error;
-                    }
-
                     __catchs.ForEach(action => action.Invoke(e));
 
-                    if (flag)
-                    {
-                        throw exception;
-                    }
+                    if (__catch_web_error is null)
+                        throw e;
 
-                    return value;
+                    return __catch_web_error.Invoke(e);
                 }
                 finally
                 {
@@ -310,28 +294,12 @@ namespace System
                 }
                 catch (WebException e)
                 {
-                    bool flag = false;
-                    string value = default;
-                    Exception exception = null;
-
-                    try
-                    {
-                        __2catchs.ForEach(action => value = action.Invoke(e));
-                    }
-                    catch (Exception error)
-                    {
-                        flag = true;
-                        exception = error;
-                    }
-
                     __catchs.ForEach(action => action.Invoke(e));
 
-                    if (flag)
-                    {
-                        throw exception;
-                    }
+                    if (__catch_web_error is null)
+                        throw e;
 
-                    return value;
+                    return __catch_web_error.Invoke(e);
                 }
                 finally
                 {
@@ -358,7 +326,7 @@ namespace System
 
             public IRequestable Catch(Func<WebException, string> catchError)
             {
-                __2catchs.Add(catchError ?? throw new ArgumentNullException(nameof(catchError)));
+                __catch_web_error = catchError ?? throw new ArgumentNullException(nameof(catchError));
 
                 return this;
             }
@@ -367,12 +335,15 @@ namespace System
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>
         {
             private readonly IRequestable requestable;
+            private Func<WebException, T> __catch_web_error;
+            private readonly List<Func<WebException, T>> __2catchs;
             private readonly List<Action<string, Exception>> __catchs;
 
             public JsonRequestable(IRequestable requestable, NamingType namingType)
             {
                 NamingType = namingType;
                 this.requestable = requestable;
+                __2catchs = new List<Func<WebException, T>>();
                 __catchs = new List<Action<string, Exception>>();
             }
 
@@ -394,22 +365,7 @@ namespace System
 
             public IJsonRequestable<T> Catch(Func<WebException, T> catchError)
             {
-                if (catchError is null)
-                {
-                    throw new ArgumentNullException(nameof(catchError));
-                }
-
-                requestable.Catch(e =>
-                {
-                    T value = catchError.Invoke(e);
-
-                    if (value == null)
-                    {
-                        return null;
-                    }
-
-                    return JsonHelper.ToJson(value);
-                });
+                __catch_web_error = catchError ?? throw new ArgumentNullException(nameof(catchError));
 
                 return this;
             }
@@ -423,7 +379,23 @@ namespace System
 
             public override T Request(string method, int timeout = 5000)
             {
-                string value = requestable.Request(method, timeout);
+                string value = default;
+
+                if (__catch_web_error is null)
+                {
+                    value = requestable.Request(method, timeout);
+                }
+                else
+                {
+                    try
+                    {
+                        value = requestable.Request(method, timeout);
+                    }
+                    catch (WebException e)
+                    {
+                        return __catch_web_error.Invoke(e);
+                    }
+                }
 
                 if (string.IsNullOrEmpty(value))
                     return default;
@@ -435,16 +407,32 @@ namespace System
                 catch (Exception e)
                 {
                     __catchs.ForEach(action => action.Invoke(value, e));
-
-                    return default;
                 }
+
+                return default;
             }
 
 #if !NET40
 
             public override async Task<T> RequestAsync(string method, int timeout = 5000)
             {
-                string value = await requestable.RequestAsync(method, timeout);
+                string value = default;
+
+                if (__catch_web_error is null)
+                {
+                    value = await requestable.RequestAsync(method, timeout);
+                }
+                else
+                {
+                    try
+                    {
+                        value = await requestable.RequestAsync(method, timeout);
+                    }
+                    catch (WebException e)
+                    {
+                        return __catch_web_error.Invoke(e);
+                    }
+                }
 
                 if (string.IsNullOrEmpty(value))
                     return default;
@@ -456,9 +444,8 @@ namespace System
                 catch (Exception e)
                 {
                     __catchs.ForEach(action => action.Invoke(value, e));
-
-                    return default;
                 }
+                return default;
             }
 #endif
         }
@@ -466,6 +453,7 @@ namespace System
         private class XmlRequestable<T> : Requestable<T>, IXmlRequestable<T>
         {
             private readonly IRequestable requestable;
+            private Func<WebException, T> __catch_web_error;
             private readonly List<Action<string, XmlException>> __catchs;
 
             public XmlRequestable(IRequestable requestable)
@@ -490,15 +478,7 @@ namespace System
 
             public IXmlRequestable<T> Catch(Func<WebException, T> catchError)
             {
-                if (catchError is null)
-                {
-                    throw new ArgumentNullException(nameof(catchError));
-                }
-
-                requestable.Catch(e =>
-                {
-                    return XmlHelper.XmlSerialize(catchError.Invoke(e));
-                });
+                __catch_web_error = catchError ?? throw new ArgumentNullException(nameof(catchError));
 
                 return this;
             }
@@ -512,7 +492,23 @@ namespace System
 
             public override T Request(string method, int timeout = 5000)
             {
-                string value = requestable.Request(method, timeout);
+                string value = default;
+
+                if(__catch_web_error is null)
+                {
+                    value = requestable.Request(method, timeout);
+                }
+                else
+                {
+                    try
+                    {
+                        value = requestable.Request(method, timeout);
+                    }
+                    catch (WebException e)
+                    {
+                        return __catch_web_error.Invoke(e);
+                    }
+                }
 
                 if (string.IsNullOrEmpty(value))
                     return default;
@@ -536,7 +532,23 @@ namespace System
 #if !NET40
             public override async Task<T> RequestAsync(string method, int timeout = 5000)
             {
-                string value = await requestable.RequestAsync(method, timeout);
+                string value = default;
+
+                if (__catch_web_error is null)
+                {
+                    value = await requestable.RequestAsync(method, timeout);
+                }
+                else
+                {
+                    try
+                    {
+                        value = await requestable.RequestAsync(method, timeout);
+                    }
+                    catch (WebException e)
+                    {
+                        return __catch_web_error.Invoke(e);
+                    }
+                }
 
                 if (string.IsNullOrEmpty(value))
                     return default;
