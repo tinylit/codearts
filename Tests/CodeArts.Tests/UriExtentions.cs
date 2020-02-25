@@ -12,6 +12,9 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Get()
         {
+
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+
             var value = "http://www.baidu.com".AsRequestable()
                  .ToQueryString(new
                  {
