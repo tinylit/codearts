@@ -27,6 +27,10 @@ namespace CodeArts.Tests
                      ie = "utf8"
                  })
                  .Json(new Dictionary<string, string>())
+                 .Catch((s, e) =>
+                 {
+                     return new Dictionary<string, string>();
+                 })
                  .Get();
         }
 
