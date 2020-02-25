@@ -6,12 +6,12 @@ namespace CodeArts.Net
     /// <summary>
     /// Web客户端
     /// </summary>
-    public class SkyWebClient : WebClient
+    public class WebCoreClient : WebClient
     {
         /// <summary>
         /// 静态构造函数
         /// </summary>
-        static SkyWebClient()
+        static WebCoreClient()
         {
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
         }

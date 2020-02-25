@@ -1,4 +1,6 @@
-﻿namespace CodeArts.ORM
+﻿using System;
+
+namespace CodeArts.ORM
 {
     /// <summary>
     /// 只读配置

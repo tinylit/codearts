@@ -123,7 +123,6 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public static IDbConnectionAdapter Create(string providerName)
         {
-
             if (providerName == null)
             {
                 throw new ArgumentNullException(nameof(providerName));
@@ -158,9 +157,8 @@ namespace CodeArts.ORM
                 return provider;
 
             if (FactoryProviders.TryGetValue(key, out Func<IDbConnectionAdapter, RepositoryProvider> factory))
-            {
                 return Providers.GetOrAdd(key, _ => factory(adapter));
-            }
+
             throw new DException($"不支持的供应商：{adapter.ProviderName}");
         }
     }

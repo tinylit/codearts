@@ -1,8 +1,6 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using CodeArts;
 using CodeArts.Mvc;
 #else
@@ -115,13 +113,12 @@ namespace CodeArts.Mvc.Builder
                 {
                     var result = await loginUri.AsRequestable()
                     .ToQueryString(context.Request.QueryString.Value)
-                    .Catch(e => throw e)
                     .Json<ServResult<Dictionary<string, object>>>()
                     .GetAsync();
 
-                    if (result?.Success ?? false)
+                    if (result.Success)
                     {
-                        await WriteToken(context, result.Data);
+                        await context.Response.WriteJsonAsync(DResult.Ok(JwtTokenGen.Create(result.Data)));
                     }
                     else
                     {
@@ -213,21 +210,19 @@ namespace CodeArts.Mvc.Builder
 #if NET40
                     var result = loginUri.AsRequestable()
                         .ToQueryString(context.Request.QueryString.ToString())
-                        .Catch(e => throw e)
                         .Json<ServResult<Dictionary<string, object>>>()
                         .Get();
 #else
                     var result = await loginUri.AsRequestable()
                         .ToQueryString(context.Request.QueryString.ToString())
-                        .Catch(e => throw e)
                         .Json<ServResult<Dictionary<string, object>>>()
                         .GetAsync();
 #endif
 
 
-                    if (result?.Success ?? false)
+                    if (result.Success)
                     {
-                        context.Response.WriteJson(DResult.Ok(GetJwtToken(result.Data)));
+                        context.Response.WriteJson(DResult.Ok(JwtTokenGen.Create(result.Data)));
                     }
                     else
                     {
@@ -309,53 +304,6 @@ namespace CodeArts.Mvc.Builder
                 image.Dispose();
             }
         }
-
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-        /// <summary>
-        /// 写入Token
-        /// </summary>
-        /// <param name="context">请求上下文</param>
-        /// <param name="user">用户</param>
-        /// <returns></returns>
-        private static async Task WriteToken(HttpContext context, Dictionary<string, object> user)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            var key = Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.JwtSecret));
-
-            var expires = DateTime.UtcNow.AddDays(1D);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = user.AsIdentity(),
-                Expires = expires,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
-
-            await context.Response.WriteJsonAsync(DResult.Ok(new
-            {
-                token,
-                type = "Bearer"
-            }));
-        }
-#else
-        /// <summary>
-        /// 获取Jwt认证令牌
-        /// </summary>
-        /// <param name="userData">用户数据</param>
-        /// <returns></returns>
-        private static string GetJwtToken(object userData)
-        {
-            var algorithm = new HMACSHA256Algorithm();
-            var serializer = new JsonNetSerializer();
-            var urlEncoder = new JwtBase64UrlEncoder();
-            var encoder = new JwtEncoder(algorithm, serializer, urlEncoder);
-
-            return encoder.Encode(userData, "jwt-secret".Config(Consts.JwtSecret));
-        }
-#endif
         #endregion
     }
 }

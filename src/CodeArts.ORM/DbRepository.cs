@@ -19,8 +19,6 @@ namespace CodeArts.ORM
     /// <typeparam name="T">元素类型</typeparam>
     public class DbRepository<T> : Repository<T>, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class, IEntiy
     {
-        private IDbRepositoryExecuter _DbExecuter = null;
-
         /// <summary>
         /// 最大参数长度
         /// </summary>
@@ -52,7 +50,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 数据库执行器
         /// </summary>
-        protected virtual IDbRepositoryExecuter DbExecuter => _DbExecuter ?? (_DbExecuter = DbConnectionManager.Create(DbAdapter));
+        protected virtual IDbRepositoryExecuter DbExecuter => DbConnectionManager.Create(DbAdapter);
 
         /// <summary>
         /// 执行器

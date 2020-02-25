@@ -64,6 +64,11 @@ namespace CodeArts.ORM
             ConfigHelper.Instance.OnConfigChanged += _ =>
             {
                 ConnectionConfig = attr.GetConfig();
+
+                if (!(_DbProvider is null || string.Equals(_DbProvider.ProviderName, ConnectionConfig.ProviderName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _DbProvider = null;
+                }
             };
 
             return attr.GetConfig();

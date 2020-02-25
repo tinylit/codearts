@@ -313,6 +313,16 @@ namespace CodeArts.Net
         IJsonRequestable<T> Catch(Action<string, Exception> catchError);
 
         /// <summary>
+        /// 捕获Json解析异常
+        /// 第一个参数：请求接口返回的内容。
+        /// 第二个参数：解析异常。
+        /// 第三个参数：异常情况返回值。
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IJsonRequestable<T> Catch(Func<string, Exception, T> catchError);
+
+        /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="catchError">异常捕获</param>
@@ -349,6 +359,16 @@ namespace CodeArts.Net
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
         IXmlRequestable<T> Catch(Action<string, XmlException> catchError);
+
+        /// <summary>
+        /// 捕获Xml解析异常
+        /// 第一个参数：请求接口返回的内容。
+        /// 第二个参数：解析异常。
+        /// 第三个参数：异常情况的返回值。
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        IXmlRequestable<T> Catch(Func<string, XmlException, T> catchError);
 
         /// <summary>
         /// 捕获Web异常
