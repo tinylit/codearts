@@ -122,5 +122,35 @@ namespace Mvc.Core.Controllers
                 account = account
             });
         }
+
+
+        /// <summary>
+        /// 登录
+        /// </summary>
+        /// <param name="account"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpGet("register")]
+        public DResult Register(string account, string password)
+        {
+            dependency.AopTest();
+            return DResult.Ok(new
+            {
+                id = 100000,
+                name = account,
+                account = account
+            });
+        }
+        /// <summary>
+        /// 测试
+        /// </summary>
+        /// <param name="weather"></param>
+        /// <returns></returns>
+
+        [HttpPost("test")]
+        public DResult Test([FromBody]WeatherForecast weather)
+        {
+            return DResult.Ok(weather);
+        }
     }
 }

@@ -312,7 +312,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
                 "Microsoft.Hosting.Lifetime": "Information"
             }
         },
-        "login": "api/values/login", //登录地址，必填
+        "login": "api/values/login", //登录地址，返回登录信息，并自动生成登录令牌
+        "register": "api/values/register", // 注册地址，接口返回用户信息时，会自动生成登录令牌
         "jwt": {
 			"authority": "" // 使用JwtStartup时必须。
             //"secret": "",  //密钥

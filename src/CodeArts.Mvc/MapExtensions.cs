@@ -1,16 +1,15 @@
-﻿#if !NET40
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Net.Http.Headers;
 #else
 using CodeArts.Mvc.Builder;
 using System.Web;
 #endif
 using CodeArts.Exceptions;
 using System;
-using System.IO;
 using System.Net;
+using System.IO;
+using System.Text;
 
 namespace CodeArts.Mvc
 {
@@ -19,6 +18,16 @@ namespace CodeArts.Mvc
     /// </summary>
     public static class MapExtensions
     {
+
+        /// <summary>
+        /// 路由(HttpVerbs.Get)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.GET, () => destinationPath);
+
         /// <summary>
         /// 路由(HttpVerbs.Get)
         /// </summary>
@@ -27,6 +36,15 @@ namespace CodeArts.Mvc
         /// <param name="destinationPath">获取目标地址</param>
         /// <returns></returns>
         public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.GET, destinationPath);
+
+        /// <summary>
+        /// 路由(HttpVerbs.POST)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapPost(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.POST, () => destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.POST)
@@ -42,9 +60,27 @@ namespace CodeArts.Mvc
         /// </summary>
         /// <param name="app">app</param>
         /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.PUT, () => destinationPath);
+
+        /// <summary>
+        /// 路由(HttpVerbs.PUT)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
         /// <param name="destinationPath">获取目标地址</param>
         /// <returns></returns>
         public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.PUT, destinationPath);
+
+        /// <summary>
+        /// 路由(HttpVerbs.DELETE)
+        /// </summary>
+        /// <param name="app">app</param>
+        /// <param name="path">路由地址</param>
+        /// <param name="destinationPath">目标地址</param>
+        /// <returns></returns>
+        public static IApplicationBuilder MapDelete(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.DELETE, () => destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.DELETE)
@@ -111,6 +147,10 @@ namespace CodeArts.Mvc
             return app.Map(path, builder => builder.Run(async context =>
             {
                 string method = context.Request.Method;
+#elif NET40
+            return app.Map(path, (HttpContext context) =>
+            {
+                string method = context.Request.HttpMethod;
 #else
             return app.Map(path, async (HttpContext context) =>
             {
@@ -162,14 +202,34 @@ namespace CodeArts.Mvc
                 {
                     request.ToForm(context.Request.Form);
                 }
-                else
-                {
 
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-                    using (var reader = new StreamReader(context.Request.Body))
+#if  NETSTANDARD2_0 || NETCOREAPP3_1
+                else if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
+                {
+                    var length = context.Request.ContentLength.Value;
+                    var buffer = new byte[length];
+                    await context.Request.Body.ReadAsync(buffer, 0, buffer.Length);
+
+                    var body = Encoding.UTF8.GetString(buffer);
+
+                    if (contentType.Contains("application/json"))
+                    {
+                        request.ToJson(body);
+                    }
+                    else if (contentType.Contains("application/xml"))
+                    {
+                        request.ToXml(body);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException($"未实现({contentType})类型传输!");
+                    }
+
+                }
 #else
-                    using (var reader = new StreamReader(context.Request.GetBufferedInputStream()))
-#endif
+                else if (context.Request.InputStream.Length > 0)
+                {
+                    using (var reader = new StreamReader(context.Request.InputStream))
                     {
                         if (contentType.Contains("application/json"))
                         {
@@ -185,7 +245,7 @@ namespace CodeArts.Mvc
                         }
                     }
                 }
-
+#endif
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
@@ -200,7 +260,11 @@ namespace CodeArts.Mvc
 #else
                 try
                 {
+#if NET40
+                    context.Response.Write(request.Request(method ?? "GET", "map-timeout".Config(10000)));
+#else
                     context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(10000)));
+#endif
                 }
                 catch (WebException e)
                 {
@@ -211,4 +275,3 @@ namespace CodeArts.Mvc
         }
     }
 }
-#endif

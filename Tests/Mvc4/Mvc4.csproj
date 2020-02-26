@@ -94,6 +94,7 @@
     <Compile Include="Controllers\ValuesController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
+    <Compile Include="Views\TestView.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CodeArts.Defaults\CodeArts.Defaults.csproj">

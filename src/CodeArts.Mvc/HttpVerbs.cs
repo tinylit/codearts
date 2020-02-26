@@ -1,5 +1,4 @@
-﻿#if !NET40
-using System;
+﻿using System;
 
 namespace CodeArts.Mvc
 {
@@ -39,4 +38,3 @@ namespace CodeArts.Mvc
         OPTIONS = 64
     }
 }
-#endif

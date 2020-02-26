@@ -1,6 +1,7 @@
 ﻿using CodeArts;
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
+using Mvc4.Views;
 using System.Collections.Generic;
 using System.Web.Http;
 
@@ -44,12 +45,6 @@ namespace Mvc4.Controllers
             return "value";
         }
         /// <inheritdoc />
-        // POST api/values
-        [HttpPost]
-        public void Post([FromBody]string value)
-        {
-        }
-        /// <inheritdoc />
         // PUT api/values/5
         [HttpPut]
         public void Put(int id, [FromBody]string value)
@@ -73,6 +68,13 @@ namespace Mvc4.Controllers
                 id = 100000,
                 name = account
             });
+        }
+
+        [HttpPost]
+        [ActionName("test")]
+        public DResult Test([FromBody]TestView view)
+        {
+            return DResult.Ok(view);
         }
     }
 }

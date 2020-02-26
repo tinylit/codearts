@@ -23,7 +23,7 @@ namespace Mvc.Core
         /// <inheritdoc />
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            base.Configure(app, env);
+            base.Configure(app.MapPost("/test", "/api/values/test"), env);
 
             app.UseEndpoints(endpoints =>
             {

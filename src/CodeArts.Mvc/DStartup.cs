@@ -254,9 +254,8 @@ namespace CodeArts.Mvc
 
             config.Routes.IgnoreRoute("ignore", "{resource}.axd/{*pathInfo}");
 #endif
-
             //? 注册默认路由
-            config.Routes.Add("route", config.Routes.CreateRoute("api/{controller}/{id}", new { id = RouteParameter.Optional }, new object()));
+            config.Routes.Add("code-arts", config.Routes.CreateRoute("api/{controller}/{id}", new { id = RouteParameter.Optional }, new object()));
 
             //?天空之城JSON转换器（修复长整型前端数据丢失的问题）
             config.Formatters.Remove(config.Formatters.XmlFormatter);
