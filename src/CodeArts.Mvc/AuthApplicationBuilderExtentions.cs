@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using CodeArts;
 using CodeArts.Mvc;
-#elif !NET40
+#endif
+#if !NET40
 using System.Threading.Tasks;
 #endif
 using CodeArts.Cache;
@@ -16,6 +17,7 @@ using System.IO;
 using System.Text;
 using CodeArts.Exceptions;
 using System.Net;
+using System.Web;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.AspNetCore.Builder
 #else
@@ -63,204 +65,56 @@ namespace CodeArts.Mvc.Builder
 
             })).Map("/login", builder => builder.Run(async context =>
             {
-                if (!context.Request.Query.TryGetValue("debug", out StringValues debug) || !bool.TryParse(debug, out bool isDebug) || !isDebug)
+                var result = VerifyAuthCode(context);
+
+                if (result.Success)
                 {
-                    if (!context.Request.Query.TryGetValue("authCode", out StringValues value) || value == StringValues.Empty)
+                    var loginUrl = "login".Config<string>();
+
+                    if (string.IsNullOrEmpty(loginUrl))
                     {
-                        await context.Response.WriteJsonAsync(DResult.Error("验证码不能为空!"));
-                        return;
+                        await context.Response.WriteJsonAsync(DResult.Error("未配置登录接口!", CodeArts.StatusCodes.ServError));
                     }
-
-                    string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
-                    string url = context.GetRefererUrlStrings();
-
-                    string md5 = $"{id}-{url}".Md5();
-
-                    string authCache = AuthCode.Get<string>(md5);
-
-                    if (string.IsNullOrEmpty(authCache))
+                    else if (loginUrl.IsUrl() ? !Uri.TryCreate(loginUrl, UriKind.Absolute, out Uri loginUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{loginUrl.TrimStart('/')}", UriKind.Absolute, out loginUri))
                     {
-                        await context.Response.WriteJsonAsync(DResult.Error("验证码已过期!"));
-                        return;
-                    }
-
-                    string authCode = value.ToString();
-
-                    if (authCode.Trim().ToLower() != authCache.Trim().ToLower())
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Error("验证码错误!"));
-                        return;
-                    }
-                }
-
-                var loginUrl = "login".Config<string>();
-
-                if (string.IsNullOrEmpty(loginUrl))
-                {
-                    await context.Response.WriteJsonAsync(DResult.Error("未配置登录接口!", CodeArts.StatusCodes.ServError));
-                    return;
-                }
-
-                if (loginUrl.IsUrl() ? !Uri.TryCreate(loginUrl, UriKind.Absolute, out Uri loginUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{loginUrl.TrimStart('/')}", UriKind.Absolute, out loginUri))
-                {
-                    await context.Response.WriteJsonAsync(DResult.Error("不规范的登录接口!", CodeArts.StatusCodes.NonstandardServerError));
-                    return;
-                }
-
-
-                var request = loginUri
-                    .AsRequestable()
-                    .ToQueryString(context.Request.QueryString.ToString());
-
-                string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
-
-                if (contentType.Contains("application/x-www-form-urlencoded"))
-                {
-                    request.ToForm(context.Request.Form);
-                }
-                else if (context.Request.Body.Length > 0)
-                {
-                    using (var reader = new StreamReader(context.Request.Body))
-                    {
-                        if (contentType.Contains("application/json"))
-                        {
-                            request.ToJson(reader.ReadToEnd());
-                        }
-                        else if (contentType.Contains("application/xml"))
-                        {
-                            request.ToXml(reader.ReadToEnd());
-                        }
-                        else
-                        {
-                            await context.Response.WriteJsonAsync(DResult.Error($"未实现({contentType})类型传输!"));
-                            return;
-                        }
-                    }
-                }
-                try
-                {
-                    var result = await request
-                        .Json<ServResult<Dictionary<string, object>>>()
-                        .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(10000));
-
-                    if (result.Success)
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Ok(JwtTokenGen.Create(result.Data)));
+                        await context.Response.WriteJsonAsync(DResult.Error("不规范的登录接口!", CodeArts.StatusCodes.NonstandardServerError));
                     }
                     else
                     {
-                        await context.Response.WriteJsonAsync(result);
+                        await context.Response.WriteJsonAsync(await RequestAsync(loginUri, context));
                     }
                 }
-                catch (Exception e)
+                else
                 {
-                    await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e));
+                    await context.Response.WriteJsonAsync(result);
                 }
-
 
             })).Map("/register", builder => builder.Run(async context =>
+            {
+                var result = VerifyAuthCode(context);
+
+                if (result.Success)
                 {
-                    if (!context.Request.Query.TryGetValue("debug", out StringValues debug) || !bool.TryParse(debug, out bool isDebug) || !isDebug)
-                    {
-                        if (!context.Request.Query.TryGetValue("authCode", out StringValues value) || value == StringValues.Empty)
-                        {
-                            await context.Response.WriteJsonAsync(DResult.Error("验证码不能为空!"));
-                            return;
-                        }
-
-                        string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
-                        string url = context.GetRefererUrlStrings();
-
-                        string md5 = $"{id}-{url}".Md5();
-
-                        string authCache = AuthCode.Get<string>(md5);
-
-                        if (string.IsNullOrEmpty(authCache))
-                        {
-                            await context.Response.WriteJsonAsync(DResult.Error("验证码已过期!"));
-                            return;
-                        }
-
-                        string authCode = value.ToString();
-
-                        if (authCode.Trim().ToLower() != authCache.Trim().ToLower())
-                        {
-                            await context.Response.WriteJsonAsync(DResult.Error("验证码错误!"));
-                            return;
-                        }
-                    }
-
                     var registerUrl = "register".Config<string>();
 
                     if (string.IsNullOrEmpty(registerUrl))
                     {
                         await context.Response.WriteJsonAsync(DResult.Error("未配置注册接口!", CodeArts.StatusCodes.ServError));
-                        return;
                     }
-
-                    if (registerUrl.IsUrl() ? !Uri.TryCreate(registerUrl, UriKind.Absolute, out Uri registerUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{registerUrl.TrimStart('/')}", UriKind.Absolute, out registerUri))
+                    else if (registerUrl.IsUrl() ? !Uri.TryCreate(registerUrl, UriKind.Absolute, out Uri registerUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{registerUrl.TrimStart('/')}", UriKind.Absolute, out registerUri))
                     {
                         await context.Response.WriteJsonAsync(DResult.Error("不规范的注册接口!", CodeArts.StatusCodes.NonstandardServerError));
-                        return;
                     }
-
-                    var request = registerUrl
-                        .AsRequestable()
-                        .ToQueryString(context.Request.QueryString.ToString());
-
-                    string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
-
-                    if (contentType.Contains("application/x-www-form-urlencoded"))
+                    else
                     {
-                        request.ToForm(context.Request.Form);
+                        await context.Response.WriteJsonAsync(await RequestAsync(registerUri, context));
                     }
-                    else if (context.Request.Body.Length > 0)
-                    {
-                        using (var reader = new StreamReader(context.Request.Body))
-                        {
-                            if (contentType.Contains("application/json"))
-                            {
-                                request.ToJson(reader.ReadToEnd());
-                            }
-                            else if (contentType.Contains("application/xml"))
-                            {
-                                request.ToXml(reader.ReadToEnd());
-                            }
-                            else
-                            {
-                                await context.Response.WriteJsonAsync(DResult.Error($"未实现({contentType})类型传输!"));
-                                return;
-                            }
-                        }
-                    }
-
-                    try
-                    {
-                        var result = await request
-                                .Json<ServResult<Dictionary<string, object>>>()
-                                .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(10000));
-
-                        if (result.Success)
-                        {
-                            if (result.Data is null || result.Data.Count == 0)
-                            {
-                                await context.Response.WriteJsonAsync(DResult.Ok());
-                            }
-                            else
-                            {
-                                await context.Response.WriteJsonAsync(DResult.Ok(JwtTokenGen.Create(result.Data)));
-                            }
-                        }
-                        else
-                        {
-                            await context.Response.WriteJsonAsync(result);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e));
-                    }
-                }));
+                }
+                else
+                {
+                    await context.Response.WriteJsonAsync(result);
+                }
+            }));
         }
 #else
         public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app)
@@ -287,117 +141,28 @@ namespace CodeArts.Mvc.Builder
             }).Map("/login", async context =>
 #endif
             {
-                var debug = context.Request.QueryString.Get("debug");
+                var result = VerifyAuthCode(context);
 
-                if (string.IsNullOrEmpty(debug) || !bool.TryParse(debug, out bool isDebug) || !isDebug)
+                if (result.Success)
                 {
-                    var value = context.Request.QueryString.Get("authCode");
+                    var loginUrl = "login".Config<string>();
 
-                    if (string.IsNullOrEmpty(value))
+                    if (string.IsNullOrEmpty(loginUrl))
                     {
-                        context.Response.WriteJson(DResult.Error("验证码不能为空!"));
-                        return;
+                        context.Response.WriteJson(DResult.Error("未配置登录接口!", StatusCodes.ServError));
                     }
-
-                    string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
-                    string url = context.GetRefererUrlStrings();
-
-                    string md5 = $"{id}-{url}".Md5();
-
-                    string authCache = AuthCode.Get<string>(md5);
-
-                    if (string.IsNullOrEmpty(authCache))
+                    else if (loginUrl.IsUrl() ? !Uri.TryCreate(loginUrl, UriKind.Absolute, out Uri loginUri) : !Uri.TryCreate($"{context.Request.Url.Scheme}://{context.Request.Url.Authority}/{loginUrl.TrimStart('/')}", UriKind.Absolute, out loginUri))
                     {
-                        context.Response.WriteJson(DResult.Error("验证码已过期!"));
-                        return;
-                    }
-
-                    string authCode = value.ToString();
-
-                    if (authCode.Trim().ToLower() != authCache.Trim().ToLower())
-                    {
-                        context.Response.WriteJson(DResult.Error("验证码错误!"));
-                        return;
-                    }
-                }
-
-                var loginUrl = "login".Config<string>();
-
-                if (string.IsNullOrEmpty(loginUrl))
-                {
-                    context.Response.WriteJson(DResult.Error("未配置登录接口!", StatusCodes.ServError));
-                    return;
-                }
-
-                if (loginUrl.IsUrl() ? !Uri.TryCreate(loginUrl, UriKind.Absolute, out Uri loginUri) : !Uri.TryCreate($"{context.Request.Url.Scheme}://{context.Request.Url.Authority}/{loginUrl.TrimStart('/')}", UriKind.Absolute, out loginUri))
-                {
-                    context.Response.WriteJson(DResult.Error("不规范的登录接口!", StatusCodes.NonstandardServerError));
-                    return;
-                }
-
-                var request = loginUri
-                    .AsRequestable()
-                    .ToQueryString(context.Request.QueryString.ToString());
-
-                string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
-
-                if (contentType.Contains("application/x-www-form-urlencoded"))
-                {
-                    request.ToForm(context.Request.Form);
-                }
-
-                var body = context.Request.GetBufferlessInputStream();
-
-                if (body.Length > 0)
-                {
-                    using (var reader = new StreamReader(body))
-                    {
-                        if (contentType.Contains("application/json"))
-                        {
-                            request.ToJson(reader.ReadToEnd());
-                        }
-                        else if (contentType.Contains("application/xml"))
-                        {
-                            request.ToXml(reader.ReadToEnd());
-                        }
-                        else
-                        {
-                            context.Response.WriteJson(DResult.Error($"未实现({contentType})类型传输!"));
-                            return;
-                        }
-                    }
-                }
-
-                try
-                {
-#if NET40
-                    var result = request
-                            .Json<ServResult<Dictionary<string, object>>>()
-                            .Request(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
-#else
-                    var result = await request
-                            .Json<ServResult<Dictionary<string, object>>>()
-                            .RequestAsync(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
-#endif
-                    if (result.Success)
-                    {
-                        if (result.Data is null || result.Data.Count == 0)
-                        {
-                            context.Response.WriteJson(DResult.Ok());
-                        }
-                        else
-                        {
-                            context.Response.WriteJson(DResult.Ok(JwtTokenGen.Create(result.Data)));
-                        }
+                        context.Response.WriteJson(DResult.Error("不规范的登录接口!", StatusCodes.NonstandardServerError));
                     }
                     else
                     {
-                        context.Response.WriteJson(result);
+#if NET40
+                        context.Response.WriteJson(Request(loginUri, context));
+#else
+                        context.Response.WriteJson(await RequestAsync(loginUri, context));
+#endif
                     }
-                }
-                catch (Exception e)
-                {
-                    context.Response.WriteJson(ExceptionHandler.Handler(e));
                 }
             })
 #if NET40
@@ -406,93 +171,184 @@ namespace CodeArts.Mvc.Builder
             .Map("/register", async context =>
 #endif
             {
-                var debug = context.Request.QueryString.Get("debug");
+                var result = VerifyAuthCode(context);
 
-                if (string.IsNullOrEmpty(debug) || !bool.TryParse(debug, out bool isDebug) || !isDebug)
+                if (result.Success)
                 {
-                    var value = context.Request.QueryString.Get("authCode");
+                    var registerUrl = "register".Config<string>();
 
-                    if (string.IsNullOrEmpty(value))
+                    if (string.IsNullOrEmpty(registerUrl))
                     {
-                        context.Response.WriteJson(DResult.Error("验证码不能为空!"));
-                        return;
+                        context.Response.WriteJson(DResult.Error("未配置注册接口!", StatusCodes.ServError));
                     }
-
-                    string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
-                    string url = context.GetRefererUrlStrings();
-
-                    string md5 = $"{id}-{url}".Md5();
-
-                    string authCache = AuthCode.Get<string>(md5);
-
-                    if (string.IsNullOrEmpty(authCache))
+                    else if (registerUrl.IsUrl() ? !Uri.TryCreate(registerUrl, UriKind.Absolute, out Uri registerUri) : !Uri.TryCreate($"{context.Request.Url.Scheme}://{context.Request.Url.Authority}/{registerUrl.TrimStart('/')}", UriKind.Absolute, out registerUri))
                     {
-                        context.Response.WriteJson(DResult.Error("验证码已过期!"));
-                        return;
-                    }
-
-                    string authCode = value.ToString();
-
-                    if (authCode.Trim().ToLower() != authCache.Trim().ToLower())
-                    {
-                        context.Response.WriteJson(DResult.Error("验证码错误!"));
-                        return;
-                    }
-                }
-
-                var registerUrl = "register".Config<string>();
-
-                if (string.IsNullOrEmpty(registerUrl))
-                {
-                    context.Response.WriteJson(DResult.Error("未配置注册接口!", StatusCodes.ServError));
-                    return;
-                }
-
-                if (registerUrl.IsUrl() ? !Uri.TryCreate(registerUrl, UriKind.Absolute, out Uri registerUri) : !Uri.TryCreate($"{context.Request.Url.Scheme}://{context.Request.Url.Authority}/{registerUrl.TrimStart('/')}", UriKind.Absolute, out registerUri))
-                {
-                    context.Response.WriteJson(DResult.Error("不规范的注册接口!", StatusCodes.NonstandardServerError));
-                    return;
-                }
-
-                try
-                {
-#if NET40
-                    var result = registerUri.AsRequestable()
-                        .ToQueryString(context.Request.QueryString.ToString())
-                        .Json<ServResult<Dictionary<string, object>>>()
-                        .Get();
-#else
-                    var result = await registerUri.AsRequestable()
-                        .ToQueryString(context.Request.QueryString.ToString())
-                        .Json<ServResult<Dictionary<string, object>>>()
-                        .GetAsync();
-#endif
-
-
-                    if (result.Success)
-                    {
-                        if (result.Data is null || result.Data.Count == 0)
-                        {
-                            context.Response.WriteJson(DResult.Ok());
-                        }
-                        else
-                        {
-                            context.Response.WriteJson(DResult.Ok(JwtTokenGen.Create(result.Data)));
-                        }
+                        context.Response.WriteJson(DResult.Error("不规范的注册接口!", StatusCodes.NonstandardServerError));
                     }
                     else
                     {
-                        context.Response.WriteJson(result);
+#if NET40
+                        context.Response.WriteJson(Request(registerUri, context));
+#else
+                        context.Response.WriteJson(await RequestAsync(registerUri, context));
+#endif
                     }
                 }
-                catch (Exception e)
+                else
                 {
-                    context.Response.WriteJson(ExceptionHandler.Handler(e));
+                    context.Response.WriteJson(result);
                 }
             });
         }
 #endif
         #region Private
+
+        /// <summary>
+        /// 请求
+        /// </summary>
+        /// <param name="uri">请求地址</param>
+        /// <param name="context">当前上下文</param>
+        /// <returns></returns>
+#if NET40
+        private static IResult Request(Uri uri, HttpContext context)
+#else
+        private static async Task<IResult> RequestAsync(Uri uri, HttpContext context)
+#endif
+        {
+            var request = uri
+                .AsRequestable()
+                .ToQueryString(context.Request.QueryString.ToString());
+
+            string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
+
+            if (contentType.Contains("application/x-www-form-urlencoded"))
+            {
+                request.ToForm(context.Request.Form);
+            }
+            else if (contentType.Contains("application/json") || contentType.Contains("application/xml"))
+            {
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
+                {
+                    var length = context.Request.ContentLength.Value;
+                    var buffer = new byte[length];
+                    await context.Request.Body.ReadAsync(buffer, 0, buffer.Length);
+
+                    var body = Encoding.UTF8.GetString(buffer);
+
+                    if (contentType.Contains("application/json"))
+                    {
+                        request.ToJson(body);
+                    }
+                    else
+                    {
+                        request.ToXml(body);
+                    }
+                }
+#else
+                if (context.Request.InputStream.Length > 0)
+                {
+                    using (var reader = new StreamReader(context.Request.InputStream))
+                    {
+                        if (contentType.Contains("application/json"))
+                        {
+                            request.ToJson(reader.ReadToEnd());
+                        }
+                        else
+                        {
+                            request.ToXml(reader.ReadToEnd());
+                        }
+                    }
+                }
+#endif
+            }
+            else
+            {
+                return DResult.Error($"未实现({contentType})类型传输!");
+            }
+
+            try
+            {
+
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                var result = await request
+                        .Json<ServResult<Dictionary<string, object>>>()
+                        .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(10000));
+#elif NET40
+                var result = request
+                        .Json<ServResult<Dictionary<string, object>>>()
+                        .Request(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
+#else
+                var result = await request
+                        .Json<ServResult<Dictionary<string, object>>>()
+                        .RequestAsync(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
+#endif
+                if (result.Success)
+                {
+                    if (result.Data is null || result.Data.Count == 0)
+                    {
+                        return DResult.Ok();
+                    }
+
+                    return DResult.Ok(JwtTokenGen.Create(result.Data));
+                }
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                return ExceptionHandler.Handler(e);
+            }
+        }
+
+        /// <summary>
+        /// 验证验证码
+        /// </summary>
+        /// <param name="context">请求上下文</param>
+        /// <returns></returns>
+        private static DResult VerifyAuthCode(HttpContext context)
+        {
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+            if (!context.Request.Query.TryGetValue("debug", out StringValues debug) || !bool.TryParse(debug, out bool isDebug) || !isDebug)
+            {
+                if (!context.Request.Query.TryGetValue("authCode", out StringValues value) || value == StringValues.Empty)
+                {
+                    return DResult.Error("验证码不能为空!");
+                }        
+#else
+            var debug = context.Request.QueryString.Get("debug");
+
+            if (string.IsNullOrEmpty(debug) || !bool.TryParse(debug, out bool isDebug) || !isDebug)
+            {
+                var value = context.Request.QueryString.Get("authCode");
+                if (string.IsNullOrEmpty(value))
+                {
+                    return DResult.Error("验证码不能为空!");
+                }
+#endif
+                string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
+                string url = context.GetRefererUrlStrings();
+
+                string md5 = $"{id}-{url}".Md5();
+
+                string authCache = AuthCode.Get<string>(md5);
+
+                if (string.IsNullOrEmpty(authCache))
+                {
+                    return DResult.Error("验证码已过期!");
+                }
+
+                string authCode = value.ToString();
+
+                if (authCode.Trim().ToLower() != authCache.Trim().ToLower())
+                {
+                    return DResult.Error("验证码错误!");
+                }
+            }
+
+            return DResult.Ok();
+        }
+
         /// <summary>
         /// 生成随机的字符串
         /// </summary>

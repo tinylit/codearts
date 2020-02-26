@@ -202,50 +202,52 @@ namespace CodeArts.Mvc
                 {
                     request.ToForm(context.Request.Form);
                 }
-
-#if  NETSTANDARD2_0 || NETCOREAPP3_1
-                else if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
+                else if (contentType.Contains("application/json") || contentType.Contains("application/xml"))
                 {
-                    var length = context.Request.ContentLength.Value;
-                    var buffer = new byte[length];
-                    await context.Request.Body.ReadAsync(buffer, 0, buffer.Length);
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                    if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
+                    {
+                        var length = context.Request.ContentLength.Value;
+                        var buffer = new byte[length];
+                        await context.Request.Body.ReadAsync(buffer, 0, buffer.Length);
 
-                    var body = Encoding.UTF8.GetString(buffer);
+                        var body = Encoding.UTF8.GetString(buffer);
 
-                    if (contentType.Contains("application/json"))
-                    {
-                        request.ToJson(body);
-                    }
-                    else if (contentType.Contains("application/xml"))
-                    {
-                        request.ToXml(body);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException($"未实现({contentType})类型传输!");
-                    }
-
-                }
-#else
-                else if (context.Request.InputStream.Length > 0)
-                {
-                    using (var reader = new StreamReader(context.Request.InputStream))
-                    {
                         if (contentType.Contains("application/json"))
                         {
-                            request.ToJson(reader.ReadToEnd());
-                        }
-                        else if (contentType.Contains("application/xml"))
-                        {
-                            request.ToXml(reader.ReadToEnd());
+                            request.ToJson(body);
                         }
                         else
                         {
-                            throw new NotImplementedException($"未实现({contentType})类型传输!");
+                            request.ToXml(body);
                         }
                     }
-                }
+#else
+                    if (context.Request.InputStream.Length > 0)
+                    {
+                        using (var reader = new StreamReader(context.Request.InputStream))
+                        {
+                            if (contentType.Contains("application/json"))
+                            {
+                                request.ToJson(reader.ReadToEnd());
+                            }
+                            else
+                            {
+                                request.ToXml(reader.ReadToEnd());
+                            }
+                        }
+                    }
 #endif
+                }
+                else
+                {
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                    await context.Response.WriteJsonAsync(DResult.Error($"未实现({contentType})类型传输!"));
+#else
+                    context.Response.WriteJson(DResult.Error($"未实现({contentType})类型传输!"));
+#endif
+                    return;
+                }
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
