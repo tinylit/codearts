@@ -1,10 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mvc.Core.Domain;
+using System;
 using CodeArts;
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Net.Http.Headers;
+using Mvc.Core.Dtos;
 
 namespace Mvc.Core.Controllers
 {
@@ -36,7 +40,7 @@ namespace Mvc.Core.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class ValuesController : BaseController
+    public class ValuesController : BaseController<UserDto>
     {
         private readonly IDependency dependency;
 
@@ -146,11 +150,11 @@ namespace Mvc.Core.Controllers
         /// </summary>
         /// <param name="weather"></param>
         /// <returns></returns>
-
+        [Authorize]
         [HttpPost("test")]
         public DResult Test([FromBody]WeatherForecast weather)
         {
-            return DResult.Ok(weather);
+            return DResult.Ok(MyUser);
         }
     }
 }

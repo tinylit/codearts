@@ -67,24 +67,26 @@ namespace CodeArts.Mvc
 
     public abstract class BaseController<TUser> : BaseController where TUser : class
     {
-        private TUser _profile;
+        private TUser _user;
         /// <summary>
         /// 用户信息
         /// </summary>
-        public TUser Profile
+        public TUser MyUser
         {
             get
             {
                 if (User is null || User.Identity is null || !User.Identity.IsAuthenticated)
                     return null;
 
-                if (_profile == null)
+                if (_user == null)
                 {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                     var authorize = HttpContext.Request.Headers[HeaderNames.Authorization];
                     var tokenHandler = new JwtSecurityTokenHandler();
-                    var token = tokenHandler.ReadJwtToken(authorize.ToString());
-                    _profile = token.Payload.MapTo<TUser>();
+                    var value = authorize.ToString();
+                    var values = value.Split(' ');
+                    var token = tokenHandler.ReadJwtToken(values[values.Length - 1]);
+                    _user = token.Payload.MapTo<TUser>();
 #else
                     var serializer = new JsonNetSerializer();
                     var provider = new UtcDateTimeProvider();
@@ -92,11 +94,11 @@ namespace CodeArts.Mvc
                     var urlEncoder = new JwtBase64UrlEncoder();
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
 
-                    _profile = decoder.DecodeToObject<TUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
+                    _user = decoder.DecodeToObject<TUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
 #endif
                 }
 
-                return _profile;
+                return _user;
             }
         }
     }

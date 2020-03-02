@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Serialization;
 
 namespace CodeArts
@@ -49,6 +50,81 @@ namespace CodeArts
         /// </summary>
         [XmlElement("timestamp")]
         public DateTime Timestamp { get; set; }
+
+        /// <summary>
+        /// 成功
+        /// </summary>
+        public static ServResult Ok() => new ServResult { Code = StatusCodes.OK };
+
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <param name="data">数据</param>
+        /// <returns></returns>IRequestable
+        public static ServResult<T> Ok<T>(T data) => new ServResult<T>
+        {
+            Code = StatusCodes.OK,
+            Data = data
+        };
+
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <param name="data">数据</param>
+        /// <returns></returns>
+        public static ServResults<T> Ok<T>(PagedList<T> data) => new ServResults<T>
+        {
+            Code = StatusCodes.OK,
+            Data = data.ToList(),
+            Count = data.Count
+        };
+
+        /// <summary>
+        /// 错误信息
+        /// </summary>
+        /// <param name="msg">错误消息</param>
+        /// <param name="errorCode">错误代码</param>
+        /// <returns></returns>
+        public static ServResult Error(string msg, int errorCode = StatusCodes.Error)
+        {
+            return new ServResult
+            {
+                Code = errorCode,
+                Msg = msg
+            };
+        }
+
+        /// <summary>
+        /// 错误信息
+        /// </summary>
+        /// <typeparam name="T">实体</typeparam>
+        /// <param name="msg">错误消息</param>
+        /// <param name="errorCode">错误代码</param>
+        /// <returns></returns>
+        public static ServResult<T> Error<T>(string msg, int errorCode = StatusCodes.Error)
+        {
+            return new ServResult<T>
+            {
+                Code = errorCode,
+                Msg = msg
+            };
+        }
+
+        /// <summary>
+        /// 错误信息
+        /// </summary>
+        /// <typeparam name="T">实体</typeparam>
+        /// <param name="msg">错误消息</param>
+        /// <param name="errorCode">错误代码</param>
+        /// <returns></returns>
+        public static ServResults<T> Errors<T>(string msg, int errorCode = StatusCodes.Error)
+        {
+            return new ServResults<T>
+            {
+                Code = errorCode,
+                Msg = msg
+            };
+        }
 
         /// <summary>
         /// 类型默认转换

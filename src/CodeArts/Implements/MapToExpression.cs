@@ -49,7 +49,7 @@ namespace CodeArts.Implements
 
                 return value;
             }
-            catch (NotSupportedException)
+            catch (NotSupportedException e)
             {
                 return def;
             }
@@ -1437,9 +1437,8 @@ namespace CodeArts.Implements
 
                 var typeArgument = typeArguments.First();
 
-                if (!typeArgument.IsValueType || !typeArgument.IsGenericType || typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)) continue;
-
-                return ByEnumarableKeyValuePairToCommon<TResult>(sourceType, conversionType, type, typeArgument.GetGenericArguments());
+                if (typeArgument.IsValueType && typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    return ByEnumarableKeyValuePairToCommon<TResult>(sourceType, conversionType, type, typeArgument.GetGenericArguments());
             }
 
             return base.ByIEnumarableLikeToCommon<TResult>(sourceType, conversionType);
