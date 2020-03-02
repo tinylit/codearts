@@ -49,7 +49,7 @@ namespace CodeArts.Implements
 
                 return value;
             }
-            catch (NotSupportedException e)
+            catch (NotSupportedException)
             {
                 return def;
             }
