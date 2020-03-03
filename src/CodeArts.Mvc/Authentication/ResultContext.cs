@@ -1,9 +1,9 @@
 ﻿#if NET40 || NET45 || NET451 || NET452 ||NET461
 using JWT;
+using JWT.Algorithms;
 using JWT.Serializers;
 using System;
 using System.Collections.Generic;
-using System.IO;
 #if NET40
 using System.Security.Principal;
 #else
@@ -99,7 +99,11 @@ namespace CodeArts.Mvc.Authentication
                     var provider = new UtcDateTimeProvider();
                     var validator = new JwtValidator(serializer, provider);
                     var urlEncoder = new JwtBase64UrlEncoder();
+#if NET461
+                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, new HMACSHA256Algorithm());
+#else
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
+#endif
 
                     try
                     {

@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 #else
 using System.Web.Http;
 using JWT;
+using JWT.Algorithms;
 using JWT.Serializers;
 #endif
 
@@ -21,7 +22,7 @@ namespace CodeArts.Mvc
     public abstract class BaseController : ControllerBase
 
 #else
-    
+
     public abstract class BaseController : ApiController
 #endif
     {
@@ -92,7 +93,11 @@ namespace CodeArts.Mvc
                     var provider = new UtcDateTimeProvider();
                     var validator = new JwtValidator(serializer, provider);
                     var urlEncoder = new JwtBase64UrlEncoder();
+#if NET461
+                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, new HMACSHA256Algorithm());
+#else
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
+#endif
 
                     _user = decoder.DecodeToObject<TUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
 #endif

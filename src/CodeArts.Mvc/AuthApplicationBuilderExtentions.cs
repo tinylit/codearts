@@ -16,7 +16,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using CodeArts.Exceptions;
-using System.Net;
 using System.Web;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.AspNetCore.Builder
