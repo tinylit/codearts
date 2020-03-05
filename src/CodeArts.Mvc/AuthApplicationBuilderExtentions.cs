@@ -68,6 +68,8 @@ namespace CodeArts.Mvc.Builder
                     if (result.Success)
                     {
                         AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+
+                        result.Data = null;
                     }
 
                     await context.Response.WriteJsonAsync(result);
@@ -170,6 +172,8 @@ namespace CodeArts.Mvc.Builder
                     if (result.Success)
                     {
                         AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+
+                        result.Data = null;
                     }
 
                     context.Response.WriteJson(result);
