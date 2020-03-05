@@ -350,7 +350,14 @@ namespace CodeArts.Implements
             {
                 if (left.Type != right.Type)
                 {
-                    right = Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type);
+                    try
+                    {
+                        right = Convert(right, left.Type);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        right = Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type);
+                    }
                 }
 
                 if (left.Type.IsValueType || AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value)
@@ -408,19 +415,33 @@ namespace CodeArts.Implements
                         type = Enum.GetUnderlyingType(type);
                     }
 
-                    list.Add(Assign(nameExp, Convert(node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type)), info.ParameterType)));
+                    try
+                    {
+                        list.Add(Assign(nameExp, Convert(Convert(node, type), info.ParameterType)));
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        list.Add(Assign(nameExp, Convert(node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type)), info.ParameterType)));
+                    }
 
                     return;
                 }
 
-                var invoke = Create(node.Type, type);
+                try
+                {
+                    list.Add(Assign(nameExp, Convert(node, type)));
+                }
+                catch (InvalidOperationException)
+                {
+                    var invoke = Create(node.Type, type);
 
-                var coreExp = invoke.Method.IsStatic ?
-                    Call(null, invoke.Method, node)
-                    :
-                    Call(Constant(invoke.Target), invoke.Method, node);
+                    var coreExp = invoke.Method.IsStatic ?
+                        Call(null, invoke.Method, node)
+                        :
+                        Call(Constant(invoke.Target), invoke.Method, node);
 
-                list.Add(Assign(nameExp, Condition(Equal(node, Constant(type)), Constant(type), Convert(coreExp, type))));
+                    list.Add(Assign(nameExp, Convert(coreExp, type)));
+                }
             }
         }
 
