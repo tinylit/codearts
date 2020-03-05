@@ -134,5 +134,12 @@ namespace MVC461.Controllers
                 account = account
             });
         }
+
+        [HttpGet]
+        [ActionName("sms")]
+        public DResult AuthCode(string mobile, string authCode)
+        {
+            return DResult.Ok(new Random().Next(1000, 10000));
+        }
     }
 }

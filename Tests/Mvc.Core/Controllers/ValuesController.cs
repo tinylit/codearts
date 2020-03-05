@@ -156,5 +156,17 @@ namespace Mvc.Core.Controllers
         {
             return DResult.Ok(MyUser);
         }
+
+        /// <summary>
+        /// 短信验证码
+        /// </summary>
+        /// <param name="mobile">手机号</param>
+        /// <param name="authCode">验证码</param>
+        /// <returns></returns>
+        [HttpGet("sms")]
+        public DResult AuthCode(string mobile, string authCode)
+        {
+            return DResult.Ok(new Random().Next(1000, 10000));
+        }
     }
 }

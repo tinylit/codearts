@@ -196,7 +196,7 @@ namespace CodeArts.Mvc
                     request.AppendHeader("Authorization", token);
                 }
 
-                string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
+                string contentType = context.Request.ContentType?.ToLower() ?? string.Empty;
 
                 if (contentType.Contains("application/x-www-form-urlencoded"))
                 {
@@ -239,7 +239,7 @@ namespace CodeArts.Mvc
                     }
 #endif
                 }
-                else
+                else if (!string.IsNullOrEmpty(contentType))
                 {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                     await context.Response.WriteJsonAsync(DResult.Error($"未实现({contentType})类型传输!"));

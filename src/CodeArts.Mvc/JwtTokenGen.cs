@@ -1,14 +1,13 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 #else
 using JWT;
-using JWT.Algorithms;
 using JWT.Serializers;
 #endif
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace CodeArts.Mvc
 {
@@ -53,7 +52,7 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         public static string Create(Dictionary<string, object> user, double expires = 12D)
         {
-            var algorithm = new HMACSHA256Algorithm();
+            var algorithm = JwtAlgorithmGen.Create();
             var serializer = new JsonNetSerializer();
             var urlEncoder = new JwtBase64UrlEncoder();
             var encoder = new JwtEncoder(algorithm, serializer, urlEncoder);

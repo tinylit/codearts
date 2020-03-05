@@ -38,7 +38,7 @@ namespace CodeArts.Mvc.Builder
         /// <summary>
         /// 登录配置。
         /// 通过“/login”登录。
-        /// 通过“/authcode”获取验证码。
+        /// 通过“/authcode”获取验证码；通过“/authcode{pathString}”会自动调用当前项目“{pathString}”接口，并将随机验证码作为【authCode】参数传递给接口，接口可选择是否返回新的验证码。
         /// 请在配置文件中配置“login”项(可以是相对地址或绝对地址)。
         /// 添加请求参数“debug”为真时，不进行验证码验证。
         /// 自定义请参考<see cref="Consts"/>。
@@ -51,16 +51,35 @@ namespace CodeArts.Mvc.Builder
             return app.Map("/authCode", builder => builder.Run(async context =>
             {
                 string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
-                byte[] bytes = CreateValidateGraphic(code);
 
                 string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
                 string url = context.GetRefererUrlStrings();
 
                 string md5 = $"{id}-{url}".Md5();
 
-                AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+                if (context.Request.Path.HasValue)
+                {
+                    var result = await $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path.Value}".AsRequestable()
+                      .ToQueryString(context.Request.QueryString.ToString())
+                      .ToQueryString($"authCode={code}")
+                      .Json<ServResult<string>>()
+                      .GetAsync();
 
-                await context.Response.WriteImageAsync(bytes);
+                    if (result.Success)
+                    {
+                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+                    }
+
+                    await context.Response.WriteJsonAsync(result);
+                }
+                else
+                {
+                    byte[] bytes = CreateValidateGraphic(code);
+
+                    AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+
+                    await context.Response.WriteImageAsync(bytes);
+                }
 
             })).Map("/login", builder => builder.Run(async context =>
             {
@@ -118,25 +137,54 @@ namespace CodeArts.Mvc.Builder
 #else
         public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app)
         {
+#if NET40
             return app.Map("/authCode", context =>
+#else
+            return app.Map("/authCode", async context =>
+#endif
             {
                 string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
-                byte[] bytes = CreateValidateGraphic(code);
-
                 string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
                 string url = context.GetRefererUrlStrings();
 
                 string md5 = $"{id}-{url}".Md5();
 
-                AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
-
+                PathString absolutePath = new PathString(context.Request.Url.AbsolutePath);
+                if (absolutePath.StartsWithSegments("/authCode", StringComparison.OrdinalIgnoreCase, out PathString path) && path.HasValue)
+                {
+                    string api = $"{context.Request.Url.Scheme}://{context.Request.Url.Authority}{path.Value}";
 #if NET40
-                context.Response.WriteImage(bytes);
+                    var result = api.AsRequestable()
+#else
+                    var result = await api.AsRequestable()
+#endif
+                        .ToQueryString(context.Request.QueryString.ToString())
+                        .ToQueryString($"authCode={code}")
+                        .Json<ServResult<string>>()
+#if NET40
+                        .Get();
+#else
+                        .GetAsync();
+#endif
 
+                    if (result.Success)
+                    {
+                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+                    }
+
+                    context.Response.WriteJson(result);
+                }
+                else
+                {
+                    byte[] bytes = CreateValidateGraphic(code);
+
+                    AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+
+                    context.Response.WriteImage(bytes);
+                }
+#if NET40
             }).Map("/login", context =>
 #else
-                return Task.Run(() => context.Response.WriteImage(bytes));
-
             }).Map("/login", async context =>
 #endif
             {
@@ -218,7 +266,7 @@ namespace CodeArts.Mvc.Builder
                 .AsRequestable()
                 .ToQueryString(context.Request.QueryString.ToString());
 
-            string contentType = context.Request.ContentType?.ToLower() ?? "application/json";
+            string contentType = context.Request.ContentType?.ToLower() ?? string.Empty;
 
             if (contentType.Contains("application/x-www-form-urlencoded"))
             {
@@ -261,7 +309,7 @@ namespace CodeArts.Mvc.Builder
                 }
 #endif
             }
-            else
+            else if (!string.IsNullOrEmpty(contentType))
             {
                 return DResult.Error($"未实现({contentType})类型传输!");
             }
@@ -313,7 +361,7 @@ namespace CodeArts.Mvc.Builder
                 if (!context.Request.Query.TryGetValue("authCode", out StringValues value) || value == StringValues.Empty)
                 {
                     return DResult.Error("验证码不能为空!");
-                }        
+                }
 #else
             var debug = context.Request.QueryString.Get("debug");
 
@@ -343,6 +391,8 @@ namespace CodeArts.Mvc.Builder
                 {
                     return DResult.Error("验证码错误!");
                 }
+
+                AuthCode.Remove(md5);
             }
 
             return DResult.Ok();
