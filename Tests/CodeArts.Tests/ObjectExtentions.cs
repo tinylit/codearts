@@ -25,6 +25,20 @@ namespace CodeArts.Tests
         public DateTime Date { get; set; }
     }
 
+    public class T1
+    {
+        public int A { get; set; }
+
+        public string B { get; set; }
+    }
+
+    public class T2
+    {
+        public string A { get; set; }
+
+        public int B { get; set; }
+    }
+
     [TestClass]
     public class ObjectExtentions
     {
@@ -120,6 +134,14 @@ namespace CodeArts.Tests
             });
 
             RuntimeServManager.TryAddSingleton(() => mapTo);
+
+            var t1 = new T1
+            {
+                A = 100,
+                B = "10000"
+            };
+
+            var t2 = t1.MapTo<T2>();
 
             var value = new CopyToTest
             {

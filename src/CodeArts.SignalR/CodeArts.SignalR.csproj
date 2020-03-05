@@ -14,7 +14,7 @@
     <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-    <Version>2.1.0.12</Version>
+    <Version>2.1.1</Version>
   </PropertyGroup>
 
  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">

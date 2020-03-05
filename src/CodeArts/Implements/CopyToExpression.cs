@@ -350,7 +350,7 @@ namespace CodeArts.Implements
             {
                 if (left.Type != right.Type)
                 {
-                    right = Convert(right, left.Type);
+                    right = Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type);
                 }
 
                 if (left.Type.IsValueType || AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value)
@@ -408,7 +408,7 @@ namespace CodeArts.Implements
                         type = Enum.GetUnderlyingType(type);
                     }
 
-                    list.Add(Assign(nameExp, Convert(Call(null, convertMethod, node, Constant(type)), info.ParameterType)));
+                    list.Add(Assign(nameExp, Convert(node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type)), info.ParameterType)));
 
                     return;
                 }
