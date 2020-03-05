@@ -38,7 +38,7 @@ namespace CodeArts.Mvc.Builder
         /// <summary>
         /// 登录配置。
         /// 通过“/login”登录。
-        /// 通过“/authcode”获取验证码；通过“/authcode{pathString}”会自动调用当前项目“{pathString}”接口，并将随机验证码作为【authCode】参数传递给接口，接口可选择是否返回新的验证码。
+        /// 通过“/authcode”获取验证码；通过“/authcode{pathString}”会自动调用当前项目的“{pathString}”(<see cref="PathString"/>)接口，并将随机验证码作为【authCode】参数传递给接口，接口可选择是否返回新的验证码。
         /// 请在配置文件中配置“login”项(可以是相对地址或绝对地址)。
         /// 添加请求参数“debug”为真时，不进行验证码验证。
         /// 自定义请参考<see cref="Consts"/>。
