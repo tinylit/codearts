@@ -71,5 +71,31 @@ namespace CodeArts
         /// </summary>
         /// <returns></returns>
         public abstract DateTime ToUniversalTime();
+
+        /// <summary>
+        /// 转本地日期字符串
+        /// </summary>
+        /// <returns></returns>
+        public string ToLocalTimeString() => ToLocalTime().ToString();
+
+        /// <summary>
+        /// 转本地日期字符串
+        /// </summary>
+        /// <param name="format">标准或自定义日期和时间格式字符串。</param>
+        /// <returns></returns>
+        public string ToLocalTimeString(string format) => ToLocalTime().ToString(format);
+
+        /// <summary>
+        /// 转UTC日期字符串
+        /// </summary>
+        /// <returns></returns>
+        public string ToUniversalTimeString() => ToUniversalTime().ToString();
+
+        /// <summary>
+        /// 转UTC日期字符串
+        /// </summary>
+        /// <param name="format">标准或自定义日期和时间格式字符串。</param>
+        /// <returns></returns>
+        public string ToUniversalTimeString(string format) => ToUniversalTime().ToString(format);
     }
 }

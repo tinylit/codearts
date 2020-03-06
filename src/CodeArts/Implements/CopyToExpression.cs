@@ -423,25 +423,25 @@ namespace CodeArts.Implements
                     {
                         list.Add(Assign(nameExp, Convert(node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type)), info.ParameterType)));
                     }
-
-                    return;
                 }
+
+                Expression expression;
 
                 try
                 {
-                    list.Add(Assign(nameExp, Convert(node, type)));
+                    expression = Convert(node, type);
                 }
                 catch (InvalidOperationException)
                 {
-                    var invoke = Create(node.Type, type);
-
-                    var coreExp = invoke.Method.IsStatic ?
-                        Call(null, invoke.Method, node)
-                        :
-                        Call(Constant(invoke.Target), invoke.Method, node);
-
-                    list.Add(Assign(nameExp, Convert(coreExp, type)));
+                    expression = node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type));
                 }
+
+                if (type != info.ParameterType)
+                {
+                    expression = Convert(expression, info.ParameterType);
+                }
+
+                list.Add(Assign(nameExp, expression));
             }
         }
 
