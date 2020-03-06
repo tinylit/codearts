@@ -404,25 +404,14 @@ namespace CodeArts.Implements
                     return;
                 }
 
-                if (type.IsValueType)
+                if (type.IsNullable())
                 {
-                    if (type.IsNullable())
-                    {
-                        type = Nullable.GetUnderlyingType(type);
-                    }
-                    else if (type.IsEnum)
-                    {
-                        type = Enum.GetUnderlyingType(type);
-                    }
+                    type = Nullable.GetUnderlyingType(type);
+                }
 
-                    try
-                    {
-                        list.Add(Assign(nameExp, Convert(Convert(node, type), info.ParameterType)));
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        list.Add(Assign(nameExp, Convert(node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type)), info.ParameterType)));
-                    }
+                if (type.IsEnum)
+                {
+                    type = Enum.GetUnderlyingType(type);
                 }
 
                 Expression expression;
