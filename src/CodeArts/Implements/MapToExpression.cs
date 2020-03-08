@@ -16,6 +16,7 @@ namespace CodeArts.Implements
     /// </summary>
     public class MapToExpression : CopyToExpression<MapToExpression>, IMapToExpression, IProfileConfiguration, IProfile
     {
+        private static readonly Type typeSelf = typeof(MapToExpression);
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Dictionary<Type, MethodInfo>> TypeMap = new System.Collections.Concurrent.ConcurrentDictionary<Type, Dictionary<Type, MethodInfo>>();
 
         /// <summary>
@@ -429,7 +430,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByDataTableToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataTableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 
@@ -505,7 +506,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByDataTableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataTableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
@@ -528,7 +529,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByDataTableToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataTableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 
@@ -669,7 +670,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByDataRowToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataRowToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments.Concat(new Type[] { conversionType }).ToArray());
 
@@ -692,7 +693,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByDataRowToDictionaryLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataRowToDictionaryLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments.Concat(new Type[] { conversionType }).ToArray());
 
@@ -715,7 +716,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByDataRowToDictionary), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataRowToDictionary), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments);
 
@@ -749,12 +750,7 @@ namespace CodeArts.Implements
             {
                 typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>
                 {
-                    list.Add(SwitchCase(Constant(info.Name), Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType))));
-
-                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
-                    {
-                        list.Add(SwitchCase(Constant(info.Naming), Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType))));
-                    }
+                    list.Add(SwitchCase(Constant(info.Naming), Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType))));
                 });
             }
 
@@ -762,12 +758,7 @@ namespace CodeArts.Implements
             {
                 typeStore.FieldStores.Where(x => x.CanWrite).ForEach(info =>
                 {
-                    list.Add(SwitchCase(Constant(info.Name), Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType))));
-
-                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
-                    {
-                        list.Add(SwitchCase(Constant(info.Naming), Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType))));
-                    }
+                    list.Add(SwitchCase(Constant(info.Naming), Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType))));
                 });
             }
 
@@ -922,7 +913,7 @@ namespace CodeArts.Implements
                 {
                     var parameterExp = Parameter(typeof(object), "source");
 
-                    var method = typeof(MapToExpression).GetMethod(nameof(ByIDataRecordToValueTypeOrStringDictionary), BindingFlags.NonPublic | BindingFlags.Static);
+                    var method = typeSelf.GetMethod(nameof(ByIDataRecordToValueTypeOrStringDictionary), BindingFlags.NonPublic | BindingFlags.Static);
 
                     var bodyExp = Call(null, method, Convert(parameterExp, sourceType), Constant(this));
 
@@ -939,7 +930,7 @@ namespace CodeArts.Implements
             {
                 var parameterExp = Parameter(typeof(object), "source");
 
-                var method = typeof(MapToExpression).GetMethod(nameof(ByIDataRecordToValueTypeOrStringCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+                var method = typeSelf.GetMethod(nameof(ByIDataRecordToValueTypeOrStringCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
                 var methodG = method.MakeGenericMethod(conversionType);
 
@@ -1004,11 +995,9 @@ namespace CodeArts.Implements
                 };
             });
 
-            var mapType = typeof(MapToExpression);
+            var getNames = typeSelf.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var getNames = mapType.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
-
-            var getOrdinal = mapType.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
+            var getOrdinal = typeSelf.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
 
             var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
 
@@ -1051,12 +1040,7 @@ namespace CodeArts.Implements
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
-
-                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming)))));
-                }
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming))));
 
                 var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 
@@ -1253,11 +1237,9 @@ namespace CodeArts.Implements
                 };
             });
 
-            var mapType = typeof(MapToExpression);
+            var getNames = typeSelf.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var getNames = mapType.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
-
-            var getOrdinal = mapType.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
+            var getOrdinal = typeSelf.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
 
             list.Add(Assign(dicExp, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
 
@@ -1289,12 +1271,7 @@ namespace CodeArts.Implements
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
-
-                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming)))));
-                }
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming))));
 
                 var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
 
@@ -1384,7 +1361,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByEnumarableToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByEnumarableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 
@@ -1407,7 +1384,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
@@ -1464,7 +1441,7 @@ namespace CodeArts.Implements
 
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(GetValueByEnumarableKeyValuePair), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(GetValueByEnumarableKeyValuePair), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments);
 
@@ -1550,7 +1527,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
@@ -1573,7 +1550,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(ByObjectToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByObjectToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 

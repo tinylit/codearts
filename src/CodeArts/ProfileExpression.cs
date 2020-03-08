@@ -203,7 +203,7 @@ namespace CodeArts
                     var typeDefinition = conversionType.GetGenericTypeDefinition();
 
 #if NET40
-                if (typeDefinition == typeof(IDictionary<,>))
+                    if (typeDefinition == typeof(IDictionary<,>))
 #else
                     if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
 #endif
@@ -231,10 +231,10 @@ namespace CodeArts
                         var typeDefinition = type.GetGenericTypeDefinition();
 
                         if (typeDefinition == typeof(IDictionary<,>))
-                            return ByIEnumarableLikeToDictionaryLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
+                            return ByIEnumarableLikeToDictionaryLike<TResult>(sourceType, conversionType, type.GetGenericArguments());
 
                         if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-                            return ByIEnumarableLikeToCollectionLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+                            return ByIEnumarableLikeToCollectionLike<TResult>(sourceType, conversionType, type.GetGenericArguments().First());
                     }
                 }
 

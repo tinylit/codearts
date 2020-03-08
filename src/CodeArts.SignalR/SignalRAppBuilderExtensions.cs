@@ -1,12 +1,9 @@
 ﻿#if NETSTANDARD2_0
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
+using System;
+using System.Linq;
 
 namespace CodeArts.SignalR
 {

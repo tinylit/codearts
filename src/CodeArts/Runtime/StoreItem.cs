@@ -229,7 +229,7 @@ namespace CodeArts.Runtime
         /// </summary>
         public override string Name => Member.Name;
 
-        private string _Naming = string.Empty;
+        private string _Naming = null;
 
         /// <summary>
         /// 命名规范名称
@@ -238,36 +238,38 @@ namespace CodeArts.Runtime
         {
             get
             {
-                if (_Naming.Length > 0) return _Naming;
-
-                var namingAttr = NamingAttribute;
-
-                string name = namingAttr?.Name ?? Name;
-
-                if (namingAttr is null)
+                if (_Naming is null)
                 {
-                    var declaringType = Member.DeclaringType;
-                    var reflectedType = Member.ReflectedType;
+                    var namingAttr = NamingAttribute;
 
-                    if (declaringType == reflectedType)
+                    string name = namingAttr?.Name ?? Name;
+
+                    if (namingAttr is null)
                     {
-                        namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute));
+                        var declaringType = Member.DeclaringType;
+                        var reflectedType = Member.ReflectedType;
+
+                        if (declaringType == reflectedType)
+                        {
+                            namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute));
+                        }
+                        else
+                        {
+                            namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute), false) ?? (NamingAttribute)Attribute.GetCustomAttribute(reflectedType, typeof(NamingAttribute));
+                        }
+                    }
+
+                    if (namingAttr is null)
+                    {
+                        _Naming = name;
                     }
                     else
                     {
-                        namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute), false);
-
-                        if (namingAttr is null)
-                        {
-                            namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(reflectedType, typeof(NamingAttribute));
-                        }
+                        _Naming = name.ToNamingCase(namingAttr.NamingType);
                     }
                 }
 
-                if (namingAttr is null)
-                    return _Naming = name;
-
-                return _Naming = name.ToNamingCase(namingAttr.NamingType);
+                return _Naming;
             }
         }
 

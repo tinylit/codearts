@@ -39,6 +39,49 @@ namespace CodeArts.Tests
         public int B { get; set; }
     }
 
+    /// <summary>
+    /// 更多服务列表
+    /// </summary>
+    public class CommodityGroupListDto
+    {
+        /// <summary>
+        /// 商品组名称
+        /// </summary>
+        public string GroupName { get; set; }
+        /// <summary>
+        /// 商品组图标
+        /// </summary>
+        public string GroupIcon { get; set; }
+        /// <summary>
+        /// 商品列表
+        /// </summary>
+        public List<CommodityListDto> CommodityList { get; set; }
+    }
+
+
+    /// <summary>
+    /// 更多服务商品组下商品列表
+    /// </summary>
+    public class CommodityListDto
+    {
+        /// <summary>
+        /// 商品Id
+        /// </summary>
+        public string Id { get; set; }
+        /// <summary>
+        /// 商品名称
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// 商品图标
+        /// </summary>
+        public string Icon { get; set; }
+        /// <summary>
+        /// 商品描述
+        /// </summary>
+        public string Desc { get; set; }
+    }
+
     [TestClass]
     public class ObjectExtentions
     {
@@ -169,6 +212,60 @@ namespace CodeArts.Tests
 
                 value.Name = "test5";
             }
+        }
+
+        [TestMethod]
+        public void MapToList()
+        {
+
+            List<CommodityGroupListDto> pList = new List<CommodityGroupListDto>
+            {
+                new CommodityGroupListDto
+                {
+                    GroupIcon = "",
+                    GroupName = "洗车分类",
+                    CommodityList = new List<CommodityListDto>
+                    {
+                        new CommodityListDto
+                        {
+                            Id = "6e2b47e8d7b6c177c91b08d7ae3c35db",
+                            Desc = "平台默认-包月洗车",
+                            Icon = "http://api.eye56.com:9008/files/20200301/7e6dcaba-5c4f-475b-93d2-43c0b53b7126.png",
+                            Name = "包月洗车"
+                        }
+                    }
+                },
+                new CommodityGroupListDto
+                {
+                    GroupIcon = "",
+                    GroupName = "洗车分类",
+                    CommodityList = new List<CommodityListDto>
+                    {
+                        new CommodityListDto
+                        {
+                            Id = "6e2b47e8d7b6c177c91b08d7ae3c35db",
+                            Desc = "平台默认-包月洗车",
+                            Icon = "http://api.eye56.com:9008/files/20200301/7e6dcaba-5c4f-475b-93d2-43c0b53b7126.png",
+                            Name = "包月洗车"
+                        },
+                        new CommodityListDto
+                        {
+                            Id = "6e2b47e8d7b6c177c91b08d7ae3c35db",
+                            Desc = "平台默认-包月洗车",
+                            Icon = "http://api.eye56.com:9008/files/20200301/7e6dcaba-5c4f-475b-93d2-43c0b53b7126.png",
+                            Name = "包月洗车"
+                        },
+                        new CommodityListDto
+                        {
+                            Id = "6e2b47e8d7b6c177c91b08d7ae3c35db",
+                            Desc = "平台默认-包月洗车",
+                            Icon = "http://api.eye56.com:9008",
+                            Name = "包月洗车"
+                        } } } };
+
+
+            var x = pList.CopyTo();
+
         }
     }
 }

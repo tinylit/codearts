@@ -14,6 +14,7 @@ namespace CodeArts.Implements
     /// </summary>
     public class CastToExpression : ProfileExpression<CastToExpression>, ICastToExpression, IProfile
     {
+        private static readonly Type typeSelf = typeof(CastToExpression);
         /// <summary>
         /// 对象转换
         /// </summary>
@@ -264,7 +265,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(CastToExpression).GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 
@@ -287,7 +288,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(CastToExpression).GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
@@ -311,7 +312,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByEnumarableToEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 
@@ -334,7 +335,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToList), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByEnumarableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 
@@ -357,7 +358,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(CastToExpression).GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 

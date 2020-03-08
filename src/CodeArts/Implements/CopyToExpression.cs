@@ -35,6 +35,8 @@ namespace CodeArts.Implements
     /// </summary>
     public class CopyToExpression<TCopyto> : ProfileExpression<TCopyto>, ICopyToExpression, IProfileConfiguration, IProfile where TCopyto : CopyToExpression<TCopyto>
     {
+        private static readonly Type typeSelf = typeof(CopyToExpression<TCopyto>);
+
         /// <summary>
         /// 类型创建器
         /// </summary>
@@ -476,7 +478,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(GetKeyValueLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(GetKeyValueLike), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(conversionType.GetGenericArguments());
 
@@ -533,16 +535,16 @@ namespace CodeArts.Implements
 #if NET40
                     if (type == typeof(IDictionary<,>))
 #else
-                    if (type == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
+                    if (type == typeof(IDictionary<,>) || type == typeof(IReadOnlyDictionary<,>))
 #endif
-                        return ByLikeEnumarableToDictionaryLike<TResult>(sourceType, conversionType, type.GetGenericArguments());
+                        return ByLikeEnumarableToDictionaryLike<TResult>(sourceType, conversionType, item.GetGenericArguments());
 
 #if NET40
                     if (type == typeof(ICollection<>) || type == typeof(IList<>))
 #else
-                    if (type == typeof(ICollection<>) || type == typeof(IList<>) || type == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+                    if (type == typeof(ICollection<>) || type == typeof(IList<>) || type == typeof(IReadOnlyCollection<>) || type == typeof(IReadOnlyList<>))
 #endif
-                        return ByLikeEnumarableToCollectionLike<TResult>(sourceType, conversionType, type.GetGenericArguments().First());
+                        return ByLikeEnumarableToCollectionLike<TResult>(sourceType, conversionType, item.GetGenericArguments().First());
                 }
             }
 
@@ -580,7 +582,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(GetCollectionLikeByEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(GetCollectionLikeByEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument, conversionType);
 
@@ -603,7 +605,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(GetDictionaryLikeByEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(GetDictionaryLikeByEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments.Concat(new Type[] { conversionType }).ToArray());
 
@@ -626,7 +628,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(GetDictionaryByEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(GetDictionaryByEnumarable), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments);
 
@@ -649,7 +651,7 @@ namespace CodeArts.Implements
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeof(MapToExpression).GetMethod(nameof(GetListByEnumerable), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(GetListByEnumerable), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArgument);
 

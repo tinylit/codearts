@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;netstandard2.0;</TargetFrameworks>
@@ -18,30 +18,22 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
-    <PackageReference Include="Microsoft.AspNet.SignalR">
+    <PackageReference Include="Microsoft.AspNet.SignalR.Core">
       <Version>2.4.1</Version>
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <PackageReference Include="JWT">
-      <Version>6.1.0</Version>
-    </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452'">
-    <PackageReference Include="JWT">
-      <Version>3.0.1</Version>
-    </PackageReference>
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.AspNetCore.SignalR">
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core">
       <Version>1.1.0</Version>
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CodeArts.Defaults\CodeArts.Defaults.csproj" />
+    <ProjectReference Include="..\CodeArts.SignalR\CodeArts.SignalR.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Messaging\" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,5 @@
 ﻿#if NET45 || NET451 || NET452 ||NET461
 using JWT;
-using JWT.Algorithms;
 using JWT.Serializers;
 using Microsoft.Owin;
 using Microsoft.Owin.Security;
@@ -130,7 +129,7 @@ namespace CodeArts.SignalR
                     var validator = new JwtValidator(serializer, provider);
                     var urlEncoder = new JwtBase64UrlEncoder();
 #if NET461
-                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, new HMACSHA256Algorithm());
+                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, JwtAlgorithmGen.Create());
 #else
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
 #endif
