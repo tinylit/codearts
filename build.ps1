@@ -16,7 +16,8 @@ $projectsToBuild =
     'CodeArts.ORM',
     'CodeArts.MySql',
 	'CodeArts.SignalR',
-    'CodeArts.SqlServer'
+    'CodeArts.SqlServer',
+	'CodeArts.SignalR.Core'
 
 mkdir -Force $packageOutputFolder | Out-Null
 Write-Host "Clearing existing $packageOutputFolder..." -NoNewline
