@@ -65,12 +65,12 @@ namespace CodeArts.SignalR
                 return;
             }
 
+            mailCache.Remove(id);
+
             list.ForEach(async message =>
             {
                 await connect.Invoke(message);
             });
-
-            mailCache.Remove(id);
         }
     }
 }
