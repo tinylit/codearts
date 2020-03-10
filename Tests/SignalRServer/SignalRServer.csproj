@@ -106,6 +106,7 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Hubs\MailHub.cs" />
     <Compile Include="Hubs\TestHub.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
@@ -122,9 +123,21 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.Defaults\CodeArts.Defaults.csproj">
+      <Project>{8dd6eac1-5f61-4072-8150-6d3df72dae65}</Project>
+      <Name>CodeArts.Defaults</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.SignalR.Core\CodeArts.SignalR.Core.csproj">
+      <Project>{14b466a0-3709-439b-a9f1-ee8d3319a75e}</Project>
+      <Name>CodeArts.SignalR.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.SignalR\CodeArts.SignalR.csproj">
       <Project>{35418940-3ea9-4898-b469-6acf328a66fb}</Project>
       <Name>CodeArts.SignalR</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts\CodeArts.csproj">
+      <Project>{e12dd9b0-64a0-4bca-9d4c-151f45fd5678}</Project>
+      <Name>CodeArts</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

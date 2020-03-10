@@ -85,8 +85,9 @@ namespace CodeArts.Cache
                 throw new ArgumentOutOfRangeException(nameof(span));
 
             var value = _database.Get(GetKey(key));
+
             if (value is null)
-                throw new ArgumentOutOfRangeException(nameof(key));
+                throw new KeyNotFoundException(nameof(key));
 
             Set(key, value, span);
         }

@@ -1,4 +1,9 @@
-﻿using Microsoft.AspNet.SignalR;
+﻿using CodeArts;
+using CodeArts.Cache;
+using CodeArts.Config;
+using CodeArts.Serialize.Json;
+using CodeArts.SignalR;
+using Microsoft.AspNet.SignalR;
 using Microsoft.Owin.Cors;
 using Owin;
 using System.Diagnostics;
@@ -16,6 +21,13 @@ namespace SignalRServer
         /// <param name="app"></param>
         public void Configuration(IAppBuilder app)
         {
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+
+            //? 缓存服务
+            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
+            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+
             app.Map("/signalr", map =>
             {
                 // Turns cors support on allowing everything
@@ -35,7 +47,7 @@ namespace SignalRServer
                            }
                        }
                    }) //? JWT消息中间件
-                   .RunSignalR(); //? 启动通讯
+                   .RunSignalR(new DefaultMail()); //? 启动通讯
             });
 
             // Turn tracing on programmatically
