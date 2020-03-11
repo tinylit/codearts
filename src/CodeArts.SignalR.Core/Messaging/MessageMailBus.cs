@@ -43,12 +43,40 @@ namespace CodeArts.SignalR.Messaging
         /// <returns></returns>
         public override Task Publish(Microsoft.AspNet.SignalR.Messaging.Message message)
         {
-            if (message.IsCommand || Topics.TryGetValue(message.Key, out Topic topic) && topic.Subscriptions.Count > 0)
+            string key = message.Key;
+
+            if (message.IsCommand || message.Filter?.Length > 0 || Topics.TryGetValue(key, out Topic topic) && topic.Subscriptions.Count > 0)
             {
                 return base.Publish(message);
             }
 
-            return mail.Accept(message.Key, JsonHelper.Json<Message>(message.GetString()));
+            Message msg = JsonHelper.Json<Message>(message.GetString());
+
+            if (key.StartsWith("h-"))
+            {
+                return mail.All(msg);
+            }
+
+            int indexOfDot = key.IndexOf('.');
+
+            string name = key.Substring(indexOfDot);
+
+            if (key.StartsWith("hu-"))
+            {
+                return mail.User(name, msg);
+            }
+
+            if (key.StartsWith("hc-"))
+            {
+                return mail.Client(name, msg);
+            }
+
+            if (key.StartsWith("hg-"))
+            {
+                return mail.Group(name, msg);
+            }
+
+            return base.Publish(message);
         }
     }
 }

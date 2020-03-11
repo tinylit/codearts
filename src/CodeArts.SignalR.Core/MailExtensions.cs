@@ -9,12 +9,12 @@ using System;
 namespace Owin
 {
     /// <summary>
-    /// Owin 扩展
+    /// Mail 扩展（定点发送：指的是指定用户编号或指定连接编号发送的消息。）
     /// </summary>
-    public static class MailtExtensions
+    public static class MailExtensions
     {
         /// <summary>
-        /// 使用信箱功能。
+        /// 使用信箱功能(仅支持【定点】发送)。
         /// </summary>
         /// <param name="app">项目构建器</param>
         /// <param name="mail">信箱</param>
@@ -22,7 +22,7 @@ namespace Owin
         public static void RunSignalR(this IAppBuilder app, IMail mail) => app.RunSignalR(new HubConfiguration(), mail);
 
         /// <summary>
-        /// 使用信箱功能。
+        /// 使用信箱功能(仅支持【定点】发送)。
         /// </summary>
         /// <param name="app">项目构建器</param>
         /// <param name="configuration">配置</param>

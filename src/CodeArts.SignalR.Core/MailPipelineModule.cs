@@ -3,6 +3,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace CodeArts.SignalR
 {
@@ -45,11 +46,11 @@ namespace CodeArts.SignalR
             {
                 string userId = request.User.Identity.Name;
 
-                mail.Send($"hu-{descriptor.Name}.{userId}", massage =>
-                {
-                    var userProxy = (UserProxy)hub.Clients.User(userId);
+                var userProxy = (IClientProxy)hub.Clients.User(userId);
 
-                    return userProxy.Invoke(massage.Method, massage.Args);
+                mail.SendToUser(userId, descriptor.Name, message =>
+                {
+                    return userProxy.Invoke(message.Method, message.Args);
                 });
             }
 
@@ -70,22 +71,18 @@ namespace CodeArts.SignalR
                 {
                     string userId = request.User.Identity.Name;
 
-                    mail.Send($"hu-{descriptor.Name}.{userId}", massage =>
-                    {
-                        var userProxy = (UserProxy)hub.Clients.User(userId);
+                    var userProxy = (IClientProxy)hub.Clients.User(userId);
 
-                        return userProxy.Invoke(massage.Method, massage.Args);
+                    mail.SendToUser(userId, descriptor.Name, message =>
+                    {
+                        return userProxy.Invoke(message.Method, message.Args);
                     });
                 }
                 else
                 {
-                    string connectionId = hub.Context.ConnectionId;
-
-                    mail.Send($"hc-{descriptor.Name}.{connectionId}", massage =>
+                    mail.SendToConnection(hub.Context.ConnectionId, descriptor.Name, massage =>
                     {
-                        var clientProxy = (ConnectionIdProxy)hub.Clients.Client(connectionId);
-
-                        return clientProxy.Invoke(massage.Method, massage.Args);
+                        return ((IClientProxy)hub.Clients.Caller).Invoke(massage.Method, massage.Args);
                     });
                 }
             }
