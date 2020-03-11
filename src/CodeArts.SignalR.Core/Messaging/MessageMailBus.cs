@@ -59,7 +59,7 @@ namespace CodeArts.SignalR.Messaging
 
             int indexOfDot = key.IndexOf('.');
 
-            string name = key.Substring(indexOfDot);
+            string name = key.Substring(indexOfDot + 1);
 
             if (key.StartsWith("hu-"))
             {
