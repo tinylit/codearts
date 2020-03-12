@@ -1372,7 +1372,7 @@ namespace CodeArts.ORM.Builders
                 return node;
             }
 
-            SQLWriter.Write(expressionType);
+            SQLWriter.Write(expressionType, node.Left.Type, node.Right.Type);
 
             if (appendAt > -1)
             {
@@ -1548,7 +1548,7 @@ namespace CodeArts.ORM.Builders
 
                 VisitEvaluate(left);
 
-                SQLWriter.Write(nodeType);
+                SQLWriter.Write(nodeType, left.Type, right.Type);
 
                 VisitEvaluate(right);
 

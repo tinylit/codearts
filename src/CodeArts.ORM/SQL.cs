@@ -25,129 +25,139 @@ namespace CodeArts.ORM
     {
         private readonly StringBuilder sb;
 
-        private readonly static ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
+
+        /// <summary>
+        /// 暂存数据
+        /// </summary>
+        private static readonly Regex PatternTemporaryStorage = new Regex("--#(?<index>\\d+)", RegexOptions.Compiled);
 
         /// <summary>
         /// 注解
         /// </summary>
-        private readonly static Regex PatternAnnotate = new Regex(@"--.*|/\*[\s\S]*?\*/", RegexOptions.Compiled);
+        private static readonly Regex PatternAnnotate = new Regex(@"--.*|/\*[\s\S]*?\*/", RegexOptions.Compiled);
 
         /// <summary>
         /// 提取字符串
         /// </summary>
-        private readonly static Regex PatternCharacter = new Regex("(['\"])(?:\\\\.|[^\\\\])*?\\1", RegexOptions.Compiled);
+        private static readonly Regex PatternCharacter = new Regex("(['\"])(?:\\\\.|[^\\\\])*?\\1", RegexOptions.Compiled);
 
         /// <summary>
         /// 多余的换行符。
         /// </summary>
-        private readonly static Regex PatternLineBreak = new Regex(@"(^[\r\n][\x20\t\r\n\f]*[\r\n]|(?<=[\r\n]{2})[\x20\t\r\n\f]*[\r\n]|(?<=[\r\n]{2})[\r\n]{2,})", RegexOptions.Compiled);
+        private static readonly Regex PatternLineBreak = new Regex(@"(^[\r\n][\x20\t\r\n\f]*[\r\n]|(?<=[\r\n]{2})[\x20\t\r\n\f]*[\r\n]|(?<=[\r\n]{2})[\r\n]{2,})", RegexOptions.Compiled);
 
         /// <summary>
         /// 移除所有前导空白字符和尾部空白字符函数修复。
         /// </summary>
-        private readonly static Regex PatternTrim = new Regex(@"\b(?<name>(trim))\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternTrim = new Regex(@"\b(?<name>(trim))\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 修改命令。
         /// </summary>
-        private readonly static Regex PatternAlter = new Regex(@"\balter[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(\w+\.)*(?<name>\w+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternAlter = new Regex(@"\balter[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(\w+\.)*(?<name>\w+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 插入命令。
         /// </summary>
-        private readonly static Regex PatternInsert = new Regex(@"\binsert[\x20\t\r\n\f]+into[\x20\t\r\n\f]+(\w+\.)*(?<name>\w+)[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternInsert = new Regex(@"\binsert[\x20\t\r\n\f]+into[\x20\t\r\n\f]+(\w+\.)*(?<name>\w+)[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 修改命令。
         /// </summary>
-        private readonly static Regex PatternChange = new Regex(@"\b((?<type>delete)[\x20\t\r\n\f]+from|(?<type>update))[\x20\t\r\n\f]+([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+set[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        private static readonly Regex PatternChange = new Regex(@"\b((?<type>delete)[\x20\t\r\n\f]+from|(?<type>update))[\x20\t\r\n\f]+([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+set[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
         /// <summary>
         /// 复杂修改命令。
         /// </summary>
-        private readonly static Regex PatternChangeComplex = new Regex(@"\b((?<type>delete)[\x20\t\r\n\f]+(\[\w+\]|(?<alias>\w+))|(?<type>update)[\x20\t\r\n\f]+(\[\w+\]|(?<alias>\w+))[\x20\t\r\n\f]+set([\x20\t\r\n\f]+[\w\.\[\]]+[\x20\t\r\n\f]*=[\x20\t\r\n\f]*[?:@]?[\w\.\[\]]+,[\x20\t\r\n\f]*)*[\x20\t\r\n\f]+[\w\.\[\]]+[\x20\t\r\n\f]*=[\x20\t\r\n\f]*[?:@]?[\w\.\[\]]+)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])((?!\b(insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternChangeComplex = new Regex(@"\b((?<type>delete)[\x20\t\r\n\f]+(\[\w+\]|(?<alias>\w+))|(?<type>update)[\x20\t\r\n\f]+(\[\w+\]|(?<alias>\w+))[\x20\t\r\n\f]+set([\x20\t\r\n\f]+[\w\.\[\]]+[\x20\t\r\n\f]*=[\x20\t\r\n\f]*[?:@]?[\w\.\[\]]+,[\x20\t\r\n\f]*)*[\x20\t\r\n\f]+[\w\.\[\]]+[\x20\t\r\n\f]*=[\x20\t\r\n\f]*[?:@]?[\w\.\[\]]+)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])((?!\b(insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 创建表命令。
         /// </summary>
-        private readonly static Regex PatternCreate = new Regex(@"\bcreate[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)?([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        private static readonly Regex PatternCreate = new Regex(@"\bcreate[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)?([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
         /// <summary>
         /// 删除表命令。
         /// </summary>
-        private readonly static Regex PatternDrop = new Regex(@"\bdrop[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)?([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]*;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        private static readonly Regex PatternDrop = new Regex(@"\bdrop[\x20\t\r\n\f]+(table|view)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)?([\w\[\]]+\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]*;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
         /// <summary>
         /// 表命令。
         /// </summary>
-        private readonly static Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|having|select|into|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+))?(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|having|select|into|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+))?(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 连表命令。
         /// </summary>
-        private readonly static Regex PatternFormFollow = new Regex(@",[\x20\t\r\n\f]*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+)?(?<alias>\w+))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternFormFollow = new Regex(@",[\x20\t\r\n\f]*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+)?(?<alias>\w+))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 参数。
         /// </summary>
-        private readonly static Regex PatternParameter = new Regex(@"(?<![\p{L}\p{N}@_])[?:@](?<name>[\p{L}\p{N}_][\p{L}\p{N}@_]*)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex PatternParameter = new Regex(@"(?<![\p{L}\p{N}@_])[?:@](?<name>[\p{L}\p{N}_][\p{L}\p{N}@_]*)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         /// <summary>
         /// 字段名称。
         /// </summary>
-        private readonly static Regex PatternField;
+        private static readonly Regex PatternField;
 
         /// <summary>
         /// 字段名称补充。
         /// </summary>
-        private readonly static Regex PatternFieldEmbody = new Regex(@"\[\w+\][\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[_a-zA-Z]\w*)", RegexOptions.Compiled);
+        private static readonly Regex PatternFieldEmbody = new Regex(@"\[\w+\][\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[_a-zA-Z]\w*)", RegexOptions.Compiled);
 
         /// <summary>
         /// 别名字段
         /// </summary>
-        private readonly static Regex PatternAliasField = new Regex(@"(?<alias>[\w-]+)\.(?<name>(?!\d+)[\w-]+)(?=[^\w\.\]\}\(]|$)", RegexOptions.Compiled);
+        private static readonly Regex PatternAliasField = new Regex(@"(?<alias>[\w-]+)\.(?<name>(?!\d+)[\w-]+)(?=[^\w\.\]\}\(]|$)", RegexOptions.Compiled);
 
         /// <summary>
         /// 独立参数字段
         /// </summary>
-        private readonly static Regex PatternSingleArgField = new Regex(@"\([\x20\t\r\n\f]*(?<name>(?!\d+)(?![_A-Z]+)(?!\b(max|min)\b)\w+)[\x20\t\r\n\f]*\)", RegexOptions.Compiled);
+        private static readonly Regex PatternSingleArgField = new Regex(@"\([\x20\t\r\n\f]*(?<name>(?!\d+)(?![_A-Z]+)(?!\b(max|min)\b)\w+)[\x20\t\r\n\f]*\)", RegexOptions.Compiled);
 
         /// <summary>
         /// 字段名称（创建别命令中）。
         /// </summary>
-        private readonly static Regex PatternFieldCreate;
+        private static readonly Regex PatternFieldCreate;
 
         /// <summary>
         /// 字段别名。
         /// </summary>
-        private readonly static Regex PatternAsField = new Regex(@"\[\w+\][\x20\t\r\n\f]+as[\x20\t\r\n\f]+(?<name>[\p{L}\p{N}@_]+)|\bas[\x20\t\r\n\f]+(?<name>(?!\bselect\b)[\p{L}\p{N}@_]+)(?=[\x20\t\r\n\f]+[^=]|[^=\x20\t\r\n\f\w]|[\x20\t\r\n\f]*$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex PatternAsField = new Regex(@"\[\w+\][\x20\t\r\n\f]+as[\x20\t\r\n\f]+(?<name>[\p{L}\p{N}@_]+)|\bas[\x20\t\r\n\f]+(?<name>(?!\bselect\b)[\p{L}\p{N}@_]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        /// <summary>
+        /// 声明别量
+        /// </summary>
+        private static readonly Regex PatternDeclare;
 
         #region UseSettings
 
         /// <summary>
         /// 信任的函数。
         /// </summary>
-        private readonly static Regex PatternConvincedMethod = new Regex(@"\b(?<name>(len|length|substr|substring|indexof))(?=\()", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternConvincedMethod = new Regex(@"\b(?<name>(len|length|substr|substring|indexof))(?=\()", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 字符串截取函数修复。
         /// </summary>
-        private readonly static Regex PatternIndexOf = new Regex(@"\bindexOf\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternIndexOf = new Regex(@"\bindexOf\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 表令牌。
         /// </summary>
-        private readonly static Regex PatternTableToken = new Regex(@"\{(?<type>[A-Z]+)#(?<name>\w+)\}", RegexOptions.Compiled);
+        private static readonly Regex PatternTableToken = new Regex(@"\{(?<type>[A-Z]+)#(?<name>\w+)\}", RegexOptions.Compiled);
 
         /// <summary>
         /// 字段令牌。
         /// </summary>
-        private readonly static Regex PatternFieldToken = new Regex(@"\[(?<name>\w+)\]", RegexOptions.Compiled);
+        private static readonly Regex PatternFieldToken = new Regex(@"\[(?<name>\w+)\]", RegexOptions.Compiled);
 
         /// <summary>
         /// 参数令牌。
         /// </summary>
-        private readonly static Regex PatternParameterToken = new Regex(@"\{(?<name>[\p{L}\p{N}@_]+)\}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex PatternParameterToken = new Regex(@"\{(?<name>[\p{L}\p{N}@_]+)\}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         #endregion
 
@@ -273,8 +283,7 @@ namespace CodeArts.ORM
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"*[&|^]") //? =[name]& =[name]| -- 位运算
-                ;
+                    .Append(@"*[&|^]"); //? =[name]& =[name]| -- 位运算
 
             PatternField = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -293,6 +302,79 @@ namespace CodeArts.ORM
                     .Append(")");
 
             PatternFieldCreate = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+            sb = new StringBuilder();
+
+            sb.Append(@"\bdeclare")
+                .Append(whitespace)
+                .Append("+")
+                .Append("(?:")
+                    .Append(@"{[\p{L}\p{N}_][\p{L}\p{N}@_]*}")
+                    .Append("(")
+                        .Append(whitespace)
+                        .Append("+as")
+                    .Append(")?")
+                    .Append(whitespace)
+                    .Append("+\\w+")
+                    .Append(whitespace)
+                    .Append("*")
+                    .Append("(")
+                        .Append("\\(")
+                        .Append(whitespace)
+                        .Append("*\\w+")
+                        .Append(whitespace)
+                        .Append("*")
+                        .Append("\\)")
+                    .Append(")?")
+                    .Append("(")
+                        .Append(whitespace)
+                        .Append("*")
+                        .Append("=")
+                        .Append(whitespace)
+                        .Append("*")
+                        .Append("(")
+                            .Append("\\w+")
+                            .Append("|")
+                            .Append("(['\"])(?:\\\\.|[^\\\\])*?\\5")
+                        .Append(")")
+                    .Append(")?")
+                    .Append(whitespace)
+                    .Append("*")
+                    .Append(",")
+                    .Append(whitespace)
+                    .Append("*")
+                .Append(")*")
+                .Append(@"{[\p{L}\p{N}_][\p{L}\p{N}@_]*}")
+                    .Append("(")
+                        .Append(whitespace)
+                        .Append("+as")
+                    .Append(")?")
+                .Append(whitespace)
+                .Append("+\\w+")
+                .Append(whitespace)
+                .Append("*")
+                .Append("(")
+                    .Append("\\(")
+                    .Append(whitespace)
+                    .Append("*\\w+")
+                    .Append(whitespace)
+                    .Append("*")
+                    .Append("\\)")
+                .Append(")?")
+                .Append("(")
+                    .Append(whitespace)
+                    .Append("*")
+                    .Append("=")
+                    .Append(whitespace)
+                    .Append("*")
+                    .Append("(")
+                        .Append("\\w+")
+                        .Append("|")
+                        .Append("(['\"])(?:\\\\.|[^\\\\])*?\\10")
+                    .Append(")")
+                .Append(")?;?");
+
+            PatternDeclare = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
 
         /// <summary>
@@ -317,19 +399,28 @@ namespace CodeArts.ORM
             if (string.IsNullOrWhiteSpace(sql))
                 throw new DSyntaxErrorException("为检测到可执行的语句!");
 
-            List<string> Characters = new List<string>();
+            List<string> temporaryStorages = new List<string>();
 
             //? 提取字符串
             sql = PatternCharacter.Replace(sql, item =>
             {
-                if (item.Length > 2)
-                {
-                    Characters.Add(item.Value);
+                string value = item.Value;
 
-                    return string.Concat("\"{=", (Characters.Count - 1).ToString(), "}\"");
+                if (value.Length > 2)
+                {
+                    var sb = new StringBuilder();
+
+                    sb.Append(value[0])
+                        .Append("--#")
+                        .Append(temporaryStorages.Count)
+                        .Append(value[value.Length - 1]);
+
+                    temporaryStorages.Add(value.Substring(1, item.Value.Length - 2));
+
+                    return sb.ToString();
                 }
 
-                return item.Value;
+                return value;
             });
 
             //? 去除多余的换行。
@@ -366,7 +457,7 @@ namespace CodeArts.ORM
                      if (nameGrp2.Index == item.Index && nameGrp2.Length == match.Length)
                          return value2;
 
-                     return match.Value.Substring(0, nameGrp2.Index - match.Index) + value2 + match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length);
+                     return string.Concat(match.Value.Substring(0, nameGrp2.Index - match.Index), value2, match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length));
                  }))
                  .ToString();
             });
@@ -392,7 +483,7 @@ namespace CodeArts.ORM
             {
                 var nameGrp = item.Groups["name"];
 
-                return item.Value.Substring(0, nameGrp.Index - item.Index) + string.Concat("{ALTER#", nameGrp.Value, "}");
+                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "{ALTER#", nameGrp.Value, "}");
             });
 
             //? 插入表指令。
@@ -400,7 +491,7 @@ namespace CodeArts.ORM
             {
                 var nameGrp = item.Groups["name"];
 
-                return item.Value.Substring(0, nameGrp.Index - item.Index) + string.Concat("{INSERT#", nameGrp.Value, "}");
+                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "{INSERT#", nameGrp.Value, "}");
             });
 
             //? 复杂结构表名称处理
@@ -508,6 +599,16 @@ namespace CodeArts.ORM
             //? 参数处理。
             sql = PatternParameter.Replace(sql, item => string.Concat("{", item.Groups["name"].Value, "}"));
 
+            //? 声明变量
+            sql = PatternDeclare.Replace(sql, item =>
+            {
+                string value = string.Concat("--#", temporaryStorages.Count.ToString());
+
+                temporaryStorages.Add(item.Value);
+
+                return value;
+            });
+
             //? 字段和别名处理。
             sql = PatternAliasField.Replace(sql, item =>
             {
@@ -572,14 +673,42 @@ namespace CodeArts.ORM
             {
                 Group nameGrp = item.Groups["name"];
 
-                return item.Value.Substring(0, nameGrp.Index - item.Index) + string.Concat("[", nameGrp.Value, "]");
+                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
             });
 
             //? 还原字符
-            Characters.ForEach((item, index) =>
+            if (temporaryStorages.Count > 0)
             {
-                sql = sql.Replace("\"{=" + index + "}\"", item);
-            });
+                int execCount = 0;
+                int dataCount = temporaryStorages.Count;
+                do
+                {
+                    bool flag = true;
+                    sql = PatternTemporaryStorage.Replace(sql, item =>
+                    {
+                        Group indexGrp = item.Groups["index"];
+
+                        if (int.TryParse(indexGrp.Value, out int index) && dataCount > index)
+                        {
+                            execCount++;
+
+                            flag = false;
+
+                            return temporaryStorages[index];
+                        }
+
+                        return item.Value;
+                    });
+
+                    if (flag)
+                    {
+                        break;
+                    }
+
+                } while (execCount < dataCount || PatternTemporaryStorage.IsMatch(sql));
+            }
+
+            temporaryStorages = null;
 
             return sql;
         }
@@ -655,9 +784,9 @@ namespace CodeArts.ORM
 
 #if NET40
 
-        private readonly static ConcurrentDictionary<string, ReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, ReadOnlyCollection<TableToken>>();
+        private static readonly ConcurrentDictionary<string, ReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, ReadOnlyCollection<TableToken>>();
 
-        private readonly static ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>>();
+        private static readonly ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>>();
 
         /// <summary>
         /// 操作的表
@@ -678,9 +807,9 @@ namespace CodeArts.ORM
             return match.Success ? new ReadOnlyCollection<ParameterToken>(GetParameterTokens(match)) : ParameterToken.None;
         });
 #else
-        private readonly static ConcurrentDictionary<string, IReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyCollection<TableToken>>();
+        private static readonly ConcurrentDictionary<string, IReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyCollection<TableToken>>();
 
-        private readonly static ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>>();
+        private static readonly ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>>();
 
         /// <summary>
         /// 操作的表

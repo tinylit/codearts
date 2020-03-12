@@ -462,6 +462,24 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
+        /// 写入类型。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        /// <param name="left">左节点类型</param>
+        /// <param name="right">右节点类型</param>
+        public virtual void Write(ExpressionType nodeType, Type left, Type right)
+        {
+            if (settings.Engine == DatabaseEngine.Oracle && (nodeType == ExpressionType.Add || nodeType == ExpressionType.AddChecked || nodeType == ExpressionType.AddAssign) && (left == typeof(string) || right == typeof(string)))
+            {
+                Write(" || ");
+            }
+            else
+            {
+                Write(ExpressionExtensions.GetOperator(Not ? nodeType.ReverseWhere() : nodeType));
+            }
+        }
+
+        /// <summary>
         /// =
         /// </summary>
         public void Equal() => Write(ExpressionType.Equal);

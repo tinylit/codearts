@@ -794,7 +794,7 @@ namespace CodeArts.ORM.Tests
         [TestMethod]
         public void TestDeclare()
         {
-            var sqlstr = "declare @ddbh nvarchar(max) = 'xx', @invoiceNo nvarchar = '12', @kprq as int= 100000; exec zdy_fphhx @ddbh ,@invoiceNo,@kprq,'1';";
+            var sqlstr = "declare @ddbh nvarchar(max) = 'xx', @invoiceNo nvarchar = '12', @kprq as int = 100000,@id as bigint; exec zdy_fphhx @ddbh ,@invoiceNo,@kprq,'1';";
 
             var sql = new SQL(sqlstr);
 
