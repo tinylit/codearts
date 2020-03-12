@@ -214,10 +214,14 @@ namespace CodeArts.ORM
                         .Append(")?")
                     .Append(@"(?<name>(?!\d+)(?!\b(not|then|top)\b)\w+)")
                     .Append(check) //? when 函数
-                .Append(@"|\b(then|else|by)")
+                .Append(@"|\b(then|else)")
+                    .Append(whitespace)
+                    .Append(@"+(?<name>(?!\d+)(?!\bnull\b)\w+)")
+                    .Append(check) //? case [name] when [name] then [name] else [name] end;
+                .Append(@"|\bby")
                     .Append(whitespace)
                     .Append(@"+(?<name>(?!\d+)\w+)")
-                    .Append(check) //? case [name] when [name] then [name] else [name] end; by [name];
+                    .Append(check) //?  by [name];
                 .Append(@"|\bselect")
                     .Append(whitespace)
                     .Append("+(")

@@ -842,5 +842,56 @@ namespace CodeArts.ORM.Tests
              * DEALLOCATE cursor_name 
              */
         }
+        [TestMethod]
+        public void TestYsmt()
+        {
+
+            var settings = new SqlServer.SqlServerCorrectSettings();
+
+            var sql1 = new SQL(@"select 
+            replace(ywdjid,' ','') as ddbh
+            from  vw_youe_dzfp
+            where datediff(dd, ywrq, getdate()) < 10
+            and ywrq>'2020-03-05'
+            group by ywdjid    
+            having sum(spje) != 0 ")
+                .ToString(settings);
+
+            var sql2 = new SQL(@"select
+replace(max(GMFMC),' ','') as gmfmc,
+sum(spje) as jshj,
+max(YWRQ) as ywrq,
+max(YWDJID)  as ddbh,
+replace(max(KPLX),' ','') as autoKp,
+replace(max(SPRSJH),' ','') as sprsjh,
+'' as spryx,
+replace(max(addtel),' ','') as gmfdzdh,
+CASE WHEN rtrim(max(GMFSH))='1' THEN  NULL ELSE rtrim(max(GMFSH)) END  as gmfsbh,
+replace(max(kfhzh),' ','') as gmfkhhjzh,
+max(bz) as bz,
+'1' as invoiceType,
+'499098834059'  as machineCode
+from  vw_youe_dzfp
+WHERE YWDJID =@ddbh
+group by YWDJID
+having sum(SPJE)<>0").ToString(settings);
+
+            var sql3 = new SQL(@"select
+'0' as fphxz,
+replace(max(SPMC),' ','') as spmc,
+case when SUM(SPSL)=0 then 1 else SUM(SPSL) end as spsl,
+case when SUM(SPSL)=0 then sum(SPJE) else round( sum(SPJE)/SUM(SPSL),6) end as dj,
+max( Convert(decimal(18,2),SPSLV)) as sl,
+replace(max(SPDW),' ','') as dw,
+replace(max(SPGG),' ','') as ggxh,
+replace(max(DSDDH),' ','') as dsddh,
+left(replace(max(spswbm),' ','')+'0000000000',19) as spbm,
+sum(SPJE)  as je
+from  vw_youe_dzfp
+WHERE YWDJID =@ddbh
+group by YWDJID,SPID 
+having sum(SPJE)<>0")
+                .ToString(settings);
+        }
     }
 }
