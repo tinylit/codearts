@@ -339,9 +339,203 @@ namespace CodeArts.ORM.Tests
 
             SET FOREIGN_KEY_CHECKS = 1;");
 
+            /**
+            *            SET NAMES utf8mb4;
+            *            SET FOREIGN_KEY_CHECKS = 0;
+            *            DROP TABLE IF EXISTS {DROP#yep_companys};
+            *            CREATE TABLE IF NOT EXISTS {CREATE#yep_auth_ship}  (
+            *                [id] bigint(20) NOT NULL,
+            *                [owner_id] bigint(20) UNSIGNED NOT NULL,
+            *                [auth_id] int(11) NOT NULL,
+            *                [type] tinyint(4) NOT NULL,
+            *                [status] int(11) NOT NULL,
+            *                [created] timestamp(0) NULL,
+            *                [modified] timestamp(0) NULL DEFAULT NULL,
+            *                PRIMARY KEY ([id]) USING BTREE,
+            *                CONSTRAINT FK_yep_companys_id FOREIGN KEY ([owner_id]) REFERENCES yep_companys ([id]) ON DELETE SET NULL ON UPDATE CASCADE 
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic
+            *            DELETE FROM yep_auth_ship;
+            *            CREATE TABLE IF NOT EXISTS {CREATE#yep_auth_tree}  (
+            *                [Id] int(11) NOT NULL AUTO_INCREMENT,
+            *                [parent_id] int(11) NOT NULL,
+            *                [disp_order] int(11) NOT NULL,
+            *                [has_child] bit(1) NOT NULL,
+            *                [code] varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [name] varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [url] varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [type] tinyint(4) NOT NULL COMMENT '0：项目\r\n1：导航\r\n2：菜单\r\n4：页面\r\n8：功能\r\n16：板块\r\n32：提示\r\n64：标记',
+            *                [status] tinyint(255) NOT NULL,
+            *                [created] timestamp(0) NULL,
+            *                [modified] timestamp(0) NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB AUTO_INCREMENT = 125 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS {CREATE#yep_org_tree}  (
+            *                [Id] bigint(20) UNSIGNED NOT NULL,
+            *                [parent_id] bigint(20) UNSIGNED NOT NULL,
+            *                [disp_order] int(11) NOT NULL,
+            *                [has_child] bit(1) NOT NULL,
+            *                [code] varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [name] varchar(150) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [type] tinyint(4) NOT NULL COMMENT '1：集团\r\n2：单位\r\n4：部门\r\n8：商铺\r\n16：虚拟节点',
+            *                [status] tinyint(4) NOT NULL,
+            *                [created] timestamp(0) NULL,
+            *                [modified] timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS {CREATE#yep_orm_test}  (
+            *                [Id] bigint(20) NOT NULL,
+            *                [Name] varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [Status] varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [Created] timestamp(0) NULL,
+            *                [Modified] timestamp(3) NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS {CREATE#yep_users}  (
+            *                [Id] bigint(20) UNSIGNED NOT NULL,
+            *                [org_id] bigint(20) UNSIGNED NOT NULL COMMENT '所在机构树节点ID',
+            *                [company_id] bigint(20) UNSIGNED NOT NULL COMMENT '所在单位',
+            *                [account] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '账户',
+            *                [role] int(11) NOT NULL COMMENT '角色',
+            *                [name] varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '名称',
+            *                [wechat_id] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '微信ID',
+            *                [alipay_id] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '支付宝ID',
+            *                [tel] varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '联系电话',
+            *                [mail] varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '邮箱地址',
+            *                [avatar] varchar(160) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '头像',
+            *                [sex] tinyint(4) NOT NULL COMMENT '性别',
+            *                [password] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '密码',
+            *                [salt] varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '加盐',
+            *                [extends_enum] int(11) NOT NULL COMMENT '扩展信息',
+            *                [status] int(11) NOT NULL COMMENT '状态',
+            *                [registered] timestamp(0) NULL DEFAULT NULL COMMENT '注册日期时间戳',
+            *                [modified] timestamp(3) NULL DEFAULT NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS {CREATE#yep_tax_code}  (
+            *                [id] varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [parent_id] varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [level] int(11) NOT NULL,
+            *                [name] varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [short_name] varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [specification] varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [unit] varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [price] decimal(18, 2) NOT NULL,
+            *                [use_policy] bit(1) NOT NULL,
+            *                [policy_type] tinyint(4) NOT NULL,
+            *                [tax_rate] double NOT NULL,
+            *                [free_tax_type] tinyint(4) NOT NULL,
+            *                [has_tax] bit(1) NOT NULL,
+            *                [special_manage] varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [introduction] varchar(2048) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [status] tinyint(4) NOT NULL,
+            *                [is_last_children] bit(1) NOT NULL DEFAULT b'0',
+            *                [create_time] timestamp(0) NULL DEFAULT NULL,
+            *                [modify_time] timestamp(0) NULL DEFAULT NULL,
+            *                PRIMARY KEY ([id]) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            SET FOREIGN_KEY_CHECKS = 1;
+            */
+
             var settings = new MySqlCorrectSettings();
 
             var query = sQL.Add(sQL1).ToString(settings);
+            /**
+            *select * from `fei_users` `a` , `fei_data` , `fei_userdetails` `b` on `a`.`uid`=`b`.`uid` where `a`.`uid` < 100;
+            *            SET NAMES utf8mb4;
+            *            SET FOREIGN_KEY_CHECKS = 0;
+            *            DROP TABLE IF EXISTS `yep_companys`;
+            *            CREATE TABLE IF NOT EXISTS `yep_auth_ship`  (
+            *                `id` bigint(20) NOT NULL,
+            *                `owner_id` bigint(20) UNSIGNED NOT NULL,
+            *                `auth_id` int(11) NOT NULL,
+            *                `type` tinyint(4) NOT NULL,
+            *                `status` int(11) NOT NULL,
+            *                `created` timestamp(0) NULL,
+            *                `modified` timestamp(0) NULL DEFAULT NULL,
+            *                PRIMARY KEY (`id`) USING BTREE,
+            *                CONSTRAINT FK_yep_companys_id FOREIGN KEY (`owner_id`) REFERENCES yep_companys (`id`) ON DELETE SET NULL ON UPDATE CASCADE 
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic
+            *            DELETE FROM yep_auth_ship;
+            *            CREATE TABLE IF NOT EXISTS `yep_auth_tree`  (
+            *                `Id` int(11) NOT NULL AUTO_INCREMENT,
+            *                `parent_id` int(11) NOT NULL,
+            *                `disp_order` int(11) NOT NULL,
+            *                `has_child` bit(1) NOT NULL,
+            *                `code` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `type` tinyint(4) NOT NULL COMMENT '0：项目\r\n1：导航\r\n2：菜单\r\n4：页面\r\n8：功能\r\n16：板块\r\n32：提示\r\n64：标记',
+            *                `status` tinyint(255) NOT NULL,
+            *                `created` timestamp(0) NULL,
+            *                `modified` timestamp(0) NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB AUTO_INCREMENT = 125 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS `yep_org_tree`  (
+            *                `Id` bigint(20) UNSIGNED NOT NULL,
+            *                `parent_id` bigint(20) UNSIGNED NOT NULL,
+            *                `disp_order` int(11) NOT NULL,
+            *                `has_child` bit(1) NOT NULL,
+            *                `code` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `name` varchar(150) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `type` tinyint(4) NOT NULL COMMENT '1：集团\r\n2：单位\r\n4：部门\r\n8：商铺\r\n16：虚拟节点',
+            *                `status` tinyint(4) NOT NULL,
+            *                `created` timestamp(0) NULL,
+            *                `modified` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS `yep_orm_test`  (
+            *                `Id` bigint(20) NOT NULL,
+            *                `Name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `Status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `Created` timestamp(0) NULL,
+            *                `Modified` timestamp(3) NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS `yep_users`  (
+            *                `Id` bigint(20) UNSIGNED NOT NULL,
+            *                `org_id` bigint(20) UNSIGNED NOT NULL COMMENT '所在机构树节点ID',
+            *                `company_id` bigint(20) UNSIGNED NOT NULL COMMENT '所在单位',
+            *                `account` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '账户',
+            *                `role` int(11) NOT NULL COMMENT '角色',
+            *                `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '名称',
+            *                `wechat_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '微信ID',
+            *                `alipay_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '支付宝ID',
+            *                `tel` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '联系电话',
+            *                `mail` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '邮箱地址',
+            *                `avatar` varchar(160) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '头像',
+            *                `sex` tinyint(4) NOT NULL COMMENT '性别',
+            *                `password` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '密码',
+            *                `salt` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '加盐',
+            *                `extends_enum` int(11) NOT NULL COMMENT '扩展信息',
+            *                `status` int(11) NOT NULL COMMENT '状态',
+            *                `registered` timestamp(0) NULL DEFAULT NULL COMMENT '注册日期时间戳',
+            *                `modified` timestamp(3) NULL DEFAULT NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            CREATE TABLE IF NOT EXISTS `yep_tax_code`  (
+            *                `id` varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `parent_id` varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `level` int(11) NOT NULL,
+            *                `name` varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `short_name` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `specification` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `unit` varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `price` decimal(18, 2) NOT NULL,
+            *                `use_policy` bit(1) NOT NULL,
+            *                `policy_type` tinyint(4) NOT NULL,
+            *                `tax_rate` double NOT NULL,
+            *                `free_tax_type` tinyint(4) NOT NULL,
+            *                `has_tax` bit(1) NOT NULL,
+            *                `special_manage` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `introduction` varchar(2048) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                `status` tinyint(4) NOT NULL,
+            *                `is_last_children` bit(1) NOT NULL DEFAULT b'0',
+            *                `create_time` timestamp(0) NULL DEFAULT NULL,
+            *                `modify_time` timestamp(0) NULL DEFAULT NULL,
+            *                PRIMARY KEY (`id`) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *            SET FOREIGN_KEY_CHECKS = 1;
+            */
 
             var sqlSettings = new SqlServerCorrectSettings();
 
@@ -349,6 +543,124 @@ namespace CodeArts.ORM.Tests
             sqlSettings.Formatters.Add(new DropIfFormatter());
 
             var query2 = sQL.ToString(sqlSettings);
+            /**
+            *select * from [fei_users] [a] , [fei_data] , [fei_userdetails] [b] on [a].[uid]=[b].[uid] where [a].[uid] < 100;
+            *            SET NAMES utf8mb4;
+            *            SET FOREIGN_KEY_CHECKS = 0;
+            *            IF EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' and [name] ='yep_companys') BEGIN
+            *DROP TABLE [yep_companys];
+            *END GO
+            *
+            *            IF NOT EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' AND [name] ='yep_auth_ship') BEGIN
+            *CREATE TABLE [yep_auth_ship]  (
+            *                [id] bigint(20) NOT NULL,
+            *                [owner_id] bigint(20) UNSIGNED NOT NULL,
+            *                [auth_id] int(11) NOT NULL,
+            *                [type] tinyint(4) NOT NULL,
+            *                [status] int(11) NOT NULL,
+            *                [created] timestamp(0) NULL,
+            *                [modified] timestamp(0) NULL DEFAULT NULL,
+            *                PRIMARY KEY ([id]) USING BTREE,
+            *                CONSTRAINT FK_yep_companys_id FOREIGN KEY ([owner_id]) REFERENCES yep_companys ([id]) ON DELETE SET NULL ON UPDATE CASCADE 
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic
+            *            
+            *END GO
+            *DELETE FROM yep_auth_ship;
+            *            IF NOT EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' AND [name] ='yep_auth_tree') BEGIN
+            *CREATE TABLE [yep_auth_tree]  (
+            *                [Id] int(11) NOT NULL AUTO_INCREMENT,
+            *                [parent_id] int(11) NOT NULL,
+            *                [disp_order] int(11) NOT NULL,
+            *                [has_child] bit(1) NOT NULL,
+            *                [code] varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [name] varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [url] varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [type] tinyint(4) NOT NULL COMMENT '0：项目\r\n1：导航\r\n2：菜单\r\n4：页面\r\n8：功能\r\n16：板块\r\n32：提示\r\n64：标记',
+            *                [status] tinyint(255) NOT NULL,
+            *                [created] timestamp(0) NULL,
+            *                [modified] timestamp(0) NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB AUTO_INCREMENT = 125 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *END GO
+            *
+            *            IF NOT EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' AND [name] ='yep_org_tree') BEGIN
+            *CREATE TABLE [yep_org_tree]  (
+            *                [Id] bigint(20) UNSIGNED NOT NULL,
+            *                [parent_id] bigint(20) UNSIGNED NOT NULL,
+            *                [disp_order] int(11) NOT NULL,
+            *                [has_child] bit(1) NOT NULL,
+            *                [code] varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [name] varchar(150) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [type] tinyint(4) NOT NULL COMMENT '1：集团\r\n2：单位\r\n4：部门\r\n8：商铺\r\n16：虚拟节点',
+            *                [status] tinyint(4) NOT NULL,
+            *                [created] timestamp(0) NULL,
+            *                [modified] timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *END GO
+            *
+            *            IF NOT EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' AND [name] ='yep_orm_test') BEGIN
+            *CREATE TABLE [yep_orm_test]  (
+            *                [Id] bigint(20) NOT NULL,
+            *                [Name] varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [Status] varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [Created] timestamp(0) NULL,
+            *                [Modified] timestamp(3) NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *END GO
+            *
+            *            IF NOT EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' AND [name] ='yep_users') BEGIN
+            *CREATE TABLE [yep_users]  (
+            *                [Id] bigint(20) UNSIGNED NOT NULL,
+            *                [org_id] bigint(20) UNSIGNED NOT NULL COMMENT '所在机构树节点ID',
+            *                [company_id] bigint(20) UNSIGNED NOT NULL COMMENT '所在单位',
+            *                [account] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '账户',
+            *                [role] int(11) NOT NULL COMMENT '角色',
+            *                [name] varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '名称',
+            *                [wechat_id] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '微信ID',
+            *                [alipay_id] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '支付宝ID',
+            *                [tel] varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '联系电话',
+            *                [mail] varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '邮箱地址',
+            *                [avatar] varchar(160) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '头像',
+            *                [sex] tinyint(4) NOT NULL COMMENT '性别',
+            *                [password] varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '密码',
+            *                [salt] varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '加盐',
+            *                [extends_enum] int(11) NOT NULL COMMENT '扩展信息',
+            *                [status] int(11) NOT NULL COMMENT '状态',
+            *                [registered] timestamp(0) NULL DEFAULT NULL COMMENT '注册日期时间戳',
+            *                [modified] timestamp(3) NULL DEFAULT NULL,
+            *                PRIMARY KEY (Id) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *END GO
+            *
+            *            IF NOT EXIXSTS(SELECT * FROM [sysobjects] WHERE [xtype]='U' AND [name] ='yep_tax_code') BEGIN
+            *CREATE TABLE [yep_tax_code]  (
+            *                [id] varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [parent_id] varchar(19) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [level] int(11) NOT NULL,
+            *                [name] varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [short_name] varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [specification] varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [unit] varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [price] decimal(18, 2) NOT NULL,
+            *                [use_policy] bit(1) NOT NULL,
+            *                [policy_type] tinyint(4) NOT NULL,
+            *                [tax_rate] double NOT NULL,
+            *                [free_tax_type] tinyint(4) NOT NULL,
+            *                [has_tax] bit(1) NOT NULL,
+            *                [special_manage] varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [introduction] varchar(2048) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+            *                [status] tinyint(4) NOT NULL,
+            *                [is_last_children] bit(1) NOT NULL DEFAULT b'0',
+            *                [create_time] timestamp(0) NULL DEFAULT NULL,
+            *                [modify_time] timestamp(0) NULL DEFAULT NULL,
+            *                PRIMARY KEY ([id]) USING BTREE
+            *            ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+            *END GO
+            *
+            *            SET FOREIGN_KEY_CHECKS = 1;
+            */
 
             var sql3 = new SQL("SELECT ywdjid as requestid FROM dzfp  GROUP BY ywdjid");
         }
@@ -361,17 +673,31 @@ namespace CodeArts.ORM.Tests
             from BEK_AR_INVOICE_NEW a
             where a.amt<>0  and  a.it_id not in ('30769','99999')
             and to_char(ct,'yyyy-mm-dd')>to_char(sysdate-5,'yyyy-mm-dd')
-            and not exists(select  t.invoice_id  from AR_INVOICE t where t.invoice_id=a.invoice_id and REALINVOICE_NO is not null)
+            and not exists(select top 10 t.invoice_id  from AR_INVOICE t where t.invoice_id=a.invoice_id and REALINVOICE_NO is not null)
+            and exists (select  t.invoice_id  from AR_INVOICE t where t.invoice_id=a.invoice_id and REALINVOICE_NO is null)
             group by a.invoice_id";
 
             var sql = new SQL(sqlstr);
 
+            /**
+            * select
+            * [a].[invoice_id]  as [ddbh]
+            * from {SELECT#BEK_AR_INVOICE_NEW} [a]
+            * where [a].[amt]<>0  and  [a].[it_id] not in ('30769','99999')
+            * and to_char([ct],'yyyy-mm-dd')>to_char(sysdate-5,'yyyy-mm-dd')
+            * and not exists(select top 10 [t].[invoice_id]  from {SELECT#AR_INVOICE} [t] where [t].[invoice_id]=[a].[invoice_id] and [REALINVOICE_NO] is not null)
+            * and exists (select  [t].[invoice_id]  from {SELECT#AR_INVOICE} [t] where [t].[invoice_id]=[a].[invoice_id] and [REALINVOICE_NO] is null)
+            * group by [a].[invoice_id]
+            */
+
             var settings = new Oracle.OracleCorrectSettings();
 
             var scalar = sql.ToString(settings);
+
+            
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void TestMapTo()
         {
             var config = new ConnectionConfig
@@ -415,7 +741,7 @@ namespace CodeArts.ORM.Tests
                 param[adapter.Settings.ParamterName(token.Name)] = requestid;
             });
 
-            var applyDto = provider.QueryFirst<ApplyDto>(connection, sql.ToString(adapter.Settings), param);
+            //var applyDto = provider.QueryFirst<ApplyDto>(connection, sql.ToString(adapter.Settings), param);
         }
 
         [TestMethod]
@@ -457,6 +783,64 @@ namespace CodeArts.ORM.Tests
             var settings = new Oracle.OracleCorrectSettings();
 
             var scalar = sql.ToString(settings);
+        }
+
+        [TestMethod]
+        public void TestExec()
+        {
+
+        }
+
+        [TestMethod]
+        public void TestDeclare()
+        {
+            var sqlstr = "declare @ddbh nvarchar(max) = 'xx', @invoiceNo nvarchar = '12', @kprq as int= 100000; exec zdy_fphhx @ddbh ,@invoiceNo,@kprq,'1';";
+
+            var sql = new SQL(sqlstr);
+
+            /**
+             * declare {ddbh} nvarchar(max) = 'xx', {invoiceNo} nvarchar = '12', {kprq} as int= 100000; exec zdy_fphhx {ddbh} ,{invoiceNo},{kprq},'1';
+             */
+
+            var settings = new Oracle.OracleCorrectSettings();
+
+            var scalar = sql.ToString(settings);
+        }
+
+        [TestMethod]
+        public void TestCursor()
+        {
+            string sqlstr = @"DECLARE @username varchar(20),@UserId varchar(100)
+            DECLARE cursor_name CURSOR FOR --定义游标
+                SELECT TOP 10 UserId,UserName FROM UserInfo
+                ORDER BY UserId DESC
+            OPEN cursor_name --打开游标
+            FETCH NEXT FROM cursor_name INTO  @UserId,@username  --抓取下一行游标数据
+            WHILE @@FETCH_STATUS = 0
+                BEGIN
+                    PRINT '用户ID：'+@UserId+'            '+'用户名：'+@username
+                    FETCH NEXT FROM cursor_name INTO @UserId,@username
+                END
+            CLOSE cursor_name --关闭游标
+            DEALLOCATE cursor_name --释放游标";
+
+            var sql = new SQL(sqlstr);
+
+            /**
+             * DECLARE {username} varchar(20),{UserId} varchar(100)
+             * DECLARE cursor_name CURSOR FOR 
+             *  SELECT TOP 10 [UserId],[UserName] FROM {SELECT#UserInfo}
+             *   ORDER BY [UserId] DESC
+             * OPEN cursor_name 
+             * FETCH NEXT FROM {SELECT#cursor_name} INTO  {UserId},{username}  
+             * WHILE @@FETCH_STATUS = 0
+             *   BEGIN
+             *       PRINT '用户ID：'+{UserId}+'            '+'用户名：'+{username}
+             *       FETCH NEXT FROM cursor_name INTO {UserId},{username}
+             *   END
+             * CLOSE cursor_name 
+             * DEALLOCATE cursor_name 
+             */
         }
     }
 }
