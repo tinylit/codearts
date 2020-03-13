@@ -46,10 +46,10 @@ namespace CodeArts.Runtime
         /// </summary>
         public Type Type { get; }
 
-        private readonly static object Lock_FieldObj = new object();
-        private readonly static object Lock_PropertyObj = new object();
-        private readonly static object Lock_MethodObj = new object();
-        private readonly static object Lock_ConstructorObj = new object();
+        private static readonly object Lock_FieldObj = new object();
+        private static readonly object Lock_PropertyObj = new object();
+        private static readonly object Lock_MethodObj = new object();
+        private static readonly object Lock_ConstructorObj = new object();
 
 #if NET40
 

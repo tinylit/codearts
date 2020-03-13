@@ -14,7 +14,7 @@ namespace CodeArts
         /// <param name="source">数据源</param>
         /// <param name="def">默认值</param>
         /// <returns></returns>
-        T MapTo<T>(object source, T def = default);
+        T Map<T>(object source, T def = default);
 
         /// <summary>
         /// 拷贝
@@ -22,6 +22,6 @@ namespace CodeArts
         /// <param name="source">数据源</param>
         /// <param name="conversionType">类型</param>
         /// <returns></returns>
-        object MapTo(object source, Type conversionType);
+        object Map(object source, Type conversionType);
     }
 }

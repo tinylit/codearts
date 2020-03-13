@@ -8,7 +8,7 @@ namespace System.Threading
     /// <typeparam name="T">数据类型</typeparam>
     public static class CallContext<T>
     {
-        private readonly static ConcurrentDictionary<string, AsyncLocal<T>> threadCache = new ConcurrentDictionary<string, AsyncLocal<T>>();
+        private static readonly ConcurrentDictionary<string, AsyncLocal<T>> threadCache = new ConcurrentDictionary<string, AsyncLocal<T>>();
 
         /// <summary>
         /// 设置数据

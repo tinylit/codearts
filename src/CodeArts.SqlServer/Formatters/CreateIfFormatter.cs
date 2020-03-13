@@ -10,7 +10,7 @@ namespace CodeArts.SqlServer.Formatters
     /// </summary>
     public class CreateIfFormatter : AdapterFormatter<CreateIfFormatter>, IFormatter
     {
-        private readonly static Regex PatternCreateIf = new Regex(@"\bcreate[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\w\[\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternCreateIf = new Regex(@"\bcreate[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\w\[\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 构造函数

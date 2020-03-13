@@ -13,7 +13,7 @@ namespace System.Threading
         [SecurityCritical]
         private readonly Action<AsyncLocalValueChangedArgs<T>> m_valueChangedHandler;
 
-        private readonly static ConcurrentDictionary<Thread, T> mapperCache = new ConcurrentDictionary<Thread, T>();
+        private static readonly ConcurrentDictionary<Thread, T> mapperCache = new ConcurrentDictionary<Thread, T>();
 
         /// <summary>
         /// 数据值

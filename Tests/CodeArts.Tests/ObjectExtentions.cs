@@ -267,5 +267,50 @@ namespace CodeArts.Tests
             var x = pList.CopyTo();
 
         }
+
+        [TestMethod]
+        public void MapDisposeTest()
+        {
+            var mapTo = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>(x => { var y = x; });
+
+            //? 为类型“CopyTest”指定代理。
+            mapTo.Run<CopyToTest, MapToTest>(source =>
+            {
+                return new MapToTest
+                {
+                    Id = source.Id,
+                    Name = source.Name,
+                    Date = source.Date
+                };
+            });
+
+            RuntimeServManager.TryAddSingleton(() => mapTo);
+
+            var t1 = new T1
+            {
+                A = 100,
+                B = "10000"
+            };
+
+            var value = new CopyToTest
+            {
+                Id = 1000,
+                Name = "test",
+                Date = DateTime.Now
+            };
+
+            var t2 = t1.MapTo<T2>();
+
+            using (var map = new MapToExpression())
+            {
+                var t3 = map.Map<T2>(t1);
+
+                var map1 = map.Map<MapToTest>(value);
+
+                var map2 = value.MapTo<MapToTest>();
+            }
+
+            var map3 = value.MapTo<MapToTest>();
+        }
     }
 }

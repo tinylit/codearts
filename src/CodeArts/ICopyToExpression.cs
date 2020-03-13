@@ -14,6 +14,6 @@ namespace CodeArts
         /// <param name="source">数据源</param>
         /// <param name="def">默认值</param>
         /// <returns></returns>
-        T CopyTo<T>(T source, T def = default);
+        T Copy<T>(T source, T def = default);
     }
 }

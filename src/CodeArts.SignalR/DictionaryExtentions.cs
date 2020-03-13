@@ -10,7 +10,7 @@ namespace CodeArts.SignalR
     internal static class DictionaryExtentions
     {
 
-        private readonly static Dictionary<string, string> ClaimTypes = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> ClaimTypes = new Dictionary<string, string>
         {
             ["id"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
             ["name"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
@@ -73,7 +73,7 @@ namespace CodeArts.SignalR
             ["x500distinguishedname"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/x500distinguishedname"
         };
 
-        private readonly static Dictionary<Type, string> ClaimValueTypes = new Dictionary<Type, string>
+        private static readonly Dictionary<Type, string> ClaimValueTypes = new Dictionary<Type, string>
         {
             [typeof(bool)] = "http://www.w3.org/2001/XMLSchema#boolean",
             [typeof(int)] = "http://www.w3.org/2001/XMLSchema#integer32",

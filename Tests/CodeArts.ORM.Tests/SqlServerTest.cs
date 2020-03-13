@@ -27,7 +27,7 @@ namespace UnitTest
         {
             var adapter = new SqlServerAdapter();
             DbConnectionManager.AddAdapter(adapter);
-            DbConnectionManager.AddProvider<SkyProvider>();
+            DbConnectionManager.AddProvider<CodeArtsProvider>();
 
             if (isCompleted) return;
 

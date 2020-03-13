@@ -49,7 +49,7 @@ namespace CodeArts.Mvc
             return new GenericPrincipal(userData.AsIdentity(), userData.Where(x => x.Key.ToLower() == "role").Select(x => x.Value.ToString()).ToArray());
         }
 #else
-        private readonly static Dictionary<string, string> ClaimTypes = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> ClaimTypes = new Dictionary<string, string>
         {
             ["id"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
             ["name"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
@@ -112,7 +112,7 @@ namespace CodeArts.Mvc
             ["x500distinguishedname"] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/x500distinguishedname"
         };
 
-        private readonly static Dictionary<Type, string> ClaimValueTypes = new Dictionary<Type, string>
+        private static readonly Dictionary<Type, string> ClaimValueTypes = new Dictionary<Type, string>
         {
             [typeof(bool)] = "http://www.w3.org/2001/XMLSchema#boolean",
             [typeof(int)] = "http://www.w3.org/2001/XMLSchema#integer32",

@@ -15,7 +15,7 @@ namespace CodeArts
         /// 空值
         /// </summary>
 
-        public readonly static UppercaseString Empty = new UppercaseString();
+        public static readonly UppercaseString Empty = new UppercaseString();
 
         /// <summary>
         /// 构造函数

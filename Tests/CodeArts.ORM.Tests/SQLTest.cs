@@ -707,7 +707,7 @@ namespace CodeArts.ORM.Tests
             };
 
             DbConnectionManager.AddAdapter(new SqlServerAdapter());
-            DbConnectionManager.AddProvider<SkyProvider>();
+            DbConnectionManager.AddProvider<CodeArtsProvider>();
 
             var adapter = DbConnectionManager.Create(config.ProviderName);
             var connection = adapter.Create(config.ConnectionString);

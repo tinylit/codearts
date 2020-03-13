@@ -13,11 +13,11 @@ namespace CodeArts.ORM
 {
     /// <summary>
     /// SQL 默认语法：
-    ///     表名称：{SELECT:yep_users}
+    ///     表名称：[yep_users]
     ///     名称：[name]
     ///     参数名称:{name}
-    ///     条件移除：DROP TABLE IF EXIXSTS yep_users;
-    ///     条件创建：CREATE TABLE IF NOT EXIXSTS yep_users (Id int not null,name varchar(100));
+    ///     条件移除：DROP TABLE IF EXIXSTS [yep_users];
+    ///     条件创建：CREATE TABLE IF NOT EXIXSTS [yep_users] ([Id] int not null,[name] varchar(100));
     /// 说明：会自动去除代码注解和多余的换行符压缩语句。
     /// </summary>
     [DebuggerDisplay("{ToString()}")]
@@ -85,7 +85,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 表命令。
         /// </summary>
-        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|having|select|into|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+))?(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|having|select|into|limit|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+))?(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 连表命令。
@@ -233,7 +233,7 @@ namespace CodeArts.ORM
                     .Append(")?")
                     .Append(@"(?<name>(?!\d+)(?!\btop\b)\w+)")
                     .Append(check) //? select [name]; select top 10 [name]
-                .Append(@"|\b(where|and|or)")
+                .Append(@"|\b(where|and|or|between)")
                     .Append(whitespace)
                     .Append(@"+(")
                         .Append("(not")
@@ -257,11 +257,18 @@ namespace CodeArts.ORM
                     .Append(whitespace)
                     .Append(@"+(?<name>(?!\d+)(?!\b(update|delete)\b)\w+)")
                     .Append(check) //? on [name]; -- mysql `modified` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0)
-                .Append(@"|([+/-]|[<=>%])")
+                .Append(@"|=")
+                    .Append(whitespace)
+                    .Append(@"*(?<name>(?!\d+)(?!\bnull\b)\w+)")
+                    .Append(whitespace)
+                    .Append(@"+(and|or|case|when|then|else|end||between|select|by|join|on|(left|right|inner|outer)")
+                    .Append(whitespace)
+                    .Append(@"+join)") // ? =[name] and
+                .Append(@"|([+/-]|[<%>])")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"+(and|or|case|when|then|else|end|select|by|join|on|(left|right|inner|outer)")
+                    .Append(@"+(and|or|case|when|then|else|end||between|select|by|join|on|(left|right|inner|outer)")
                     .Append(whitespace)
                     .Append(@"+join)") // ? =[name] and
                 .Append(@"|\*")

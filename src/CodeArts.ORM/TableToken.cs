@@ -15,7 +15,7 @@ namespace CodeArts.ORM
     [DebuggerDisplay("{Name}")]
     public struct TableToken
     {
-        private readonly static Regex Pattern = new Regex("^[a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex Pattern = new Regex("^[a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.Singleline);
 
         /// <summary>
         /// 令牌
@@ -59,12 +59,12 @@ namespace CodeArts.ORM
         /// <summary>
         /// 空集合。
         /// </summary>
-        public readonly static ReadOnlyCollection<TableToken> None = new ReadOnlyCollection<TableToken>(new List<TableToken>());
+        public static readonly ReadOnlyCollection<TableToken> None = new ReadOnlyCollection<TableToken>(new List<TableToken>());
 #else
         /// <summary>
         /// 空集合。
         /// </summary>
-        public readonly static IReadOnlyCollection<TableToken> None = new List<TableToken>();
+        public static readonly IReadOnlyCollection<TableToken> None = new List<TableToken>();
 #endif
     }
 }

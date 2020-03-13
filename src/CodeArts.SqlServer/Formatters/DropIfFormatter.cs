@@ -10,7 +10,7 @@ namespace CodeArts.SqlServer.Formatters
     /// </summary>
     public class DropIfFormatter : AdapterFormatter<DropIfFormatter>, IFormatter
     {
-        private readonly static Regex PatternDropIf = new Regex(@"\bdrop[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\[\w\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternDropIf = new Regex(@"\bdrop[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\[\w\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         /// <summary>
         /// 构造函数
         /// </summary>

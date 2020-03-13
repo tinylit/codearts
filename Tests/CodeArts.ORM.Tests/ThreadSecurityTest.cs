@@ -8,7 +8,7 @@ namespace UnitTest
     [TestClass]
     public class ThreadSecurityTest
     {
-        private readonly static object LockObj = new object();
+        private static readonly object LockObj = new object();
         //连接池（线程及对应的数据库连接）
         private static readonly ConcurrentDictionary<Thread, Dictionary<string, int>> ConnectionCache = new ConcurrentDictionary<Thread, Dictionary<string, int>>();
         [TestMethod]

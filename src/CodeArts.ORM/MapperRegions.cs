@@ -11,7 +11,7 @@ namespace CodeArts.ORM
     /// </summary>
     public static class MapperRegions
     {
-        private readonly static ConcurrentDictionary<Type, TableRegions> MapperCache =
+        private static readonly ConcurrentDictionary<Type, TableRegions> MapperCache =
             new ConcurrentDictionary<Type, TableRegions>();
 
         /// <summary>

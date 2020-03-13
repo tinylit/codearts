@@ -49,12 +49,12 @@ namespace CodeArts
         /// Utc
         /// </summary>
         [XmlElement("timestamp")]
-        public DateTime Timestamp { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         /// <summary>
         /// 成功
         /// </summary>
-        public static ServResult Ok() => new ServResult { Code = StatusCodes.OK };
+        public static ServResult Ok() => new ServResult();
 
         /// <summary>
         /// 成功

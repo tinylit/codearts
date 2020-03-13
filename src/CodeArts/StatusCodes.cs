@@ -10,6 +10,12 @@ namespace CodeArts
     public abstract class StatusCodes
     {
         /// <summary>
+        ///     执行成功。
+        /// </summary>
+        [Description("执行成功!")]
+        public const int OK = 0;
+
+        /// <summary>
         ///     等效于 HTTP 状态 100。 System.Net.HttpStatusCode.Continue 指示客户端可能继续其请求。
         /// </summary>
         [Description("指示客户端可能继续其请求.")]
@@ -23,7 +29,7 @@ namespace CodeArts
         ///     等效于 HTTP 状态 200。 System.Net.HttpStatusCode.OK 指示请求成功，且请求的信息包含在响应中。 这是最常接收的状态代码。
         /// </summary>
         [Description("请求成功!")]
-        public const int OK = 200;
+        public const int RequestOK = 200;
         /// <summary>
         ///     等效于 HTTP 状态 201。 System.Net.HttpStatusCode.Created 指示请求导致在响应被发送前创建新资源。
         /// </summary>

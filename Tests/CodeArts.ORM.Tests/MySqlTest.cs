@@ -34,7 +34,7 @@ namespace UnitTest
             adapter.Settings.Visitters.Add(new ConvertVisitter());
 
             DbConnectionManager.AddAdapter(adapter);
-            DbConnectionManager.AddProvider<SkyProvider>();
+            DbConnectionManager.AddProvider<CodeArtsProvider>();
 
             if (isCompleted) return;
 

@@ -45,7 +45,7 @@ namespace CodeArts.Runtime
 
 
         private ReadOnlyCollection<ParameterStoreItem> parameterStores;
-        private readonly static object Lock_ParameterObj = new object();
+        private static readonly object Lock_ParameterObj = new object();
         /// <summary>
         /// 参数信息
         /// </summary>

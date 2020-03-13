@@ -9,7 +9,7 @@ namespace CodeArts
     /// </summary>
     public class JsonSettings : DefaultSettings
     {
-        private readonly static Regex NumberPattern = new Regex("^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?$", RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex NumberPattern = new Regex("^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?$", RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
         /// 构造函数

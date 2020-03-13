@@ -14,7 +14,7 @@ namespace CodeArts.ORM
     /// </summary>
     public abstract class RepositoryProvider : IDbRepositoryProvider, IDbRepositoryExecuter
     {
-        private readonly static AsyncLocal<bool> localCache = new AsyncLocal<bool>();
+        private static readonly AsyncLocal<bool> localCache = new AsyncLocal<bool>();
 
         /// <summary>
         /// 构造函数

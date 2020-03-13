@@ -20,14 +20,18 @@ namespace CodeArts
             /// <summary>
             /// 用作Xml解析
             /// </summary>
-            private ErrorResult() { Code = StatusCodes.OK; }
+            private ErrorResult() { }
 
             /// <summary>
             /// 构造函数
             /// </summary>
             /// <param name="errorMsg">错误消息</param>
             /// <param name="statusCode">错误编码</param>
-            public ErrorResult(string errorMsg, int statusCode) : base(statusCode) => Msg = errorMsg;
+            public ErrorResult(string errorMsg, int statusCode)
+            {
+                Msg = errorMsg;
+                Code = statusCode;
+            }
 
             /// <summary>
             /// 错误信息
@@ -37,15 +41,9 @@ namespace CodeArts
         }
 
         /// <summary>
-        /// 用作Xml解析
-        /// </summary>
-        private DResult() { Code = StatusCodes.OK; }
-
-        /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="statusCode">状态码</param>
-        public DResult(int statusCode = StatusCodes.OK) => Code = statusCode;
+        public DResult() { }
 
         /// <summary>
         /// 状态码
@@ -68,7 +66,7 @@ namespace CodeArts
         /// <summary>
         /// 成功
         /// </summary>
-        public static DResult Ok() => new DResult(StatusCodes.OK);
+        public static DResult Ok() => new DResult();
 
         /// <summary>
         /// 成功
@@ -117,7 +115,7 @@ namespace CodeArts
         /// 构造函数
         /// </summary>
         /// <param name="data">数据</param>
-        public DResult(T data) : base(StatusCodes.OK) => Data = data;
+        public DResult(T data) : base() => Data = data;
 
         /// <summary>
         /// 数据

@@ -85,7 +85,7 @@ namespace CodeArts.Implements
         /// <param name="source">数据源</param>
         /// <param name="def">默认值</param>
         /// <returns></returns>
-        public T CopyTo<T>(T source, T def = default)
+        public T Copy<T>(T source, T def = default)
         {
             if (source == null)
                 return def;

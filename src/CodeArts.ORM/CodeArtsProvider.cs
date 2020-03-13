@@ -7,9 +7,9 @@ using System.Threading;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 天空供应
+    /// 代码艺术
     /// </summary>
-    public class SkyProvider : RepositoryProvider
+    public class CodeArtsProvider : RepositoryProvider
     {
         private readonly ISQLCorrectSettings settings;
         private static readonly Dictionary<Type, DbType> typeMap;
@@ -18,12 +18,12 @@ namespace CodeArts.ORM
         /// 构造函数
         /// </summary>
         /// <param name="settings">SQL矫正配置</param>
-        public SkyProvider(ISQLCorrectSettings settings) : base(settings)
+        public CodeArtsProvider(ISQLCorrectSettings settings) : base(settings)
         {
             this.settings = settings;
         }
 
-        static SkyProvider()
+        static CodeArtsProvider()
         {
             typeMap = new Dictionary<Type, DbType>
             {
@@ -109,10 +109,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
-            if (conn.State == ConnectionState.Closed)
-            {
-                conn.Open();
-            }
+            OpenConnection(conn);
 
             using (var command = conn.CreateCommand())
             {
@@ -195,16 +192,13 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
-            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+            OpenConnection(conn);
 
-            if (conn.State == ConnectionState.Closed)
-            {
-                conn.Open();
-            }
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
 
             if (settings.Engine == DatabaseEngine.SQLite)
             {
-                behavior &= ~(CommandBehavior.SingleResult | CommandBehavior.SingleRow);
+                behavior &= ~CommandBehavior.SingleResult;
             }
 
             using (var command = conn.CreateCommand())

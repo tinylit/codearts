@@ -22,7 +22,7 @@ namespace CodeArts.Implements
         /// <param name="obj">源数据</param>
         /// <param name="def">默认值</param>
         /// <returns></returns>
-        public T CastTo<T>(object obj, T def = default)
+        public T Cast<T>(object obj, T def = default)
         {
             if (obj == null) return def;
 
@@ -68,7 +68,7 @@ namespace CodeArts.Implements
         /// <param name="obj">源数据</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        public object CastTo(object obj, Type conversionType)
+        public object Cast(object obj, Type conversionType)
         {
             if (conversionType is null)
                 throw new ArgumentNullException(nameof(conversionType));
@@ -481,7 +481,7 @@ namespace CodeArts.Implements
 
             var paramterExp = Parameter(typeof(object), "source");
 
-            var castToMethod = GetMethodInfo(CastTo); //typeof(ObjectExtentions).GetMethod("CastTo", new Type[] { typeof(object), typeof(Type) });
+            var castToMethod = GetMethodInfo(Cast); //typeof(ObjectExtentions).GetMethod("CastTo", new Type[] { typeof(object), typeof(Type) });
 
             if (sourceType.IsValueType)
             {

@@ -42,12 +42,12 @@ namespace CodeArts.ORM
         /// <summary>
         /// 空集合
         /// </summary>
-        public readonly static ReadOnlyCollection<ParameterToken> None = new ReadOnlyCollection<ParameterToken>(new List<ParameterToken>());
+        public static readonly ReadOnlyCollection<ParameterToken> None = new ReadOnlyCollection<ParameterToken>(new List<ParameterToken>());
 #else
         /// <summary>
         /// 空集合
         /// </summary>
-        public readonly static IReadOnlyCollection<ParameterToken> None = new List<ParameterToken>();
+        public static readonly IReadOnlyCollection<ParameterToken> None = new List<ParameterToken>();
 #endif
     }
 }

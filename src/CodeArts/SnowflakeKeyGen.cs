@@ -16,7 +16,7 @@ namespace CodeArts
             public override DateTime ToUniversalTime() => UtcBase.AddMilliseconds(Value >> timestampLeftShift);
         }
 
-        private readonly static DateTime UtcBase = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime UtcBase = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         private readonly long workerId = 0L; // 这个就是代表了机器id
         private readonly long datacenterId = 0L; // 这个就是代表了机房id
 
@@ -49,19 +49,19 @@ namespace CodeArts
             this.datacenterId = datacenterId;
         }
 
-        private readonly static long _timestamp = 0L;
-        private readonly static int workerIdBits = 5;
-        private readonly static int datacenterIdBits = 5;
+        private static readonly long _timestamp = 0L;
+        private static readonly int workerIdBits = 5;
+        private static readonly int datacenterIdBits = 5;
 
         // 这个是二进制运算，就是5 bit最多只能有31个数字，也就是说机器id最多只能是32以内
-        private readonly static int maxWorkerId = -1 ^ (-1 << workerIdBits);
+        private static readonly int maxWorkerId = -1 ^ (-1 << workerIdBits);
         // 这个是一个意思，就是5 bit最多只能有31个数字，机房id最多只能是32以内
-        private readonly static int maxDatacenterId = -1 ^ (-1 << datacenterIdBits);
-        private readonly static int sequenceBits = 12;
-        private readonly static int workerIdShift = sequenceBits;
-        private readonly static int datacenterIdShift = sequenceBits + workerIdBits;
-        private readonly static int timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;
-        private readonly static long sequenceMask = -1L ^ (-1L << sequenceBits);
+        private static readonly int maxDatacenterId = -1 ^ (-1 << datacenterIdBits);
+        private static readonly int sequenceBits = 12;
+        private static readonly int workerIdShift = sequenceBits;
+        private static readonly int datacenterIdShift = sequenceBits + workerIdBits;
+        private static readonly int timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;
+        private static readonly long sequenceMask = -1L ^ (-1L << sequenceBits);
         private long lastTimestamp = -1L;
 
         /// <summary>

@@ -13,7 +13,7 @@ namespace Mvc.Core
         public override void ConfigureServices(IServiceCollection services)
         {
             DbConnectionManager.AddAdapter(new MySqlAdapter());
-            DbConnectionManager.AddProvider<SkyProvider>();
+            DbConnectionManager.AddProvider<CodeArtsProvider>();
 
             services.AddGrpc();
 

@@ -14,7 +14,7 @@ namespace CodeArts
         /// <param name="source">数据源</param>
         /// <param name="def">默认值</param>
         /// <returns></returns>
-        T CastTo<T>(object source, T def = default);
+        T Cast<T>(object source, T def = default);
 
         /// <summary>
         /// 转换
@@ -22,6 +22,6 @@ namespace CodeArts
         /// <param name="source">数据源</param>
         /// <param name="conversionType">类型</param>
         /// <returns></returns>
-        object CastTo(object source, Type conversionType);
+        object Cast(object source, Type conversionType);
     }
 }

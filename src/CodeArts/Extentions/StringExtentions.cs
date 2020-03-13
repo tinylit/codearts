@@ -24,6 +24,8 @@ namespace System
 
         private static readonly Regex PatternUrlCamelCase = new Regex("(?<letter>([A-Z]))", RegexOptions.Singleline & RegexOptions.Compiled);
 
+        private static readonly Regex PatternMail = new Regex(@"\w[-\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\.)+[A-Za-z]{2,14}", RegexOptions.Compiled);
+
         private static readonly ConcurrentDictionary<NamingType, DefaultSettings> SettingsCache = new ConcurrentDictionary<NamingType, DefaultSettings>();
 
         /// <summary>
@@ -97,6 +99,34 @@ namespace System
         /// <param name="name">名称</param>
         /// <returns></returns>
         public static string ToUrlCase(this string name) => ToNamingCase(name, NamingType.UrlCase);
+
+        /// <summary>
+        /// 是否为NULL。
+        /// </summary>
+        /// <param name="value">字符串</param>
+        /// <returns></returns>
+        public static bool IsNull(this string value) => value is null;
+
+        /// <summary>
+        /// 指示指定的字符串是 null 或是 空字符串 ("")。
+        /// </summary>
+        /// <param name="value">字符串</param>
+        /// <returns></returns>
+        public static bool IsEmpty(this string value) => value is null || value.Length == 0;
+
+        /// <summary>
+        /// 原内容不为null时，返回原字符，否则返回空字符串（""）。
+        /// </summary>
+        /// <param name="value">字符串</param>
+        /// <returns></returns>
+        public static string OrEmpty(this string value) => value ?? string.Empty;
+
+        /// <summary>
+        /// 内容是邮箱。
+        /// </summary>
+        /// <param name="value">字符串</param>
+        /// <returns></returns>
+        public static bool IsMail(this string value) => PatternMail.IsMatch(value);
 
         /// <summary>
         /// 配置文件读取
@@ -243,7 +273,7 @@ namespace System
                 {
                     string text = Nested<T>.Invoke(source, ((Capture)nameCap.Current).Value, settings);
 
-                    if(!(text is null))
+                    if (!(text is null))
                     {
                         flag = false;
                         valueStr += text;
@@ -253,7 +283,7 @@ namespace System
                     {
                         break;
                     }
-                    
+
                     string token = ((Capture)tokenCap.Current).Value;
 
                     if (valueStr.Length > 0)

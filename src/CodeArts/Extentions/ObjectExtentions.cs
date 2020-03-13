@@ -32,7 +32,7 @@ namespace System
         /// <param name="def">默认值</param>
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
-        public static T CastTo<T>(this object obj, T def = default) => Cast.CastTo(obj, def);
+        public static T CastTo<T>(this object obj, T def = default) => Cast.Cast(obj, def);
 
         /// <summary> 
         /// 对象转换 
@@ -40,7 +40,7 @@ namespace System
         /// <param name="obj">数据源</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        public static object CastTo(this object obj, Type conversionType) => Cast.CastTo(obj, conversionType);
+        public static object CastTo(this object obj, Type conversionType) => Cast.Cast(obj, conversionType);
 
         private static ICopyToExpression copy;
         /// <summary>
@@ -66,7 +66,7 @@ namespace System
         /// <param name="def">默认值</param>
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
-        public static T CopyTo<T>(this T obj, T def = default) => Copy.CopyTo(obj, def);
+        public static T CopyTo<T>(this T obj, T def = default) => Copy.Copy(obj, def);
 
         private static IMapToExpression map;
         /// <summary>
@@ -92,7 +92,7 @@ namespace System
         /// <param name="def">默认值</param>
         /// <typeparam name="T">目标类型</typeparam>
         /// <returns></returns>
-        public static T MapTo<T>(this object obj, T def = default) => Map.MapTo(obj, def);
+        public static T MapTo<T>(this object obj, T def = default) => Map.Map(obj, def);
 
         /// <summary> 
         /// 对象映射
@@ -100,6 +100,6 @@ namespace System
         /// <param name="obj">数据源</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        public static object MapTo(this object obj, Type conversionType) => Map.MapTo(obj, conversionType);
+        public static object MapTo(this object obj, Type conversionType) => Map.Map(obj, conversionType);
     }
 }

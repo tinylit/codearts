@@ -37,7 +37,7 @@ namespace CodeArts.Implements
         /// <param name="obj">数据源</param>
         /// <param name="def">默认值</param>
         /// <returns></returns>
-        public T MapTo<T>(object obj, T def = default)
+        public T Map<T>(object obj, T def = default)
         {
             if (obj == null) return def;
 
@@ -75,7 +75,7 @@ namespace CodeArts.Implements
         /// <param name="source">数据源</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        public object MapTo(object source, Type conversionType)
+        public object Map(object source, Type conversionType)
         {
             if (source == null) return null;
 
@@ -824,9 +824,9 @@ namespace CodeArts.Implements
 
             var valueExp = Variable(sourceType, "value");
 
-            var errorExp = Parameter(typeof(Exception), "e");
-
             var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
+
+            var takeFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
 
             var convertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
 
@@ -877,7 +877,9 @@ namespace CodeArts.Implements
 
             if (typeMap.TryGetValue(conversionType, out MethodInfo methodInfo))
             {
-                objExp = TryCatch(Call(valueExp, methodInfo, indexExp), Catch(errorExp, Convert(Call(null, convertMethod, objExp, Constant(conversionType)), conversionType)));
+                var conversionTypeExp = Constant(conversionType);
+
+                objExp = Condition(Equal(conversionTypeExp, Call(valueExp, takeFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, conversionTypeExp), conversionType));
             }
             else
             {
@@ -926,7 +928,8 @@ namespace CodeArts.Implements
                     return lamdaExp.Compile();
                 }
             }
-            else if (conversionType.IsClass && typeof(ICollection<KeyValuePair<string, object>>).IsAssignableFrom(conversionType))
+
+            if (conversionType.IsClass && typeof(ICollection<KeyValuePair<string, object>>).IsAssignableFrom(conversionType))
             {
                 var parameterExp = Parameter(typeof(object), "source");
 

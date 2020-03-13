@@ -125,7 +125,7 @@ namespace CodeArts.Proxies
             private readonly Type _ofType;
             private readonly Func<T, IInterceptor, T> Invoke;
 
-            private readonly static ConcurrentDictionary<Type, Func<T, IInterceptor, T>> InvokeCache = new ConcurrentDictionary<Type, Func<T, IInterceptor, T>>();
+            private static readonly ConcurrentDictionary<Type, Func<T, IInterceptor, T>> InvokeCache = new ConcurrentDictionary<Type, Func<T, IInterceptor, T>>();
 
             public ProxyOf(Type proxyType)
             {
@@ -174,7 +174,7 @@ namespace CodeArts.Proxies
         private sealed class DefaultConstructorProxyOf<T> : IDefaultConstructorProxyOf<T> where T : class, new()
         {
             private readonly Func<IInterceptor, T> Invoke;
-            private readonly static ConcurrentDictionary<Type, Func<IInterceptor, T>> InvokeCache = new ConcurrentDictionary<Type, Func<IInterceptor, T>>();
+            private static readonly ConcurrentDictionary<Type, Func<IInterceptor, T>> InvokeCache = new ConcurrentDictionary<Type, Func<IInterceptor, T>>();
 
             public DefaultConstructorProxyOf(Type proxyType)
             {

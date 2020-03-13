@@ -17,7 +17,7 @@ namespace CodeArts.ORM
     /// </summary>
     public abstract class Repository
     {
-        private readonly static ConcurrentDictionary<Type, DbConfigAttribute> mapperCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> mapperCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
         private IDbConnectionAdapter _DbProvider = null;
         /// <summary>
