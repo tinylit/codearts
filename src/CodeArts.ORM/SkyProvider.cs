@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading;
 
 namespace CodeArts.ORM
 {
@@ -113,20 +114,34 @@ namespace CodeArts.ORM
                 conn.Open();
             }
 
-            try
+            using (var command = conn.CreateCommand())
             {
-                using (var command = conn.CreateCommand())
-                {
-                    command.CommandText = sql;
+                command.CommandText = sql;
 
-                    AddParameterAuto(command, parameters);
+                AddParameterAuto(command, parameters);
 
-                    return command.ExecuteNonQuery();
-                }
+                return command.ExecuteNonQuery();
             }
-            finally
+        }
+
+        private static void OpenConnection(IDbConnection conn)
+        {
+            switch (conn.State)
             {
-                conn.Close();
+                case ConnectionState.Closed:
+                    conn.Open();
+                    break;
+                case ConnectionState.Connecting:
+                    do
+                    {
+                        Thread.Sleep(5);
+
+                    } while (conn.State == ConnectionState.Connecting);
+                    break;
+                case ConnectionState.Broken:
+                    conn.Close();
+                    conn.Open();
+                    break;
             }
         }
 
@@ -140,35 +155,30 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
-            if (conn.State == ConnectionState.Closed)
+            OpenConnection(conn);
+
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
+
+            if (settings.Engine == DatabaseEngine.SQLite)
             {
-                conn.Open();
+                behavior &= ~CommandBehavior.SingleResult;
             }
 
-            try
+            using (var command = conn.CreateCommand())
             {
-                using (var command = conn.CreateCommand())
+                command.CommandText = sql;
+
+                AddParameterAuto(command, parameters);
+
+                using (var dr = command.ExecuteReader(behavior))
                 {
-                    command.CommandText = sql;
-
-                    AddParameterAuto(command, parameters);
-
-                    using (var dr = command.ExecuteReader())
+                    while (dr.Read())
                     {
-                        while (dr.Read())
-                        {
-                            yield return dr.MapTo<T>();
-                        }
-
-                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
-
-                        dr.Close();
+                        yield return dr.MapTo<T>();
                     }
+
+                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
                 }
-            }
-            finally
-            {
-                conn.Close();
             }
         }
 
@@ -185,44 +195,42 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+
             if (conn.State == ConnectionState.Closed)
             {
                 conn.Open();
             }
 
-            var value = defaultValue;
-
-            try
+            if (settings.Engine == DatabaseEngine.SQLite)
             {
-                using (var command = conn.CreateCommand())
+                behavior &= ~(CommandBehavior.SingleResult | CommandBehavior.SingleRow);
+            }
+
+            using (var command = conn.CreateCommand())
+            {
+                command.CommandText = sql;
+
+                AddParameterAuto(command, parameters);
+
+                using (var dr = command.ExecuteReader(behavior))
                 {
-                    command.CommandText = sql;
-
-                    AddParameterAuto(command, parameters);
-
-                    using (var dr = command.ExecuteReader())
+                    if (dr.Read())
                     {
-                        if (dr.Read())
-                        {
-                            value = dr.MapTo<T>();
-                        }
-                        else if (reqiured)
-                        {
-                            throw new DRequiredException();
-                        }
+                        defaultValue = dr.MapTo<T>();
 
-                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
-
-                        dr.Close();
+                        while (dr.Read()) { /* ignore subsequent rows */ }
                     }
+                    else if (reqiured)
+                    {
+                        throw new DRequiredException();
+                    }
+
+                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
                 }
             }
-            finally
-            {
-                conn.Close();
-            }
 
-            return value;
+            return defaultValue;
         }
     }
 }

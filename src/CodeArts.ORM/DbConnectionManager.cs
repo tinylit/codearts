@@ -36,10 +36,8 @@ namespace CodeArts.ORM
                 throw new ArgumentNullException(nameof(adapter));
             if (string.IsNullOrWhiteSpace(adapter.ProviderName))
                 throw new DException("数据库适配器名称不能为空!");
-            var key = adapter.ProviderName.ToLower();
-            if (Adapters.ContainsKey(key))
-                return;
-            Adapters.TryAdd(key, adapter);
+
+            Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (_, _2) => adapter);
         }
 
         /// <summary>

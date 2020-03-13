@@ -102,14 +102,19 @@ namespace CodeArts.ORM
                         return (TResult)Query<T>(conn, sql, builder.Parameters);
                     }
 
-                    bool required = builder.Required;
+                    object value = builder.DefaultValue;
 
-                    if (builder.DefaultValue is TResult defaultValue)
+                    if (value is null)
                     {
-                        return QueryFirst(conn, sql, builder.Parameters, required, defaultValue);
+                        return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required);
                     }
 
-                    return QueryFirst<TResult>(conn, sql, builder.Parameters, required);
+                    if (value is TResult defaultValue)
+                    {
+                        return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue);
+                    }
+
+                    return QueryFirst(conn, sql, builder.Parameters, builder.Required, value.MapTo<TResult>());
                 }
                 catch (DbException db)
                 {
@@ -148,10 +153,7 @@ namespace CodeArts.ORM
 
                 try
                 {
-                    lock (conn)
-                    {
-                        return Execute(conn, sql, builder.Parameters);
-                    }
+                    return Execute(conn, sql, builder.Parameters);
                 }
                 catch (DbException db)
                 {

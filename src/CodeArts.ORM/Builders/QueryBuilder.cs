@@ -618,11 +618,6 @@ namespace CodeArts.ORM.Builders
                 _MethodLevel += 1;
             }
 
-            if (defaultIfEmpty && !(defaultIfEmpty = node.Type == defaultValueType) && !(DefaultValue is null))
-            {
-                DefaultValue = null;
-            }
-
             switch (name)
             {
                 case MethodCall.Any:
@@ -958,12 +953,18 @@ namespace CodeArts.ORM.Builders
 
                     return base.Visit(node.Arguments[0]);
                 case MethodCall.DefaultIfEmpty:
+                    if (defaultIfEmpty)
+                    {
+                        return base.Visit(node.Arguments[0]);
+                    }
+
                     if (node.Arguments.Count > 1)
                     {
                         DefaultValue = node.Arguments[1].GetValueFromExpression();
                     }
+
                     defaultIfEmpty = true;
-                    defaultValueType = node.Type;
+
                     return base.Visit(node.Arguments[0]);
                 default:
                     return VisitFormatterMethodCall(node);
@@ -1175,7 +1176,6 @@ namespace CodeArts.ORM.Builders
         #endregion
 
         private bool defaultIfEmpty = false;
-        private Type defaultValueType = null;
 
         /// <summary>
         /// 是否必须

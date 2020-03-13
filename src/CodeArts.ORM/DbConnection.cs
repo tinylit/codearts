@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Threading;
 
 namespace CodeArts.ORM
 {
@@ -60,11 +61,32 @@ namespace CodeArts.ORM
         /// </summary>
         public virtual void Open()
         {
-            if (_connection.State != ConnectionState.Open)
-                _connection.Open();
+            switch (State)
+            {
+                case ConnectionState.Closed:
+                    _connection.Open();
+                    break;
+                case ConnectionState.Connecting:
+                    do
+                    {
+                        Thread.Sleep(5);
+
+                    } while (State == ConnectionState.Connecting);
+                    break;
+                case ConnectionState.Broken:
+                    _connection.Close();
+                    _connection.Open();
+                    break;
+            }
         }
 
-        void IDbConnection.Close() { }
+        void IDbConnection.Close()
+        {
+            if (State == ConnectionState.Broken)
+            {
+                Close();
+            }
+        }
 
         /// <summary>
         /// 关闭链接
