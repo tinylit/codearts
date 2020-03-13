@@ -631,7 +631,7 @@ namespace CodeArts
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="invoke">将任意类型转为目标类型的工厂</param>
-        public void Use<TResult>(Func<T, Type, Func<object, TResult>> invoke) => Nested<TResult>.TryAdd(this, invoke);
+        public void Use<TResult>(Func<T, Type, Func<object, TResult>> invoke) => Invokers.GetOrAdd(typeof(TResult), _ => new Invoker<TResult>(invoke));
 
         /// <summary>
         /// 映射 解决特定类型 【TSource】 到特定 【TResult】 的操作
@@ -655,24 +655,7 @@ namespace CodeArts
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="predicate">判断源类型是否支持转到目标类型</param>
         /// <param name="plan">将对象转为目标类型的方案</param>
-        public void Map<TResult>(Predicate<Type> predicate, Func<object, TResult> plan)
-        {
-            if (predicate is null)
-            {
-                throw new ArgumentNullException(nameof(predicate));
-            }
-
-            if (plan is null)
-            {
-                throw new ArgumentNullException(nameof(plan));
-            }
-
-            Nested<TResult>.TryAdd(this, new MapRouter<TResult>
-            {
-                CanResolve = predicate,
-                Plan = plan
-            });
-        }
+        public void Map<TResult>(Predicate<Type> predicate, Func<object, TResult> plan) => Routers.Add(new MapRouter<TResult>(predicate, plan));
 
         /// <summary>
         /// 运行 解决类似 【TSource】（相同或其子类）的类型 到特定 【TResult】 类型的转换。
@@ -692,8 +675,6 @@ namespace CodeArts
 
         private bool disposedValue = false; // 要检测冗余调用
 
-        private static Action<IProfile> OnDispose { get; set; }
-
         /// <summary>
         /// 释放资源
         /// </summary>
@@ -702,9 +683,18 @@ namespace CodeArts
         {
             if (!disposedValue)
             {
+                Routers.Clear();
+                Invokers.Clear();
+
+                foreach (var kv in Policies)
+                {
+                    kv.Value.Clear();
+                }
+
+                Policies.Clear();
+
                 if (disposing)
                 {
-                    OnDispose?.Invoke(this);
                     GC.SuppressFinalize(this);
                 }
 
@@ -724,19 +714,92 @@ namespace CodeArts
         /// <summary>
         /// 路由
         /// </summary>
-        /// <typeparam name="TResult">结果类型</typeparam>
-        private class MapRouter<TResult>
+        private interface IMapRouter
         {
+            Type ConversionType { get; }
+        }
+
+        /// <summary>
+        /// 路由
+        /// </summary>
+        /// <typeparam name="TResult">结果类型</typeparam>
+        private class MapRouter<TResult> : IMapRouter
+        {
+            private static readonly Type _conversionType;
+            static MapRouter() => _conversionType = typeof(TResult);
+
+            public MapRouter(Predicate<Type> predicate, Func<object, TResult> plan)
+            {
+                CanResolve = predicate ?? throw new ArgumentNullException(nameof(predicate));
+                Plan = plan ?? throw new ArgumentNullException(nameof(plan));
+            }
+
+            /// <summary>
+            /// 目标类型
+            /// </summary>
+            public Type ConversionType => _conversionType;
+
             /// <summary>
             /// 是否能解决
             /// </summary>
-            public Predicate<Type> CanResolve { get; set; }
+            public Predicate<Type> CanResolve { get; }
 
             /// <summary>
             /// 解决方案
             /// </summary>
-            public Func<object, TResult> Plan { get; set; }
+            public Func<object, TResult> Plan { get; }
         }
+
+        /// <summary>
+        /// 调用器
+        /// </summary>
+        private interface IInvoker
+        {
+        }
+
+        /// <summary>
+        /// 调用器
+        /// </summary>
+        private class Invoker<TResult> : IInvoker
+        {
+            public Invoker(Func<T, Type, Func<object, TResult>> invoke) => Invoke = invoke ?? throw new ArgumentNullException(nameof(invoke));
+            /// <summary>
+            /// 调用器
+            /// </summary>
+            public Func<T, Type, Func<object, TResult>> Invoke { get; }
+        }
+
+        /// <summary>
+        /// 策略
+        /// </summary>
+        private interface IPolicy
+        {
+            Type ConversionType { get; }
+        }
+
+        private class Policy<TResult> : IPolicy
+        {
+            private static readonly Type _conversionType;
+            static Policy() => _conversionType = typeof(TResult);
+
+            public Policy(Func<object, TResult> plan)
+            {
+                Plan = plan ?? throw new ArgumentNullException(nameof(plan));
+            }
+
+            /// <summary>
+            /// 目标类型
+            /// </summary>
+            public Type ConversionType => _conversionType;
+            /// <summary>
+            /// 调用器
+            /// </summary>
+            public Func<object, TResult> Plan { get; }
+        }
+
+        private readonly List<IMapRouter> Routers = new List<IMapRouter>();
+        private readonly ConcurrentDictionary<Type, IInvoker> Invokers = new ConcurrentDictionary<Type, IInvoker>();
+        private readonly ConcurrentDictionary<Type, ConcurrentDictionary<Type, IPolicy>> Policies = new ConcurrentDictionary<Type, ConcurrentDictionary<Type, IPolicy>>();
 
         /// <summary>
         /// 静态内部类
@@ -744,89 +807,65 @@ namespace CodeArts
         /// <typeparam name="TResult">结果类型</typeparam>
         private static class Nested<TResult>
         {
-            private static readonly AsyncLocal<bool> ThreadSecurity = new AsyncLocal<bool>();
+            private static readonly Type conversionType;
 
-            private static readonly ConcurrentDictionary<IProfile, List<MapRouter<TResult>>> ProfileRouterCache = new ConcurrentDictionary<IProfile, List<MapRouter<TResult>>>();
+            private static readonly ConcurrentDictionary<Type, Func<object, TResult>> ProfileTypeCache = new ConcurrentDictionary<Type, Func<object, TResult>>();
 
-            private static readonly ConcurrentDictionary<IProfile, Func<T, Type, Func<object, TResult>>> ProfileInvokeCache = new ConcurrentDictionary<IProfile, Func<T, Type, Func<object, TResult>>>();
+            private static Func<object, TResult> CreateByExtra(ProfileExpression<T> profile, Type sourceType, Type conversionType)
+            {
+                if (profile.SyncRoot.Value)
+                {
+                    return ProfileTypeCache.GetOrAdd(sourceType, _ => profile.CreateExpression<TResult>(sourceType));
+                }
 
-            private static readonly ConcurrentDictionary<IProfile, ConcurrentDictionary<Type, Func<object, TResult>>> ProfileTypeCache = new ConcurrentDictionary<IProfile, ConcurrentDictionary<Type, Func<object, TResult>>>();
+                if (profile.Routers.Count > 0)
+                {
+                    foreach (MapRouter<TResult> item in profile.Routers.Where(x => x.ConversionType == conversionType))
+                    {
+                        if (item.CanResolve(sourceType))
+                        {
+                            return item.Plan;
+                        }
+                    }
+                }
+
+                if (profile.Invokers.TryGetValue(conversionType, out IInvoker invoker) && (invoker is Invoker<TResult> invoke))
+                {
+                    profile.SyncRoot.Value = true;
+
+                    try
+                    {
+                        return invoke.Invoke.Invoke((T)profile, sourceType);
+                    }
+                    finally
+                    {
+                        profile.SyncRoot.Value = false;
+                    }
+                }
+
+                return ProfileTypeCache.GetOrAdd(sourceType, _ => profile.CreateExpression<TResult>(sourceType));
+            }
 
             public static Func<object, TResult> Create(ProfileExpression<T> profile, Type sourceType)
             {
-                return ProfileTypeCache
-                    .GetOrAdd(profile, _ => new ConcurrentDictionary<Type, Func<object, TResult>>())
-                    .GetOrAdd(sourceType.IsNullable() ? Nullable.GetUnderlyingType(sourceType) : sourceType, type =>
-                    {
-                        if (profile.SyncRoot.Value)
-                            return profile.CreateExpression<TResult>(sourceType);
+                var standardType = sourceType.IsNullable() ? Nullable.GetUnderlyingType(sourceType) : sourceType;
 
-                        if (ProfileRouterCache.TryGetValue(profile, out List<MapRouter<TResult>> list))
-                        {
-                            foreach (var item in list)
-                            {
-                                if (item.CanResolve(sourceType)) return item.Plan;
-                            }
-                        }
-
-                        if (ProfileInvokeCache.TryGetValue(profile, out Func<T, Type, Func<object, TResult>> invoke))
-                        {
-                            ThreadSecurity.Value = true;
-
-                            try
-                            {
-                                return invoke.Invoke((T)profile, sourceType);
-                            }
-                            finally
-                            {
-                                profile.SyncRoot.Value = false;
-                            }
-                        }
-
-                        return profile.CreateExpression<TResult>(sourceType);
-
-                    });
-            }
-
-            /// <summary>
-            /// 添加映射路由
-            /// </summary>
-            /// <param name="profile">配置</param>
-            /// <param name="router">映射路由</param>
-            public static void TryAdd(IProfile profile, MapRouter<TResult> router)
-                => ProfileRouterCache.GetOrAdd(profile, _ => new List<MapRouter<TResult>>()).Add(router);
-
-            /// <summary>
-            /// 添加调用器
-            /// </summary>
-            /// <param name="profile">配置</param>
-            /// <param name="invoke">调用器</param>
-            public static void TryAdd(IProfile profile, Func<T, Type, Func<object, TResult>> invoke)
-                => ProfileInvokeCache.AddOrUpdate(profile, invoke, (_, _2) => invoke);
-
-            /// <summary>
-            /// 释放配置资源。
-            /// </summary>
-            /// <param name="profile">配置</param>
-            public static void Dispose(IProfile profile)
-            {
-                if (ProfileTypeCache.TryRemove(profile, out ConcurrentDictionary<Type, Func<object, TResult>> typeCache))
+                if (profile.Routers.Count > 0 || profile.Invokers.Count > 0)
                 {
-                    typeCache.Clear();
+                    var policy = profile.Policies
+                        .GetOrAdd(standardType, _ => new ConcurrentDictionary<Type, IPolicy>())
+                        .GetOrAdd(conversionType, _ => new Policy<TResult>(CreateByExtra(profile, standardType, conversionType)));
+
+                    return (policy as Policy<TResult>).Plan;
                 }
 
-                if (ProfileRouterCache.TryRemove(profile, out List<MapRouter<TResult>> routerCache))
-                {
-                    routerCache.Clear();
-                }
-
-                ProfileInvokeCache.TryRemove(profile, out _);
+                return ProfileTypeCache.GetOrAdd(standardType, _ => profile.CreateExpression<TResult>(standardType));
             }
 
             /// <summary>
             /// 静态构造函数（优化编译器）
             /// </summary>
-            static Nested() => OnDispose += Dispose;
+            static Nested() => conversionType = typeof(TResult);
         }
     }
 }
