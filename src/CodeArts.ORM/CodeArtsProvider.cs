@@ -109,36 +109,30 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
-            OpenConnection(conn);
+            bool isClosedConnection = conn.State == ConnectionState.Closed;
 
-            using (var command = conn.CreateCommand())
+            if (isClosedConnection)
             {
-                command.CommandText = sql;
-
-                AddParameterAuto(command, parameters);
-
-                return command.ExecuteNonQuery();
+                conn.Open();
             }
-        }
 
-        private static void OpenConnection(IDbConnection conn)
-        {
-            switch (conn.State)
+            try
             {
-                case ConnectionState.Closed:
-                    conn.Open();
-                    break;
-                case ConnectionState.Connecting:
-                    do
-                    {
-                        Thread.Sleep(5);
+                using (var command = conn.CreateCommand())
+                {
+                    command.CommandText = sql;
 
-                    } while (conn.State == ConnectionState.Connecting);
-                    break;
-                case ConnectionState.Broken:
+                    AddParameterAuto(command, parameters);
+
+                    return command.ExecuteNonQuery();
+                }
+            }
+            finally
+            {
+                if (isClosedConnection)
+                {
                     conn.Close();
-                    conn.Open();
-                    break;
+                }
             }
         }
 
@@ -152,7 +146,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
         {
-            OpenConnection(conn);
+            bool isClosedConnection = conn.State == ConnectionState.Closed;
 
             CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
 
@@ -161,20 +155,39 @@ namespace CodeArts.ORM
                 behavior &= ~CommandBehavior.SingleResult;
             }
 
-            using (var command = conn.CreateCommand())
+            if (isClosedConnection)
             {
-                command.CommandText = sql;
+                conn.Open();
 
-                AddParameterAuto(command, parameters);
+                behavior |= CommandBehavior.CloseConnection;
+            }
 
-                using (var dr = command.ExecuteReader(behavior))
+            try
+            {
+                using (var command = conn.CreateCommand())
                 {
-                    while (dr.Read())
-                    {
-                        yield return dr.MapTo<T>();
-                    }
+                    command.CommandText = sql;
 
-                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                    AddParameterAuto(command, parameters);
+
+                    using (var dr = command.ExecuteReader(behavior))
+                    {
+                        isClosedConnection = false;
+
+                        while (dr.Read())
+                        {
+                            yield return dr.MapTo<T>();
+                        }
+
+                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                    }
+                }
+            }
+            finally
+            {
+                if (isClosedConnection)
+                {
+                    conn.Close();
                 }
             }
         }
@@ -192,7 +205,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
         {
-            OpenConnection(conn);
+            bool isClosedConnection = conn.State == ConnectionState.Closed;
 
             CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
 
@@ -201,26 +214,45 @@ namespace CodeArts.ORM
                 behavior &= ~CommandBehavior.SingleResult;
             }
 
-            using (var command = conn.CreateCommand())
+            if (isClosedConnection)
             {
-                command.CommandText = sql;
+                conn.Open();
 
-                AddParameterAuto(command, parameters);
+                behavior |= CommandBehavior.CloseConnection;
+            }
 
-                using (var dr = command.ExecuteReader(behavior))
+            try
+            {
+                using (var command = conn.CreateCommand())
                 {
-                    if (dr.Read())
-                    {
-                        defaultValue = dr.MapTo<T>();
+                    command.CommandText = sql;
 
-                        while (dr.Read()) { /* ignore subsequent rows */ }
-                    }
-                    else if (reqiured)
-                    {
-                        throw new DRequiredException();
-                    }
+                    AddParameterAuto(command, parameters);
 
-                    while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                    using (var dr = command.ExecuteReader(behavior))
+                    {
+                        isClosedConnection = false;
+
+                        if (dr.Read())
+                        {
+                            defaultValue = dr.MapTo<T>();
+
+                            while (dr.Read()) { /* ignore subsequent rows */ }
+                        }
+                        else if (reqiured)
+                        {
+                            throw new DRequiredException();
+                        }
+
+                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                    }
+                }
+            }
+            finally 
+            {
+                if (isClosedConnection)
+                {
+                    conn.Close();
                 }
             }
 
