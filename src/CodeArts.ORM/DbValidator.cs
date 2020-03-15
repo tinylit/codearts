@@ -9,7 +9,7 @@ namespace CodeArts.ORM
     /// </summary>
     public static class DbValidator
     {
-        private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>> Cache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>>();
+        private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>> ValidationCache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>>();
 
         /// <summary>
         /// 消息验证（校验异常时，返回自定义的错误消息）
@@ -23,7 +23,7 @@ namespace CodeArts.ORM
                 throw new ArgumentNullException(nameof(validator));
             }
 
-            Cache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context);
+            ValidationCache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context);
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace CodeArts.ORM
                 throw new ArgumentNullException(nameof(validator));
             }
 
-            Cache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context, value);
+            ValidationCache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context, value);
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace CodeArts.ORM
 
                 if (validation == ValidationResult.Success) continue;
 
-                if (Cache.TryGetValue(attr.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
+                if (ValidationCache.TryGetValue(attr.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
                 {
                     validation.ErrorMessage = invoke.Invoke(attr, validationContext, value);
                 }

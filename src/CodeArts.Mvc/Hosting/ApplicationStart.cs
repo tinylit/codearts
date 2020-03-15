@@ -545,10 +545,17 @@ namespace CodeArts.Mvc.Hosting
         {
 #if NET40
 
-            var _dynamicModuleRegistryField = typeof(HttpApplication).GetField("_dynamicModuleRegistry", BindingFlags.Static | BindingFlags.NonPublic);
+            var applicationType = typeof(HttpApplication);
+
+            var _dynamicModuleRegistryField = applicationType
+                .GetField("_dynamicModuleRegistry", BindingFlags.Static | BindingFlags.NonPublic) ?? applicationType
+                .GetFields(BindingFlags.Static | BindingFlags.NonPublic)
+                    .FirstOrDefault(x => x.FieldType.FullName.StartsWith("System.Web.DynamicModuleRegistry"));
 
             if (_dynamicModuleRegistryField is null)
+            {
                 return;
+            }
 
             var _dynamicModuleRegistry = _dynamicModuleRegistryField.GetValue(null);
 
@@ -563,13 +570,6 @@ namespace CodeArts.Mvc.Hosting
 #else
             HttpApplication.RegisterModule(typeof(HttpModule));
 #endif
-        }
-
-        private const string _moduleNameFormat = "__DynamicModule_{0}_{1}";
-        private static string MakeUniqueModuleName(Type moduleType)
-        {
-            // returns a unique name for this module
-            return string.Format(CultureInfo.InvariantCulture, _moduleNameFormat, moduleType.AssemblyQualifiedName, Guid.NewGuid());
         }
     }
 }

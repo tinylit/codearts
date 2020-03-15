@@ -56,7 +56,7 @@ namespace CodeArts.Mvc
                   {
                       options.JsonSerializerOptions.Converters.Add(new MyJsonConverter());
                   })
-                  .SetCompatibilityVersion(CompatibilityVersion.Version_3_0));
+                  .SetCompatibilityVersion(CompatibilityVersion.Latest));
 #else
             ConfigureMvc(services
                  .AddMvc(options =>

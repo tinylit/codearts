@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Net.Http.Headers;
 using Mvc.Core.Dtos;
+using System.ComponentModel.DataAnnotations;
 
 namespace Mvc.Core.Controllers
 {
@@ -116,7 +117,7 @@ namespace Mvc.Core.Controllers
         /// <param name="password"></param>
         /// <returns></returns>
         [HttpGet("login")]
-        public DResult Login(string account, string password)
+        public DResult Login(string account, [Required]string password)
         {
             dependency.AopTest();
             return DResult.Ok(new

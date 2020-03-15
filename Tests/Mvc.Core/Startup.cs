@@ -19,6 +19,7 @@ namespace Mvc.Core
 
             base.ConfigureServices(services);
         }
+        protected override IMvcBuilder ConfigureMvc(IMvcBuilder builder) => builder.UseValidator();
 
         /// <inheritdoc />
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)

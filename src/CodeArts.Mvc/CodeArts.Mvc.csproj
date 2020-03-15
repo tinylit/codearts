@@ -112,6 +112,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="MvcValidator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CodeArts.Defaults\CodeArts.Defaults.csproj" />
   </ItemGroup>
 

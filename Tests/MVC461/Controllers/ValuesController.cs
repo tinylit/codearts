@@ -127,6 +127,7 @@ namespace MVC461.Controllers
         [ActionName("login")]
         public DResult Login(string account, string password)
         {
+            ModelState
             return DResult.Ok(new
             {
                 id = 100000,

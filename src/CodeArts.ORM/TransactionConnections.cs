@@ -86,15 +86,14 @@ namespace CodeArts.ORM
 
         private static void OnTransactionCompleted(object sender, System.Transactions.TransactionEventArgs e)
         {
-            transactionConnections.TryRemove(e.Transaction, out Dictionary<string, TransactionConnection> dictionary);
-
-            if (dictionary == null) return;
-
-            lock (dictionary)
+            if (transactionConnections.TryRemove(e.Transaction, out Dictionary<string, TransactionConnection> dictionary))
             {
-                foreach (TransactionConnection value in dictionary.Values)
+                lock (dictionary)
                 {
-                    value.Dispose();
+                    foreach (TransactionConnection value in dictionary.Values)
+                    {
+                        value.Dispose();
+                    }
                 }
             }
         }
