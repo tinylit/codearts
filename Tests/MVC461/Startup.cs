@@ -10,8 +10,6 @@ namespace Mvc461
     {
         public override void Configuration(HttpConfiguration config)
         {
-            config.BindParameter();
-
             base.Configuration(config);
         }
     }
