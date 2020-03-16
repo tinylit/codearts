@@ -80,13 +80,7 @@ namespace CodeArts.ORM
             }
         }
 
-        void IDbConnection.Close()
-        {
-            if (State == ConnectionState.Broken)
-            {
-                Close();
-            }
-        }
+        void IDbConnection.Close() => Close();
 
         /// <summary>
         /// 关闭链接
