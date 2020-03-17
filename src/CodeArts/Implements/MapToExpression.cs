@@ -118,6 +118,21 @@ namespace CodeArts.Implements
             return dic;
         }
 
+        private static Dictionary<int, object> GetKeyWithValues(IDataRecord dataRecord)
+        {
+            var dic = new Dictionary<int, object>();
+
+            for (int i = 0; i < dataRecord.FieldCount; i++)
+            {
+                if (dataRecord.IsDBNull(i))
+                    continue;
+
+                dic.Add(i, dataRecord.GetValue(i));
+            }
+
+            return dic;
+        }
+
         private static int GetOrdinal(Dictionary<int, string> names, string name)
         {
             name = name.ToLower();
@@ -129,6 +144,16 @@ namespace CodeArts.Implements
             }
 
             return -1;
+        }
+
+        private static bool IsDbNull(Dictionary<int, object> values, int index)
+        {
+            return !values.TryGetValue(index, out object value) || value is null;
+        }
+
+        private static object GetValue(Dictionary<int, object> values, int index)
+        {
+            return values.TryGetValue(index, out object value) ? value : default;
         }
 
         private static MethodInfo GetMethodInfo<T1, T2, T3>(Func<T1, T2, T3> func) => func.Method;
@@ -966,6 +991,8 @@ namespace CodeArts.Implements
 
             var nullCst = Constant(null);
 
+            var errorExp = Parameter(typeof(Exception), "e");
+
             var valueExp = Variable(sourceType, "value");
 
             var indexExp = Variable(typeof(int), "index");
@@ -974,45 +1001,29 @@ namespace CodeArts.Implements
 
             var negativeExp = Constant(-1);
 
-            var dicExp = Variable(typeof(Dictionary<int, string>), "dic");
+            var dicKeys = Variable(typeof(Dictionary<int, string>), "__key_2_names");
 
-            var typeMap = TypeMap.GetOrAdd(sourceType, type =>
-            {
-                var types = new Type[1] { typeof(int) };
-
-                return new Dictionary<Type, MethodInfo>
-                {
-                    [typeof(bool)] = type.GetMethod("GetBoolean", types),
-                    [typeof(byte)] = type.GetMethod("GetByte", types),
-                    [typeof(char)] = type.GetMethod("GetChar", types),
-                    [typeof(short)] = type.GetMethod("GetInt16", types),
-                    [typeof(int)] = type.GetMethod("GetInt32", types),
-                    [typeof(long)] = type.GetMethod("GetInt64", types),
-                    [typeof(float)] = type.GetMethod("GetFloat", types),
-                    [typeof(double)] = type.GetMethod("GetDouble", types),
-                    [typeof(decimal)] = type.GetMethod("GetDecimal", types),
-                    [typeof(Guid)] = type.GetMethod("GetGuid", types),
-                    [typeof(DateTime)] = type.GetMethod("GetDateTime", types),
-                    [typeof(string)] = type.GetMethod("GetString", types),
-                    [typeof(object)] = type.GetMethod("GetValue", types)
-                };
-            });
+            var dicValues = Variable(typeof(Dictionary<int, object>), "__key_2_values");
 
             var getNames = typeSelf.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
 
+            var getValues = typeSelf.GetMethod(nameof(GetKeyWithValues), BindingFlags.NonPublic | BindingFlags.Static);
+
             var getOrdinal = typeSelf.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
+            var getValue = typeSelf.GetMethod(nameof(GetValue), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var getFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
+            var isDBNull = typeSelf.GetMethod(nameof(IsDbNull), BindingFlags.NonPublic | BindingFlags.Static);
 
             var convertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
 
             var list = new List<Expression> { Assign(valueExp, Convert(parameterExp, sourceType)) };
 
-            list.Add(Assign(dicExp, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
+            list.Add(Assign(dicKeys, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
 
-            var variables = new List<ParameterExpression> { valueExp, targetExp, indexExp, dicExp };
+            list.Add(Assign(dicValues, Call(null, getValues, Convert(valueExp, typeof(IDataRecord)))));
+
+            var variables = new List<ParameterExpression> { valueExp, targetExp, indexExp, dicKeys, dicValues };
 
             var arguments = new List<Expression>();
 
@@ -1043,9 +1054,7 @@ namespace CodeArts.Implements
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming))));
-
-                var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Naming))));
 
                 if (memberType.IsValueType)
                 {
@@ -1059,45 +1068,17 @@ namespace CodeArts.Implements
                     }
                 }
 
-                Expression objExp = Call(valueExp, typeMap[typeof(object)], indexExp);
+                Expression valExp = Call(null, getValue, dicValues, indexExp);
 
-                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
-                {
-                    var memberTypeCst = Constant(memberType);
-
-                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
-                }
-                else
-                {
-                    objExp = Convert(objExp, memberType);
-                }
+                Expression objExp = TryCatch(Convert(valExp, memberType), Catch(errorExp, Convert(Call(null, convertMethod, valExp, Constant(memberType)), memberType)));
 
                 if (AllowNullPropagationMapping.Value)
                 {
-                    if (!AllowNullDestinationValues.Value && memberType == typeof(string))
-                    {
-                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Constant(string.Empty))));
-                    }
-                    else if (memberType == info.MemberType)
-                    {
-                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Default(info.MemberType))));
-                    }
-                    else
-                    {
-                        list.Add(IfThenElse(testExp, Assign(left, Convert(objExp, info.MemberType)), Assign(left, Default(info.MemberType))));
-                    }
-                }
-                else if (!AllowNullDestinationValues.Value && memberType == typeof(string))
-                {
-                    list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Coalesce(left, Constant(string.Empty))))); ;
-                }
-                else if (memberType == info.MemberType)
-                {
-                    list.Add(IfThen(testExp, Assign(left, objExp)));
+                    list.Add(IfThen(GreaterThan(indexExp, negativeExp), IfThenElse(Call(null, isDBNull, dicValues, indexExp), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType)))));
                 }
                 else
                 {
-                    list.Add(IfThen(testExp, Assign(left, Convert(objExp, info.MemberType))));
+                    list.Add(IfThen(AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(null, isDBNull, dicValues, indexExp))), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))));
                 }
             }
 
@@ -1105,9 +1086,7 @@ namespace CodeArts.Implements
             {
                 var memberType = info.ParameterType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Name))));
-
-                var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Name))));
 
                 if (memberType.IsValueType)
                 {
@@ -1123,18 +1102,9 @@ namespace CodeArts.Implements
 
                 var nameExp = Variable(info.ParameterType, info.Name.ToCamelCase());
 
-                Expression objExp = Call(valueExp, typeMap[typeof(object)], indexExp);
+                Expression valExp = Call(null, getValue, dicValues, indexExp);
 
-                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
-                {
-                    var memberTypeCst = Constant(memberType);
-
-                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
-                }
-                else
-                {
-                    objExp = Convert(objExp, memberType);
-                }
+                Expression objExp = TryCatch(Convert(valExp, memberType), Catch(errorExp, Convert(Call(null, convertMethod, valExp, Constant(memberType)), memberType)));
 
                 Expression defaultExp = null;
 
@@ -1142,38 +1112,24 @@ namespace CodeArts.Implements
                 {
                     defaultExp = Constant(info.DefaultValue, info.ParameterType);
                 }
+                else if (!AllowNullDestinationValues.Value && info.ParameterType == typeof(string))
+                {
+                    defaultExp = Constant(string.Empty);
+                }
                 else
                 {
                     defaultExp = Default(info.ParameterType);
                 }
 
+                var conditionExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(null, isDBNull, dicValues, indexExp)));
 
                 if (AllowNullPropagationMapping.Value)
                 {
-                    if (!AllowNullDestinationValues.Value && memberType == typeof(string))
-                    {
-                        list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Constant(string.Empty))));
-                    }
-                    else if (memberType == info.ParameterType)
-                    {
-                        list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Default(info.ParameterType))));
-                    }
-                    else
-                    {
-                        list.Add(IfThenElse(testExp, Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, Default(info.ParameterType))));
-                    }
-                }
-                else if (!AllowNullDestinationValues.Value && memberType == typeof(string))
-                {
-                    list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Constant(string.Empty))));
-                }
-                else if (memberType == info.ParameterType)
-                {
-                    list.Add(IfThenElse(testExp, Assign(nameExp, objExp), Assign(nameExp, Default(info.ParameterType))));
+                    list.Add(IfThenElse(conditionExp, memberType == info.ParameterType ? Assign(nameExp, objExp) : Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, defaultExp)));
                 }
                 else
                 {
-                    list.Add(IfThenElse(testExp, Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, Default(info.ParameterType))));
+                    list.Add(IfThenElse(conditionExp, memberType == info.ParameterType ? Assign(nameExp, objExp) : Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, defaultExp)));
                 }
 
                 variables.Add(nameExp);
@@ -1202,17 +1158,13 @@ namespace CodeArts.Implements
 
             var parameterExp = Parameter(typeof(object), "source");
 
+            var iVar = Parameter(typeof(int), "i");
+
             var nullCst = Constant(null);
 
             var valueExp = Variable(sourceType, "value");
 
             var targetExp = Variable(conversionType, "target");
-
-            var indexExp = Variable(typeof(int), "index");
-
-            var dicExp = Variable(typeof(Dictionary<int, string>), "dic");
-
-            var negativeExp = Constant(-1);
 
             list.Add(Assign(valueExp, Convert(parameterExp, sourceType)));
 
@@ -1240,17 +1192,13 @@ namespace CodeArts.Implements
                 };
             });
 
-            var getNames = typeSelf.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
-
-            var getOrdinal = typeSelf.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
-
-            list.Add(Assign(dicExp, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
-
             var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
 
             var getFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
 
             var convertMethod = typeof(Convert).GetMethod(nameof(System.Convert.ChangeType), new Type[] { typeof(object), typeof(Type) });
+
+            var listCases = new List<SwitchCase>();
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
@@ -1264,9 +1212,34 @@ namespace CodeArts.Implements
                    .ForEach(info => Config(info, Field(targetExp, info.Member)));
             }
 
+            #region for
+
+            var lenVar = Property(valueExp, "FieldCount");
+
+            var getName = sourceType.GetMethod("GetName", new Type[] { typeof(int) });
+
+            var body = Switch(Call(valueExp, getName, iVar), null, GetMethodInfo<string, string, bool>(EqaulsString), listCases.ToArray());
+
+            list.Add(Assign(iVar, Constant(0)));
+
+            LabelTarget break_label = Label(typeof(void));
+            LabelTarget continue_label = Label(typeof(void));
+
+            list.Add(Loop(IfThenElse(
+                             LessThan(iVar, lenVar),
+                             Block(
+                                 body,
+                                 AddAssign(iVar, Constant(1)),
+                                 Continue(continue_label, typeof(void))
+                             ),
+                             Break(break_label, typeof(void))
+                 ), break_label, continue_label));
+
+            #endregion
+
             list.Add(targetExp);
 
-            var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { valueExp, indexExp, targetExp, dicExp }, list), parameterExp);
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { valueExp, iVar, targetExp }, list), parameterExp);
 
             return lamdaExp.Compile();
 
@@ -1274,9 +1247,9 @@ namespace CodeArts.Implements
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicExp, Constant(info.Naming))));
+                var namingCst = Constant(info.Naming);
 
-                var testExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(valueExp, isDBNull, indexExp)));
+                var assigns = new List<Expression>();
 
                 if (memberType.IsValueType)
                 {
@@ -1290,13 +1263,13 @@ namespace CodeArts.Implements
                     }
                 }
 
-                Expression objExp = Call(valueExp, typeMap[typeof(object)], indexExp);
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], iVar);
 
                 if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
                 {
                     var memberTypeCst = Constant(memberType);
 
-                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, indexExp)), Call(valueExp, methodInfo, indexExp), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, iVar)), Call(valueExp, methodInfo, iVar), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
                 }
                 else
                 {
@@ -1305,30 +1278,11 @@ namespace CodeArts.Implements
 
                 if (AllowNullPropagationMapping.Value)
                 {
-                    if (!AllowNullDestinationValues.Value && memberType == typeof(string))
-                    {
-                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Constant(string.Empty))));
-                    }
-                    else if (memberType == info.MemberType)
-                    {
-                        list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Default(info.MemberType))));
-                    }
-                    else
-                    {
-                        list.Add(IfThenElse(testExp, Assign(left, Convert(objExp, info.MemberType)), Assign(left, Default(info.MemberType))));
-                    }
-                }
-                else if (!AllowNullDestinationValues.Value && memberType == typeof(string))
-                {
-                    list.Add(IfThenElse(testExp, Assign(left, objExp), Assign(left, Coalesce(left, Constant(string.Empty))))); ;
-                }
-                else if (memberType == info.MemberType)
-                {
-                    list.Add(IfThen(testExp, Assign(left, objExp)));
+                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), namingCst));
                 }
                 else
                 {
-                    list.Add(IfThen(testExp, Assign(left, Convert(objExp, info.MemberType))));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), namingCst));
                 }
             }
         }

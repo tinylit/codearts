@@ -92,10 +92,16 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public static ITableRegions Resolve(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             if (type.IsValueType)
             {
                 throw new NotSupportedException("不支持值类型!");
             }
+
             return Aw_Resolve(type);
         }
         /// <summary>

@@ -1265,7 +1265,7 @@ namespace CodeArts.ORM.Builders
                 {
                     VisitMemberSimple(member);
 
-                    WrapNot(SQLWriter.IsNull);
+                    SQLWriter.IsNotNull();
 
                     return node;
                 }

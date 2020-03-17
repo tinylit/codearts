@@ -20,12 +20,10 @@ namespace CodeArts.ORM
         /// 主键
         /// </summary>
         IEnumerable<string> Keys { get; }
-
         /// <summary>
         /// 只读键
         /// </summary>
         IEnumerable<string> ReadOnlys { get; }
-
 #if NET40
         /// <summary>
         /// 令牌
@@ -41,17 +39,14 @@ namespace CodeArts.ORM
         /// </summary>
         IDictionary<string, string> ReadOrWrites { get; }
 #else
-
         /// <summary>
         /// 令牌
         /// </summary>
         IReadOnlyDictionary<string, TokenAttribute> Tokens { get; }
-
         /// <summary>
         /// 可读写的键
         /// </summary>
         IReadOnlyDictionary<string, string> ReadWrites { get; }
-
         /// <summary>
         /// 属性和字段
         /// </summary>

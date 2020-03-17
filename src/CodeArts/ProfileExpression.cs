@@ -627,11 +627,12 @@ namespace CodeArts
         protected virtual Func<object, TResult> ByIEnumarableLikeToCommon<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
 
         /// <summary>
-        /// 添加指定目标类型工厂(仅生效最后一次配置).
+        /// 添加指定目标类型工厂(同种目标类型第一次配置生效).
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="invoke">将任意类型转为目标类型的工厂</param>
-        public void Use<TResult>(Func<T, Type, Func<object, TResult>> invoke) => Invokers.GetOrAdd(typeof(TResult), _ => new Invoker<TResult>(invoke));
+        /// <returns>返回真代表注册成功，返回假代表注册失败（目标类型已被指定其他调用器）。</returns>
+        public bool Use<TResult>(Func<T, Type, Func<object, TResult>> invoke) => Invokers.TryAdd(typeof(TResult), new Invoker<TResult>(invoke));
 
         /// <summary>
         /// 映射 解决特定类型 【TSource】 到特定 【TResult】 的操作

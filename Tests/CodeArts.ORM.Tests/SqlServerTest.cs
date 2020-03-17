@@ -1392,5 +1392,13 @@ namespace UnitTest
             var x2 = user.AsExecuteable()
                 .Delete(x => x.Username == "admi");
         }
+
+        [TestMethod]
+        public void ApplyTest()
+        {
+            var user = new UserRepository();
+
+            var dto = user.GetApply();
+        }
     }
 }

@@ -273,7 +273,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="required">是否必须返回数据(为真时数据库无数据会抛异常)</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirst<TResult>(ISQL sql, object param, bool required = true)
+        protected virtual TResult QueryFirst<TResult>(ISQL sql, object param = null, bool required = true)
         {
             if (!QueryAuthorize(sql))
                 throw new NonAuthorizeException();
