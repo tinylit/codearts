@@ -1402,17 +1402,5 @@ namespace UnitTest
 
             var dto = user.GetApply();
         }
-
-        [TestMethod]
-        public void TransactionTest()
-        {
-            var user = new UserRepository();
-            using (TransactionScope transation = new TransactionScope())
-            {
-                var useDto = user.First(x => x.Id > 10);
-
-                throw new BusiException("“Ï≥£≤‚ ‘");
-            }
-        }
     }
 }
