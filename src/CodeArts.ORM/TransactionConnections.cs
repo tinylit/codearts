@@ -88,13 +88,12 @@ namespace CodeArts.ORM
         {
             if (transactionConnections.TryRemove(e.Transaction, out Dictionary<string, TransactionConnection> dictionary))
             {
-                lock (dictionary)
+                foreach (TransactionConnection value in dictionary.Values)
                 {
-                    foreach (TransactionConnection value in dictionary.Values)
-                    {
-                        value.Dispose();
-                    }
+                    value.Dispose();
                 }
+
+                dictionary.Clear();
             }
         }
     }

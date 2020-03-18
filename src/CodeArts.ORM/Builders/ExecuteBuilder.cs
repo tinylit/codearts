@@ -32,7 +32,7 @@ namespace CodeArts.ORM.Builders
                 base.Evaluate(node);
 
                 if (list.Count == 0)
-                    throw new ExpressionNotSupportedException("插入语句不支持匿名字段!");
+                    throw new DSyntaxErrorException("插入语句不支持匿名字段!");
 
                 SQLWriter.AppendAt = index;
 
@@ -66,7 +66,7 @@ namespace CodeArts.ORM.Builders
                 {
                     if (!typeRegions.ReadWrites.TryGetValue(name, out string value))
                     {
-                        throw new ExpressionNotSupportedException($"{name}字段不可写!");
+                        throw new DSyntaxErrorException($"{name}字段不可写!");
                     }
 
                     list.Add(value);
@@ -79,7 +79,7 @@ namespace CodeArts.ORM.Builders
             {
                 if (!typeRegions.ReadWrites.TryGetValue(node.Member.Name, out string value))
                 {
-                    throw new ExpressionNotSupportedException($"{node.Member.Name}字段不可写!");
+                    throw new DSyntaxErrorException($"{node.Member.Name}字段不可写!");
                 }
 
                 list.Add(value);
@@ -198,7 +198,7 @@ namespace CodeArts.ORM.Builders
 
                 case MethodCall.Where:
                     if (Behavior == ExecuteBehavior.Insert)
-                        throw new ExpressionNotSupportedException("插入语句不支持条件，请在查询器中使用条件过滤!");
+                        throw new DSyntaxErrorException("插入语句不支持条件，请在查询器中使用条件过滤!");
 
                     return MakeWhereNode(node);
                 case MethodCall.Update:
@@ -268,7 +268,7 @@ namespace CodeArts.ORM.Builders
                     return node;
             }
 
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <summary>
         /// 成员分析
@@ -285,7 +285,7 @@ namespace CodeArts.ORM.Builders
                 return base.VisitMemberAssignment(node);
             }
 
-            throw new ExpressionNotSupportedException($"{node.Member.Name}字段不可写!");
+            throw new DSyntaxErrorException($"{node.Member.Name}字段不可写!");
         }
         /// <summary>
         /// 创建构造器

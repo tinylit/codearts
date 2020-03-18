@@ -5,7 +5,7 @@ namespace CodeArts.ORM.Exceptions
     /// <summary>
     /// 未授权的异常
     /// </summary>
-    public class NonAuthorizeException : NotSupportedException
+    public class NonAuthorizeException : InvalidOperationException
     {
         /// <summary>
         /// 构造函数

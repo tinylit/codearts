@@ -775,7 +775,17 @@ namespace CodeArts.Implements
             {
                 typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>
                 {
-                    list.Add(SwitchCase(Constant(info.Naming), Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType))));
+                    var testValues = new List<Expression>
+                    {
+                        Constant(info.Name)
+                    };
+
+                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                    {
+                        testValues.Add(Constant(info.Naming));
+                    }
+
+                    list.Add(SwitchCase(Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
                 });
             }
 
@@ -783,7 +793,17 @@ namespace CodeArts.Implements
             {
                 typeStore.FieldStores.Where(x => x.CanWrite).ForEach(info =>
                 {
-                    list.Add(SwitchCase(Constant(info.Naming), Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType))));
+                    var testValues = new List<Expression>
+                    {
+                        Constant(info.Name)
+                    };
+
+                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                    {
+                        testValues.Add(Constant(info.Naming));
+                    }
+
+                    list.Add(SwitchCase(Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
                 });
             }
 
@@ -969,7 +989,7 @@ namespace CodeArts.Implements
                 return lamdaExp.Compile();
             }
 
-            throw new InvalidCastException();
+            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -1054,7 +1074,12 @@ namespace CodeArts.Implements
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Naming))));
+                list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Name))));
+
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Naming)))));
+                }
 
                 if (memberType.IsValueType)
                 {
@@ -1087,6 +1112,11 @@ namespace CodeArts.Implements
                 var memberType = info.ParameterType;
 
                 list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Name))));
+
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Naming)))));
+                }
 
                 if (memberType.IsValueType)
                 {
@@ -1247,7 +1277,15 @@ namespace CodeArts.Implements
             {
                 var memberType = info.MemberType;
 
-                var namingCst = Constant(info.Naming);
+                var testValues = new List<Expression>
+                {
+                    Constant(info.Name)
+                };
+
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    testValues.Add(Constant(info.Naming));
+                }
 
                 var assigns = new List<Expression>();
 
@@ -1278,11 +1316,11 @@ namespace CodeArts.Implements
 
                 if (AllowNullPropagationMapping.Value)
                 {
-                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), namingCst));
+                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
                 }
                 else
                 {
-                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), namingCst));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
                 }
             }
         }

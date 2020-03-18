@@ -246,18 +246,42 @@ namespace CodeArts.ORM.Builders
         {
             Expression arg = node.Arguments[0];
 
-            object value = TryThrow(() => arg.GetValueFromExpression());
-
-            if (value == null) return node;
-
-            if (!(value is string likeStr))
-                throw new ExpressionNotSupportedException($"仅支持参数类型为System.String的函数({node.Method.Name})方法。");
-
-            if (likeStr.Length == 0)
+            if (IsStaticVariable(arg, true))
             {
+                object value = arg.GetValueFromExpression();
+
+                if (value == null) return node;
+
+                if (!(value is string likeStr))
+                    throw new DSyntaxErrorException($"仅支持参数类型为System.String的函数({node.Method.Name})方法。");
+
+                if (likeStr.Length == 0)
+                {
+                    base.Visit(node.Object);
+
+                    WrapNot(SQLWriter.IsNull);
+
+                    return node;
+                }
+
                 base.Visit(node.Object);
 
-                WrapNot(SQLWriter.IsNull);
+                SQLWriter.Like();
+
+                if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
+                    likeStr = "%" + likeStr;
+
+                if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
+                    likeStr += "%";
+
+                if (arg is MemberExpression member)
+                {
+                    SQLWriter.Parameter(member.Member.Name, likeStr);
+                }
+                else
+                {
+                    SQLWriter.Parameter(likeStr);
+                }
 
                 return node;
             }
@@ -266,19 +290,29 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.Like();
 
-            if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
-                likeStr = "%" + likeStr;
-
-            if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
-                likeStr += "%";
-
-            if (arg is MemberExpression member)
+            if (_settings.Engine == DatabaseEngine.MySQL)
             {
-                SQLWriter.Parameter(member.Member.Name, likeStr);
+                SQLWriter.Write("CONCAT");
+                SQLWriter.OpenBrace();
+
+                if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
+                {
+                    SQLWriter.Parameter("%");
+                    SQLWriter.Delimiter();
+                }
             }
-            else
+
+            base.Visit(node.Arguments[0]);
+
+            if (_settings.Engine == DatabaseEngine.MySQL)
             {
-                SQLWriter.Parameter(likeStr);
+                if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
+                {
+                    SQLWriter.Delimiter();
+                    SQLWriter.Parameter("%");
+                }
+
+                SQLWriter.CloseBrace();
             }
 
             return node;
@@ -304,11 +338,11 @@ namespace CodeArts.ORM.Builders
             }
             catch (ArgumentException arg)
             {
-                throw new ExpressionNotSupportedException("表达式参数异常!", arg);
+                throw new DSyntaxErrorException("表达式参数异常!", arg);
             }
             catch (Exception ex)
             {
-                throw new ExpressionNotSupportedException("无法分析的表达式!", ex);
+                throw new DSyntaxErrorException("无法分析的表达式!", ex);
             }
         }
 
@@ -597,7 +631,7 @@ namespace CodeArts.ORM.Builders
             if (type.IsValueType || type == typeof(string))
             {
                 if (node.Arguments.Count > 1)
-                    throw new ExpressionNotSupportedException();
+                    throw new DSyntaxErrorException();
 
                 if (node.Arguments.Count == 0)
                     SQLWriter.Parameter(node.GetValueFromExpression());
@@ -630,7 +664,7 @@ namespace CodeArts.ORM.Builders
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.IsBoolean())
-                throw new ExpressionNotSupportedException("禁止使用布尔常量作为条件语句或结果!");
+                throw new DSyntaxErrorException("禁止使用布尔常量作为条件语句或结果!");
 
             var value = node.Value as ConstantExpression;
 
@@ -669,7 +703,7 @@ namespace CodeArts.ORM.Builders
 
             type = node.Method.DeclaringType;
 
-            throw new ExpressionNotSupportedException($"命名空间({type.Namespace})下的类({type.Name})中的方法({node.Method.Name})不被支持!");
+            throw new DSyntaxErrorException($"命名空间({type.Namespace})下的类({type.Name})中的方法({node.Method.Name})不被支持!");
         }
 
         /// <summary>
@@ -1017,7 +1051,7 @@ namespace CodeArts.ORM.Builders
         protected sealed override Expression VisitLambda<T>(Expression<T> node)
         {
             if (node.Parameters.Count > 1)
-                throw new ExpressionNotSupportedException("不支持多个参数!");
+                throw new DSyntaxErrorException("不支持多个参数!");
 
             return VisitLambda(node, (type, name) =>
              {
@@ -1184,7 +1218,7 @@ namespace CodeArts.ORM.Builders
             var regions = MakeTableRegions(node.Expression.Type);
 
             if (!regions.ReadOrWrites.TryGetValue(name, out string value))
-                throw new ExpressionNotSupportedException($"{name}不可读也不可写!");
+                throw new DSyntaxErrorException($"{name}不可读也不可写!");
 
             SQLWriter.Name(value);
 
@@ -1333,7 +1367,7 @@ namespace CodeArts.ORM.Builders
             return node;
         }
 
-        private Expression VisitOperationBinary(BinaryExpression node, ExpressionType expressionType)
+        private Expression VisitOperationBinary(BinaryExpression node, ExpressionType expressionType, bool isMySqlContact)
         {
             int indexBefore = SQLWriter.Length;
 
@@ -1357,6 +1391,11 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.AppendAt = indexBefore;
 
+            if (isMySqlContact)
+            {
+                SQLWriter.Write("CONCAT");
+            }
+
             SQLWriter.OpenBrace();
 
             int indexNext = SQLWriter.Length;
@@ -1372,7 +1411,14 @@ namespace CodeArts.ORM.Builders
                 return node;
             }
 
-            SQLWriter.Write(expressionType, node.Left.Type, node.Right.Type);
+            if (isMySqlContact)
+            {
+                SQLWriter.Delimiter();
+            }
+            else
+            {
+                SQLWriter.Write(expressionType, node.Left.Type, node.Right.Type);
+            }
 
             if (appendAt > -1)
             {
@@ -1530,13 +1576,14 @@ namespace CodeArts.ORM.Builders
                 }
             }
 
+            bool isMySqlConcat = _settings.Engine == DatabaseEngine.MySQL && (nodeType == ExpressionType.Add || nodeType == ExpressionType.AddChecked || nodeType == ExpressionType.AddAssign) && (left.Type == typeof(string) || right.Type == typeof(string));
 
             if (left.Type.IsValueType || right.Type.IsValueType)
             {
                 return BuildBinaryWarp(() =>
                 {
                     isIgnoreNullable = true;
-                    var me = VisitOperationBinary(node, nodeType);
+                    var me = VisitOperationBinary(node, nodeType, isMySqlConcat);
                     isIgnoreNullable = false;
                     return me;
                 });
@@ -1544,11 +1591,23 @@ namespace CodeArts.ORM.Builders
 
             return BuildBinaryWarp(() =>
             {
+                if (isMySqlConcat)
+                {
+                    SQLWriter.Write("CONCAT");
+                }
+
                 SQLWriter.OpenBrace();
 
                 VisitEvaluate(left);
 
-                SQLWriter.Write(nodeType, left.Type, right.Type);
+                if (isMySqlConcat)
+                {
+                    SQLWriter.Delimiter();
+                }
+                else
+                {
+                    SQLWriter.Write(nodeType, left.Type, right.Type);
+                }
 
                 VisitEvaluate(right);
 
@@ -1648,37 +1707,37 @@ namespace CodeArts.ORM.Builders
         /// <inheritdoc />
         protected override Expression VisitNewArray(NewArrayExpression node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <inheritdoc />
         protected override Expression VisitBlock(BlockExpression node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <inheritdoc />
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <inheritdoc />
         protected override Expression VisitGoto(GotoExpression node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <inheritdoc />
         protected override Expression VisitLabel(LabelExpression node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <inheritdoc />
         protected override Expression VisitLoop(LoopExpression node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         /// <inheritdoc />
         protected override Expression VisitTry(TryExpression node)
         {
-            throw new ExpressionNotSupportedException();
+            throw new DSyntaxErrorException();
         }
         #endregion
 

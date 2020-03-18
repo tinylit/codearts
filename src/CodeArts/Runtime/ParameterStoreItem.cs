@@ -33,6 +33,13 @@ namespace CodeArts.Runtime
         /// </summary>
         public bool IsOptional => Info.IsOptional;
 
+#if !NET40
+        /// <summary>
+        /// 是否有默认值
+        /// </summary>
+        public bool HasDefaultValue => Info.HasDefaultValue;
+#endif
+
         /// <summary>
         /// 默认值
         /// </summary>

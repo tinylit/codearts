@@ -203,7 +203,7 @@ namespace CodeArts.ORM.Builders
             }
             else
             {
-                throw new ExpressionNotSupportedException($"仅支持“System.Linq.Queryable”中的{node.Method.Name}函数!");
+                throw new DSyntaxErrorException($"仅支持“System.Linq.Queryable”中的{node.Method.Name}函数!");
             }
         }
 
@@ -692,7 +692,7 @@ namespace CodeArts.ORM.Builders
                 case MethodCall.TakeLast:
 
                     if (isAggregation)
-                        throw new ExpressionNotSupportedException($"使用聚合函数时，禁止使用分页函数({name})!");
+                        throw new DSyntaxErrorException($"使用聚合函数时，禁止使用分页函数({name})!");
 
                     if (name == MethodCall.TakeLast)
                         isOrderByReverse ^= true;
@@ -700,7 +700,7 @@ namespace CodeArts.ORM.Builders
                     base.Visit(node.Arguments[0]);
 
                     if (!isContainsOrderBy && name == MethodCall.TakeLast)
-                        throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
 
                     int take = (int)node.Arguments[1].GetValueFromExpression();
 
@@ -751,7 +751,7 @@ namespace CodeArts.ORM.Builders
                     }
 
                     if (!isContainsOrderBy)
-                        throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
 
                     Required = name == MethodCall.Last;
 
@@ -760,7 +760,7 @@ namespace CodeArts.ORM.Builders
                 case MethodCall.SkipLast:
 
                     if (isAggregation)
-                        throw new ExpressionNotSupportedException($"使用聚合函数时，禁止使用分页函数({name})!");
+                        throw new DSyntaxErrorException($"使用聚合函数时，禁止使用分页函数({name})!");
 
                     if (name == MethodCall.SkipLast)
                         isOrderByReverse ^= true;
@@ -768,7 +768,7 @@ namespace CodeArts.ORM.Builders
                     base.Visit(node.Arguments[0]);
 
                     if (!isContainsOrderBy && name == MethodCall.SkipLast)
-                        throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
 
                     int skip = (int)node.Arguments[1].GetValueFromExpression();
 
@@ -798,7 +798,7 @@ namespace CodeArts.ORM.Builders
                     base.Visit(node.Arguments[0]);
 
                     if (!isContainsOrderBy)
-                        throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
 
                     return node;
                 case MethodCall.OrderBy:
@@ -844,7 +844,7 @@ namespace CodeArts.ORM.Builders
                 case MethodCall.Select:
 
                     if (_MethodLevel > 1)
-                        throw new ExpressionNotSupportedException($"请将函数({name})置于查询最后一个包含入参的函数之后!");
+                        throw new DSyntaxErrorException($"请将函数({name})置于查询最后一个包含入参的函数之后!");
 
                     if (isNoParameterCount)
                         return base.Visit(node.Arguments[0]);
@@ -1050,7 +1050,7 @@ namespace CodeArts.ORM.Builders
                     }, () => base.Visit(node.Arguments[0]));
 
                     if (!isContainsOrderBy)
-                        throw new ExpressionNotSupportedException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
 
                     Required = name == MethodCall.TakeLast;
 
@@ -1116,7 +1116,7 @@ namespace CodeArts.ORM.Builders
         protected override Expression VisitLambda<T>(Expression<T> node, Action<Type, string> addPrefixCache)
         {
             if (node.Parameters.Count > 1)
-                throw new ExpressionNotSupportedException("不支持多个参数!");
+                throw new DSyntaxErrorException("不支持多个参数!");
 
             if (isJoin || isUnion)
             {

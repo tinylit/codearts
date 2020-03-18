@@ -5,12 +5,12 @@ namespace CodeArts.ORM.Exceptions
     /// <summary>
     /// 未实现主键异常
     /// </summary>
-    public class NotImplementedKeyException : NotImplementedException
+    public class NotImplementedKeyException : DException
     {
         /// <summary>
         /// 构造函数
         /// </summary>
-        public NotImplementedKeyException()
+        public NotImplementedKeyException() : base()
         {
         }
         /// <summary>

@@ -14,6 +14,8 @@ using System.Linq;
 using System.Text;
 using UnitTest.Domain.Entities;
 using UnitTest.Dtos;
+using System.Transactions;
+using CodeArts.Exceptions;
 
 namespace UnitTest
 {
@@ -1399,6 +1401,18 @@ namespace UnitTest
             var user = new UserRepository();
 
             var dto = user.GetApply();
+        }
+
+        [TestMethod]
+        public void TransactionTest()
+        {
+            var user = new UserRepository();
+            using (TransactionScope transation = new TransactionScope())
+            {
+                var useDto = user.First(x => x.Id > 10);
+
+                throw new BusiException("“Ï≥£≤‚ ‘");
+            }
         }
     }
 }

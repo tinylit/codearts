@@ -11,7 +11,7 @@ namespace CodeArts.ORM.Exceptions
         /// <summary>
         /// 构造函数
         /// </summary>
-        public DSyntaxErrorException()
+        public DSyntaxErrorException() : base()
         {
         }
 

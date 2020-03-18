@@ -82,6 +82,19 @@ namespace CodeArts.Tests
         public string Desc { get; set; }
     }
 
+    public class NonPublicConstructor
+    {
+        private NonPublicConstructor() { }
+    }
+
+    public class NoArgumentsConstructor
+    {
+        public NoArgumentsConstructor(int i)
+        {
+
+        }
+    }
+
     [TestClass]
     public class ObjectExtentions
     {
@@ -311,6 +324,18 @@ namespace CodeArts.Tests
             }
 
             var map3 = value.MapTo<MapToTest>();
+        }
+
+        [TestMethod]
+        public void EmptyTest()
+        {
+            var i = Emptyable.Empty<int>();
+            var e = Emptyable.Empty<DateTimeKind>();
+            var d = Emptyable.Empty<DateTime>();
+            var s = Emptyable.Empty<string>();
+            var c = Emptyable.Empty<CopyTest>();
+            var nc = Emptyable.Empty<NonPublicConstructor>();
+            var na = Emptyable.Empty<NoArgumentsConstructor>();
         }
     }
 }

@@ -1,9 +1,13 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿using CodeArts.Mvc;
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.Extensions.Logging;
 #else
 using log4net;
 #endif
 using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Net;
 
 namespace CodeArts.Exceptions
@@ -19,6 +23,12 @@ namespace CodeArts.Exceptions
         private static ILog Logger => logger ?? (logger = LogManager.GetLogger(typeof(ExceptionHandler)));
 #endif
 
+        private static readonly List<ExceptionAdapter> Adapters = new List<ExceptionAdapter>();
+        /// <summary>
+        /// 添加异常适配器(系统约定的<see cref="CodeException"/>不接受适配器处理)。
+        /// </summary>
+        /// <param name="adapter">适配器</param>
+        public static void Add(ExceptionAdapter adapter) => Adapters.Add(adapter ?? throw new ArgumentNullException(nameof(adapter)));
 
         /// <summary> 异常事件 </summary>
         public static event Action<Exception> OnException;
@@ -37,6 +47,7 @@ namespace CodeArts.Exceptions
         public static DResult Handler(Exception exception)
         {
             var error = exception.GetBaseException();
+
             switch (error)
             {
                 case CodeException code:
@@ -59,11 +70,20 @@ namespace CodeArts.Exceptions
                     //操作取消
                     return null;
                 default:
+
                     OnException?.Invoke(error);
+
+                    foreach (var adapter in Adapters)
+                    {
+                        if (adapter.CanResolve(error))
+                        {
+                            return adapter.GetResult(error);
+                        }
+                    }
 
                     var type = error.GetType();
 
-                    if (type.Name == "ValidationException" && type.FullName.StartsWith("System.ComponentModel.DataAnnotations.ValidationException", StringComparison.OrdinalIgnoreCase))
+                    if (type.Name == "ValidationException" && type.FullName == "System.ComponentModel.DataAnnotations.ValidationException")
                     {
                         return DResult.Error(error.Message);
                     }
@@ -123,6 +143,26 @@ namespace CodeArts.Exceptions
                     if (error is ArgumentException)
                     {
                         return StatusCodes.ParamaterError.CodeResult();
+                    }
+
+                    if (error is NullReferenceException)
+                    {
+                        return StatusCodes.NullError.CodeResult();
+                    }
+
+                    if (error is DbException)
+                    {
+                        return StatusCodes.DbError.CodeResult();
+                    }
+
+                    if (error is SyntaxErrorException)
+                    {
+                        return StatusCodes.SyntaxError.CodeResult();
+                    }
+
+                    if (error is DivideByZeroException)
+                    {
+                        return StatusCodes.DivideByZeroError.CodeResult();
                     }
 
                     return StatusCodes.SystemError.CodeResult();

@@ -3,15 +3,22 @@
 namespace CodeArts
 {
     /// <summary>
+    /// -1 基础异常
+    /// 0 执行成功
+    /// 1-5000 请求状态码
+    /// 5001-10000 系统错误码
     /// 10001-40000 业务错误码
     /// 40001-60000 服务异常
+    /// 60001-70000 数据库异常
     /// --可扩展
     /// </summary>
     public abstract class StatusCodes
     {
-        /// <summary>
-        ///     执行成功。
-        /// </summary>
+        /// <summary> 默认错误码 </summary>
+        [Description("基础异常")]
+        public const int Error = -1;
+
+        /// <summary> 执行成功。</summary>
         [Description("执行成功!")]
         public const int OK = 0;
 
@@ -236,23 +243,33 @@ namespace CodeArts
         [Description("指示服务器不支持请求的 HTTP 版本.")]
         public const int HttpVersionNotSupported = 505;
 
-        /// <summary> 默认错误码 </summary>
-        [Description("基础异常")]
-        public const int Error = -1;
-
+        #region 系统异常
         /// <summary> 服务器心情不好，请稍后重试~ </summary>
         [Description("服务器心情不好，请稍后重试~")]
-        public const int SystemError = 10000;
+        public const int SystemError = 5001;
+
+        /// <summary> 参数错误 </summary>
+        [Description("参数错误")]
+        public const int ParamaterError = 5002;
+
+        /// <summary> 空引用异常 </summary>
+        [Description("空引用异常")]
+        public const int NullError = 5003;
+
+        /// <summary> 语法异常 </summary>
+        [Description("语法异常")]
+        public const int SyntaxError = 5004;
+
+        /// <summary> 除零异常 </summary>
+        [Description("除零异常")]
+        public const int DivideByZeroError = 5006;
+        #endregion
 
         #region 业务层异常
 
         /// <summary> 业务异常 </summary>
         [Description("业务异常")]
         public const int BusiError = 10001;
-
-        /// <summary> 参数错误 </summary>
-        [Description("参数错误")]
-        public const int ParamaterError = 10002;
 
         #endregion
 
@@ -276,6 +293,14 @@ namespace CodeArts
         /// <summary> 没有可用的服务 </summary>
         [Description("没有可用的服务")]
         public const int NoServiceError = 40005;
+        #endregion
+
+        #region 数据层异常
+        /// <summary>
+        /// 数据库异常
+        /// </summary>
+        [Description("数据库异常")]
+        public const int DbError = 60001;
         #endregion
     }
 }

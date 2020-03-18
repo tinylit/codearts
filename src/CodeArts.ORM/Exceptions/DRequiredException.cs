@@ -1,14 +1,17 @@
-﻿namespace CodeArts.ORM.Exceptions
+﻿using CodeArts.Exceptions;
+
+namespace CodeArts.ORM.Exceptions
 {
     /// <summary>
     /// 数据必填异常
     /// </summary>
-    public class DRequiredException : ORMException
+    public class DRequiredException : CodeException
     {
+        private const string DefaultError = "未查询到指定条件的相关信息";
         /// <summary>
         /// 构造函数
         /// </summary>
-        public DRequiredException()
+        public DRequiredException() : base(DefaultError)
         {
         }
         /// <summary>

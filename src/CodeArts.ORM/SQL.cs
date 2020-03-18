@@ -130,7 +130,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 声明别量
         /// </summary>
-        private static readonly Regex PatternDeclare;
+        private static readonly Regex PatternDeclare = new Regex(@"\bdeclare[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
         #region UseSettings
 
@@ -313,79 +313,6 @@ namespace CodeArts.ORM
                     .Append(")");
 
             PatternFieldCreate = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            sb = new StringBuilder();
-
-            sb.Append(@"\bdeclare")
-                .Append(whitespace)
-                .Append("+")
-                .Append("(?:")
-                    .Append(@"{[\p{L}\p{N}_][\p{L}\p{N}@_]*}")
-                    .Append("(")
-                        .Append(whitespace)
-                        .Append("+as")
-                    .Append(")?")
-                    .Append(whitespace)
-                    .Append("+\\w+")
-                    .Append(whitespace)
-                    .Append("*")
-                    .Append("(")
-                        .Append("\\(")
-                        .Append(whitespace)
-                        .Append("*\\w+")
-                        .Append(whitespace)
-                        .Append("*")
-                        .Append("\\)")
-                    .Append(")?")
-                    .Append("(")
-                        .Append(whitespace)
-                        .Append("*")
-                        .Append("=")
-                        .Append(whitespace)
-                        .Append("*")
-                        .Append("(")
-                            .Append("\\w+")
-                            .Append("|")
-                            .Append("(['\"])(?:\\\\.|[^\\\\])*?\\5")
-                        .Append(")")
-                    .Append(")?")
-                    .Append(whitespace)
-                    .Append("*")
-                    .Append(",")
-                    .Append(whitespace)
-                    .Append("*")
-                .Append(")*")
-                .Append(@"{[\p{L}\p{N}_][\p{L}\p{N}@_]*}")
-                    .Append("(")
-                        .Append(whitespace)
-                        .Append("+as")
-                    .Append(")?")
-                .Append(whitespace)
-                .Append("+\\w+")
-                .Append(whitespace)
-                .Append("*")
-                .Append("(")
-                    .Append("\\(")
-                    .Append(whitespace)
-                    .Append("*\\w+")
-                    .Append(whitespace)
-                    .Append("*")
-                    .Append("\\)")
-                .Append(")?")
-                .Append("(")
-                    .Append(whitespace)
-                    .Append("*")
-                    .Append("=")
-                    .Append(whitespace)
-                    .Append("*")
-                    .Append("(")
-                        .Append("\\w+")
-                        .Append("|")
-                        .Append("(['\"])(?:\\\\.|[^\\\\])*?\\10")
-                    .Append(")")
-                .Append(")?;?");
-
-            PatternDeclare = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
 
         /// <summary>

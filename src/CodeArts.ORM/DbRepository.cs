@@ -855,7 +855,7 @@ namespace CodeArts.ORM
             public string[] Except<TEntry, TColumn>(Expression<Func<TEntry, TColumn>> lamda)
             {
                 if (lamda.Parameters.Count > 1)
-                    throw new ExpressionNotSupportedException();
+                    throw new DSyntaxErrorException();
 
                 var parameter = lamda.Parameters.First();
 
@@ -894,7 +894,7 @@ namespace CodeArts.ORM
             public Func<TEntry, string[]> Where<TEntry, TColumn>(Expression<Func<TEntry, TColumn>> lamda)
             {
                 if (lamda.Parameters.Count > 1)
-                    throw new ExpressionNotSupportedException();
+                    throw new DSyntaxErrorException();
 
                 var parameter = lamda.Parameters.First();
 
