@@ -59,6 +59,7 @@ namespace UnitTest
                             command.ExecuteNonQuery();
                         }
                     }
+
                     isCompleted = true;
                 }
                 finally
