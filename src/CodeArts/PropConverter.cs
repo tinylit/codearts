@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Runtime;
+using System;
 
 namespace CodeArts
 {
@@ -17,11 +18,10 @@ namespace CodeArts
         /// <summary>
         /// 替换内容（解决对象类型）
         /// </summary>
-        /// <param name="propertyName">属性名称</param>
-        /// <param name="typeToConvert">属性类型</param>
+        /// <param name="propertyItem">属性</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public abstract string Convert(string propertyName, Type typeToConvert, object value);
+        public abstract string Convert(PropertyStoreItem propertyItem, object value);
     }
 
     /// <summary>
@@ -40,15 +40,14 @@ namespace CodeArts
         /// <summary>
         /// 替换内容
         /// </summary>
-        /// <param name="propertyName">属性名称</param>
-        /// <param name="typeToConvert">属性类型</param>
+        /// <param name="propertyItem">属性</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public sealed override string Convert(string propertyName, Type typeToConvert, object value)
+        public sealed override string Convert(PropertyStoreItem propertyItem, object value)
         {
             if (value is T typeValue)
             {
-                return Convert(propertyName, typeToConvert, typeValue);
+                return Convert(propertyItem, typeValue);
             }
 
             throw new NotSupportedException();
@@ -57,10 +56,9 @@ namespace CodeArts
         /// <summary>
         /// 替换内容
         /// </summary>
-        /// <param name="propertyName">属性名称</param>
-        /// <param name="typeToConvert">属性类型</param>
+        /// <param name="propertyItem">属性</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public abstract string Convert(string propertyName, Type typeToConvert, T value);
+        protected abstract string Convert(PropertyStoreItem propertyItem, T value);
     }
 }

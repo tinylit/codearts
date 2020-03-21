@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Runtime;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -22,6 +23,12 @@ namespace CodeArts
         /// 保留未知的属性令牌 (为真时，保留匹配的 {PropertyName} 标识，默认：false)
         /// </summary>
         public bool PreserveUnknownPropertyToken { get; set; }
+
+        /// <summary>
+        /// ‘null’值处理。
+        /// </summary>
+        /// <returns></returns>
+        public virtual string NullValue => string.Empty;
 
         private string dateFormatString;
 
@@ -51,68 +58,90 @@ namespace CodeArts
         /// 数据解决
         /// </summary>
         /// <param name="value">内容</param>
+        /// <param name="packaging">包装数据</param>
         /// <returns></returns>
-        protected virtual string Convert(object value)
+        public string Convert(object value, bool packaging = true)
         {
-            if (value is string text)
-                return text;
-
-            if (value is DateTime date)
+            if (value is null)
             {
-                return date.ToString(DateFormatString);
-            }
-
-            if (value is IEnumerable enumerable)
-            {
-                var enumerator = enumerable.GetEnumerator();
-
-                if (!enumerator.MoveNext())
-                    return null;
-
-                while (enumerator.Current is null)
+                if (packaging)
                 {
-                    if (!enumerator.MoveNext())
-                        return null;
+                    return NullValue;
                 }
 
-                var sb = new StringBuilder();
-
-                sb.Append("[")
-                    .Append(Convert(enumerator.Current));
-
-                while (enumerator.MoveNext())
-                {
-                    if (enumerator.Current is null)
-                        continue;
-
-                    sb.Append(",")
-                        .Append(Convert(enumerator.Current));
-                }
-
-                return sb.Append("]")
-                    .ToString();
+                return null;
             }
 
-            return value.ToString();
+            switch (value)
+            {
+                case string text:
+                    return packaging ? ValuePackaging(text, typeof(string)) : text;
+                case DateTime date:
+                    return packaging ? ValuePackaging(date.ToString(DateFormatString), typeof(DateTime)) : date.ToString(DateFormatString);
+                case IEnumerable enumerable:
+                    {
+                        var enumerator = enumerable.GetEnumerator();
+
+                        if (!enumerator.MoveNext())
+                        {
+                            if (packaging)
+                            {
+                                return NullValue;
+                            }
+
+                            return null;
+                        }
+
+                        while (enumerator.Current is null)
+                        {
+                            if (!enumerator.MoveNext())
+                            {
+                                if (packaging)
+                                {
+                                    return NullValue;
+                                }
+
+                                return null;
+                            }
+                        }
+
+                        var sb = new StringBuilder();
+
+                        sb.Append("[")
+                            .Append(Convert(enumerator.Current, true));
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current is null)
+                            {
+                                continue;
+                            }
+
+                            sb.Append(",")
+                                .Append(Convert(enumerator.Current, true));
+                        }
+
+                        return sb.Append("]")
+                            .ToString();
+                    }
+                default:
+                    return packaging ? ValuePackaging(value.ToString(), value.GetType()) : value.ToString();
+            }
         }
 
         /// <summary>
         /// 替换内容
         /// </summary>
-        /// <param name="propertyName">属性名称</param>
-        /// <param name="typeToConvert">属性类型</param>
+        /// <param name="propertyItem">属性</param>
         /// <param name="value">属性值</param>
         /// <returns></returns>
-        public virtual string Convert(string propertyName, Type typeToConvert, object value)
+        public string Convert(PropertyStoreItem propertyItem, object value)
         {
-            if (value is null) 
-                return null;
-
             foreach (PropConverter converter in Converters)
             {
-                if (converter.CanConvert(typeToConvert))
+                if (converter.CanConvert(propertyItem.MemberType))
                 {
-                    return converter.Convert(propertyName, typeToConvert, value);
+                    return ValuePackaging(converter.Convert(propertyItem, value), propertyItem.MemberType);
                 }
             }
 
@@ -122,8 +151,16 @@ namespace CodeArts
             }
             catch (Exception)
             {
-                return null;
+                return NullValue;
             }
         }
+
+        /// <summary>
+        /// 打包数据。
+        /// </summary>
+        /// <param name="value">数据</param>
+        /// <param name="typeToConvert">源数据类型</param>
+        /// <returns></returns>
+        protected virtual string ValuePackaging(string value, Type typeToConvert) => value;
     }
 }

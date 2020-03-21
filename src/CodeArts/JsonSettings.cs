@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Text.RegularExpressions;
 
 namespace CodeArts
@@ -19,23 +20,25 @@ namespace CodeArts
         }
 
         /// <summary>
-        /// 数据解决
+        /// ‘null’值处理。
         /// </summary>
-        /// <param name="value">值</param>
         /// <returns></returns>
-        protected override string Convert(object value)
+        public override string NullValue => "null";
+
+        /// <summary>
+        /// 打包数据。
+        /// </summary>
+        /// <param name="value">数据</param>
+        /// <param name="typeToConvert">源数据类型</param>
+        /// <returns></returns>
+        protected override string ValuePackaging(string value, Type typeToConvert)
         {
-            string text = base.Convert(value);
+            if (typeToConvert.IsValueType && NumberPattern.IsMatch(value))
+            {
+                return value;
+            }
 
-            if (text is null || value is null || value is IEnumerable)
-                return text;
-
-            var typeToConvert = value.GetType();
-
-            if (typeToConvert.IsValueType && NumberPattern.IsMatch(text))
-                return text;
-
-            return string.Concat("\"", text, "\"");
+            return string.Concat("\"", value, "\"");
         }
     }
 }

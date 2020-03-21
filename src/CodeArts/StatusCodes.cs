@@ -301,6 +301,12 @@ namespace CodeArts
         /// </summary>
         [Description("数据库异常")]
         public const int DbError = 60001;
+
+        /// <summary>
+        /// 执行语句异常
+        /// </summary>
+        [Description("执行语句异常")]
+        public const int SqlError = 60002;
         #endregion
     }
 }
