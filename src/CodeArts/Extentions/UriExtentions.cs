@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -58,12 +59,114 @@ namespace System
         }
 
         #region 补充
+        private class TryRequestable : Requestable<string>, ITryRequestable
+        {
+            private readonly IRequestable<string> requestable;
+            private readonly IHandler<WebException> hanlder;
+
+            public TryRequestable(IRequestable<string> requestable, IHandler<WebException> hanlder)
+            {
+                this.requestable = requestable;
+                this.hanlder = hanlder ?? throw new ArgumentNullException(nameof(hanlder));
+            }
+
+            public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
+
+            public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
+
+            public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
+
+            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public override string Request(string method, int timeout = 5000)
+            {
+                int times = 0;
+                WebException webException = null;
+
+                if (hanlder is IDelayHandler<WebException> delayHandler)
+                {
+                    for (; delayHandler.CanDo(webException, times); Thread.Sleep(delayHandler.Delay(webException, ++times)))
+                    {
+                        try
+                        {
+                            return requestable.Request(method, timeout);
+                        }
+                        catch (WebException e)
+                        {
+                            webException = e;
+                        }
+                    }
+                }
+                else
+                {
+                    do
+                    {
+                        try
+                        {
+                            return requestable.Request(method, timeout);
+                        }
+                        catch (WebException e)
+                        {
+                            webException = e;
+                        }
+                    } while (hanlder.CanDo(webException, ++times));
+                }
+
+                throw webException;
+            }
+#if !NET40
+            public override async Task<string> RequestAsync(string method, int timeout = 5000)
+            {
+                int times = 0;
+                WebException webException = null;
+
+                if (hanlder is IDelayHandler<WebException> delayHandler)
+                {
+                    for (; delayHandler.CanDo(webException, times); Thread.Sleep(delayHandler.Delay(webException, ++times)))
+                    {
+                        try
+                        {
+                            return await requestable.RequestAsync(method, timeout);
+                        }
+                        catch (WebException e)
+                        {
+                            webException = e;
+                        }
+                    }
+                }
+                else
+                {
+                    do
+                    {
+                        try
+                        {
+                            return await requestable.RequestAsync(method, timeout);
+                        }
+                        catch (WebException e)
+                        {
+                            webException = e;
+                        }
+
+                    } while (hanlder.CanDo(webException, ++times));
+                }
+
+                throw webException;
+            }
+#endif
+
+            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
+
+            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
+        }
+
         private class CatchRequestable : Requestable<string>, ICatchRequestable
         {
-            private readonly IRequestable requestable;
+            private readonly IRequestable<string> requestable;
             private readonly Action<WebException> action;
 
-            public CatchRequestable(IRequestable requestable, Action<WebException> action)
+            public CatchRequestable(IRequestable<string> requestable, Action<WebException> action)
             {
                 this.requestable = requestable;
                 this.action = action ?? throw new ArgumentNullException(nameof(action));
@@ -111,10 +214,10 @@ namespace System
 
         private class ResultCatchRequestable : Requestable<string>, ICatchRequestable
         {
-            private readonly IRequestable requestable;
+            private readonly IRequestable<string> requestable;
             private readonly Func<WebException, string> action;
 
-            public ResultCatchRequestable(IRequestable requestable, Func<WebException, string> action)
+            public ResultCatchRequestable(IRequestable<string> requestable, Func<WebException, string> action)
             {
                 this.requestable = requestable;
                 this.action = action ?? throw new ArgumentNullException(nameof(action));
@@ -147,64 +250,6 @@ namespace System
                 catch (WebException e)
                 {
                     return action.Invoke(e);
-                }
-            }
-#endif
-
-            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
-        }
-
-        private class HanlderCatchRequestable : Requestable<string>, ICatchRequestable
-        {
-            private int times = 0;
-            private readonly IRequestable requestable;
-            private readonly IWebExceptionHanlder<string> hanlder;
-
-            public HanlderCatchRequestable(IRequestable requestable, IWebExceptionHanlder<string> hanlder)
-            {
-                this.requestable = requestable;
-                this.hanlder = hanlder ?? throw new ArgumentNullException(nameof(hanlder));
-            }
-
-            public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
-
-            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public override string Request(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return requestable.Request(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (hanlder.CanDo(e, ++times))
-                    {
-                        return hanlder.Do(() => Request(method, timeout));
-                    }
-
-                    throw;
-                }
-            }
-#if !NET40
-            public override Task<string> RequestAsync(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return requestable.RequestAsync(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (hanlder.CanDo(e, ++times))
-                    {
-                        return hanlder.Do(() => RequestAsync(method, timeout));
-                    }
-
-                    throw;
                 }
             }
 #endif
@@ -765,7 +810,7 @@ namespace System
 
             public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
 
-            public ICatchRequestable Catch<THanlder>(THanlder hanlder) where THanlder : IWebExceptionHanlder<string> => new HanlderCatchRequestable(this, hanlder);
+            public ITryRequestable Try(IHandler<WebException> hanlder) => new TryRequestable(this, hanlder);
 
             IFinallyRequestable IRequestable.Finally(Action always) => new FinallyRequestable(this, always);
         }

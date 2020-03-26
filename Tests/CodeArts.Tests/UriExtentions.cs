@@ -2,10 +2,17 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace CodeArts.Tests
 {
+    public class WebExceptionHanlder : IDelayHandler<WebException>
+    {
+        public bool CanDo(WebException e, int times) => times < 3;
+
+        public int Delay(WebException e, int times) => times * 5;
+    }
     [TestClass]
     public class UriExtentions
     {
@@ -34,22 +41,53 @@ namespace CodeArts.Tests
                  .Get();
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void GetJson()
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
-            //var token = "http://localhost:56324/login".AsRequestable()
-            //    .Query("?account=ljl&password=liujialin&debug=true")
-            //    .ByJson(new
-            //    {
-            //        data = new { type = string.Empty, token = string.Empty },
-            //        status = true,
-            //        code = 0,
-            //        message = string.Empty,
-            //        timestamp = DateTime.Now
-            //    }, NamingType.CamelCase)
+            var entry = new
+            {
+                data = new { type = string.Empty, token = string.Empty },
+                status = true,
+                code = 0,
+                message = string.Empty,
+                timestamp = DateTime.Now
+            };
+
+            var token = "http://localhost:56324/login".AsRequestable()
+                .ToQueryString("?account=ljl&password=liujialin&debug=true")
+                .Try(new WebExceptionHanlder())
+                .Json(entry, NamingType.CamelCase)
+                .Catch(e => entry)
+                .Get();
+
+            //var values = "http://localhost:56324/api/values".AsRequestable()
+            //    .AppendHeader("Authorization", token.data.type + " " + token.data.token)
+            //    .ByJson<List<string>>()
             //    .Get();
+        }
+
+        [TestMethod]
+        public async Task GetJsonAsync()
+        {
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+
+            var entry = new
+            {
+                data = new { type = string.Empty, token = string.Empty },
+                status = true,
+                code = 0,
+                message = string.Empty,
+                timestamp = DateTime.Now
+            };
+
+            var token = await "http://localhost:56324/login".AsRequestable()
+                .ToQueryString("?account=ljl&password=liujialin&debug=true")
+                .Try(new WebExceptionHanlder())
+                .Json(entry, NamingType.CamelCase)
+                .Catch(e => entry)
+                .GetAsync();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()
             //    .AppendHeader("Authorization", token.data.type + " " + token.data.token)

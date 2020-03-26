@@ -284,11 +284,11 @@ namespace CodeArts.Net
         ICatchRequestable Catch(Action<WebException> catchError);
 
         /// <summary>
-        /// 异常处理
+        /// 尝试
         /// </summary>
         /// <param name="hanlder">操作</param>
         /// <returns></returns>
-        ICatchRequestable Catch<THanlder>(THanlder hanlder) where THanlder : IWebExceptionHanlder<string>;
+        ITryRequestable Try(IHandler<WebException> hanlder);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
@@ -306,7 +306,7 @@ namespace CodeArts.Net
     }
 
     /// <summary>
-    /// 异常处理能力
+    /// 异常处理的请求
     /// </summary>
     public interface ICatchRequestable : IRequestable<string>, ICastRequestable
     {
@@ -316,6 +316,26 @@ namespace CodeArts.Net
         /// <param name="always">请求始终会执行的方法</param>
         /// <returns></returns>
         IFinallyRequestable Finally(Action always);
+    }
+
+    /// <summary>
+    /// 异常处理能力的请求
+    /// </summary>
+    public interface ITryRequestable : ICatchRequestable
+    {
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Func<WebException, string> catchError);
     }
 
     /// <summary>
