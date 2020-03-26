@@ -23,14 +23,22 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，也会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】）
         /// </summary>
+        /// <remarks>可配置【di:pattern】缩小依赖注入程序集范围，作为<see cref="System.IO.Directory.GetFiles(string, string)"/>的第二个参数，默认:“*”。</remarks>
+        /// <remarks>可配置【di:singleton】决定注入控制器构造函数时，是否参数单例模式注入，默认：true。</remarks>
 #else
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，也会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】）
         /// </summary>
+        /// <remarks>可配置【di-pattern】缩小依赖注入程序集范围，作为<see cref="System.IO.Directory.GetFiles(string, string)"/>的第二个参数，默认:“*”。</remarks>
+        /// <remarks>可配置【di-singleton】决定注入控制器构造函数时，是否参数单例模式注入，默认：true。</remarks>
 #endif
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
         {
-            var assemblys = AssemblyFinder.FindAll();
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+            var assemblys = AssemblyFinder.Find("di:pattern".Config("*"));
+#else
+            var assemblys = AssemblyFinder.Find("di-pattern".Config("*"));
+#endif
 
             var assemblyTypes = assemblys
                 .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
@@ -99,32 +107,45 @@ namespace CodeArts.Mvc.DependencyInjection
 
                                 if (!(value is null)) return value;
 #if NET40
-                                if (x.DefaultValue != DBNull.Value)
+                                if (x.IsOptional && x.DefaultValue != DBNull.Value)
 #else
                                 if (x.HasDefaultValue)
 #endif
                                 {
                                     return x.DefaultValue;
                                 }
-
-                                if (dic.TryGetValue(x.ParameterType, out object instance))
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                                if ("di:singleton".Config(true))
+#else
+                                if ("di-singleton".Config(true))
+#endif
                                 {
+                                    if (dic.TryGetValue(x.ParameterType, out object instance))
+                                    {
+                                        return instance;
+                                    }
+
+                                    if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
+                                    {
+                                        var coreType = coreTypes.First(y => x.ParameterType.IsAssignableFrom(y));
+
+                                        if (!dic.TryGetValue(coreType, out instance))
+                                        {
+                                            dic.Add(coreType, instance = Activator.CreateInstance(coreType));
+                                        }
+                                    }
+
+                                    dic.Add(x.ParameterType, instance ?? (instance = Activator.CreateInstance(x.ParameterType)));
+
                                     return instance;
                                 }
 
                                 if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
                                 {
-                                    var coreType = coreTypes.First(y => x.ParameterType.IsAssignableFrom(y));
-
-                                    if (!dic.TryGetValue(coreType, out instance))
-                                    {
-                                        dic.Add(coreType, instance = Activator.CreateInstance(coreType));
-                                    }
+                                    return Activator.CreateInstance(coreTypes.First(y => x.ParameterType.IsAssignableFrom(y)));
                                 }
 
-                                dic.Add(x.ParameterType, instance ?? (instance = Activator.CreateInstance(x.ParameterType)));
-
-                                return instance;
+                                return Activator.CreateInstance(x.ParameterType);
 
                             }).ToArray());
                         });

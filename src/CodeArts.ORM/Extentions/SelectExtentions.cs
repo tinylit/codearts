@@ -8,7 +8,7 @@ namespace System.Linq
     /// <summary>
     /// 查询器扩展
     /// </summary>
-    public static class QueryableStrengthen
+    public static class SelectExtentions
     {
         private static readonly ConcurrentDictionary<Type, IDbRepositoryProvider> ProviderCache = new ConcurrentDictionary<Type, IDbRepositoryProvider>();
         private static MethodInfo GetMethodInfo<T1, T2, T3>(Func<T1, T2, T3> f, T1 _, T2 _2) => f.Method;
@@ -27,34 +27,17 @@ namespace System.Linq
         }));
 
         /// <summary>
-        /// 查询第一个
+        /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。
         /// </summary>
-        /// <typeparam name="TSource">源</typeparam>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="source">源</param>
-        /// <param name="selector">选择器</param>
+        /// <typeparam name="TSource">资源类型</typeparam>
+        /// <param name="source">查询器</param>
+        /// <param name="commandTimeout">超时时间，单位：秒。<see cref="System.Data.IDbCommand.CommandTimeout"/></param>
         /// <returns></returns>
-        public static TResult TakeFirst<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(TakeFirst, source, selector), new Expression[2] {
-                source.Expression,
-                Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
-            }));
-
-
-        /// <summary>
-        /// 查询第一个或默认
-        /// </summary>
-        /// <typeparam name="TSource">源</typeparam>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="source">源</param>
-        /// <param name="selector">选择器</param>
-        /// <returns></returns>
-        public static TResult TakeFirstOrDefault<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(TakeFirstOrDefault, source, selector), new Expression[2] {
-                source.Expression,
-                Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
-            }));
-
+        public static IQueryable<TSource> TimeOut<TSource>(this IQueryable<TSource> source, int commandTimeout)
+            => source.Provider.CreateQuery<TSource>(Expression.Call(null, GetMethodInfo(TimeOut, source, commandTimeout), new Expression[2] {
+            source.Expression,
+            Expression.Constant(commandTimeout)
+        }));
 
         /// <summary>
         /// 查询第一个
@@ -64,27 +47,11 @@ namespace System.Linq
         /// <param name="source">源</param>
         /// <param name="selector">选择器</param>
         /// <returns></returns>
-        public static TResult TakeSingle<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector) where TResult : class
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(TakeSingle, source, selector), new Expression[2] {
+        public static TResult One<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
+        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(One, source, selector), new Expression[2] {
                 source.Expression,
                 Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
             }));
-
-
-        /// <summary>
-        /// 查询第一个
-        /// </summary>
-        /// <typeparam name="TSource">源</typeparam>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="source">源</param>
-        /// <param name="selector">选择器</param>
-        /// <returns></returns>
-        public static TResult TakeSingleOrDefault<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector) where TResult : class
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(TakeSingleOrDefault, source, selector), new Expression[2] {
-                source.Expression,
-                Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
-            }));
-        
 
         /// <summary>
         /// 查询最后一个
@@ -94,27 +61,11 @@ namespace System.Linq
         /// <param name="source">源</param>
         /// <param name="selector">选择器</param>
         /// <returns></returns>
-        public static TResult TakeLast<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector) where TResult : class
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(TakeLast, source, selector), new Expression[2] {
+        public static TResult LastOne<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector) where TResult : class
+        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(LastOne, source, selector), new Expression[2] {
                 source.Expression,
                 Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
             }));
-        
-
-        /// <summary>
-        /// 查询最后一个
-        /// </summary>
-        /// <typeparam name="TSource">源</typeparam>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="source">源</param>
-        /// <param name="selector">选择器</param>
-        /// <returns></returns>
-        public static TResult TakeLastOrDefault<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector) where TResult : class
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(TakeLastOrDefault, source, selector), new Expression[2] {
-                source.Expression,
-                Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
-            }));
-        
 
         /// <summary>
         /// SQL

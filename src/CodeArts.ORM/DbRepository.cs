@@ -110,15 +110,17 @@ namespace CodeArts.ORM
 
             protected ISQLCorrectSimSettings Settings => Editable.Settings;
 
-            public int ExecuteCommand()
+            public int ExecuteCommand(int? commandTimeout = null)
             {
-                if (!collect.Any())
-                    return 0;
+                if (collect.Any())
+                {
+                    return Execute(commandTimeout);
+                }
 
-                return Execute();
+                return 0;
             }
 
-            public abstract int Execute();
+            public abstract int Execute(int? commandTimeout);
 
             public IEnumerator<T> GetEnumerator() => collect.GetEnumerator();
 
@@ -136,11 +138,11 @@ namespace CodeArts.ORM
             private Func<T, string[]> where;
             private Func<ITableRegions, string> from;
 
-            public override int Execute()
+            public override int Execute(int? commandTimeout)
             {
                 if (where is null)
                 {
-                    return wheres.Length == 1 ? Simple() : Complex();
+                    return wheres.Length == 1 ? Simple(commandTimeout) : Complex(commandTimeout);
                 }
 
                 var list = this.ToList();
@@ -187,7 +189,7 @@ namespace CodeArts.ORM
                         return Simple(TableRegions.ReadWrites.First(x => x.Key == item.Key), item, index, parameters);
                     }));
 
-                    return Editable.Excute(sql, parameters);
+                    return Editable.Excute(sql, parameters, commandTimeout);
                 }
 
                 int group_index = 0;
@@ -250,7 +252,7 @@ namespace CodeArts.ORM
                         group_index++;
                     }
 
-                    affected_rows += Editable.Excute(sb.ToString(), parameters);
+                    affected_rows += Editable.Excute(sb.ToString(), parameters, commandTimeout);
 
                     transaction.Complete();
                 }
@@ -258,7 +260,7 @@ namespace CodeArts.ORM
                 return affected_rows;
             }
 
-            private int Simple()
+            private int Simple(int? commandTimeout)
             {
                 bool flag = true;
                 string value = wheres[0];
@@ -285,7 +287,7 @@ namespace CodeArts.ORM
 
                     var sql = Simple(column, list, 0, parameters);
 
-                    return Editable.Excute(sql, parameters);
+                    return Editable.Excute(sql, parameters, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -298,7 +300,7 @@ namespace CodeArts.ORM
 
                         var sql = Simple(column, list.Skip(i).Take(MAX_PARAMETERS_COUNT), 0, parameters);
 
-                        affected_rows += Editable.Excute(sql, parameters);
+                        affected_rows += Editable.Excute(sql, parameters, commandTimeout);
                     }
 
                     transaction.Complete();
@@ -307,7 +309,7 @@ namespace CodeArts.ORM
                 return affected_rows;
             }
 
-            private int Complex()
+            private int Complex(int? commandTimeout)
             {
                 var columns = typeRegions.ReadWrites
                         .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
@@ -321,7 +323,7 @@ namespace CodeArts.ORM
 
                     var sql = Complex(columns, list, 0, parameters);
 
-                    return Editable.Excute(sql, parameters);
+                    return Editable.Excute(sql, parameters, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -335,7 +337,7 @@ namespace CodeArts.ORM
 
                         var sql = Complex(columns, list.Skip(i).Take(offset), 0, parameters);
 
-                        affected_rows += Editable.Excute(sql, parameters);
+                        affected_rows += Editable.Excute(sql, parameters, commandTimeout);
                     }
 
                     transaction.Complete();
@@ -489,7 +491,7 @@ namespace CodeArts.ORM
 
             public IInsertable<T> Except<TColumn>(Expression<Func<T, TColumn>> columns) => Except(Provider.Except(columns));
 
-            public override int Execute()
+            public override int Execute(int? commandTimeout)
             {
                 IEnumerable<KeyValuePair<string, string>> columns = typeRegions.ReadWrites;
 
@@ -514,7 +516,7 @@ namespace CodeArts.ORM
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
-                    return Execute(list, insert_columns);
+                    return Execute(list, insert_columns, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -524,7 +526,7 @@ namespace CodeArts.ORM
                 {
                     for (int i = 0; i < list.Count; i += offset)
                     {
-                        affected_rows += Execute(list.Skip(i).Take(offset).ToList(), insert_columns);
+                        affected_rows += Execute(list.Skip(i).Take(offset).ToList(), insert_columns, commandTimeout);
                     }
 
                     transaction.Complete();
@@ -533,7 +535,7 @@ namespace CodeArts.ORM
                 return affected_rows;
             }
 
-            private int Execute(List<T> list, List<KeyValuePair<string, string>> columns)
+            private int Execute(List<T> list, List<KeyValuePair<string, string>> columns, int? commandTimeout)
             {
                 var sb = new StringBuilder();
                 var paramters = new Dictionary<string, object>();
@@ -582,7 +584,7 @@ namespace CodeArts.ORM
                         })), ")");
                     })));
 
-                return Editable.Excute(sb.Append(";").ToString(), paramters);
+                return Editable.Excute(sb.Append(";").ToString(), paramters, commandTimeout);
             }
 
             public IInsertable<T> From(Func<ITableRegions, string> table)
@@ -622,7 +624,7 @@ namespace CodeArts.ORM
 
             public IUpdateable<T> Except<TColumn>(Expression<Func<T, TColumn>> columns) => Except(Provider.Except(columns));
 
-            public override int Execute()
+            public override int Execute(int? commandTimeout)
             {
                 var sb = new StringBuilder();
                 var paramters = new Dictionary<string, object>();
@@ -679,7 +681,7 @@ namespace CodeArts.ORM
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
-                    return Execute(dicRoot, insert_columns);
+                    return Execute(dicRoot, insert_columns, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -696,7 +698,7 @@ namespace CodeArts.ORM
 
                         if (parameter_count > MAX_PARAMETERS_COUNT)
                         {
-                            affected_rows += Execute(dic, insert_columns);
+                            affected_rows += Execute(dic, insert_columns, commandTimeout);
 
                             dic = new List<KeyValuePair<T, string[]>>();
 
@@ -706,7 +708,7 @@ namespace CodeArts.ORM
                         dic.Add(new KeyValuePair<T, string[]>(item.Key, item.Value));
                     }
 
-                    affected_rows += Execute(dic, insert_columns);
+                    affected_rows += Execute(dic, insert_columns, commandTimeout);
 
                     transaction.Complete();
                 }
@@ -714,7 +716,7 @@ namespace CodeArts.ORM
                 return affected_rows;
             }
 
-            private int Execute(List<KeyValuePair<T, string[]>> list, List<KeyValuePair<string, string>> columns)
+            private int Execute(List<KeyValuePair<T, string[]>> list, List<KeyValuePair<string, string>> columns, int? commandTimeout)
             {
                 var sb = new StringBuilder();
                 var paramters = new Dictionary<string, object>();
@@ -785,7 +787,7 @@ namespace CodeArts.ORM
                         .Append(";");
                 });
 
-                return Editable.Excute(sb.ToString(), paramters);
+                return Editable.Excute(sb.ToString(), paramters, commandTimeout);
             }
 
             public IUpdateable<T> From(Func<ITableRegions, string> table)
@@ -984,8 +986,9 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="sql">SQL</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        int IEditable.Excute(string sql, Dictionary<string, object> parameters) => DbExecuter.Execute(Connection, sql, parameters);
+        int IEditable.Excute(string sql, Dictionary<string, object> parameters, int? commandTimeout) => DbExecuter.Execute(Connection, sql, parameters, commandTimeout);
 
         /// <summary>
         /// 执行SQL验证

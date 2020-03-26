@@ -1233,7 +1233,7 @@ namespace UnitTest
         public void CustomFirstWithMethodTest()
         {
             var user = new UserRepository();
-            var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).TakeFirst(y => y.Id) && x.CreatedTime < DateTime.Now)
+            var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).One(y => y.Id) && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.CreatedTime)
                 .Take(10)
                 .Skip(100)
@@ -1402,6 +1402,29 @@ namespace UnitTest
             var user = new UserRepository();
 
             var dto = user.GetApply();
+        }
+
+        [TestMethod]
+        public void TimeOutTest()
+        {
+            var user = new UserRepository();
+            var result = user.Where(x => x.Id > 0 && x.Id < 20).TimeOut(10);
+
+            var results = result.ToList();
+        }
+
+        [TestMethod]
+        public void TimeOut2Test()
+        {
+            var user = new UserRepository();
+            var result = user.AsExecuteable()
+                .From(x => x.TableName)
+                .Where(x => x.Username == "admin")
+                .TimeOut(10)
+                .Update(x => new FeiUsers
+                {
+                    Username = x.Username.Substring(0, 4)
+                });
         }
     }
 }

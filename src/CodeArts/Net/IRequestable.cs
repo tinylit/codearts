@@ -113,9 +113,45 @@ namespace CodeArts.Net
     }
 
     /// <summary>
+    /// 转换能力
+    /// </summary>
+    public interface ICastRequestable
+    {
+        /// <summary>
+        /// 数据返回JSON格式的结果，将转为指定类型
+        /// </summary>
+        /// <typeparam name="T">返回类型</typeparam>
+        /// <param name="namingType">命名规则</param>
+        /// <returns></returns>
+        IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class;
+        /// <summary>
+        /// 数据返回XML格式的结果，将转为指定类型
+        /// </summary>
+        /// <typeparam name="T">返回类型</typeparam>
+        /// <returns></returns>
+        IXmlRequestable<T> Xml<T>() where T : class;
+
+        /// <summary>
+        /// 数据返回JSON格式的结果，将转为指定类型(匿名对象)
+        /// </summary>
+        /// <typeparam name="T">匿名类型</typeparam>
+        /// <param name="anonymousTypeObject">匿名对象</param>
+        /// <param name="namingType">命名规范</param>
+        /// <returns></returns>
+        IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
+        /// <summary>
+        /// 数据返回XML格式的结果，将转为指定类型(匿名对象)
+        /// </summary>
+        /// <typeparam name="T">匿名类型</typeparam>
+        /// <param name="anonymousTypeObject">匿名对象</param>
+        /// <returns></returns>
+        IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class;
+    }
+
+    /// <summary>
     /// 请求
     /// </summary>
-    public interface IRequestable : IRequestable<string>
+    public interface IRequestable : IRequestable<string>, ICastRequestable
     {
         /// <summary>
         /// 添加包含与请求或响应相关联的协议头。
@@ -241,55 +277,73 @@ namespace CodeArts.Net
         IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase);
 
         /// <summary>
-        /// 数据返回JSON格式的结果，将转为指定类型
-        /// </summary>
-        /// <typeparam name="T">返回类型</typeparam>
-        /// <param name="namingType">命名规则</param>
-        /// <returns></returns>
-        IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class;
-        /// <summary>
-        /// 数据返回XML格式的结果，将转为指定类型
-        /// </summary>
-        /// <typeparam name="T">返回类型</typeparam>
-        /// <returns></returns>
-        IXmlRequestable<T> Xml<T>() where T : class;
-
-        /// <summary>
-        /// 数据返回JSON格式的结果，将转为指定类型(匿名对象)
-        /// </summary>
-        /// <typeparam name="T">匿名类型</typeparam>
-        /// <param name="anonymousTypeObject">匿名对象</param>
-        /// <param name="namingType">命名规范</param>
-        /// <returns></returns>
-        IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
-        /// <summary>
-        /// 数据返回XML格式的结果，将转为指定类型(匿名对象)
-        /// </summary>
-        /// <typeparam name="T">匿名类型</typeparam>
-        /// <param name="anonymousTypeObject">匿名对象</param>
-        /// <returns></returns>
-        IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class;
-
-        /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
-        IRequestable Catch(Action<WebException> catchError);
+        ICatchRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 异常处理
+        /// </summary>
+        /// <param name="hanlder">操作</param>
+        /// <returns></returns>
+        ICatchRequestable Catch<THanlder>(THanlder hanlder) where THanlder : IWebExceptionHanlder<string>;
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IRequestable Catch(Func<WebException, string> catchError);
+        ICatchRequestable Catch(Func<WebException, string> catchError);
 
         /// <summary>
         /// 始终执行的动作
         /// </summary>
         /// <param name="always">请求始终会执行的方法</param>
         /// <returns></returns>
-        IRequestable Finally(Action always);
+        IFinallyRequestable Finally(Action always);
+    }
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface ICatchRequestable : IRequestable<string>, ICastRequestable
+    {
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="always">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IFinallyRequestable Finally(Action always);
+    }
+
+    /// <summary>
+    /// 结束
+    /// </summary>
+    public interface IFinallyRequestable : IRequestable<string>, ICastRequestable
+    {
+    }
+
+    /// <summary>
+    /// 结束
+    /// </summary>
+    public interface IFinallyRequestable<T> : IRequestable<T>
+    {
+    }
+
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface ICatchRequestable<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="always">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IFinallyRequestable<T> Finally(Action always);
     }
 
     /// <summary>
@@ -304,45 +358,32 @@ namespace CodeArts.Net
         NamingType NamingType { get; }
 
         /// <summary>
-        /// 捕获Json解析异常
-        /// 第一个参数：请求接口返回的内容。
-        /// 第二个参数：解析异常。
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        IJsonRequestable<T> Catch(Action<string, Exception> catchError);
-
-        /// <summary>
-        /// 捕获Json解析异常
-        /// 第一个参数：请求接口返回的内容。
-        /// 第二个参数：解析异常。
-        /// 第三个参数：异常情况返回值。
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        IJsonRequestable<T> Catch(Func<string, Exception, T> catchError);
-
-        /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
-        IJsonRequestable<T> Catch(Action<WebException> catchError);
-
+        ICatchRequestable<T> Catch(Action<string, Exception> catchError);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IJsonRequestable<T> Catch(Func<WebException, T> catchError);
+        ICatchRequestable<T> Catch(Func<string, Exception, T> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable<T> Catch(Func<WebException, T> catchError);
 
         /// <summary>
         /// 始终执行的动作
         /// </summary>
         /// <param name="always">请求始终会执行的方法</param>
         /// <returns></returns>
-        IJsonRequestable<T> Finally(Action always);
+        IFinallyRequestable<T> Finally(Action always);
     }
 
     /// <summary>
@@ -352,43 +393,31 @@ namespace CodeArts.Net
     public interface IXmlRequestable<T> : IRequestable<T>
     {
         /// <summary>
-        /// 捕获Xml解析异常
-        /// 第一个参数：请求接口返回的内容。
-        /// 第二个参数：解析异常。
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        IXmlRequestable<T> Catch(Action<string, XmlException> catchError);
-
-        /// <summary>
-        /// 捕获Xml解析异常
-        /// 第一个参数：请求接口返回的内容。
-        /// 第二个参数：解析异常。
-        /// 第三个参数：异常情况的返回值。
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        IXmlRequestable<T> Catch(Func<string, XmlException, T> catchError);
-
-        /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
-        IXmlRequestable<T> Catch(Action<WebException> catchError);
+        ICatchRequestable<T> Catch(Action<string, XmlException> catchError);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IXmlRequestable<T> Catch(Func<WebException, T> catchError);
+        ICatchRequestable<T> Catch(Func<string, XmlException, T> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable<T> Catch(Func<WebException, T> catchError);
 
         /// <summary>
         /// 始终执行的动作
         /// </summary>
         /// <param name="always">请求始终会执行的方法</param>
         /// <returns></returns>
-        IXmlRequestable<T> Finally(Action always);
+        IFinallyRequestable<T> Finally(Action always);
     }
 }

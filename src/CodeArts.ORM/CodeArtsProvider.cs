@@ -106,8 +106,9 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库连接</param>
         /// <param name="sql">SQL</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
-        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
+        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
@@ -121,6 +122,11 @@ namespace CodeArts.ORM
                 using (var command = conn.CreateCommand())
                 {
                     command.CommandText = sql;
+
+                    if (commandTimeout.HasValue)
+                    {
+                        command.CommandTimeout = commandTimeout.Value;
+                    }
 
                     AddParameterAuto(command, parameters);
 
@@ -143,8 +149,9 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库连接</param>
         /// <param name="sql">SQL</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
-        public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
+        public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
@@ -167,6 +174,11 @@ namespace CodeArts.ORM
                 using (var command = conn.CreateCommand())
                 {
                     command.CommandText = sql;
+
+                    if (commandTimeout.HasValue)
+                    {
+                        command.CommandTimeout = commandTimeout.Value;
+                    }
 
                     AddParameterAuto(command, parameters);
 
@@ -201,9 +213,10 @@ namespace CodeArts.ORM
         /// <param name="parameters">参数</param>
         /// <param name="reqiured">是否必须。</param>
         /// <param name="defaultValue">默认</param>
+        /// <param name="commandTimeout">超时时间。</param>
         /// <exception cref="DRequiredException">必须且数据库未查询到数据</exception>
         /// <returns></returns>
-        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default)
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default, int? commandTimeout = null)
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
@@ -227,6 +240,11 @@ namespace CodeArts.ORM
                 {
                     command.CommandText = sql;
 
+                    if (commandTimeout.HasValue)
+                    {
+                        command.CommandTimeout = commandTimeout.Value;
+                    }
+
                     AddParameterAuto(command, parameters);
 
                     using (var dr = command.ExecuteReader(behavior))
@@ -248,7 +266,7 @@ namespace CodeArts.ORM
                     }
                 }
             }
-            finally 
+            finally
             {
                 if (isClosedConnection)
                 {

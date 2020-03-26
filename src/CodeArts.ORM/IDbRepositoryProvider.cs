@@ -25,9 +25,10 @@ namespace CodeArts.ORM
         /// <param name="parameters">参数</param>
         /// <param name="required">是否必须</param>
         /// <param name="defaultValue">默认值</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <exception cref="DRequiredException">当 【required】 为真且未查询到数据</exception>
         /// <returns></returns>
-        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
+        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null);
 
         /// <summary>
         /// 查询列表集合
@@ -36,8 +37,9 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
+        IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
 
         /// <summary>
         /// 测评表达式语句（查询）

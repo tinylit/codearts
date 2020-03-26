@@ -1092,7 +1092,7 @@ namespace CodeArts.ORM.Builders
             {
                 Type declaringType = methodCall.Method.DeclaringType;
 
-                if (declaringType == typeof(Queryable) || declaringType == typeof(QueryableStrengthen))
+                if (declaringType == typeof(Queryable) || declaringType == typeof(SelectExtentions))
                 {
                     switch (methodCall.Method.Name)
                     {
@@ -1740,6 +1740,11 @@ namespace CodeArts.ORM.Builders
             throw new DSyntaxErrorException();
         }
         #endregion
+
+        /// <summary>
+        /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。
+        /// </summary>
+        public int? TimeOut { get; protected set; }
 
         /// <summary>
         /// 参数集合

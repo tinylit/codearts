@@ -16,10 +16,11 @@ namespace CodeArts.ORM
         /// <summary>
         /// 执行
         /// </summary>
-        /// <param name="sql">SQL语句</param>
-        /// <param name="parameters">参数</param>
+        /// <param name="sql">SQL语句。</param>
+        /// <param name="parameters">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
-        int Excute(string sql, Dictionary<string, object> parameters);
+        int Excute(string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
     }
 
     /// <summary>

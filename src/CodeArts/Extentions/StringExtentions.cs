@@ -267,22 +267,22 @@ namespace System
             Type leftType = left.GetType();
             Type rightType = right.GetType();
 
+            if (leftType.IsEnum)
+            {
+                leftType = Enum.GetUnderlyingType(leftType);
+
+                left = Convert.ChangeType(left, leftType);
+            }
+
+            if (rightType.IsEnum)
+            {
+                rightType = Enum.GetUnderlyingType(rightType);
+
+                right = Convert.ChangeType(right, rightType);
+            }
+
             if (leftType.IsValueType && rightType.IsValueType)
             {
-                if (leftType.IsEnum)
-                {
-                    leftType = Enum.GetUnderlyingType(leftType);
-
-                    left = Convert.ChangeType(left, leftType);
-                }
-
-                if (rightType.IsEnum)
-                {
-                    rightType = Enum.GetUnderlyingType(rightType);
-
-                    right = Convert.ChangeType(right, rightType);
-                }
-
                 switch (left)
                 {
                     case bool b:

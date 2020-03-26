@@ -40,6 +40,19 @@ namespace CodeArts.ORM
         }));
 
         /// <summary>
+        /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间.
+        /// </summary>
+        /// <typeparam name="T">实体</typeparam>
+        /// <param name="source">源</param>
+        /// <param name="commandTimeout">超时时间，单位：秒。<see cref="System.Data.IDbCommand.CommandTimeout"/></param>
+        /// <returns></returns>
+        public static IExecuteable<T> TimeOut<T>(this IExecuteable<T> source, int commandTimeout)
+        => source.Provider.CreateExecute(Expression.Call(null, GetMethodInfo(TimeOut, source, commandTimeout), new Expression[2] {
+            source.Expression,
+            Expression.Constant(commandTimeout)
+        }));
+
+        /// <summary>
         /// 更新数据
         /// </summary>
         /// <typeparam name="T">实体</typeparam>

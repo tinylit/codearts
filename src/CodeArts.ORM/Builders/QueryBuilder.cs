@@ -983,10 +983,7 @@ namespace CodeArts.ORM.Builders
             switch (name)
             {
                 case MethodCall.From:
-
-                    var value = (Func<ITableRegions, string>)node.Arguments[1].GetValueFromExpression();
-
-                    if (value == null)
+                    if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableRegions, string> value))
                         throw new DException("指定表名称不能为空!");
 
                     if (!buildFrom)
@@ -998,10 +995,14 @@ namespace CodeArts.ORM.Builders
                         return base.Visit(node.Arguments[0]);
 
                     return node;
-                case MethodCall.TakeFirst:
-                case MethodCall.TakeFirstOrDefault:
-                case MethodCall.TakeSingle:
-                case MethodCall.TakeSingleOrDefault:
+                case MethodCall.TimeOut:
+
+                    TimeOut = (int)node.Arguments[1].GetValueFromExpression();
+
+                    base.Visit(node.Arguments[0]);
+
+                    return node;
+                case MethodCall.One:
 
                     // TOP(1)
                     take = 1;
@@ -1022,11 +1023,10 @@ namespace CodeArts.ORM.Builders
 
                     }, () => base.Visit(node.Arguments[0]));
 
-                    Required = name == MethodCall.TakeFirst || name == MethodCall.TakeSingle;
+                    Required = true;
 
                     return node;
-                case MethodCall.TakeLast:
-                case MethodCall.TakeLastOrDefault:
+                case MethodCall.LastOne:
 
                     // TOP(..)
                     take = 1;
@@ -1052,7 +1052,7 @@ namespace CodeArts.ORM.Builders
                     if (!isContainsOrderBy)
                         throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
 
-                    Required = name == MethodCall.TakeLast;
+                    Required = true;
 
                     return node;
                 default:
@@ -1067,7 +1067,7 @@ namespace CodeArts.ORM.Builders
                 return VisitQueryableMethodCall(node);
             }
 
-            if (node.Method.DeclaringType == typeof(QueryableStrengthen))
+            if (node.Method.DeclaringType == typeof(SelectExtentions))
             {
                 return VisitQueryableExtentionsMethodCall(node);
             }

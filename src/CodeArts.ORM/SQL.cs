@@ -850,7 +850,7 @@ namespace CodeArts.ORM
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            string sql = ToString();
+            string sql = sb.ToString();
 
             //? 检查 IndexOf 函数，参数处理
             if (settings.IndexOfSwapPlaces)
@@ -920,7 +920,11 @@ namespace CodeArts.ORM
         /// 返回分析的SQL结果。
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => sb.ToString();
+        public override string ToString()
+        {
+            //? 表名称。
+            return PatternFieldToken.Replace(PatternTableToken.Replace(sb.ToString(), item => string.Concat("[", item.Groups["name"].Value, "]")), item => string.Concat("[", item.Groups["name"].Value, "]"));
+        }
 
         /// <summary>
         /// 追加sql

@@ -41,8 +41,9 @@ namespace CodeArts.ORM
         /// <summary>
         /// 执行指令
         /// </summary>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        int ExecuteCommand();
+        int ExecuteCommand(int? commandTimeout = null);
 
         /// <summary>
         /// 执行提供器

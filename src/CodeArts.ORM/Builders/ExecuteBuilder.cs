@@ -58,6 +58,7 @@ namespace CodeArts.ORM.Builders
 
                 base.WriteMembers(prefix, members);
             }
+
             protected override Expression VisitMemberParameterSelect(MemberExpression node)
             {
                 string name = node.Member.Name;
@@ -185,12 +186,17 @@ namespace CodeArts.ORM.Builders
             {
                 case MethodCall.From:
 
-                    var value = (Func<ITableRegions, string>)node.Arguments[1].GetValueFromExpression();
-
-                    if (value == null)
+                    if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableRegions, string> value))
                         throw new DException("指定表名称不能为空!");
 
                     SetTableFactory(value);
+
+                    base.Visit(node.Arguments[0]);
+
+                    return node;
+                case MethodCall.TimeOut:
+
+                    TimeOut = (int)node.Arguments[1].GetValueFromExpression();
 
                     base.Visit(node.Arguments[0]);
 

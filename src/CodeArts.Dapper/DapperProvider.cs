@@ -27,13 +27,14 @@ namespace CodeArts.Dapper
         /// <param name="parameters">参数</param>
         /// <param name="required">是否必须</param>
         /// <param name="defaultValue">默认值</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default)
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null)
         {
             if (required)
-                return conn.QueryFirst<T>(sql, parameters);
+                return conn.QueryFirst<T>(sql, parameters, commandTimeout: commandTimeout);
 
-            return conn.QueryFirstOrDefault<T>(sql, parameters);
+            return conn.QueryFirstOrDefault<T>(sql, parameters, commandTimeout: commandTimeout);
         }
         /// <summary>
         /// 查询列表集合
@@ -42,10 +43,11 @@ namespace CodeArts.Dapper
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
+        public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
         {
-            return conn.Query<T>(sql, parameters);
+            return conn.Query<T>(sql, parameters, commandTimeout: commandTimeout);
         }
         /// <summary>
         /// 执行增删改功能
@@ -53,10 +55,11 @@ namespace CodeArts.Dapper
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">执行语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null)
+        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
         {
-            return conn.Execute(sql, parameters);
+            return conn.Execute(sql, parameters, commandTimeout: commandTimeout);
         }
     }
 }

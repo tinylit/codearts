@@ -53,6 +53,5 @@ namespace CodeArts
 
             return AssemblyCache.GetOrAdd(pattern, searchPattern => Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, Assembly.LoadFrom)).ToList());
         }
-
     }
 }

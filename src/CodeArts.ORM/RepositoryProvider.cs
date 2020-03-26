@@ -52,8 +52,9 @@ namespace CodeArts.ORM
         /// <param name="parameters">参数</param>
         /// <param name="required">是否必须</param>
         /// <param name="defaultValue">默认值</param>
+        /// <param name="commandTimeout">执行超时时间</param>
         /// <returns></returns>
-        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default);
+        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null);
 
         /// <summary>
         /// 查询列表集合
@@ -62,8 +63,9 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">查询语句</param>
         /// <param name="parameters">参数</param>
+        /// <param name="commandTimeout">执行超时时间</param>
         /// <returns></returns>
-        public abstract IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
+        public abstract IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
 
         /// <summary>
         /// 测评表达式语句（查询）
@@ -99,22 +101,22 @@ namespace CodeArts.ORM
                 {
                     if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
                     {
-                        return (TResult)Query<T>(conn, sql, builder.Parameters);
+                        return (TResult)Query<T>(conn, sql, builder.Parameters, builder.TimeOut);
                     }
 
                     object value = builder.DefaultValue;
 
                     if (value is null)
                     {
-                        return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required);
+                        return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut);
                     }
 
                     if (value is TResult defaultValue)
                     {
-                        return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue);
+                        return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue, builder.TimeOut);
                     }
 
-                    return QueryFirst(conn, sql, builder.Parameters, builder.Required, value.MapTo<TResult>());
+                    return QueryFirst(conn, sql, builder.Parameters, builder.Required, value.MapTo<TResult>(), builder.TimeOut);
                 }
                 catch (DbException db)
                 {
@@ -153,7 +155,7 @@ namespace CodeArts.ORM
 
                 try
                 {
-                    return Execute(conn, sql, builder.Parameters);
+                    return Execute(conn, sql, builder.Parameters, builder.TimeOut);
                 }
                 catch (DbException db)
                 {
@@ -168,6 +170,7 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">执行语句</param>
         /// <param name="parameters">参数</param>
-        public abstract int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
+        /// <param name="commandTimeout">超时时间</param>
+        public abstract int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
     }
 }

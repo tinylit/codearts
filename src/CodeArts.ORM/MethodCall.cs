@@ -202,29 +202,19 @@ namespace CodeArts.ORM
         public const string TrimEnd = "TrimEnd";
 
         /** 查询器扩展 */
-        public const string From = nameof(QueryableStrengthen.From);//"From";
+        public const string From = nameof(SelectExtentions.From);// "From";
+
+        /** 超时时长 */
+        public const string TimeOut = nameof(SelectExtentions.TimeOut);// "TimeOut"
 
         /// <summary>
         /// 获取第一个元素。
         /// </summary>
-        public const string TakeFirst = nameof(QueryableStrengthen.TakeFirst);// "TakeFirst";
+        public const string One = nameof(SelectExtentions.One);// "TakeFirst";
         /// <summary>
         /// 获取第一个元素，或默认值。
         /// </summary>
-        public const string TakeFirstOrDefault = nameof(QueryableStrengthen.TakeFirstOrDefault);// "TakeFirstOrDefault";
-        /// <summary>
-        /// 获取第一个元素。
-        /// </summary>
-        public const string TakeSingle = nameof(QueryableStrengthen.TakeSingle);// "TakeSingle";
-        /// <summary>
-        /// 获取第一个元素，或默认值。
-        /// </summary>
-        public const string TakeSingleOrDefault = nameof(QueryableStrengthen.TakeSingleOrDefault);//"TakeSingleOrDefault";
-        /// <summary>
-        /// 获取最后一个元素，或默认值。
-        /// </summary>
-        public const string TakeLastOrDefault = nameof(QueryableStrengthen.TakeLastOrDefault);// "TakeLastOrDefault";
-
+        public const string LastOne = nameof(SelectExtentions.LastOne);
         /// <summary>
         /// 更新
         /// </summary>

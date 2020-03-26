@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Tiny Lit</Authors>
-    <Version>3.1.6</Version>
+    <Version>3.1.8</Version>
 	  <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

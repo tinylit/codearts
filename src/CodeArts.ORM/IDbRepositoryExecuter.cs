@@ -21,7 +21,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="conn">数据库链接</param>
         /// <param name="expression">表达式</param>
-        /// <returns></returns>
+        /// <returns>执行影响行</returns>
         int Execute<T>(IDbConnection conn, Expression expression);
 
         /// <summary>
@@ -30,6 +30,8 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="sql">执行语句</param>
         /// <param name="parameters">参数</param>
-        int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null);
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns>执行影响行</returns>
+        int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
     }
 }
