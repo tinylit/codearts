@@ -158,6 +158,7 @@ namespace System
 
         private class HanlderCatchRequestable : Requestable<string>, ICatchRequestable
         {
+            private int times = 0;
             private readonly IRequestable requestable;
             private readonly IWebExceptionHanlder<string> hanlder;
 
@@ -175,45 +176,35 @@ namespace System
 
             public override string Request(string method, int timeout = 5000)
             {
-                int times = 0;
-
-            label_do:
+                try
                 {
-                    try
+                    return requestable.Request(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (hanlder.CanDo(e, ++times))
                     {
-                        return requestable.Request(method, timeout);
+                        return hanlder.Do(() => Request(method, timeout));
                     }
-                    catch (WebException e)
-                    {
-                        if (hanlder.CanDo(e, ++times))
-                        {
-                            goto label_do;
-                        }
 
-                        throw;
-                    }
+                    throw;
                 }
             }
 #if !NET40
             public override Task<string> RequestAsync(string method, int timeout = 5000)
             {
-                int times = 0;
-
-            label_do:
+                try
                 {
-                    try
+                    return requestable.RequestAsync(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (hanlder.CanDo(e, ++times))
                     {
-                        return requestable.RequestAsync(method, timeout);
+                        return hanlder.Do(() => RequestAsync(method, timeout));
                     }
-                    catch (WebException e)
-                    {
-                        if (hanlder.CanDo(e, ++times))
-                        {
-                            goto label_do;
-                        }
 
-                        throw;
-                    }
+                    throw;
                 }
             }
 #endif
