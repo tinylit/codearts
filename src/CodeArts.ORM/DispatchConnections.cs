@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Data;
-using System.Web;
+﻿using System.Data;
 
 namespace CodeArts.ORM
 {
@@ -21,9 +19,6 @@ namespace CodeArts.ORM
         /// </summary>
         private class DefaultConnections : IDispatchConnections
         {
-#if NET45 || NET451 || NET452 || NET461
-            private static readonly ConcurrentDictionary<HttpContext, DbConnection> ConnectionCache = new ConcurrentDictionary<HttpContext, DbConnection>();
-#endif
             /// <summary>
             /// 链接管理
             /// </summary>
@@ -31,30 +26,7 @@ namespace CodeArts.ORM
             /// <param name="adapter">适配器</param>
             /// <param name="useCache">是否使用缓存</param>
             /// <returns></returns>
-            public IDbConnection Create(string connectionString, IDbConnectionAdapter adapter, bool useCache = true)
-            {
-#if NET40 || NETSTANDARD2_0
-                return adapter.Create(connectionString);
-#else
-
-                if (!useCache || HttpContext.Current is null)
-                    return adapter.Create(connectionString);
-
-                return ConnectionCache.GetOrAdd(HttpContext.Current, context =>
-                 {
-                     context.AddOnRequestCompleted(context2 =>
-                     {
-                         if (ConnectionCache.TryRemove(context2, out DbConnection connection))
-                         {
-                             connection.Dispose();
-                         }
-                     });
-
-                     return new DbConnection(adapter.Create(connectionString));
-                 });
-#endif
-
-            }
+            public IDbConnection Create(string connectionString, IDbConnectionAdapter adapter, bool useCache = true) => adapter.Create(connectionString);
         }
 
         /// <summary>

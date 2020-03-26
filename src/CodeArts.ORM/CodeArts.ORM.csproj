@@ -23,10 +23,6 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
   
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' ">
-	<Reference Include="System.Web" />
-  </ItemGroup>
-  
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.5.0" />
   </ItemGroup>
