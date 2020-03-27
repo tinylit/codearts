@@ -2,17 +2,12 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 
 namespace CodeArts.Tests
 {
-    public class WebExceptionHanlder : IDelayHandler<WebException>
-    {
-        public bool CanDo(WebException e, int times) => times < 3;
-
-        public int Delay(WebException e, int times) => times * 5;
-    }
     [TestClass]
     public class UriExtentions
     {
@@ -57,7 +52,6 @@ namespace CodeArts.Tests
 
             var token = "http://localhost:56324/login".AsRequestable()
                 .ToQueryString("?account=ljl&password=liujialin&debug=true")
-                .Try(new WebExceptionHanlder())
                 .Json(entry, NamingType.CamelCase)
                 .Catch(e => entry)
                 .Get();
@@ -84,7 +78,10 @@ namespace CodeArts.Tests
 
             var token = await "http://localhost:56324/login".AsRequestable()
                 .ToQueryString("?account=ljl&password=liujialin&debug=true")
-                .Try(new WebExceptionHanlder())
+                .TryThen((requestable, e) =>
+                {
+                    //对请求的参数或Headers进行调整。如：令牌认证。 requestable.AppendHeader("Authorization", "{token}");
+                })
                 .Json(entry, NamingType.CamelCase)
                 .Catch(e => entry)
                 .GetAsync();
@@ -93,6 +90,32 @@ namespace CodeArts.Tests
             //    .AppendHeader("Authorization", token.data.type + " " + token.data.token)
             //    .ByJson<List<string>>()
             //    .Get();
+        }
+
+        [TestMethod]
+        public async Task DownloadAsync()
+        {
+            string fileName = "C:\\dotnet-sdk-3.0.100-win-x64.exe";
+
+            if (File.Exists(fileName))
+            {
+                File.Delete(fileName);
+            }
+
+            try
+            {
+                await "https://download.visualstudio.microsoft.com/download/pr/53f250a1-318f-4350-8bda-3c6e49f40e76/e8cbbd98b08edd6222125268166cfc43/dotnet-sdk-3.0.100-win-x64.exe".AsRequestable()
+                      .TryThen(e => true)
+                      .DownloadFileAsync(fileName);
+            }
+            catch (WebException) { }
+            finally
+            {
+                if (File.Exists(fileName))
+                {
+                    File.Delete(fileName);
+                }
+            }
         }
 
         //[TestMethod]

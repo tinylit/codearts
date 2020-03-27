@@ -20,25 +20,11 @@ namespace CodeArts.Net
         T Get(int timeout = 5000);
 
         /// <summary>
-        /// GET 请求
-        /// </summary>
-        /// <param name="timeout">超时时间，单位：毫秒</param>
-        /// <returns></returns>
-        Task<T> GetAsync(int timeout = 5000);
-
-        /// <summary>
         /// DELETE 请求
         /// </summary>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
         T Delete(int timeout = 5000);
-
-        /// <summary>
-        /// DELETE 请求
-        /// </summary>
-        /// <param name="timeout">超时时间，单位：毫秒</param>
-        /// <returns></returns>
-        Task<T> DeleteAsync(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
@@ -52,14 +38,51 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> PostAsync(int timeout = 5000);
+        T Put(int timeout = 5000);
+
+        /// <summary>
+        /// HEAD 请求
+        /// </summary>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        /// <returns></returns>
+        T Head(int timeout = 5000);
+
+        /// <summary>
+        /// PATCH 请求
+        /// </summary>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        /// <returns></returns>
+        T Patch(int timeout = 5000);
+
+        /// <summary>
+        /// 数据返回XML格式的结果，将转为指定类型
+        /// </summary>
+        /// <param name="method">求取方式</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        /// <returns></returns>
+        T Request(string method, int timeout = 5000);
+
+#if !NET40
+        /// <summary>
+        /// GET 请求
+        /// </summary>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        /// <returns></returns>
+        Task<T> GetAsync(int timeout = 5000);
+
+        /// <summary>
+        /// DELETE 请求
+        /// </summary>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        /// <returns></returns>
+        Task<T> DeleteAsync(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
         /// </summary>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Put(int timeout = 5000);
+        Task<T> PostAsync(int timeout = 5000);
 
         /// <summary>
         /// POST 请求
@@ -73,21 +96,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Head(int timeout = 5000);
-
-        /// <summary>
-        /// HEAD 请求
-        /// </summary>
-        /// <param name="timeout">超时时间，单位：毫秒</param>
-        /// <returns></returns>
         Task<T> HeadAsync(int timeout = 5000);
-
-        /// <summary>
-        /// PATCH 请求
-        /// </summary>
-        /// <param name="timeout">超时时间，单位：毫秒</param>
-        /// <returns></returns>
-        T Patch(int timeout = 5000);
 
         /// <summary>
         /// PATCH 请求
@@ -102,14 +111,9 @@ namespace CodeArts.Net
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Request(string method, int timeout = 5000);
-        /// <summary>
-        /// 数据返回XML格式的结果，将转为指定类型
-        /// </summary>
-        /// <param name="method">求取方式</param>
-        /// <param name="timeout">超时时间，单位：毫秒</param>
-        /// <returns></returns>
         Task<T> RequestAsync(string method, int timeout = 5000);
+#endif
+
     }
 
     /// <summary>
@@ -149,9 +153,61 @@ namespace CodeArts.Net
     }
 
     /// <summary>
-    /// 请求
+    /// 文件下载地址
     /// </summary>
-    public interface IRequestable : IRequestable<string>, ICastRequestable
+    public interface IFileRequestable
+    {
+        /// <summary>
+        /// 上传文件
+        /// </summary>
+        /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        byte[] UploadFile(string fileName, int timeout = 5000);
+
+        /// <summary>
+        /// 上传文件
+        /// </summary>
+        /// <param name="method">求取方式</param>
+        /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        byte[] UploadFile(string method, string fileName, int timeout = 5000);
+
+        /// <summary>
+        /// 下载文件
+        /// </summary>
+        /// <param name="fileName">本地文件地址：文件将下载到这个路径下。</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        void DownloadFile(string fileName, int timeout = 5000);
+
+#if !NET40
+        /// <summary>
+        /// 上传文件
+        /// </summary>
+        /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000);
+
+        /// <summary>
+        /// 上传文件
+        /// </summary>
+        /// <param name="method">求取方式</param>
+        /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000);
+
+        /// <summary>
+        /// 下载文件
+        /// </summary>
+        /// <param name="fileName">本地文件地址：文件将下载到这个路径下。</param>
+        /// <param name="timeout">超时时间，单位：毫秒</param>
+        Task DownloadFileAsync(string fileName, int timeout = 5000);
+#endif
+    }
+
+    /// <summary>
+    /// 请求基础
+    /// </summary>
+    public interface IRequestableBase
     {
         /// <summary>
         /// 添加包含与请求或响应相关联的协议头。
@@ -167,6 +223,57 @@ namespace CodeArts.Net
         /// <param name="headers">协议头</param>
         /// <returns></returns>
         IRequestable AppendHeaders(IEnumerable<KeyValuePair<string, string>> headers);
+
+        /// <summary>
+        /// 请求参数。
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable ToQueryString(string param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable ToQueryString(IEnumerable<string> param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable ToQueryString<T>(IEnumerable<KeyValuePair<string, T>> param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <param name="namingType">命名规则</param>
+        /// <returns></returns>
+        IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase);
+    }
+
+    /// <summary>
+    /// 请求
+    /// </summary>
+    public interface IRequestable : IRequestable<string>, IRequestableBase, IFileRequestable, ICastRequestable
+    {
 
         /// <summary>
         /// content-type = "application/json"
@@ -233,48 +340,18 @@ namespace CodeArts.Net
         IRequestable ToForm(object param, NamingType namingType = NamingType.Normal);
 
         /// <summary>
-        /// 请求参数。
+        /// 如果请求异常，会调用一次【<paramref name="match"/>】，判断是否重试请求。
         /// </summary>
-        /// <param name="param">参数</param>
+        /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
-        IRequestable ToQueryString(string param);
+        IThenRequestable TryThen(Predicate<WebException> match);
 
         /// <summary>
-        /// 请求参数。?id=1&amp;name="yep"
+        /// 如果请求异常，会调用一次【<paramref name="then"/>】，并重试一次请求。
         /// </summary>
-        /// <param name="param">参数</param>
+        /// <param name="then">异常处理事件</param>
         /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<string> param);
-
-        /// <summary>
-        /// 请求参数。?id=1&amp;name="yep"
-        /// </summary>
-        /// <param name="param">参数</param>
-        /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param);
-
-        /// <summary>
-        /// 请求参数。?id=1&amp;name="yep"
-        /// </summary>
-        /// <param name="param">参数</param>
-        /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param);
-
-        /// <summary>
-        /// 请求参数。?id=1&amp;name="yep"
-        /// </summary>
-        /// <typeparam name="T">值类型</typeparam>
-        /// <param name="param">参数</param>
-        /// <returns></returns>
-        IRequestable ToQueryString<T>(IEnumerable<KeyValuePair<string, T>> param);
-
-        /// <summary>
-        /// 请求参数。?id=1&amp;name="yep"
-        /// </summary>
-        /// <param name="param">参数</param>
-        /// <param name="namingType">命名规则</param>
-        /// <returns></returns>
-        IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase);
+        IThenRequestable TryThen(Action<IRequestableBase, WebException> then);
 
         /// <summary>
         /// 捕获Web异常
@@ -282,13 +359,6 @@ namespace CodeArts.Net
         /// <param name="catchError">异常捕获</param>
         /// <returns></returns>
         ICatchRequestable Catch(Action<WebException> catchError);
-
-        /// <summary>
-        /// 尝试
-        /// </summary>
-        /// <param name="hanlder">操作</param>
-        /// <returns></returns>
-        ITryRequestable Try(IHandler<WebException> hanlder);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
@@ -319,10 +389,53 @@ namespace CodeArts.Net
     }
 
     /// <summary>
-    /// 异常处理能力的请求
+    /// 结束
     /// </summary>
-    public interface ITryRequestable : ICatchRequestable
+    public interface IFinallyRequestable : IRequestable<string>, ICastRequestable
     {
+
+    }
+
+    /// <summary>
+    /// 结束
+    /// </summary>
+    public interface IFinallyRequestable<T> : IRequestable<T>
+    {
+
+    }
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface ICatchRequestable<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="always">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IFinallyRequestable<T> Finally(Action always);
+    }
+
+    /// <summary>
+    /// 延续能力的请求
+    /// </summary>
+    public interface IThenRequestable : ICatchRequestable, IFileRequestable
+    {
+        /// <summary>
+        /// 如果请求异常，会调用一次【<paramref name="match"/>】，判断是否重试请求。
+        /// </summary>
+        /// <param name="match">判断是否重试请求</param>
+        /// <returns></returns>
+        IThenRequestable Then(Predicate<WebException> match);
+
+        /// <summary>
+        /// 如果请求异常，会调用一次【<paramref name="then"/>】，并重试一次请求。
+        /// </summary>
+        /// <param name="then">异常处理事件</param>
+        /// <returns></returns>
+        IThenRequestable Then(Action<IRequestableBase, WebException> then);
+
         /// <summary>
         /// 捕获Web异常
         /// </summary>
@@ -336,34 +449,6 @@ namespace CodeArts.Net
         /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
         ICatchRequestable Catch(Func<WebException, string> catchError);
-    }
-
-    /// <summary>
-    /// 结束
-    /// </summary>
-    public interface IFinallyRequestable : IRequestable<string>, ICastRequestable
-    {
-    }
-
-    /// <summary>
-    /// 结束
-    /// </summary>
-    public interface IFinallyRequestable<T> : IRequestable<T>
-    {
-    }
-
-
-    /// <summary>
-    /// 异常处理能力
-    /// </summary>
-    public interface ICatchRequestable<T> : IRequestable<T>
-    {
-        /// <summary>
-        /// 始终执行的动作
-        /// </summary>
-        /// <param name="always">请求始终会执行的方法</param>
-        /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action always);
     }
 
     /// <summary>

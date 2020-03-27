@@ -21,146 +21,40 @@ namespace System
     public static class UriExtentions
     {
         private static readonly Regex UriPattern = new Regex(@"\w+://.+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private abstract class Requestable<T> : IRequestable<T>
         {
             public T Get(int timeout = 5000) => Request("GET", timeout);
+            public T Delete(int timeout = 5000) => Request("DELETE", timeout);
+            public T Post(int timeout = 5000) => Request("POST", timeout);
+            public T Put(int timeout = 5000) => Request("PUT", timeout);
+            public T Head(int timeout = 5000) => Request("HEAD", timeout);
+            public T Patch(int timeout = 5000) => Request("PATCH", timeout);
+            public abstract T Request(string method, int timeout = 5000);
 
+#if !NET40
             public Task<T> GetAsync(int timeout = 5000) => RequestAsync("GET", timeout);
 
-            public T Delete(int timeout = 5000) => Request("DELETE", timeout);
 
             public Task<T> DeleteAsync(int timeout = 5000) => RequestAsync("DELETE", timeout);
 
-            public T Post(int timeout = 5000) => Request("POST", timeout);
 
             public Task<T> PostAsync(int timeout = 5000) => RequestAsync("POST", timeout);
 
-            public T Put(int timeout = 5000) => Request("PUT", timeout);
 
             public Task<T> PutAsync(int timeout = 5000) => RequestAsync("PUT", timeout);
 
-            public T Head(int timeout = 5000) => Request("HEAD", timeout);
 
             public Task<T> HeadAsync(int timeout = 5000) => RequestAsync("HEAD", timeout);
 
-            public T Patch(int timeout = 5000) => Request("PATCH", timeout);
 
             public Task<T> PatchAsync(int timeout = 5000) => RequestAsync("PATCH", timeout);
-
-            public abstract T Request(string method, int timeout = 5000);
-
-#if NET40
-            public Task<T> RequestAsync(string method, int timeout = 5000)
-                => Task.Factory.StartNew(() => Request(method, timeout));
-#else
 
             public abstract Task<T> RequestAsync(string method, int timeout = 5000);
 #endif
         }
 
         #region 补充
-        private class TryRequestable : Requestable<string>, ITryRequestable
-        {
-            private readonly IRequestable<string> requestable;
-            private readonly IHandler<WebException> hanlder;
-
-            public TryRequestable(IRequestable<string> requestable, IHandler<WebException> hanlder)
-            {
-                this.requestable = requestable;
-                this.hanlder = hanlder ?? throw new ArgumentNullException(nameof(hanlder));
-            }
-
-            public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
-
-            public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
-
-            public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
-
-            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public override string Request(string method, int timeout = 5000)
-            {
-                int times = 0;
-                WebException webException = null;
-
-                if (hanlder is IDelayHandler<WebException> delayHandler)
-                {
-                    for (; delayHandler.CanDo(webException, times); Thread.Sleep(delayHandler.Delay(webException, ++times)))
-                    {
-                        try
-                        {
-                            return requestable.Request(method, timeout);
-                        }
-                        catch (WebException e)
-                        {
-                            webException = e;
-                        }
-                    }
-                }
-                else
-                {
-                    do
-                    {
-                        try
-                        {
-                            return requestable.Request(method, timeout);
-                        }
-                        catch (WebException e)
-                        {
-                            webException = e;
-                        }
-                    } while (hanlder.CanDo(webException, ++times));
-                }
-
-                throw webException;
-            }
-#if !NET40
-            public override async Task<string> RequestAsync(string method, int timeout = 5000)
-            {
-                int times = 0;
-                WebException webException = null;
-
-                if (hanlder is IDelayHandler<WebException> delayHandler)
-                {
-                    for (; delayHandler.CanDo(webException, times); Thread.Sleep(delayHandler.Delay(webException, ++times)))
-                    {
-                        try
-                        {
-                            return await requestable.RequestAsync(method, timeout);
-                        }
-                        catch (WebException e)
-                        {
-                            webException = e;
-                        }
-                    }
-                }
-                else
-                {
-                    do
-                    {
-                        try
-                        {
-                            return await requestable.RequestAsync(method, timeout);
-                        }
-                        catch (WebException e)
-                        {
-                            webException = e;
-                        }
-
-                    } while (hanlder.CanDo(webException, ++times));
-                }
-
-                throw webException;
-            }
-#endif
-
-            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
-        }
-
         private class CatchRequestable : Requestable<string>, ICatchRequestable
         {
             private readonly IRequestable<string> requestable;
@@ -209,7 +103,7 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
 
-            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
+            public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
         }
 
         private class ResultCatchRequestable : Requestable<string>, ICatchRequestable
@@ -302,6 +196,283 @@ namespace System
             public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
 
             public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
+        }
+
+        private class IIFThenRequestable : Requestable<string>, IThenRequestable
+        {
+            private readonly IRequestableBase requestable;
+            private readonly IRequestable<string> request;
+            private readonly IFileRequestable fileRequestable;
+            private readonly Predicate<WebException> predicate;
+
+            public IIFThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, IRequestableBase requestable, Predicate<WebException> predicate)
+            {
+                this.request = request;
+                this.requestable = requestable;
+                this.fileRequestable = fileRequestable;
+                this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+            }
+
+            public IIFThenRequestable(IRequestable requestable, Predicate<WebException> predicate) : this(requestable, requestable, requestable, predicate)
+            {
+            }
+
+            public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
+
+            public IThenRequestable Then(Predicate<WebException> match) => new IIFThenRequestable(this, this, requestable, match);
+
+            public IThenRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
+
+            public override string Request(string method, int timeout = 5000)
+            {
+                try
+                {
+                    return request.Request(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (predicate.Invoke(e))
+                    {
+                        return request.Request(method, timeout);
+                    }
+
+                    throw;
+                }
+            }
+
+            public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
+
+            public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
+
+            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
+
+            public IJsonRequestable<T> Json<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => Json<T>(namingType);
+
+            public IXmlRequestable<T> Xml<T>(T _) where T : class => Xml<T>();
+
+            public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
+
+            public byte[] UploadFile(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return fileRequestable.UploadFile(method, fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (predicate.Invoke(e))
+                    {
+                        return fileRequestable.UploadFile(method, fileName, timeout);
+                    }
+
+                    throw;
+                }
+            }
+
+            public void DownloadFile(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    fileRequestable.DownloadFile(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (predicate.Invoke(e))
+                    {
+                        fileRequestable.DownloadFile(fileName, timeout);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+
+#if !NET40
+            public override async Task<string> RequestAsync(string method, int timeout = 5000)
+            {
+                try
+                {
+                    return await request.RequestAsync(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (predicate.Invoke(e))
+                    {
+                        return await request.RequestAsync(method, timeout);
+                    }
+
+                    throw;
+                }
+            }
+
+            public Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => UploadFileAsync(null, fileName, timeout);
+
+            public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (predicate.Invoke(e))
+                    {
+                        return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                    }
+
+                    throw;
+                }
+            }
+
+            public async Task DownloadFileAsync(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    await fileRequestable.DownloadFileAsync(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    if (predicate.Invoke(e))
+                    {
+                        await fileRequestable.DownloadFileAsync(fileName, timeout);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+#endif
+        }
+        private class ThenRequestable : Requestable<string>, IThenRequestable
+        {
+            private readonly IRequestableBase requestable;
+            private readonly IRequestable<string> request;
+            private readonly IFileRequestable fileRequestable;
+            private readonly Action<IRequestableBase, WebException> then;
+
+            public ThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
+            {
+                this.request = request;
+                this.requestable = requestable;
+                this.fileRequestable = fileRequestable;
+                this.then = then ?? throw new ArgumentNullException(nameof(then));
+            }
+
+            public ThenRequestable(IRequestable requestable, Action<IRequestableBase, WebException> then) : this(requestable, requestable, requestable, then)
+            {
+            }
+
+            public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
+
+            public IThenRequestable Then(Predicate<WebException> match) => new IIFThenRequestable(this, this, requestable, match);
+
+            public IThenRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
+
+            public override string Request(string method, int timeout = 5000)
+            {
+                try
+                {
+                    return request.Request(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    then.Invoke(requestable, e);
+
+                    return request.Request(method, timeout);
+                }
+            }
+
+            public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
+
+            public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
+
+            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
+
+            public IJsonRequestable<T> Json<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => Json<T>(namingType);
+
+            public IXmlRequestable<T> Xml<T>(T _) where T : class => Xml<T>();
+
+            public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
+
+            public byte[] UploadFile(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return fileRequestable.UploadFile(method, fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    then.Invoke(requestable, e);
+
+                    return fileRequestable.UploadFile(method, fileName, timeout);
+                }
+            }
+
+            public void DownloadFile(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    fileRequestable.DownloadFile(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    then.Invoke(requestable, e);
+
+                    fileRequestable.DownloadFile(fileName, timeout);
+                }
+            }
+
+#if !NET40
+            public override async Task<string> RequestAsync(string method, int timeout = 5000)
+            {
+                try
+                {
+                    return await request.RequestAsync(method, timeout);
+                }
+                catch (WebException e)
+                {
+                    then.Invoke(requestable, e);
+
+                    return await request.RequestAsync(method, timeout);
+                }
+            }
+
+            public Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => UploadFileAsync(null, fileName, timeout);
+
+            public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    then.Invoke(requestable, e);
+
+                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                }
+            }
+
+            public async Task DownloadFileAsync(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    await fileRequestable.DownloadFileAsync(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    then.Invoke(requestable, e);
+
+                    await fileRequestable.DownloadFileAsync(fileName, timeout);
+                }
+            }
+#endif
         }
 
         private class JsonCatchRequestable<T> : Requestable<T>, ICatchRequestable<T>
@@ -599,8 +770,6 @@ namespace System
         }
         #endregion
 
-
-
         private class Requestable : Requestable<string>, IRequestable
         {
             private Uri __uri;
@@ -656,7 +825,10 @@ namespace System
 
             public IRequestable ToForm(object param, NamingType namingType = NamingType.Normal)
             {
-                if (param is null) return this;
+                if (param is null)
+                {
+                    return this;
+                }
 
                 var typeStore = RuntimeTypeCache.Instance.GetCache(param.GetType());
 
@@ -690,7 +862,10 @@ namespace System
 
             public IRequestable ToQueryString(string param)
             {
-                if (string.IsNullOrEmpty(param)) return this;
+                if (string.IsNullOrEmpty(param))
+                {
+                    return this;
+                }
 
                 string uriString = __uri.ToString();
 
@@ -715,7 +890,10 @@ namespace System
 
             public IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase)
             {
-                if (param is null) return this;
+                if (param is null)
+                {
+                    return this;
+                }
 
                 var typeStore = RuntimeTypeCache.Instance.GetCache(param.GetType());
 
@@ -761,6 +939,70 @@ namespace System
                     return Encoding.UTF8.GetString(client.UploadValues(__uri, method.ToUpper(), __form));
                 }
             }
+
+            public IRequestable ToXml(string param)
+            {
+                __data = param;
+
+                return AppendHeader("Content-Type", "application/xml");
+            }
+
+            public IRequestable ToXml<T>(T param) where T : class => ToXml(XmlHelper.XmlSerialize(param));
+
+            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
+
+            public IJsonRequestable<T> Json<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
+
+            public IThenRequestable TryThen(Predicate<WebException> match) => new IIFThenRequestable(this, match);
+
+            public IThenRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
+
+            public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
+
+            public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
+
+            public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
+
+            public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
+
+            public byte[] UploadFile(string method, string fileName, int timeout = 5000)
+            {
+                using (var client = new WebCoreClient
+                {
+                    Timeout = timeout,
+                    Encoding = Encoding.UTF8
+                })
+                {
+                    foreach (var kv in __headers)
+                    {
+                        client.Headers.Add(kv.Key, kv.Value);
+                    }
+
+                    return client.UploadFile(__uri, method, fileName);
+                }
+            }
+
+            public void DownloadFile(string fileName, int timeout = 5000)
+            {
+                using (var client = new WebCoreClient
+                {
+                    Timeout = timeout,
+                    Encoding = Encoding.UTF8
+                })
+                {
+                    foreach (var kv in __headers)
+                    {
+                        client.Headers.Add(kv.Key, kv.Value);
+                    }
+
+                    client.DownloadFile(__uri, fileName);
+                }
+            }
+
 #if !NET40
             public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
@@ -788,31 +1030,43 @@ namespace System
                     return Encoding.UTF8.GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form));
                 }
             }
-#endif
-            public IRequestable ToXml(string param)
-            {
-                __data = param;
 
-                return AppendHeader("Content-Type", "application/xml");
+            public Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => UploadFileAsync(null, fileName, timeout);
+
+            public Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
+            {
+                using (var client = new WebCoreClient
+                {
+                    Timeout = timeout,
+                    Encoding = Encoding.UTF8
+                })
+                {
+                    foreach (var kv in __headers)
+                    {
+                        client.Headers.Add(kv.Key, kv.Value);
+                    }
+
+                    return client.UploadFileTaskAsync(__uri, method, fileName);
+                }
             }
 
-            public IRequestable ToXml<T>(T param) where T : class => ToXml(XmlHelper.XmlSerialize(param));
+            public Task DownloadFileAsync(string fileName, int timeout = 5000)
+            {
+                using (var client = new WebCoreClient
+                {
+                    Timeout = timeout,
+                    Encoding = Encoding.UTF8
+                })
+                {
+                    foreach (var kv in __headers)
+                    {
+                        client.Headers.Add(kv.Key, kv.Value);
+                    }
 
-            public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IJsonRequestable<T> Json<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
-
-            public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
-
-            public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
-
-            public ITryRequestable Try(IHandler<WebException> hanlder) => new TryRequestable(this, hanlder);
-
-            IFinallyRequestable IRequestable.Finally(Action always) => new FinallyRequestable(this, always);
+                    return client.DownloadFileTaskAsync(__uri, fileName);
+                }
+            }
+#endif
         }
 
         private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>
