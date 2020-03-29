@@ -262,8 +262,9 @@ namespace CodeArts.ORM
         /// <typeparam name="TResult">结果</typeparam>
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null) => QueryFirst<TResult>(sql, param, false);
+        protected virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null, int? commandTimeout = null) => QueryFirst<TResult>(sql, param, false, commandTimeout);
 
         /// <summary>
         /// 查询一条数据
@@ -272,8 +273,9 @@ namespace CodeArts.ORM
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
         /// <param name="required">是否必须返回数据(为真时数据库无数据会抛异常)</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirst<TResult>(ISQL sql, object param = null, bool required = true)
+        protected virtual TResult QueryFirst<TResult>(ISQL sql, object param = null, bool required = true, int? commandTimeout = null)
         {
             if (!QueryAuthorize(sql))
                 throw new NonAuthorizeException();
@@ -283,7 +285,7 @@ namespace CodeArts.ORM
                 if (sql.Parameters.Count > 0)
                     throw new DSyntaxErrorException("参数不匹配!");
 
-                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), null, required);
+                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), null, required, default, commandTimeout);
             }
 
             var type = param.GetType();
@@ -298,7 +300,7 @@ namespace CodeArts.ORM
                 return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
                     [Settings.ParamterName(token.Name)] = param
-                }, required);
+                }, required, default, commandTimeout);
             }
 
             if (!(param is Dictionary<string, object> parameters))
@@ -309,7 +311,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), parameters, required);
+            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), parameters, required, default, commandTimeout);
         }
 
         /// <summary>
@@ -318,8 +320,9 @@ namespace CodeArts.ORM
         /// <typeparam name="TResult">结果</typeparam>
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        protected virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null)
+        protected virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null, int? commandTimeout = null)
         {
             if (!QueryAuthorize(sql))
                 throw new NonAuthorizeException();
@@ -329,7 +332,7 @@ namespace CodeArts.ORM
                 if (sql.Parameters.Count > 0)
                     throw new DSyntaxErrorException("参数不匹配!");
 
-                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings));
+                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), null, commandTimeout);
             }
 
             var type = param.GetType();
@@ -344,7 +347,7 @@ namespace CodeArts.ORM
                 return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
                     [token.Name] = param
-                });
+                }, commandTimeout);
             }
 
             if (!(param is Dictionary<string, object> parameters))
@@ -355,7 +358,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters);
+            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters, commandTimeout);
 
         }
 

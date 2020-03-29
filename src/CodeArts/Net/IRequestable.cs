@@ -479,7 +479,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
-        IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
+        IThenConditionRequestable Then(Action<IRequestableBase, WebException> then);
 
         /// <summary>
         /// 捕获Web异常
@@ -522,7 +522,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
-        IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
+        IThenConditionRequestable Then(Action<IRequestableBase, WebException> then);
 
         /// <summary>
         /// 捕获Web异常

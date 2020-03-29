@@ -454,7 +454,7 @@ namespace System
 
             public IThenRequestable TryWhen(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
 
-            public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
+            public IThenConditionRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
 
             public override string Request(string method, int timeout = 5000)
             {

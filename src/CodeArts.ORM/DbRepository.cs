@@ -1001,8 +1001,9 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns>影响行</returns>
-        protected virtual int Excute(ISQL sql, object param = null)
+        protected virtual int Excute(ISQL sql, object param = null, int? commandTimeout = null)
         {
             if (!ExcuteAuthorize(sql))
                 throw new NonAuthorizeException();
@@ -1012,7 +1013,7 @@ namespace CodeArts.ORM
                 if (sql.Parameters.Count > 0)
                     throw new DSyntaxErrorException("参数不匹配!");
 
-                return DbExecuter.Execute(Connection, sql.ToString(Settings));
+                return DbExecuter.Execute(Connection, sql.ToString(Settings), null, commandTimeout);
             }
 
             var type = param.GetType();
@@ -1027,7 +1028,7 @@ namespace CodeArts.ORM
                 return DbExecuter.Execute(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
                     [token.Name] = param
-                });
+                }, commandTimeout);
             }
 
             if (!(param is Dictionary<string, object> parameters))
@@ -1038,7 +1039,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            return DbExecuter.Execute(Connection, sql.ToString(Settings), parameters);
+            return DbExecuter.Execute(Connection, sql.ToString(Settings), parameters, commandTimeout);
         }
     }
 }
