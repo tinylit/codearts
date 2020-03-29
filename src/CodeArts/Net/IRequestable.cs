@@ -274,7 +274,6 @@ namespace CodeArts.Net
     /// </summary>
     public interface IRequestable : IRequestable<string>, IRequestableBase, IFileRequestable, ICastRequestable
     {
-
         /// <summary>
         /// content-type = "application/json"
         /// </summary>
@@ -340,18 +339,19 @@ namespace CodeArts.Net
         IRequestable ToForm(object param, NamingType namingType = NamingType.Normal);
 
         /// <summary>
-        /// 如果请求异常，会调用一次【<paramref name="match"/>】，判断是否重试请求。
+        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
+        /// 多个条件是或的关系。
         /// </summary>
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestable TryThen(Predicate<WebException> match);
+        IThenRequestable TryWhen(Predicate<WebException> match);
 
         /// <summary>
-        /// 如果请求异常，会调用一次【<paramref name="then"/>】，并重试一次请求。
+        /// 如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
         /// </summary>
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
-        IThenRequestable TryThen(Action<IRequestableBase, WebException> then);
+        IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
 
         /// <summary>
         /// 捕获Web异常
@@ -423,18 +423,106 @@ namespace CodeArts.Net
     public interface IThenRequestable : ICatchRequestable, IFileRequestable
     {
         /// <summary>
-        /// 如果请求异常，会调用一次【<paramref name="match"/>】，判断是否重试请求。
+        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
+        /// 多个条件之间是或的关系。
         /// </summary>
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestable Then(Predicate<WebException> match);
+        IThenRequestable Or(Predicate<WebException> match);
 
         /// <summary>
-        /// 如果请求异常，会调用一次【<paramref name="then"/>】，并重试一次请求。
+        /// 设置重试次数：默认：设置<see cref="Or(Predicate{WebException})"/>或<seealso cref="IRequestable.TryWhen(Predicate{WebException})"/>或<seealso cref="IThenConditionRequestable.TryWhen(Predicate{WebException})"/>的总次数。
+        /// 多次设置时，取最大值。
+        /// </summary>
+        /// <param name="retryCount">最大重试次数。</param>
+        /// <returns></returns>
+        IThenRequestable MaxRetries(int retryCount);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Func<WebException, string> catchError);
+    }
+
+    /// <summary>
+    /// 带有条件的延续能力请求
+    /// </summary>
+    public interface IThenConditionRequestable : ICatchRequestable, IFileRequestable
+    {
+        /// <summary>
+        /// 所有条件都满足时，重试一次请求。
+        /// 多个条件之间是且的关系。
+        /// </summary>
+        /// <param name="predicate">条件</param>
+        /// <returns></returns>
+        IThenAndConditionRequestable If(Predicate<WebException> predicate);
+
+        /// <summary>
+        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
+        /// 多个条件是或的关系。
+        /// </summary>
+        /// <param name="match">判断是否重试请求</param>
+        /// <returns></returns>
+        IThenRequestable TryWhen(Predicate<WebException> match);
+
+        /// <summary>
+        /// 新开一个重试机制，如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
         /// </summary>
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
-        IThenRequestable Then(Action<IRequestableBase, WebException> then);
+        IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Func<WebException, string> catchError);
+    }
+
+    /// <summary>
+    /// 带有条件的延续能力请求
+    /// </summary>
+    public interface IThenAndConditionRequestable : ICatchRequestable, IFileRequestable
+    {
+        /// <summary>
+        /// 所有条件都满足时，重试一次请求。
+        /// 多个条件之间是且的关系。
+        /// </summary>
+        /// <param name="predicate">条件</param>
+        /// <returns></returns>
+        IThenAndConditionRequestable And(Predicate<WebException> predicate);
+
+        /// <summary>
+        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
+        /// 多个条件是或的关系。
+        /// </summary>
+        /// <param name="match">判断是否重试请求</param>
+        /// <returns></returns>
+        IThenRequestable TryWhen(Predicate<WebException> match);
+
+        /// <summary>
+        /// 新开一个重试机制，如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
+        /// </summary>
+        /// <param name="then">异常处理事件</param>
+        /// <returns></returns>
+        IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
 
         /// <summary>
         /// 捕获Web异常

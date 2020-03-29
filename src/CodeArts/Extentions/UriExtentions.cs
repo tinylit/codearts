@@ -2,14 +2,12 @@
 using CodeArts.Net;
 using CodeArts.Serialize.Json;
 using CodeArts.Serialize.Xml;
-using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -70,7 +68,7 @@ namespace System
 
             public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
-            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => Json<T>(namingType);
 
             public override string Request(string method, int timeout = 5000)
             {
@@ -103,7 +101,7 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
 
-            public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
+            public IXmlRequestable<T> Xml<T>(T _) where T : class => Xml<T>();
         }
 
         private class ResultCatchRequestable : Requestable<string>, ICatchRequestable
@@ -121,7 +119,7 @@ namespace System
 
             public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
-            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => Json<T>(namingType);
 
             public override string Request(string method, int timeout = 5000)
             {
@@ -150,7 +148,7 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
 
-            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
+            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => Xml<T>();
         }
 
         private class FinallyRequestable : Requestable<string>, IFinallyRequestable
@@ -166,7 +164,7 @@ namespace System
 
             public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
-            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => Json<T>(namingType);
 
             public override string Request(string method, int timeout = 5000)
             {
@@ -195,44 +193,87 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>() where T : class => new XmlRequestable<T>(this);
 
-            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => new XmlRequestable<T>(this);
+            public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => Xml<T>();
         }
 
         private class IIFThenRequestable : Requestable<string>, IThenRequestable
         {
-            private readonly IRequestableBase requestable;
+            private int maxRetires = -1;
+            private volatile int retryCount = 0;
+
             private readonly IRequestable<string> request;
             private readonly IFileRequestable fileRequestable;
-            private readonly Predicate<WebException> predicate;
+            private readonly List<Predicate<WebException>> predicates;
 
-            public IIFThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, IRequestableBase requestable, Predicate<WebException> predicate)
+            public IIFThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, Predicate<WebException> predicate)
             {
-                this.request = request;
-                this.requestable = requestable;
-                this.fileRequestable = fileRequestable;
-                this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                this.request = request ?? throw new ArgumentNullException(nameof(request));
+                this.fileRequestable = fileRequestable ?? throw new ArgumentNullException(nameof(fileRequestable));
+                predicates = new List<Predicate<WebException>> { predicate };
             }
 
-            public IIFThenRequestable(IRequestable requestable, Predicate<WebException> predicate) : this(requestable, requestable, requestable, predicate)
+            public IIFThenRequestable(IRequestable requestable, Predicate<WebException> predicate) : this(requestable, requestable, predicate)
             {
             }
 
             public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
 
-            public IThenRequestable Then(Predicate<WebException> match) => new IIFThenRequestable(this, this, requestable, match);
+            public IThenRequestable Or(Predicate<WebException> match)
+            {
+                if (match is null)
+                {
+                    throw new ArgumentNullException(nameof(match));
+                }
 
-            public IThenRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
+                predicates.Add(match);
+
+                return this;
+            }
+
+            public IThenRequestable MaxRetries(int retryCount)
+            {
+                if (retryCount < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(retryCount), "重试次数必须大于零。");
+                }
+
+                maxRetires = Math.Max(retryCount, maxRetires);
+
+                return this;
+            }
+
+            private bool IsStopTrying()
+            {
+                if (maxRetires == -1)
+                {
+                    return predicates.Count < retryCount;
+                }
+
+                return maxRetires < retryCount;
+            }
 
             public override string Request(string method, int timeout = 5000)
             {
+                if (IsStopTrying())
+                {
+                    return request.Request(method, timeout);
+                }
+
                 try
                 {
                     return request.Request(method, timeout);
                 }
                 catch (WebException e)
                 {
-                    if (predicate.Invoke(e))
+                    if (predicates.Any(x => x.Invoke(e)))
                     {
+                        retryCount++;
+
                         return request.Request(method, timeout);
                     }
 
@@ -256,14 +297,21 @@ namespace System
 
             public byte[] UploadFile(string method, string fileName, int timeout = 5000)
             {
+                if (IsStopTrying())
+                {
+                    return fileRequestable.UploadFile(method, fileName, timeout);
+                }
+
                 try
                 {
                     return fileRequestable.UploadFile(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
-                    if (predicate.Invoke(e))
+                    if (predicates.Any(x => x.Invoke(e)))
                     {
+                        retryCount++;
+
                         return fileRequestable.UploadFile(method, fileName, timeout);
                     }
 
@@ -273,19 +321,28 @@ namespace System
 
             public void DownloadFile(string fileName, int timeout = 5000)
             {
-                try
+                if (IsStopTrying())
                 {
                     fileRequestable.DownloadFile(fileName, timeout);
                 }
-                catch (WebException e)
+                else
                 {
-                    if (predicate.Invoke(e))
+                    try
                     {
                         fileRequestable.DownloadFile(fileName, timeout);
                     }
-                    else
+                    catch (WebException e)
                     {
-                        throw;
+                        if (predicates.Any(x => x.Invoke(e)))
+                        {
+                            retryCount++;
+
+                            fileRequestable.DownloadFile(fileName, timeout);
+                        }
+                        else
+                        {
+                            throw;
+                        }
                     }
                 }
             }
@@ -293,14 +350,21 @@ namespace System
 #if !NET40
             public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
+                if (IsStopTrying())
+                {
+                    return await request.RequestAsync(method, timeout);
+                }
+
                 try
                 {
                     return await request.RequestAsync(method, timeout);
                 }
                 catch (WebException e)
                 {
-                    if (predicate.Invoke(e))
+                    if (predicates.Any(x => x.Invoke(e)))
                     {
+                        retryCount++;
+
                         return await request.RequestAsync(method, timeout);
                     }
 
@@ -312,14 +376,21 @@ namespace System
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
+                if (IsStopTrying())
+                {
+                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                }
+
                 try
                 {
                     return await fileRequestable.UploadFileAsync(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
-                    if (predicate.Invoke(e))
+                    if (predicates.Any(x => x.Invoke(e)))
                     {
+                        retryCount++;
+
                         return await fileRequestable.UploadFileAsync(method, fileName, timeout);
                     }
 
@@ -329,36 +400,49 @@ namespace System
 
             public async Task DownloadFileAsync(string fileName, int timeout = 5000)
             {
-                try
+                if (IsStopTrying())
                 {
                     await fileRequestable.DownloadFileAsync(fileName, timeout);
                 }
-                catch (WebException e)
+                else
                 {
-                    if (predicate.Invoke(e))
+                    try
                     {
                         await fileRequestable.DownloadFileAsync(fileName, timeout);
                     }
-                    else
+                    catch (WebException e)
                     {
-                        throw;
+                        if (predicates.Any(x => x.Invoke(e)))
+                        {
+                            retryCount++;
+
+                            await fileRequestable.DownloadFileAsync(fileName, timeout);
+                        }
+                        else
+                        {
+                            throw;
+                        }
                     }
                 }
             }
 #endif
         }
-        private class ThenRequestable : Requestable<string>, IThenRequestable
+        private class ThenRequestable : Requestable<string>, IThenConditionRequestable, IThenAndConditionRequestable
         {
+            private volatile bool isAllocated = false;
+
             private readonly IRequestableBase requestable;
             private readonly IRequestable<string> request;
             private readonly IFileRequestable fileRequestable;
+            private readonly List<Predicate<WebException>> predicates;
             private readonly Action<IRequestableBase, WebException> then;
 
-            public ThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
+            private ThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
             {
                 this.request = request;
                 this.requestable = requestable;
                 this.fileRequestable = fileRequestable;
+                this.predicates = new List<Predicate<WebException>>();
                 this.then = then ?? throw new ArgumentNullException(nameof(then));
             }
 
@@ -368,21 +452,33 @@ namespace System
 
             public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
 
-            public IThenRequestable Then(Predicate<WebException> match) => new IIFThenRequestable(this, this, requestable, match);
+            public IThenRequestable TryWhen(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
 
-            public IThenRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
+            public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
 
             public override string Request(string method, int timeout = 5000)
             {
+                if (isAllocated)
+                {
+                    return request.Request(method, timeout);
+                }
+
                 try
                 {
                     return request.Request(method, timeout);
                 }
                 catch (WebException e)
                 {
-                    then.Invoke(requestable, e);
+                    if (predicates.All(x => x.Invoke(e)))
+                    {
+                        isAllocated = true;
 
-                    return request.Request(method, timeout);
+                        then.Invoke(requestable, e);
+
+                        return request.Request(method, timeout);
+                    }
+
+                    throw;
                 }
             }
 
@@ -402,44 +498,107 @@ namespace System
 
             public byte[] UploadFile(string method, string fileName, int timeout = 5000)
             {
+                if (isAllocated)
+                {
+                    return fileRequestable.UploadFile(method, fileName, timeout);
+                }
+
                 try
                 {
                     return fileRequestable.UploadFile(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
-                    then.Invoke(requestable, e);
+                    if (predicates.All(x => x.Invoke(e)))
+                    {
+                        isAllocated = true;
 
-                    return fileRequestable.UploadFile(method, fileName, timeout);
+                        then.Invoke(requestable, e);
+
+                        return fileRequestable.UploadFile(method, fileName, timeout);
+                    }
+
+                    throw;
                 }
             }
 
             public void DownloadFile(string fileName, int timeout = 5000)
             {
-                try
+                if (isAllocated)
                 {
                     fileRequestable.DownloadFile(fileName, timeout);
                 }
-                catch (WebException e)
+                else
                 {
-                    then.Invoke(requestable, e);
+                    try
+                    {
+                        fileRequestable.DownloadFile(fileName, timeout);
+                    }
+                    catch (WebException e)
+                    {
+                        if (predicates.All(x => x.Invoke(e)))
+                        {
+                            isAllocated = true;
 
-                    fileRequestable.DownloadFile(fileName, timeout);
+                            then.Invoke(requestable, e);
+
+                            fileRequestable.DownloadFile(fileName, timeout);
+                        }
+
+                        throw;
+                    }
                 }
             }
+
+            public IThenAndConditionRequestable If(Predicate<WebException> match)
+            {
+                if (match is null)
+                {
+                    throw new ArgumentNullException(nameof(match));
+                }
+
+                predicates.Add(match);
+
+                return this;
+            }
+
+            public IThenAndConditionRequestable And(Predicate<WebException> match)
+            {
+                if (match is null)
+                {
+                    throw new ArgumentNullException(nameof(match));
+                }
+
+                predicates.Add(match);
+
+                return this;
+            }
+
 
 #if !NET40
             public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
+                if (isAllocated)
+                {
+                    return await request.RequestAsync(method, timeout);
+                }
+
                 try
                 {
                     return await request.RequestAsync(method, timeout);
                 }
                 catch (WebException e)
                 {
-                    then.Invoke(requestable, e);
+                    if (predicates.All(x => x.Invoke(e)))
+                    {
+                        isAllocated = true;
 
-                    return await request.RequestAsync(method, timeout);
+                        then.Invoke(requestable, e);
+
+                        return await request.RequestAsync(method, timeout);
+                    }
+
+                    throw;
                 }
             }
 
@@ -447,29 +606,55 @@ namespace System
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
+                if (isAllocated)
+                {
+                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                }
+
                 try
                 {
                     return await fileRequestable.UploadFileAsync(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
-                    then.Invoke(requestable, e);
+                    if (predicates.All(x => x.Invoke(e)))
+                    {
+                        isAllocated = true;
 
-                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                        then.Invoke(requestable, e);
+
+                        return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                    }
+
+                    throw;
                 }
             }
 
             public async Task DownloadFileAsync(string fileName, int timeout = 5000)
             {
-                try
+                if (isAllocated)
                 {
                     await fileRequestable.DownloadFileAsync(fileName, timeout);
                 }
-                catch (WebException e)
+                else
                 {
-                    then.Invoke(requestable, e);
+                    try
+                    {
+                        await fileRequestable.DownloadFileAsync(fileName, timeout);
+                    }
+                    catch (WebException e)
+                    {
+                        if (predicates.All(x => x.Invoke(e)))
+                        {
+                            isAllocated = true;
 
-                    await fileRequestable.DownloadFileAsync(fileName, timeout);
+                            then.Invoke(requestable, e);
+
+                            await fileRequestable.DownloadFileAsync(fileName, timeout);
+                        }
+
+                        throw;
+                    }
                 }
             }
 #endif
@@ -787,7 +972,7 @@ namespace System
 
             public IRequestable AppendHeader(string header, string value)
             {
-                __headers.Add(header, value);
+                __headers[header] = value;
 
                 return this;
             }
@@ -796,7 +981,7 @@ namespace System
             {
                 foreach (var kv in headers)
                 {
-                    __headers.Add(kv.Key, kv.Value);
+                    __headers[kv.Key] = kv.Value;
                 }
 
                 return this;
@@ -957,9 +1142,9 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
 
-            public IThenRequestable TryThen(Predicate<WebException> match) => new IIFThenRequestable(this, match);
+            public IThenRequestable TryWhen(Predicate<WebException> match) => new IIFThenRequestable(this, match);
 
-            public IThenRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
+            public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
 
             public ICatchRequestable Catch(Func<WebException, string> catchError) => new ResultCatchRequestable(this, catchError);
 

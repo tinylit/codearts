@@ -82,6 +82,12 @@ namespace CodeArts.Tests
                 {
                     //对请求的参数或Headers进行调整。如：令牌认证。 requestable.AppendHeader("Authorization", "{token}");
                 })
+                .If(e => e.Response is HttpWebResponse response && response.StatusCode == HttpStatusCode.Unauthorized) // 当认真过期时，才会执行上一个TryThen。
+                .And(e => true)
+                .And(e => true)
+                .TryWhen(e => e.Status == WebExceptionStatus.Timeout)
+                .Or(e => e.Status == WebExceptionStatus.UnknownError)
+                .MaxRetries(2) // 设置最大重试次数
                 .Json(entry, NamingType.CamelCase)
                 .Catch(e => entry)
                 .GetAsync();
@@ -105,7 +111,7 @@ namespace CodeArts.Tests
             try
             {
                 await "https://download.visualstudio.microsoft.com/download/pr/53f250a1-318f-4350-8bda-3c6e49f40e76/e8cbbd98b08edd6222125268166cfc43/dotnet-sdk-3.0.100-win-x64.exe".AsRequestable()
-                      .TryThen(e => true)
+                      .TryWhen(e => true)
                       .DownloadFileAsync(fileName);
             }
             catch (WebException) { }
