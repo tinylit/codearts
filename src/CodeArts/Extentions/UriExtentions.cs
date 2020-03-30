@@ -199,7 +199,7 @@ namespace System
 
         private class IIFThenRequestable : Requestable<string>, IThenRequestable, IRetryThenRequestable, IRetryIntervalThenRequestable
         {
-            private int maxRetires = -1;
+            private int maxRetires = 1;
             private int millisecondsTimeout = -1;
             private volatile int retryCount = 0;
             private Func<WebException, int, int> interval;
@@ -269,21 +269,11 @@ namespace System
                 return this;
             }
 
-            private bool IsStopTrying()
+            private void IntervalSleep(WebException exception, int times)
             {
-                if (maxRetires == -1)
+                if (!(interval is null))
                 {
-                    return retryCount > 0;
-                }
-
-                return maxRetires <= retryCount;
-            }
-
-            private void IntervalSleep(WebException exception)
-            {
-                if(!(interval is null))
-                {
-                    millisecondsTimeout = interval.Invoke(exception, retryCount);
+                    millisecondsTimeout = interval.Invoke(exception, times);
                 }
 
                 if (millisecondsTimeout > -1)
@@ -294,28 +284,26 @@ namespace System
 
             public override string Request(string method, int timeout = 5000)
             {
-                if (IsStopTrying())
+                int times = 0;
+                do
                 {
-                    return request.Request(method, timeout);
-                }
-
-                try
-                {
-                    return request.Request(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (predicates.Any(x => x.Invoke(e)))
+                    try
                     {
-                        retryCount++;
-
-                        IntervalSleep(e);
-
                         return request.Request(method, timeout);
                     }
+                    catch (WebException e)
+                    {
+                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        {
+                            IntervalSleep(e, ++times);
 
-                    throw;
-                }
+                            continue;
+                        }
+
+                        throw;
+                    }
+
+                } while (true);
             }
 
             public ICatchRequestable Catch(Action<WebException> catchError) => new CatchRequestable(this, catchError);
@@ -334,143 +322,133 @@ namespace System
 
             public byte[] UploadFile(string method, string fileName, int timeout = 5000)
             {
-                if (IsStopTrying())
+                int times = 0;
+                do
                 {
-                    return fileRequestable.UploadFile(method, fileName, timeout);
-                }
-
-                try
-                {
-                    return fileRequestable.UploadFile(method, fileName, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (predicates.Any(x => x.Invoke(e)))
+                    try
                     {
-                        retryCount++;
-
-                        IntervalSleep(e);
-
                         return fileRequestable.UploadFile(method, fileName, timeout);
                     }
+                    catch (WebException e)
+                    {
+                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        {
+                            IntervalSleep(e, ++times);
 
-                    throw;
-                }
+                            continue;
+                        }
+
+                        throw;
+                    }
+
+                } while (true);
             }
 
             public void DownloadFile(string fileName, int timeout = 5000)
             {
-                if (IsStopTrying())
-                {
-                    fileRequestable.DownloadFile(fileName, timeout);
-                }
-                else
+                int times = 0;
+
+                do
                 {
                     try
                     {
                         fileRequestable.DownloadFile(fileName, timeout);
+
+                        break;
                     }
                     catch (WebException e)
                     {
-                        if (predicates.Any(x => x.Invoke(e)))
+                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
                         {
-                            retryCount++;
+                            IntervalSleep(e, ++times);
 
-                            IntervalSleep(e);
+                            continue;
+                        }
 
-                            fileRequestable.DownloadFile(fileName, timeout);
-                        }
-                        else
-                        {
-                            throw;
-                        }
+                        throw;
                     }
-                }
+
+                } while (true);
             }
 
 #if !NET40
             public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
-                if (IsStopTrying())
-                {
-                    return await request.RequestAsync(method, timeout);
-                }
+                int times = 0;
 
-                try
+                do
                 {
-                    return await request.RequestAsync(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (predicates.Any(x => x.Invoke(e)))
+                    try
                     {
-                        retryCount++;
-
-                        IntervalSleep(e);
-
                         return await request.RequestAsync(method, timeout);
                     }
+                    catch (WebException e)
+                    {
+                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        {
+                            IntervalSleep(e, ++times);
 
-                    throw;
-                }
+                            continue;
+                        }
+
+                        throw;
+                    }
+
+                } while (true);
             }
 
             public Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => UploadFileAsync(null, fileName, timeout);
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
-                if (IsStopTrying())
-                {
-                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
-                }
+                int times = 0;
 
-                try
+                do
                 {
-                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (predicates.Any(x => x.Invoke(e)))
+                    try
                     {
-                        retryCount++;
-
-                        IntervalSleep(e);
-
                         return await fileRequestable.UploadFileAsync(method, fileName, timeout);
                     }
+                    catch (WebException e)
+                    {
+                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        {
+                            IntervalSleep(e, ++times);
 
-                    throw;
-                }
+                            continue;
+                        }
+
+                        throw;
+                    }
+
+                } while (true);
             }
 
             public async Task DownloadFileAsync(string fileName, int timeout = 5000)
             {
-                if (IsStopTrying())
-                {
-                    await fileRequestable.DownloadFileAsync(fileName, timeout);
-                }
-                else
+                int times = 0;
+
+                do
                 {
                     try
                     {
                         await fileRequestable.DownloadFileAsync(fileName, timeout);
+
+                        break;
                     }
                     catch (WebException e)
                     {
-                        if (predicates.Any(x => x.Invoke(e)))
+                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
                         {
-                            retryCount++;
+                            IntervalSleep(e, ++times);
 
-                            IntervalSleep(e);
+                            continue;
+                        }
 
-                            await fileRequestable.DownloadFileAsync(fileName, timeout);
-                        }
-                        else
-                        {
-                            throw;
-                        }
+                        throw;
                     }
-                }
+
+                } while (true);
             }
 #endif
         }
