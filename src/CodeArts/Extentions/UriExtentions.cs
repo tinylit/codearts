@@ -238,7 +238,7 @@ namespace System
                 return this;
             }
 
-            public IRetryThenRequestable Retry(int retryCount)
+            public IRetryThenRequestable RetryCount(int retryCount)
             {
                 if (retryCount < 1)
                 {

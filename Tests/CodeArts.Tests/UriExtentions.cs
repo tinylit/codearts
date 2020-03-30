@@ -86,7 +86,7 @@ namespace CodeArts.Tests
                 .And(e => true)
                 .TryIf(e => e.Status == WebExceptionStatus.Timeout)
                 .Or(e => e.Status == WebExceptionStatus.UnknownError)
-                .Retry(2) // 设置重试次数
+                .RetryCount(2) // 设置重试次数
                 .RetryInterval(500)//重试间隔时长。
                 .Json(entry, NamingType.CamelCase)
                 .Catch(e => entry)

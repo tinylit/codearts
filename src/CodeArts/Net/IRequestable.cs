@@ -435,7 +435,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="retryCount">最大重试次数。</param>
         /// <returns></returns>
-        IRetryThenRequestable Retry(int retryCount);
+        IRetryThenRequestable RetryCount(int retryCount);
 
         /// <summary>
         /// 捕获Web异常
