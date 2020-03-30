@@ -344,7 +344,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestable TryWhen(Predicate<WebException> match);
+        IThenRequestable TryIf(Predicate<WebException> match);
 
         /// <summary>
         /// 如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
@@ -431,13 +431,66 @@ namespace CodeArts.Net
         IThenRequestable Or(Predicate<WebException> match);
 
         /// <summary>
-        /// 设置重试次数：默认：设置<see cref="Or(Predicate{WebException})"/>或<seealso cref="IRequestable.TryWhen(Predicate{WebException})"/>或<seealso cref="IThenConditionRequestable.TryWhen(Predicate{WebException})"/>的总次数。
-        /// 多次设置时，取最大值。
+        /// 设置重试次数。
         /// </summary>
         /// <param name="retryCount">最大重试次数。</param>
         /// <returns></returns>
-        IThenRequestable MaxRetries(int retryCount);
+        IRetryThenRequestable Retry(int retryCount);
 
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Func<WebException, string> catchError);
+    }
+
+    /// <summary>
+    /// 最大重试次数设置。
+    /// </summary>
+    public interface IRetryThenRequestable : ICatchRequestable, IFileRequestable
+    {
+        /// <summary>
+        /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求。<see cref="System.Threading.Thread.Sleep(int)"/>
+        /// </summary>
+        /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
+        /// <returns></returns>
+        IRetryIntervalThenRequestable RetryInterval(int millisecondsTimeout);
+
+        /// <summary>
+        /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求。<see cref="System.Threading.Thread.Sleep(int)"/>
+        /// </summary>
+        /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。</param>
+        /// <returns></returns>
+        IRetryIntervalThenRequestable RetryInterval(Func<WebException, int, int> interval);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="catchError">异常捕获</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Action<WebException> catchError);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Func<WebException, string> catchError);
+    }
+
+    /// <summary>
+    /// 间隔时间重试。
+    /// </summary>
+    public interface IRetryIntervalThenRequestable : ICatchRequestable, IFileRequestable
+    {
         /// <summary>
         /// 捕获Web异常
         /// </summary>
@@ -472,7 +525,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestable TryWhen(Predicate<WebException> match);
+        IThenRequestable TryIf(Predicate<WebException> match);
 
         /// <summary>
         /// 新开一个重试机制，如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
@@ -515,7 +568,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestable TryWhen(Predicate<WebException> match);
+        IThenRequestable TryIf(Predicate<WebException> match);
 
         /// <summary>
         /// 新开一个重试机制，如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。

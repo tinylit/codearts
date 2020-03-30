@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -196,10 +197,12 @@ namespace System
             public IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class => Xml<T>();
         }
 
-        private class IIFThenRequestable : Requestable<string>, IThenRequestable
+        private class IIFThenRequestable : Requestable<string>, IThenRequestable, IRetryThenRequestable, IRetryIntervalThenRequestable
         {
             private int maxRetires = -1;
+            private int millisecondsTimeout = -1;
             private volatile int retryCount = 0;
+            private Func<WebException, int, int> interval;
 
             private readonly IRequestable<string> request;
             private readonly IFileRequestable fileRequestable;
@@ -235,7 +238,7 @@ namespace System
                 return this;
             }
 
-            public IThenRequestable MaxRetries(int retryCount)
+            public IRetryThenRequestable Retry(int retryCount)
             {
                 if (retryCount < 1)
                 {
@@ -247,14 +250,46 @@ namespace System
                 return this;
             }
 
+            public IRetryIntervalThenRequestable RetryInterval(int millisecondsTimeout)
+            {
+                if (millisecondsTimeout < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), "重试时间间隔不能小于零。");
+                }
+
+                this.millisecondsTimeout = millisecondsTimeout;
+
+                return this;
+            }
+
+            public IRetryIntervalThenRequestable RetryInterval(Func<WebException, int, int> interval)
+            {
+                this.interval = interval ?? throw new ArgumentNullException(nameof(interval));
+
+                return this;
+            }
+
             private bool IsStopTrying()
             {
                 if (maxRetires == -1)
                 {
-                    return predicates.Count < retryCount;
+                    return retryCount > 0;
                 }
 
-                return maxRetires < retryCount;
+                return maxRetires <= retryCount;
+            }
+
+            private void IntervalSleep(WebException exception)
+            {
+                if(!(interval is null))
+                {
+                    millisecondsTimeout = interval.Invoke(exception, retryCount);
+                }
+
+                if (millisecondsTimeout > -1)
+                {
+                    Thread.Sleep(millisecondsTimeout);
+                }
             }
 
             public override string Request(string method, int timeout = 5000)
@@ -273,6 +308,8 @@ namespace System
                     if (predicates.Any(x => x.Invoke(e)))
                     {
                         retryCount++;
+
+                        IntervalSleep(e);
 
                         return request.Request(method, timeout);
                     }
@@ -312,6 +349,8 @@ namespace System
                     {
                         retryCount++;
 
+                        IntervalSleep(e);
+
                         return fileRequestable.UploadFile(method, fileName, timeout);
                     }
 
@@ -336,6 +375,8 @@ namespace System
                         if (predicates.Any(x => x.Invoke(e)))
                         {
                             retryCount++;
+
+                            IntervalSleep(e);
 
                             fileRequestable.DownloadFile(fileName, timeout);
                         }
@@ -365,6 +406,8 @@ namespace System
                     {
                         retryCount++;
 
+                        IntervalSleep(e);
+
                         return await request.RequestAsync(method, timeout);
                     }
 
@@ -391,6 +434,8 @@ namespace System
                     {
                         retryCount++;
 
+                        IntervalSleep(e);
+
                         return await fileRequestable.UploadFileAsync(method, fileName, timeout);
                     }
 
@@ -415,6 +460,8 @@ namespace System
                         if (predicates.Any(x => x.Invoke(e)))
                         {
                             retryCount++;
+
+                            IntervalSleep(e);
 
                             await fileRequestable.DownloadFileAsync(fileName, timeout);
                         }
@@ -452,7 +499,7 @@ namespace System
 
             public IFinallyRequestable Finally(Action always) => new FinallyRequestable(this, always);
 
-            public IThenRequestable TryWhen(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
+            public IThenRequestable TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
 
             public IThenConditionRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
 
@@ -1142,7 +1189,7 @@ namespace System
 
             public IXmlRequestable<T> Xml<T>(T _) where T : class => new XmlRequestable<T>(this);
 
-            public IThenRequestable TryWhen(Predicate<WebException> match) => new IIFThenRequestable(this, match);
+            public IThenRequestable TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, match);
 
             public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
 
