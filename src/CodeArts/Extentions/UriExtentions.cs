@@ -201,7 +201,6 @@ namespace System
         {
             private int maxRetires = 1;
             private int millisecondsTimeout = -1;
-            private volatile int retryCount = 0;
             private Func<WebException, int, int> interval;
 
             private readonly IRequestable<string> request;
