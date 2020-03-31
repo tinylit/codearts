@@ -88,8 +88,18 @@ namespace CodeArts.Tests
                 .Or(e => e.Status == WebExceptionStatus.UnknownError)
                 .RetryCount(2) // 设置重试次数
                 .RetryInterval(500)//重试间隔时长。
+                .Catch(e => { })
+                .Catch(e => { })
+                .Finally(() =>
+                {
+
+                })
                 .Json(entry, NamingType.CamelCase)
                 .Catch(e => entry)
+                .Finally(() =>
+                {
+
+                })
                 .GetAsync();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()

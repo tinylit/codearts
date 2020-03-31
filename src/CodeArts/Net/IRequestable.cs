@@ -356,23 +356,44 @@ namespace CodeArts.Net
         /// <summary>
         /// 捕获Web异常
         /// </summary>
-        /// <param name="catchError">异常捕获</param>
+        /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> catchError);
+        ICatchRequestable Catch(Action<WebException> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        ICatchRequestable Catch(Func<WebException, string> catchError);
+        IResultStringCatchRequestable Catch(Func<WebException, string> returnValue);
 
         /// <summary>
         /// 始终执行的动作
         /// </summary>
-        /// <param name="always">请求始终会执行的方法</param>
+        /// <param name="log">请求始终会执行的方法</param>
         /// <returns></returns>
-        IFinallyRequestable Finally(Action always);
+        IFinallyRequestable Finally(Action log);
+    }
+
+    /// <summary>
+    /// 字符串结果
+    /// </summary>
+    public interface IResultStringCatchRequestable : IRequestable<string>
+    {
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="log">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IFinallyStringRequestable Finally(Action log);
+    }
+
+    /// <summary>
+    /// 结束
+    /// </summary>
+    public interface IFinallyStringRequestable : IRequestable<string>
+    {
+
     }
 
     /// <summary>
@@ -381,11 +402,25 @@ namespace CodeArts.Net
     public interface ICatchRequestable : IRequestable<string>, ICastRequestable
     {
         /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="log">记录异常信息</param>
+        /// <returns></returns>
+        ICatchRequestable Catch(Action<WebException> log);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IResultStringCatchRequestable Catch(Func<WebException, string> returnValue);
+
+        /// <summary>
         /// 始终执行的动作
         /// </summary>
-        /// <param name="always">请求始终会执行的方法</param>
+        /// <param name="log">请求始终会执行的方法</param>
         /// <returns></returns>
-        IFinallyRequestable Finally(Action always);
+        IFinallyRequestable Finally(Action log);
     }
 
     /// <summary>
@@ -407,14 +442,96 @@ namespace CodeArts.Net
     /// <summary>
     /// 异常处理能力
     /// </summary>
-    public interface ICatchRequestable<T> : IRequestable<T>
+    public interface IXmlCatchRequestable<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="log">记录异常信息</param>
+        /// <returns></returns>
+        IXmlCatchRequestable<T> Catch(Action<string, XmlException> log);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IXmlResultCatchRequestable<T> Catch(Func<string, XmlException, T> returnValue);
+
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="log">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IFinallyRequestable<T> Finally(Action log);
+    }
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface IJsonCatchRequestable<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
+
+        /// <summary>
+        /// 捕获Web异常
+        /// </summary>
+        /// <param name="log">记录异常信息</param>
+        /// <returns></returns>
+        IJsonCatchRequestable<T> Catch(Action<string, Exception> log);
+
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IJsonResultCatchRequestable<T> Catch(Func<string, Exception, T> returnValue);
+
+        /// <summary>
+        /// 始终执行的动作
+        /// </summary>
+        /// <param name="log">请求始终会执行的方法</param>
+        /// <returns></returns>
+        IFinallyRequestable<T> Finally(Action log);
+    }
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface IResultCatchRequestable<T> : IRequestable<T>
     {
         /// <summary>
         /// 始终执行的动作
         /// </summary>
-        /// <param name="always">请求始终会执行的方法</param>
+        /// <param name="log">请求始终会执行的方法</param>
         /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action always);
+        IFinallyRequestable<T> Finally(Action log);
+    }
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface IJsonResultCatchRequestable<T> : IResultCatchRequestable<T>
+    {
+    }
+
+    /// <summary>
+    /// 异常处理能力
+    /// </summary>
+    public interface IXmlResultCatchRequestable<T> : IResultCatchRequestable<T>
+    {
     }
 
     /// <summary>
@@ -436,20 +553,6 @@ namespace CodeArts.Net
         /// <param name="retryCount">最大重试次数。</param>
         /// <returns></returns>
         IRetryThenRequestable RetryCount(int retryCount);
-
-        /// <summary>
-        /// 捕获Web异常
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> catchError);
-
-        /// <summary>
-        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
-        /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Func<WebException, string> catchError);
     }
 
     /// <summary>
@@ -470,20 +573,6 @@ namespace CodeArts.Net
         /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。</param>
         /// <returns></returns>
         IRetryIntervalThenRequestable RetryInterval(Func<WebException, int, int> interval);
-
-        /// <summary>
-        /// 捕获Web异常
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> catchError);
-
-        /// <summary>
-        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
-        /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Func<WebException, string> catchError);
     }
 
     /// <summary>
@@ -491,19 +580,6 @@ namespace CodeArts.Net
     /// </summary>
     public interface IRetryIntervalThenRequestable : ICatchRequestable, IFileRequestable
     {
-        /// <summary>
-        /// 捕获Web异常
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> catchError);
-
-        /// <summary>
-        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
-        /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Func<WebException, string> catchError);
     }
 
     /// <summary>
@@ -533,20 +609,6 @@ namespace CodeArts.Net
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
         IThenConditionRequestable Then(Action<IRequestableBase, WebException> then);
-
-        /// <summary>
-        /// 捕获Web异常
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> catchError);
-
-        /// <summary>
-        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
-        /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Func<WebException, string> catchError);
     }
 
     /// <summary>
@@ -576,20 +638,6 @@ namespace CodeArts.Net
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
         IThenConditionRequestable Then(Action<IRequestableBase, WebException> then);
-
-        /// <summary>
-        /// 捕获Web异常
-        /// </summary>
-        /// <param name="catchError">异常捕获</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> catchError);
-
-        /// <summary>
-        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
-        /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
-        /// <returns></returns>
-        ICatchRequestable Catch(Func<WebException, string> catchError);
     }
 
     /// <summary>
@@ -606,30 +654,30 @@ namespace CodeArts.Net
         /// <summary>
         /// 捕获Web异常
         /// </summary>
-        /// <param name="catchError">异常捕获</param>
+        /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        ICatchRequestable<T> Catch(Action<string, Exception> catchError);
+        IJsonCatchRequestable<T> Catch(Action<string, Exception> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        ICatchRequestable<T> Catch(Func<string, Exception, T> catchError);
+        IJsonResultCatchRequestable<T> Catch(Func<string, Exception, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        ICatchRequestable<T> Catch(Func<WebException, T> catchError);
+        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 始终执行的动作
         /// </summary>
-        /// <param name="always">请求始终会执行的方法</param>
+        /// <param name="log">请求始终会执行的方法</param>
         /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action always);
+        IFinallyRequestable<T> Finally(Action log);
     }
 
     /// <summary>
@@ -641,29 +689,29 @@ namespace CodeArts.Net
         /// <summary>
         /// 捕获Web异常
         /// </summary>
-        /// <param name="catchError">异常捕获</param>
+        /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        ICatchRequestable<T> Catch(Action<string, XmlException> catchError);
+        IXmlCatchRequestable<T> Catch(Action<string, XmlException> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        ICatchRequestable<T> Catch(Func<string, XmlException, T> catchError);
+        IXmlResultCatchRequestable<T> Catch(Func<string, XmlException, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
-        /// <param name="catchError">异常捕获,并返回异常情况下的结果</param>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        ICatchRequestable<T> Catch(Func<WebException, T> catchError);
+        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 始终执行的动作
         /// </summary>
-        /// <param name="always">请求始终会执行的方法</param>
+        /// <param name="log">请求始终会执行的方法</param>
         /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action always);
+        IFinallyRequestable<T> Finally(Action log);
     }
 }
