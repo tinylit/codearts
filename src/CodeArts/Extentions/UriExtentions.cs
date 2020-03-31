@@ -59,10 +59,12 @@ namespace System
             private Action<WebException> log;
             private Func<WebException, string> returnValue;
             private readonly IRequestable<string> requestable;
+            private readonly IFileRequestable file;
 
-            public CatchRequestable(IRequestable<string> requestable, Action<WebException> log)
+            public CatchRequestable(IRequestable<string> requestable, IFileRequestable file, Action<WebException> log)
             {
                 this.requestable = requestable;
+                this.file = file;
                 this.log = log ?? throw new ArgumentNullException(nameof(log));
             }
 
@@ -85,9 +87,9 @@ namespace System
                 return this;
             }
 
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, log);
+            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
 
-            IFinallyStringRequestable IResultStringCatchRequestable.Finally(Action log) => new FinallyRequestable(this, log);
+            IFinallyStringRequestable IResultStringCatchRequestable.Finally(Action log) => new FinallyRequestable(this, file, log);
 
             public IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
@@ -111,6 +113,36 @@ namespace System
                     return returnValue.Invoke(e);
                 }
             }
+
+            public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
+
+            public byte[] UploadFile(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return file.UploadFile(method, fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    log.Invoke(e);
+
+                    throw;
+                }
+            }
+
+            public void DownloadFile(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    file.DownloadFile(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    log.Invoke(e);
+
+                    throw;
+                }
+            }
 #if !NET40
             public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
@@ -122,12 +154,42 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    if(returnValue is null)
+                    if (returnValue is null)
                     {
                         throw;
                     }
 
                     return returnValue.Invoke(e);
+                }
+            }
+
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout);
+
+            public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return await file.UploadFileAsync(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    log.Invoke(e);
+
+                    throw;
+                }
+            }
+
+            public async Task DownloadFileAsync(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    await file.DownloadFileAsync(fileName, timeout);
+                }
+                catch (WebException e)
+                {
+                    log.Invoke(e);
+
+                    throw;
                 }
             }
 #endif
@@ -141,10 +203,12 @@ namespace System
         {
             private readonly Action log;
             private readonly IRequestable<string> requestable;
+            private readonly IFileRequestable file;
 
-            public FinallyRequestable(IRequestable<string> requestable, Action log)
+            public FinallyRequestable(IRequestable<string> requestable, IFileRequestable file, Action log)
             {
                 this.requestable = requestable;
+                this.file = file;
                 this.log = log ?? throw new ArgumentNullException(nameof(log));
             }
 
@@ -163,12 +227,64 @@ namespace System
                     log.Invoke();
                 }
             }
+
+            public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
+
+            public byte[] UploadFile(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return file.UploadFile(method, fileName, timeout);
+                }
+                finally
+                {
+                    log.Invoke();
+                }
+            }
+
+            public void DownloadFile(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    file.DownloadFile(fileName, timeout);
+                }
+                finally
+                {
+                    log.Invoke();
+                }
+            }
 #if !NET40
             public override async Task<string> RequestAsync(string method, int timeout = 5000)
             {
                 try
                 {
                     return await requestable.RequestAsync(method, timeout);
+                }
+                finally
+                {
+                    log.Invoke();
+                }
+            }
+
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout);
+
+            public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    return await file.UploadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    log.Invoke();
+                }
+            }
+
+            public async Task DownloadFileAsync(string fileName, int timeout = 5000)
+            {
+                try
+                {
+                    await file.DownloadFileAsync(fileName, timeout);
                 }
                 finally
                 {
@@ -189,18 +305,18 @@ namespace System
             private Func<WebException, int, int> interval;
 
             private readonly IRequestable<string> request;
-            private readonly IFileRequestable fileRequestable;
+            private readonly IFileRequestable file;
             private readonly List<Predicate<WebException>> predicates;
 
-            public IIFThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, Predicate<WebException> predicate)
+            public IIFThenRequestable(IRequestable<string> request, IFileRequestable file, Predicate<WebException> predicate)
             {
                 if (predicate is null)
                 {
                     throw new ArgumentNullException(nameof(predicate));
                 }
 
-                this.request = request ?? throw new ArgumentNullException(nameof(request));
-                this.fileRequestable = fileRequestable ?? throw new ArgumentNullException(nameof(fileRequestable));
+                this.request = request;
+                this.file = file;
                 predicates = new List<Predicate<WebException>> { predicate };
             }
 
@@ -208,7 +324,7 @@ namespace System
             {
             }
 
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, log);
+            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
 
             public IThenRequestable Or(Predicate<WebException> match)
             {
@@ -255,7 +371,7 @@ namespace System
 
             private void IntervalSleep(WebException exception, int times)
             {
-                if (!(interval is null))
+                if (interval != null)
                 {
                     millisecondsTimeout = interval.Invoke(exception, times);
                 }
@@ -290,7 +406,7 @@ namespace System
                 } while (true);
             }
 
-            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, log);
+            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, file, log);
 
             public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
@@ -311,7 +427,7 @@ namespace System
                 {
                     try
                     {
-                        return fileRequestable.UploadFile(method, fileName, timeout);
+                        return file.UploadFile(method, fileName, timeout);
                     }
                     catch (WebException e)
                     {
@@ -336,7 +452,7 @@ namespace System
                 {
                     try
                     {
-                        fileRequestable.DownloadFile(fileName, timeout);
+                        file.DownloadFile(fileName, timeout);
 
                         break;
                     }
@@ -368,9 +484,17 @@ namespace System
                     }
                     catch (WebException e)
                     {
-                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        if (++times <= maxRetires && predicates.Any(x => x.Invoke(e)))
                         {
-                            IntervalSleep(e, ++times);
+                            if (interval != null)
+                            {
+                                millisecondsTimeout = interval.Invoke(e, times);
+                            }
+
+                            if (millisecondsTimeout > -1)
+                            {
+                                await Task.Delay(millisecondsTimeout);
+                            }
 
                             continue;
                         }
@@ -391,13 +515,21 @@ namespace System
                 {
                     try
                     {
-                        return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                        return await file.UploadFileAsync(method, fileName, timeout);
                     }
                     catch (WebException e)
                     {
-                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        if (++times <= maxRetires && predicates.Any(x => x.Invoke(e)))
                         {
-                            IntervalSleep(e, ++times);
+                            if (interval != null)
+                            {
+                                millisecondsTimeout = interval.Invoke(e, times);
+                            }
+
+                            if (millisecondsTimeout > -1)
+                            {
+                                await Task.Delay(millisecondsTimeout);
+                            }
 
                             continue;
                         }
@@ -416,15 +548,23 @@ namespace System
                 {
                     try
                     {
-                        await fileRequestable.DownloadFileAsync(fileName, timeout);
+                        await file.DownloadFileAsync(fileName, timeout);
 
                         break;
                     }
                     catch (WebException e)
                     {
-                        if (times < maxRetires && predicates.Any(x => x.Invoke(e)))
+                        if (++times <= maxRetires && predicates.Any(x => x.Invoke(e)))
                         {
-                            IntervalSleep(e, ++times);
+                            if (interval != null)
+                            {
+                                millisecondsTimeout = interval.Invoke(e, times);
+                            }
+
+                            if (millisecondsTimeout > -1)
+                            {
+                                await Task.Delay(millisecondsTimeout);
+                            }
 
                             continue;
                         }
@@ -443,16 +583,15 @@ namespace System
 
             private readonly IRequestableBase requestable;
             private readonly IRequestable<string> request;
-            private readonly IFileRequestable fileRequestable;
-            private readonly List<Predicate<WebException>> predicates;
+            private readonly IFileRequestable file;
             private readonly Action<IRequestableBase, WebException> then;
+            private readonly List<Predicate<WebException>> predicates = new List<Predicate<WebException>>();
 
-            private ThenRequestable(IRequestable<string> request, IFileRequestable fileRequestable, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
+            private ThenRequestable(IRequestable<string> request, IFileRequestable file, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
             {
                 this.request = request;
                 this.requestable = requestable;
-                this.fileRequestable = fileRequestable;
-                this.predicates = new List<Predicate<WebException>>();
+                this.file = file;
                 this.then = then ?? throw new ArgumentNullException(nameof(then));
             }
 
@@ -460,7 +599,7 @@ namespace System
             {
             }
 
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, log);
+            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
 
             public IThenRequestable TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
 
@@ -492,7 +631,7 @@ namespace System
                 }
             }
 
-            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, log);
+            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, file, log);
 
             public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
@@ -510,12 +649,12 @@ namespace System
             {
                 if (isAllocated)
                 {
-                    return fileRequestable.UploadFile(method, fileName, timeout);
+                    return file.UploadFile(method, fileName, timeout);
                 }
 
                 try
                 {
-                    return fileRequestable.UploadFile(method, fileName, timeout);
+                    return file.UploadFile(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
@@ -525,7 +664,7 @@ namespace System
 
                         then.Invoke(requestable, e);
 
-                        return fileRequestable.UploadFile(method, fileName, timeout);
+                        return file.UploadFile(method, fileName, timeout);
                     }
 
                     throw;
@@ -536,13 +675,13 @@ namespace System
             {
                 if (isAllocated)
                 {
-                    fileRequestable.DownloadFile(fileName, timeout);
+                    file.DownloadFile(fileName, timeout);
                 }
                 else
                 {
                     try
                     {
-                        fileRequestable.DownloadFile(fileName, timeout);
+                        file.DownloadFile(fileName, timeout);
                     }
                     catch (WebException e)
                     {
@@ -552,7 +691,7 @@ namespace System
 
                             then.Invoke(requestable, e);
 
-                            fileRequestable.DownloadFile(fileName, timeout);
+                            file.DownloadFile(fileName, timeout);
                         }
 
                         throw;
@@ -618,12 +757,12 @@ namespace System
             {
                 if (isAllocated)
                 {
-                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout);
                 }
 
                 try
                 {
-                    return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
@@ -633,7 +772,7 @@ namespace System
 
                         then.Invoke(requestable, e);
 
-                        return await fileRequestable.UploadFileAsync(method, fileName, timeout);
+                        return await file.UploadFileAsync(method, fileName, timeout);
                     }
 
                     throw;
@@ -644,13 +783,13 @@ namespace System
             {
                 if (isAllocated)
                 {
-                    await fileRequestable.DownloadFileAsync(fileName, timeout);
+                    await file.DownloadFileAsync(fileName, timeout);
                 }
                 else
                 {
                     try
                     {
-                        await fileRequestable.DownloadFileAsync(fileName, timeout);
+                        await file.DownloadFileAsync(fileName, timeout);
                     }
                     catch (WebException e)
                     {
@@ -660,7 +799,7 @@ namespace System
 
                             then.Invoke(requestable, e);
 
-                            await fileRequestable.DownloadFileAsync(fileName, timeout);
+                            await file.DownloadFileAsync(fileName, timeout);
                         }
 
                         throw;
@@ -1299,11 +1438,11 @@ namespace System
 
             public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
 
-            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, log);
+            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, this, log);
 
             public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, log);
+            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, this, log);
 
             public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
 

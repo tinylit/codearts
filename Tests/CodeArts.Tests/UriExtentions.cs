@@ -85,7 +85,7 @@ namespace CodeArts.Tests
                 .If(e => e.Response is HttpWebResponse response && response.StatusCode == HttpStatusCode.Unauthorized) // 当认真过期时，才会执行上一个TryThen。
                 .And(e => true)
                 .TryIf(e => e.Status == WebExceptionStatus.Timeout)
-                .Or(e => e.Status == WebExceptionStatus.UnknownError)
+                .Or(e => true)
                 .RetryCount(2) // 设置重试次数
                 .RetryInterval(500)//重试间隔时长。
                 .Catch(e => { })
@@ -121,17 +121,23 @@ namespace CodeArts.Tests
             try
             {
                 await "https://download.visualstudio.microsoft.com/download/pr/53f250a1-318f-4350-8bda-3c6e49f40e76/e8cbbd98b08edd6222125268166cfc43/dotnet-sdk-3.0.100-win-x64.exe".AsRequestable()
-                      .TryIf(e => true)
-                      .DownloadFileAsync(fileName);
+                    .TryThen((r, e) =>
+                    {
+
+                    })
+                    .If(e => true)
+                    .TryIf(e => true)
+                    .Catch(e => { })
+                    .Finally(() =>
+                    {
+                        if (File.Exists(fileName))
+                        {
+                            File.Delete(fileName);
+                        }
+                    })
+                    .DownloadFileAsync(fileName);
             }
             catch (WebException) { }
-            finally
-            {
-                if (File.Exists(fileName))
-                {
-                    File.Delete(fileName);
-                }
-            }
         }
 
         //[TestMethod]

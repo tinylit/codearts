@@ -399,7 +399,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 异常处理的请求
     /// </summary>
-    public interface ICatchRequestable : IRequestable<string>, ICastRequestable
+    public interface ICatchRequestable : IRequestable<string>, ICastRequestable, IFileRequestable
     {
         /// <summary>
         /// 捕获Web异常
@@ -426,7 +426,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 结束
     /// </summary>
-    public interface IFinallyRequestable : IRequestable<string>, ICastRequestable
+    public interface IFinallyRequestable : IRequestable<string>, ICastRequestable, IFileRequestable
     {
 
     }
@@ -561,14 +561,14 @@ namespace CodeArts.Net
     public interface IRetryThenRequestable : ICatchRequestable, IFileRequestable
     {
         /// <summary>
-        /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求。<see cref="System.Threading.Thread.Sleep(int)"/>
+        /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求。【同步请求：<see cref="System.Threading.Thread.Sleep(int)"/>】或【异步请求：<see cref="Task.Delay(int)"/>】。
         /// </summary>
         /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
         /// <returns></returns>
         IRetryIntervalThenRequestable RetryInterval(int millisecondsTimeout);
 
         /// <summary>
-        /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求。<see cref="System.Threading.Thread.Sleep(int)"/>
+        /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求。【同步请求：<see cref="System.Threading.Thread.Sleep(int)"/>】或【异步请求：<see cref="Task.Delay(int)"/>】。
         /// </summary>
         /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。</param>
         /// <returns></returns>
