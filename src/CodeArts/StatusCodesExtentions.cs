@@ -41,7 +41,7 @@ namespace CodeArts
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
         public static string Message<T>(this HttpStatusCode statusCode) where T : StatusCodes
-            => Codes<T>().TryGetValue(statusCode, out var message) ? message : StatusCodes.Error.Message<StatusCodes>();
+            => Codes<T>().TryGetValue((int)statusCode, out var message) ? message : StatusCodes.Error.Message<StatusCodes>();
 
 
         /// <summary> 错误编码对应DResult </summary>
@@ -64,8 +64,7 @@ namespace CodeArts
         /// <summary> 获取状态码的信息 </summary>
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
-        public static DResult CodeResult<T>(this HttpStatusCode statusCode) where T : StatusCodes
-            => ((int)statusCode).CodeResult<T>();
+        public static DResult CodeResult<T>(this HttpStatusCode statusCode) where T : StatusCodes => ((int)statusCode).CodeResult<T>();
 
         /// <summary> 获取指定类型的错误码 </summary>
         /// <typeparam name="T">错误码类型</typeparam>
