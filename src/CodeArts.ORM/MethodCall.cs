@@ -208,14 +208,6 @@ namespace CodeArts.ORM
         public const string TimeOut = nameof(SelectExtentions.TimeOut);// "TimeOut"
 
         /// <summary>
-        /// 获取第一个元素。
-        /// </summary>
-        public const string One = nameof(SelectExtentions.One);// "TakeFirst";
-        /// <summary>
-        /// 获取第一个元素，或默认值。
-        /// </summary>
-        public const string LastOne = nameof(SelectExtentions.LastOne);
-        /// <summary>
         /// 更新
         /// </summary>
         public const string Update = nameof(Executeable.Update); //"Update";

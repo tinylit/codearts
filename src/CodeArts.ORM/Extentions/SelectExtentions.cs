@@ -40,34 +40,6 @@ namespace System.Linq
         }));
 
         /// <summary>
-        /// 查询第一个
-        /// </summary>
-        /// <typeparam name="TSource">源</typeparam>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="source">源</param>
-        /// <param name="selector">选择器</param>
-        /// <returns></returns>
-        public static TResult One<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(One, source, selector), new Expression[2] {
-                source.Expression,
-                Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
-            }));
-
-        /// <summary>
-        /// 查询最后一个
-        /// </summary>
-        /// <typeparam name="TSource">源</typeparam>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="source">源</param>
-        /// <param name="selector">选择器</param>
-        /// <returns></returns>
-        public static TResult LastOne<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector) where TResult : class
-        => source.Provider.Execute<TResult>(Expression.Call(null, GetMethodInfo(LastOne, source, selector), new Expression[2] {
-                source.Expression,
-                Expression.Quote(selector ?? throw new ArgumentNullException(nameof(selector)))
-            }));
-
-        /// <summary>
         /// SQL
         /// </summary>
         /// <typeparam name="TSource">资源类型</typeparam>

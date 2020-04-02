@@ -608,12 +608,7 @@ namespace CodeArts.ORM.Builders
             //? 函数名称
             string name = node.Method.Name;
 
-            if (name == MethodCall.DefaultIfEmpty || (
-                node.Arguments.Count > 1
-                ? !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast)
-                : (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average)
-                )
-            )
+            if (node.Arguments.Count > 1 ? !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast) : (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average))
             {
                 _MethodLevel += 1;
             }
@@ -997,62 +992,9 @@ namespace CodeArts.ORM.Builders
                     return node;
                 case MethodCall.TimeOut:
 
-                    TimeOut = (int)node.Arguments[1].GetValueFromExpression();
+                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
 
                     base.Visit(node.Arguments[0]);
-
-                    return node;
-                case MethodCall.One:
-
-                    // TOP(1)
-                    take = 1;
-
-                    buildSelect = false;
-
-                    SQLWriter.Select();
-
-                    buildFrom = false;
-
-                    WriteAppendAtFix(() =>
-                    {
-                        if (isDistinct) SQLWriter.Distinct();
-
-                        buildFrom = true;
-                        base.Visit(node.Arguments[1]);
-                        buildFrom = false;
-
-                    }, () => base.Visit(node.Arguments[0]));
-
-                    Required = true;
-
-                    return node;
-                case MethodCall.LastOne:
-
-                    // TOP(..)
-                    take = 1;
-
-                    isOrderByReverse ^= true;
-
-                    buildSelect = false;
-
-                    SQLWriter.Select();
-
-                    buildFrom = false;
-
-                    WriteAppendAtFix(() =>
-                    {
-                        if (isDistinct) SQLWriter.Distinct();
-
-                        buildFrom = true;
-                        base.Visit(node.Arguments[1]);
-                        buildFrom = false;
-
-                    }, () => base.Visit(node.Arguments[0]));
-
-                    if (!isContainsOrderBy)
-                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
-
-                    Required = true;
 
                     return node;
                 default:

@@ -196,7 +196,7 @@ namespace CodeArts.ORM.Builders
                     return node;
                 case MethodCall.TimeOut:
 
-                    TimeOut = (int)node.Arguments[1].GetValueFromExpression();
+                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
 
                     base.Visit(node.Arguments[0]);
 

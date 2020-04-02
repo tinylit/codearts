@@ -560,18 +560,34 @@ namespace CodeArts.Net
     /// </summary>
     public interface IRetryThenRequestable : ICatchRequestable, IFileRequestable
     {
+#if NET40
+        /// <summary>
+        /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求<see cref="System.Threading.Thread.Sleep(int)"/>。
+        /// </summary>
+        /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
+        /// <returns></returns>
+#else
         /// <summary>
         /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求。【同步请求：<see cref="System.Threading.Thread.Sleep(int)"/>】或【异步请求：<see cref="Task.Delay(int)"/>】。
         /// </summary>
         /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
         /// <returns></returns>
+#endif
         IRetryIntervalThenRequestable RetryInterval(int millisecondsTimeout);
 
+#if NET40
+        /// <summary>
+        /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求<see cref="System.Threading.Thread.Sleep(int)"/>。
+        /// </summary>
+        /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。单位：毫秒。</param>
+        /// <returns></returns>
+#else
         /// <summary>
         /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求。【同步请求：<see cref="System.Threading.Thread.Sleep(int)"/>】或【异步请求：<see cref="Task.Delay(int)"/>】。
         /// </summary>
-        /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。</param>
+        /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。单位：毫秒</param>
         /// <returns></returns>
+#endif
         IRetryIntervalThenRequestable RetryInterval(Func<WebException, int, int> interval);
     }
 

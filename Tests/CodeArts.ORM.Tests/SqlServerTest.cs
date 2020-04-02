@@ -1233,7 +1233,7 @@ namespace UnitTest
         public void CustomFirstWithMethodTest()
         {
             var user = new UserRepository();
-            var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).One(y => y.Id) && x.CreatedTime < DateTime.Now)
+            var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).Select(y => y.Id).First() && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.CreatedTime)
                 .Take(10)
                 .Skip(100)

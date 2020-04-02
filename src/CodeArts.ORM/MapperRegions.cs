@@ -62,22 +62,32 @@ namespace CodeArts.ORM
              foreach (var item in typeStore.PropertyStores)
              {
                  if (item.IsDefined<IgnoreAttribute>())
+                 {
                      continue;
+                 }
 
                  if (item.IsDefined<KeyAttribute>())
+                 {
                      keys.Add(item.Name);
+                 }
 
                  var token = item.GetCustomAttribute<TokenAttribute>();
 
-                 if (!(token is null))
+                 if (token != null)
+                 {
                      tokens.Add(item.Name, token);
+                 }
 
                  var readOnly = item.GetCustomAttribute<ReadOnlyAttribute>();
 
                  if (readOnly?.IsReadOnly ?? false)
+                 {
                      readOnlys.Add(item.Name);
+                 }
                  else
+                 {
                      readWrites.Add(item.Name, item.Naming);
+                 }
 
                  readOrWrites.Add(item.Name, item.Naming);
              }

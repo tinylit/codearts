@@ -7,7 +7,7 @@ namespace CodeArts.ORM.Exceptions
     /// </summary>
     public class DRequiredException : CodeException
     {
-        private const string DefaultError = "未查询到指定条件的相关信息";
+        private const string DefaultError = "未查询到满足指定条件的相关信息！";
         /// <summary>
         /// 构造函数
         /// </summary>
