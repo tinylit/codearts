@@ -32,6 +32,17 @@ namespace CodeArts
         public static string Message<T>(this int statusCode) where T : StatusCodes
             => Codes<T>().TryGetValue(statusCode, out var message) ? message : StatusCodes.Error.Message<StatusCodes>();
 
+        /// <summary> 获取状态码的信息 </summary>
+        /// <param name="statusCode">状态码</param>
+        /// <returns></returns>
+        public static string Message(this HttpStatusCode statusCode) => statusCode.Message<StatusCodes>();
+
+        /// <summary> 获取状态码的信息 </summary>
+        /// <param name="statusCode">状态码</param>
+        /// <returns></returns>
+        public static string Message<T>(this HttpStatusCode statusCode) where T : StatusCodes
+            => Codes<T>().TryGetValue(statusCode, out var message) ? message : StatusCodes.Error.Message<StatusCodes>();
+
 
         /// <summary> 错误编码对应DResult </summary>
         /// <param name="statusCode">状态码</param>

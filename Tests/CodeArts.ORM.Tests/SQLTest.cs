@@ -694,7 +694,7 @@ namespace CodeArts.ORM.Tests
 
             var scalar = sql.ToString(settings);
 
-            
+
         }
 
         [TestMethod]
@@ -777,6 +777,29 @@ namespace CodeArts.ORM.Tests
             set REALINVOICE_NO=replace(replace(REALINVOICE_NO,'~'||@invoiceNo||'~','~'),' ','')||'~'||@invoiceNo
             ,invoice_time=to_date(@kprq,'yyyy-mm-dd hh24:mi:ss')
              where invoice_id=@ddbh";
+
+            var sql = new SQL(sqlstr);
+
+            var settings = new Oracle.OracleCorrectSettings();
+
+            var scalar = sql.ToString(settings);
+        }
+
+        [TestMethod]
+        public void TestOracle2()
+        {
+            var sqlstr = string.Format(@"SELECT
+             replace( ywdjid, ' ', '' ) AS ddbh 
+            FROM
+             {0}
+            WHERE
+             BILLSTATE !=1
+             AND ywrq > to_char ( sysdate - 10, 'yyyy-mm-dd' ) 
+             and  ywrq>='2020-04-02'
+            GROUP BY
+             ywdjid 
+            HAVING
+             SUM ( spje ) != 0", "\"SYSTEM\".\"ELEINVOICE\"");
 
             var sql = new SQL(sqlstr);
 

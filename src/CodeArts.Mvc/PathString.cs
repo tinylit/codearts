@@ -16,29 +16,27 @@ namespace CodeArts.Mvc
         {
             public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
             {
-                if (!(sourceType == typeof(string)))
-                {
-                    return base.CanConvertFrom(context, sourceType);
-                }
-                return true;
+                return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
             }
 
             public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
             {
-                if (!(value is string))
+                if (value is string text)
                 {
-                    return base.ConvertFrom(context, culture, value);
+                    return PathString.ConvertFromString(text);
                 }
-                return PathString.ConvertFromString((string)value);
+
+                return base.ConvertFrom(context, culture, value);
             }
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (!(destinationType == typeof(string)))
+                if (destinationType == typeof(string))
                 {
-                    return base.ConvertTo(context, culture, value, destinationType);
+                    return value.ToString();
                 }
-                return value.ToString();
+
+                return base.ConvertTo(context, culture, value, destinationType);
             }
         }
 
@@ -213,17 +211,15 @@ namespace CodeArts.Mvc
         /// </summary>
         public static readonly PathString Empty = new PathString(string.Empty);
 
-        private readonly string _value;
-
         /// <summary>
         /// The unescaped path value
         /// </summary>
-        public string Value => _value;
+        public string Value { get; private set; }
 
         /// <summary>
         /// True if the path is not empty
         /// </summary>
-        public bool HasValue => !string.IsNullOrEmpty(_value);
+        public bool HasValue => !string.IsNullOrEmpty(Value);
 
         /// <summary>
         /// Initialize the path string with a given value. This value must be in unescaped format. Use
@@ -236,7 +232,7 @@ namespace CodeArts.Mvc
             {
                 throw new ArgumentException("路径必须以“/”开头!", "value");
             }
-            _value = value;
+            Value = value;
         }
 
         /// <summary>
@@ -263,18 +259,18 @@ namespace CodeArts.Mvc
             int num = 0;
             bool flag = false;
             int num2 = 0;
-            while (num2 < _value.Length)
+            while (num2 < Value.Length)
             {
-                bool flag2 = PathStringHelper.IsPercentEncodedChar(_value, num2);
-                if (PathStringHelper.IsValidPathChar(_value[num2]) | flag2)
+                bool flag2 = PathStringHelper.IsPercentEncodedChar(Value, num2);
+                if (PathStringHelper.IsValidPathChar(Value[num2]) | flag2)
                 {
                     if (flag)
                     {
                         if (stringBuilder == null)
                         {
-                            stringBuilder = new StringBuilder(_value.Length * 3);
+                            stringBuilder = new StringBuilder(Value.Length * 3);
                         }
-                        stringBuilder.Append(Uri.EscapeDataString(_value.Substring(startIndex, num)));
+                        stringBuilder.Append(Uri.EscapeDataString(Value.Substring(startIndex, num)));
                         flag = false;
                         startIndex = num2;
                         num = 0;
@@ -295,9 +291,9 @@ namespace CodeArts.Mvc
                 {
                     if (stringBuilder == null)
                     {
-                        stringBuilder = new StringBuilder(_value.Length * 3);
+                        stringBuilder = new StringBuilder(Value.Length * 3);
                     }
-                    stringBuilder.Append(_value, startIndex, num);
+                    stringBuilder.Append(Value, startIndex, num);
                     flag = true;
                     startIndex = num2;
                     num = 0;
@@ -305,23 +301,23 @@ namespace CodeArts.Mvc
                 num++;
                 num2++;
             }
-            if (num == _value.Length && !flag)
+            if (num == Value.Length && !flag)
             {
-                return _value;
+                return Value;
             }
             if (num > 0)
             {
                 if (stringBuilder == null)
                 {
-                    stringBuilder = new StringBuilder(_value.Length * 3);
+                    stringBuilder = new StringBuilder(Value.Length * 3);
                 }
                 if (flag)
                 {
-                    stringBuilder.Append(Uri.EscapeDataString(_value.Substring(startIndex, num)));
+                    stringBuilder.Append(Uri.EscapeDataString(Value.Substring(startIndex, num)));
                 }
                 else
                 {
-                    stringBuilder.Append(_value, startIndex, num);
+                    stringBuilder.Append(Value, startIndex, num);
                 }
             }
             return stringBuilder.ToString();
@@ -489,7 +485,7 @@ namespace CodeArts.Mvc
             {
                 return true;
             }
-            return string.Equals(_value, other._value, comparisonType);
+            return string.Equals(Value, other.Value, comparisonType);
         }
 
         /// <summary>
@@ -520,7 +516,7 @@ namespace CodeArts.Mvc
             {
                 return 0;
             }
-            return StringComparer.OrdinalIgnoreCase.GetHashCode(_value);
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(Value);
         }
 
         /// <summary>

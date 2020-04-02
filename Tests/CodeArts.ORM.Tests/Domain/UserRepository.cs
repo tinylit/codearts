@@ -12,6 +12,7 @@ namespace CodeArts.ORM.Domain
         public ApplyDto GetApply()
         {
             var sql = @"select
+            '6651287474607755264' as shopId,
             '东坡区圣丹大药房柳圣张红霞加盟店' as gmfmc,
             1646.35 as jshj,
             '2018-10-09' as ywrq,

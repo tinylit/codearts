@@ -10,6 +10,10 @@ namespace Mvc.Core
 {
     public class Startup : JwtStartup
     {
+        public Startup() : base(new PathString("/api"))
+        {
+        }
+
         public override void ConfigureServices(IServiceCollection services)
         {
             DbConnectionManager.AddAdapter(new MySqlAdapter());

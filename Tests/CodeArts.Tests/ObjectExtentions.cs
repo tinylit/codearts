@@ -95,6 +95,17 @@ namespace CodeArts.Tests
         }
     }
 
+    /// <summary>
+    /// 发票DTO
+    /// </summary>
+    public class ApplyDto
+    {
+        /// <summary>
+        /// 商铺ID
+        /// </summary>
+        public ulong ShopId { get; set; }
+    }
+
     [TestClass]
     public class ObjectExtentions
     {
@@ -278,7 +289,6 @@ namespace CodeArts.Tests
 
 
             var x = pList.CopyTo();
-
         }
 
         [TestMethod]
@@ -324,6 +334,19 @@ namespace CodeArts.Tests
             }
 
             var map3 = value.MapTo<MapToTest>();
+        }
+
+        [TestMethod]
+        public void CastTest()
+        {
+            var data = new
+            {
+                ShopId = "6651287474607755264"
+            };
+
+            var shopId = System.Convert.ChangeType("6651287474607755264", typeof(ulong));
+
+            var value = data.MapTo<ApplyDto>();
         }
 
         [TestMethod]

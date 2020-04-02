@@ -24,15 +24,19 @@ namespace CodeArts.Mvc
     /// </summary>
     public class DStartup
     {
-        /// <summary>
-        /// 是否使用SwaggerUi。（默认：true）
-        /// </summary>
-        protected bool UseSwaggerUi { get; set; } = true;
+        private readonly bool useSwaggerUi;
+        private readonly bool useDependencyInjection;
 
         /// <summary>
-        /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
+        /// 构造函数
         /// </summary>
-        protected bool UseDependencyInjection { get; set; } = true;
+        /// <param name="useSwaggerUi">使用SwaggerUi</param>
+        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        public DStartup(bool useSwaggerUi = true, bool useDependencyInjection = true)
+        {
+            this.useSwaggerUi = useSwaggerUi;
+            this.useDependencyInjection = useDependencyInjection;
+        }
 
         /// <summary>
         /// 配置服务（这个方法被运行时调用。使用此方法向容器添加服务。）
@@ -42,35 +46,7 @@ namespace CodeArts.Mvc
 
         public virtual void ConfigureServices(IServiceCollection services)
         {
-#if NETCOREAPP3_1
-            services.AddControllers();
-
-            ConfigureMvc(services
-                  .AddMvc(options =>
-                  {
-                      options.EnableEndpointRouting = false;
-                      //自定义异常捕获
-                      options.Filters.Add<DExceptionFilter>();
-                  })
-                  .AddJsonOptions(options =>
-                  {
-                      options.JsonSerializerOptions.Converters.Add(new MyJsonConverter());
-                  })
-                  .SetCompatibilityVersion(CompatibilityVersion.Latest));
-#else
-            ConfigureMvc(services
-                 .AddMvc(options =>
-                 {
-                     //自定义异常捕获
-                     options.Filters.Add<DExceptionFilter>();
-                 })
-                .AddJsonOptions(options =>
-                {
-                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
-                    options.SerializerSettings.Converters.Add(new MyJsonConverter());
-                })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2));
-#endif
+            ConfigureMvc(services);
 
             services.AddCors(options =>
             {
@@ -91,11 +67,12 @@ namespace CodeArts.Mvc
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
 
-            if (UseDependencyInjection)
+            if (useDependencyInjection)
             {
                 services.UseDependencyInjection();
             }
-            if (UseSwaggerUi)
+
+            if (useSwaggerUi)
             {
 #if NETCOREAPP3_1
                 //增加XML文档解析
@@ -126,10 +103,43 @@ namespace CodeArts.Mvc
         }
 
         /// <summary>
-        /// 配置<see cref="IMvcBuilder"/>通道，可添加Xml等支持。
+        /// 配置MVC【<see cref="MvcServiceCollectionExtensions.AddMvc(IServiceCollection)"/>或<seealso cref="MvcServiceCollectionExtensions.AddMvc(IServiceCollection, Action{MvcOptions})"/>】。
         /// </summary>
-        /// <param name="builder">MVC构造器</param>
-        protected virtual IMvcBuilder ConfigureMvc(IMvcBuilder builder) => builder;
+        /// <param name="services">服务集合</param>
+        /// <returns></returns>
+#if NETCOREAPP3_1
+        protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services)
+        {
+            services.AddControllers();
+
+            return services
+                   .AddMvc(options =>
+                   {
+                       options.EnableEndpointRouting = false;
+                       //自定义异常捕获
+                       options.Filters.Add<DExceptionFilter>();
+                   })
+                   .AddJsonOptions(options =>
+                   {
+                       options.JsonSerializerOptions.Converters.Add(new MyJsonConverter());
+                   })
+                   .SetCompatibilityVersion(CompatibilityVersion.Latest);
+        }
+#else
+        protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services) 
+            => services
+                .AddMvc(options =>
+                {
+                    //自定义异常捕获
+                    options.Filters.Add<DExceptionFilter>();
+                })
+                .AddJsonOptions(options =>
+                {
+                    options.SerializerSettings.DateFormatString = Consts.DateFormatString;
+                    options.SerializerSettings.Converters.Add(new MyJsonConverter());
+                })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+#endif
 
 #if NETCOREAPP3_1
         /// <summary>
@@ -161,7 +171,7 @@ namespace CodeArts.Mvc
                 .UseMvc()
                 .UseLoggerManager();
 
-            if (UseSwaggerUi)
+            if (useSwaggerUi)
             {
                 app.UseSwagger()
                     .UseSwaggerUI(c =>
@@ -180,7 +190,7 @@ namespace CodeArts.Mvc
                 .UseMvc()
                 .UseLoggerManager();
 
-            if (UseSwaggerUi)
+            if (useSwaggerUi)
             {
                 app.UseSwagger()
                     .UseSwaggerUI(c =>
@@ -220,6 +230,20 @@ namespace CodeArts.Mvc
     /// </summary>
     public class DStartup
     {
+        private readonly bool useSwaggerUi;
+        private readonly bool useDependencyInjection;
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="useSwaggerUi">使用SwaggerUi</param>
+        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        public DStartup(bool useSwaggerUi = true, bool useDependencyInjection = true)
+        {
+            this.useSwaggerUi = useSwaggerUi;
+            this.useDependencyInjection = useDependencyInjection;
+        }
+
         /// <summary>
         /// 属性名称解析规则
         /// </summary>
@@ -230,17 +254,6 @@ namespace CodeArts.Mvc
                 return propertyName.ToCamelCase();
             }
         }
-#if NET45 || NET451 || NET452 || NET461
-        /// <summary>
-        /// 是否使用SwaggerUi（默认：true）
-        /// </summary>
-        protected bool UseSwaggerUi { get; set; } = true;
-#endif
-
-        /// <summary>
-        /// 使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>(默认:true)。
-        /// </summary>
-        protected bool UseDependencyInjection { get; set; } = true;
 
         /// <summary>
         /// 配置默认路由规则，解析器等。
@@ -282,7 +295,7 @@ namespace CodeArts.Mvc
                 .ContractResolver = new ContractResolver();
 
 #if NET45 || NET451 || NET452 || NET461
-            if (UseSwaggerUi)
+            if (useSwaggerUi)
             {
                 //? SwaggerUi
                 config.EnableSwagger(c =>
@@ -337,7 +350,7 @@ namespace CodeArts.Mvc
         /// <param name="services">服务集合</param>
         public virtual void ConfigureServices(IServiceCollection services)
         {
-            if (UseDependencyInjection)
+            if (useDependencyInjection)
             {
                 services.UseDependencyInjection();
             }

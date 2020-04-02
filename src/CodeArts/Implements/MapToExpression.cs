@@ -1301,17 +1301,17 @@ namespace CodeArts.Implements
                     }
                 }
 
+                var memberTypeCst = Constant(memberType);
+
                 Expression objExp = Call(valueExp, typeMap[typeof(object)], iVar);
 
                 if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
                 {
-                    var memberTypeCst = Constant(memberType);
-
                     objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, iVar)), Call(valueExp, methodInfo, iVar), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
                 }
                 else
                 {
-                    objExp = Convert(objExp, memberType);
+                    objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
 
                 if (AllowNullPropagationMapping.Value)

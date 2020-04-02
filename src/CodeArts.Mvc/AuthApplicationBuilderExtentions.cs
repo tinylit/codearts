@@ -17,6 +17,7 @@ using System.IO;
 using System.Text;
 using CodeArts.Exceptions;
 using System.Web;
+using System.Net;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 namespace Microsoft.AspNetCore.Builder
 #else
@@ -44,11 +45,12 @@ namespace CodeArts.Mvc.Builder
         /// 自定义请参考<see cref="Consts"/>。
         /// </summary>
         /// <param name="app">配置</param>
+        /// <param name="basePath">登录、注册、验证码的基础路径。</param>
         /// <returns></returns>
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-        public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app)
+        public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app, PathString basePath)
         {
-            return app.Map("/authCode", builder => builder.Run(async context =>
+            return app.Map(basePath.Add("/authCode"), builder => builder.Run(async context =>
             {
                 string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
 
@@ -63,13 +65,42 @@ namespace CodeArts.Mvc.Builder
                       .ToQueryString(context.Request.QueryString.ToString())
                       .ToQueryString($"authCode={code}")
                       .Json<ServResult<string>>()
+                      .Catch(e =>
+                      {
+                          if (e.Response is HttpWebResponse response)
+                          {
+                              var statusCode = (int)response.StatusCode;
+
+                              return ServResult.Error<string>(statusCode.Message(), statusCode);
+                          }
+
+                          return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.NotFound);
+                      })
                       .GetAsync();
 
                     if (result.Success)
                     {
-                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+                        string value = result.Data;
 
-                        result.Data = null;
+                        if (value is null)
+                        {
+                            AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+                        }
+                        else
+                        {
+                            int indexOf = value.IndexOf('=');
+
+                            if (indexOf > 0)
+                            {
+                                AuthCode.Set(value.Substring(0, indexOf), value.Substring(indexOf + 1), TimeSpan.FromMinutes(2D));
+                            }
+                            else
+                            {
+                                AuthCode.Set(md5, value, TimeSpan.FromMinutes(2D));
+                            }
+
+                            result.Data = null;
+                        }
                     }
 
                     await context.Response.WriteJsonAsync(result);
@@ -83,7 +114,7 @@ namespace CodeArts.Mvc.Builder
                     await context.Response.WriteImageAsync(bytes);
                 }
 
-            })).Map("/login", builder => builder.Run(async context =>
+            })).Map(basePath.Add("/login"), builder => builder.Run(async context =>
             {
                 var result = VerifyAuthCode(context);
 
@@ -109,7 +140,7 @@ namespace CodeArts.Mvc.Builder
                     await context.Response.WriteJsonAsync(result);
                 }
 
-            })).Map("/register", builder => builder.Run(async context =>
+            })).Map(basePath.Add("/register"), builder => builder.Run(async context =>
             {
                 var result = VerifyAuthCode(context);
 
@@ -137,12 +168,13 @@ namespace CodeArts.Mvc.Builder
             }));
         }
 #else
-        public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app)
+        public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app, PathString basePath)
         {
+            PathString authCode = basePath.Add("/authCode");
 #if NET40
-            return app.Map("/authCode", context =>
+            return app.Map(authCode, context =>
 #else
-            return app.Map("/authCode", async context =>
+            return app.Map(authCode, async context =>
 #endif
             {
                 string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
@@ -152,7 +184,7 @@ namespace CodeArts.Mvc.Builder
                 string md5 = $"{id}-{url}".Md5();
 
                 PathString absolutePath = new PathString(context.Request.Url.AbsolutePath);
-                if (absolutePath.StartsWithSegments("/authCode", StringComparison.OrdinalIgnoreCase, out PathString path) && path.HasValue)
+                if (absolutePath.StartsWithSegments(authCode, StringComparison.OrdinalIgnoreCase, out PathString path) && path.HasValue)
                 {
                     string api = $"{context.Request.Url.Scheme}://{context.Request.Url.Authority}{path.Value}";
 #if NET40
@@ -163,6 +195,17 @@ namespace CodeArts.Mvc.Builder
                         .ToQueryString(context.Request.QueryString.ToString())
                         .ToQueryString($"authCode={code}")
                         .Json<ServResult<string>>()
+                        .Catch(e =>
+                        {
+                            if (e.Response is HttpWebResponse response)
+                            {
+                                var statusCode = (int)response.StatusCode;
+
+                                return ServResult.Error<string>(statusCode.Message(), statusCode);
+                            }
+
+                            return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.NotFound);
+                        })
 #if NET40
                         .Get();
 #else
@@ -171,9 +214,27 @@ namespace CodeArts.Mvc.Builder
 
                     if (result.Success)
                     {
-                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+                        string value = result.Data;
 
-                        result.Data = null;
+                        if (value is null)
+                        {
+                            AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+                        }
+                        else
+                        {
+                            int indexOf = value.IndexOf('=');
+
+                            if (indexOf > 0)
+                            {
+                                AuthCode.Set(value.Substring(0, indexOf), value.Substring(indexOf + 1), TimeSpan.FromMinutes(2D));
+                            }
+                            else
+                            {
+                                AuthCode.Set(md5, value, TimeSpan.FromMinutes(2D));
+                            }
+
+                            result.Data = null;
+                        }
                     }
 
                     context.Response.WriteJson(result);
@@ -187,9 +248,9 @@ namespace CodeArts.Mvc.Builder
                     context.Response.WriteImage(bytes);
                 }
 #if NET40
-            }).Map("/login", context =>
+            }).Map(basePath.Add("/login"), context =>
 #else
-            }).Map("/login", async context =>
+            }).Map(basePath.Add("/login"), async context =>
 #endif
             {
                 var result = VerifyAuthCode(context);
@@ -217,9 +278,9 @@ namespace CodeArts.Mvc.Builder
                 }
             })
 #if NET40
-            .Map("/register", context =>
+            .Map(basePath.Add("/register"), context =>
 #else
-            .Map("/register", async context =>
+            .Map(basePath.Add("/register"), async context =>
 #endif
             {
                 var result = VerifyAuthCode(context);
