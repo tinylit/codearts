@@ -85,6 +85,8 @@ namespace CodeArts.Mvc
                     {
                         c.IncludeXmlComments(file);
                     }
+
+                    c.CustomSchemaIds(x => x.FullName);
                 });
 #else
                 //增加XML文档解析
@@ -97,6 +99,8 @@ namespace CodeArts.Mvc
                     {
                         c.IncludeXmlComments(file);
                     }
+
+                    c.CustomSchemaIds(x => x.FullName);
                 });
 #endif
             }

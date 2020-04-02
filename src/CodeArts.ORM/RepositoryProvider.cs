@@ -104,19 +104,31 @@ namespace CodeArts.ORM
                         return (TResult)Query<T>(conn, sql, builder.Parameters, builder.TimeOut);
                     }
 
-                    object value = builder.DefaultValue;
-
-                    if (value is null)
+                    if (builder.HasDefaultValue)
                     {
-                        return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut);
+                        object value = builder.DefaultValue;
+
+                        if (value is TResult defaultValue)
+                        {
+                            return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue, builder.TimeOut);
+                        }
+
+                        Type conversionType = typeof(TResult);
+
+                        if (value is null)
+                        {
+                            if (conversionType.IsValueType)
+                            {
+                                throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
+                            }
+
+                            return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut);
+                        }
+
+                        throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
                     }
 
-                    if (value is TResult defaultValue)
-                    {
-                        return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue, builder.TimeOut);
-                    }
-
-                    return QueryFirst(conn, sql, builder.Parameters, builder.Required, value.MapTo<TResult>(), builder.TimeOut);
+                    return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut);
                 }
                 catch (DbException db)
                 {

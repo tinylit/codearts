@@ -608,7 +608,11 @@ namespace CodeArts.ORM.Builders
             //? 函数名称
             string name = node.Method.Name;
 
-            if (node.Arguments.Count > 1 ? !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast) : (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average))
+            if (node.Arguments.Count > 1
+                ? !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast || name == MethodCall.DefaultIfEmpty || name == MethodCall.ElementAt || name == MethodCall.ElementAtOrDefault)
+                :
+                (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average)
+                )
             {
                 _MethodLevel += 1;
             }
@@ -948,7 +952,7 @@ namespace CodeArts.ORM.Builders
 
                     return base.Visit(node.Arguments[0]);
                 case MethodCall.DefaultIfEmpty:
-                    if (defaultIfEmpty)
+                    if (HasDefaultValue)
                     {
                         return base.Visit(node.Arguments[0]);
                     }
@@ -958,7 +962,7 @@ namespace CodeArts.ORM.Builders
                         DefaultValue = node.Arguments[1].GetValueFromExpression();
                     }
 
-                    defaultIfEmpty = true;
+                    HasDefaultValue = true;
 
                     return base.Visit(node.Arguments[0]);
                 default:
@@ -1117,12 +1121,15 @@ namespace CodeArts.ORM.Builders
 
         #endregion
 
-        private bool defaultIfEmpty = false;
-
         /// <summary>
         /// 是否必须
         /// </summary>
         public bool Required { protected set; get; }
+
+        /// <summary>
+        /// 是否有默认值
+        /// </summary>
+        public bool HasDefaultValue { private set; get; }
 
         /// <summary>
         /// 默认值

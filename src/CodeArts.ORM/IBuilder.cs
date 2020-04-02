@@ -43,6 +43,11 @@ namespace CodeArts.ORM
         bool Required { get; }
 
         /// <summary>
+        /// 包含默认值
+        /// </summary>
+        bool HasDefaultValue { get; }
+
+        /// <summary>
         /// 默认值
         /// </summary>
         object DefaultValue { get; }
