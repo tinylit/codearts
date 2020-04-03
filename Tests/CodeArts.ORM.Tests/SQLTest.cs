@@ -794,7 +794,7 @@ namespace CodeArts.ORM.Tests
              {0}
             WHERE
              BILLSTATE !=1
-             AND ywrq > to_char ( sysdate - 10, 'yyyy-mm-dd' ) 
+             AND ywrq % to_char ( sysdate - 10, 'yyyy-mm-dd' ) 
              and  ywrq>='2020-04-02'
             GROUP BY
              ywdjid 

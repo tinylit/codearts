@@ -303,22 +303,23 @@ namespace CodeArts.ORM.Builders
             string name = node.Method.Name;
 
             if (name == MethodCall.Average)
+            {
                 name = "Avg";
+            }
             else if (name == MethodCall.LongCount)
+            {
                 name = MethodCall.Count;
+            }
 
             isAggregation = true;
 
-            if (node.Arguments.Count > 1 || !(isNoParameterCount = name == MethodCall.Count))
-            {
-                _MethodLevel += 1;
-            }
+            isNoParameterCount = name == MethodCall.Count;
 
             if (buildSelect)
             {
                 buildSelect = false;
 
-                if (node.Arguments.Count > 1 || name == MethodCall.Count)
+                if (isNoParameterCount || node.Arguments.Count > 1)
                 {
                     return SingleFieldTwoArgOrCountMethod(name, node);
                 }
@@ -326,12 +327,12 @@ namespace CodeArts.ORM.Builders
                 return SingleFieldOnlyArgMethod(name, node.Arguments[0]);
             }
 
-            if (node.Arguments.Count > 1 || name == MethodCall.Count)
+            if (isNoParameterCount || node.Arguments.Count > 1)
             {
                 SQLWriter.Write(name);
                 SQLWriter.OpenBrace();
 
-                if (name == MethodCall.Count || node.Arguments.Count == 1)
+                if (isNoParameterCount || node.Arguments.Count == 1)
                 {
                     SQLWriter.Write("1");
                 }
@@ -608,8 +609,8 @@ namespace CodeArts.ORM.Builders
             //? 函数名称
             string name = node.Method.Name;
 
-            if (node.Arguments.Count > 1
-                ? !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast || name == MethodCall.DefaultIfEmpty || name == MethodCall.ElementAt || name == MethodCall.ElementAtOrDefault)
+            if (node.Arguments.Count > 1 ?
+                !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast || name == MethodCall.DefaultIfEmpty || name == MethodCall.ElementAt || name == MethodCall.ElementAtOrDefault)
                 :
                 (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average)
                 )

@@ -130,11 +130,19 @@ namespace CodeArts
         /// 类型默认转换
         /// </summary>
         /// <param name="data">数据</param>
-        public static implicit operator ServResult(DResult data) => data is null ? null : new ServResult
+        public static implicit operator ServResult(DResult data)
         {
-            Code = data.Code,
-            Timestamp = data.Timestamp
-        };
+            if (data is null)
+            {
+                return Error("数据为空!");
+            }
+
+            return new ServResult
+            {
+                Code = data.Code,
+                Timestamp = data.Timestamp
+            };
+        }
     }
 
     /// <summary>
@@ -154,12 +162,20 @@ namespace CodeArts
         /// 类型默认转换
         /// </summary>
         /// <param name="data">数据</param>
-        public static implicit operator ServResult<T>(DResult<T> data) => data is null ? null : new ServResult<T>
+        public static implicit operator ServResult<T>(DResult<T> data)
         {
-            Code = data.Code,
-            Data = data.Data,
-            Timestamp = data.Timestamp
-        };
+            if (data is null)
+            {
+                return Error<T>("数据为空!");
+            }
+
+            return new ServResult<T>
+            {
+                Code = data.Code,
+                Data = data.Data,
+                Timestamp = data.Timestamp
+            };
+        }
     }
 
     /// <summary>
@@ -179,12 +195,20 @@ namespace CodeArts
         /// 类型默认转换
         /// </summary>
         /// <param name="data">数据</param>
-        public static implicit operator ServResults<T>(DResults<T> data) => data is null ? null : new ServResults<T>
+        public static implicit operator ServResults<T>(DResults<T> data)
         {
-            Code = data.Code,
-            Data = data.Data,
-            Count = data.Count,
-            Timestamp = data.Timestamp
-        };
+            if (data is null)
+            {
+                return Errors<T>("数据为空!");
+            }
+
+            return new ServResults<T>
+            {
+                Code = data.Code,
+                Data = data.Data,
+                Count = data.Count,
+                Timestamp = data.Timestamp
+            };
+        }
     }
 }

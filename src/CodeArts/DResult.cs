@@ -41,6 +41,64 @@ namespace CodeArts
         }
 
         /// <summary>
+        /// 错误信息实体
+        /// </summary>
+        [XmlRoot("xml")]
+        private class ErrorResult<T> : DResult<T>, IResult
+        {
+            /// <summary>
+            /// 用作Xml解析
+            /// </summary>
+            private ErrorResult() : base(default) { }
+
+            /// <summary>
+            /// 构造函数
+            /// </summary>
+            /// <param name="errorMsg">错误消息</param>
+            /// <param name="statusCode">错误编码</param>
+            public ErrorResult(string errorMsg, int statusCode) : this()
+            {
+                Msg = errorMsg;
+                Code = statusCode;
+            }
+
+            /// <summary>
+            /// 错误信息
+            /// </summary>
+            [XmlElement("msg")]
+            public string Msg { get; private set; }
+        }
+
+        /// <summary>
+        /// 错误信息实体
+        /// </summary>
+        [XmlRoot("xml")]
+        private class ErrorResults<T> : DResults<T>, IResult
+        {
+            /// <summary>
+            /// 用作Xml解析
+            /// </summary>
+            private ErrorResults() : base(default) { }
+
+            /// <summary>
+            /// 构造函数
+            /// </summary>
+            /// <param name="errorMsg">错误消息</param>
+            /// <param name="statusCode">错误编码</param>
+            public ErrorResults(string errorMsg, int statusCode) : this()
+            {
+                Msg = errorMsg;
+                Code = statusCode;
+            }
+
+            /// <summary>
+            /// 错误信息
+            /// </summary>
+            [XmlElement("msg")]
+            public string Msg { get; private set; }
+        }
+
+        /// <summary>
         /// 构造函数
         /// </summary>
         public DResult() { }
@@ -97,6 +155,22 @@ namespace CodeArts
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
         public static DResult Error(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorResult(errorMsg, statusCode);
+
+        /// <summary>
+        /// 错误信息
+        /// </summary>
+        /// <param name="errorMsg">错误信息</param>
+        /// <param name="statusCode">状态码</param>
+        /// <returns></returns>
+        public static DResult<T> Error<T>(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorResult<T>(errorMsg, statusCode);
+
+        /// <summary>
+        /// 错误信息
+        /// </summary>
+        /// <param name="errorMsg">错误信息</param>
+        /// <param name="statusCode">状态码</param>
+        /// <returns></returns>
+        public static DResults<T> Errors<T>(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorResults<T>(errorMsg, statusCode);
     }
 
     /// <summary>

@@ -201,7 +201,7 @@ namespace CodeArts.ORM
                             .Append(whitespace)
                             .Append("+)?exists")
                             .Append(whitespace)
-                            .Append("*\\(")
+                            .Append(@"*\(")
                             .Append(whitespace)
                             .Append("*select")
                             .Append(whitespace)
@@ -240,7 +240,7 @@ namespace CodeArts.ORM
                             .Append(whitespace)
                             .Append("+)?exists")
                             .Append(whitespace)
-                            .Append("*\\(")
+                            .Append(@"*\(")
                             .Append(whitespace)
                             .Append("*select")
                             .Append(whitespace)
@@ -257,20 +257,15 @@ namespace CodeArts.ORM
                     .Append(whitespace)
                     .Append(@"+(?<name>(?!\d+)(?!\b(update|delete)\b)\w+)")
                     .Append(check) //? on [name]; -- mysql `modified` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0)
-                .Append(@"|=")
-                    .Append(whitespace)
-                    .Append(@"*(?<name>(?!\d+)(?!\bnull\b)\w+)")
-                    .Append(whitespace)
-                    .Append(@"+(and|or|case|when|then|else|end||between|select|by|join|on|(left|right|inner|outer)")
-                    .Append(whitespace)
-                    .Append(@"+join)") // ? =[name] and
-                .Append(@"|([+/-]|[<%>])")
+                .Append("|[<=%>+/-]")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"+(and|or|case|when|then|else|end||between|select|by|join|on|(left|right|inner|outer)")
+                    .Append(@"+(?=(and|or|case|when|then|else|end|between|select|by|join|on|(left|right|inner|outer)")
                     .Append(whitespace)
-                    .Append(@"+join)") // ? =[name] and
+                    .Append(@"+join") // ? =[name] and
+                    .Append(whitespace)
+                    .Append("+))")
                 .Append(@"|\*")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)(?!\bfrom\b)\w+)")
@@ -284,17 +279,27 @@ namespace CodeArts.ORM
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"*\)") //? [name])
-                .Append(@"|[&|^]")
+                    .Append(@"*\)") //? ,[name])
+                .Append(@"|\(")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"*([+/-]|[<=>%])") //? &[name]= |[name]= -- 位运算
-                .Append(@"|([+/-]|[<=>%])")
+                    .Append(@"*(?=[<=%>+/-])") //? ([name]=
+                .Append(@"|[<=%>+/-]")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"*[&|^]"); //? =[name]& =[name]| -- 位运算
+                    .Append(@"*\)") //? =[name])
+                .Append("|[&|^]")
+                    .Append(whitespace)
+                    .Append(@"*(?<name>(?!\d+)\w+)")
+                    .Append(whitespace)
+                    .Append("*(?=[<=%>+/-])") //? &[name]= |[name]= -- 位运算
+                .Append("|[<=%>+/-]")
+                    .Append(whitespace)
+                    .Append(@"*(?<name>(?!\d+)\w+)")
+                    .Append(whitespace)
+                    .Append("*(?=[&|^])"); //? +[name]& +[name]| -- 位运算
 
             PatternField = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -876,7 +881,7 @@ namespace CodeArts.ORM
 
             //? 检查并处理函数名称。
             sql = PatternConvincedMethod.Replace(sql, item =>
-             {
+            {
                  Group nameGrp = item.Groups["name"];
 
                  string name = nameGrp.Value.ToUpper();

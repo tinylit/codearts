@@ -812,6 +812,7 @@ namespace CodeArts.ORM.Builders
                     foreach (Expression item in node.Arguments)
                     {
                         SQLWriter.Delimiter();
+
                         base.Visit(item);
                     }
                     SQLWriter.CloseBrace();
@@ -861,6 +862,7 @@ namespace CodeArts.ORM.Builders
                     }
 
                     SQLWriter.Delimiter();
+
                     if (node.Arguments.Count > 1)
                     {
                         base.Visit(node.Arguments[1]);
