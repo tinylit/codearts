@@ -789,7 +789,8 @@ namespace CodeArts.ORM.Tests
         public void TestOracle2()
         {
             var sqlstr = string.Format(@"SELECT
-             replace( ywdjid, ' ', '' ) AS ddbh 
+             replace
+( ywdjid, ' ', '' ) AS ddbh 
             FROM
              {0}
             WHERE

@@ -166,7 +166,7 @@ namespace CodeArts.ORM
         /// </summary>
         static SQL()
         {
-            var check = @"(?=[\x20\t\r\n\f]+[^\(]|[^\x20\t\r\n\f\w\.\]\}\(]|[\x20\t\r\n\f]*$)";
+            var check = @"(?=[\x20\t\r\n\f]+[^\x20\t\r\n\f\(]|[^\x20\t\r\n\f\w\.\]\}\(]|[\x20\t\r\n\f]*$)";
             var whitespace = @"[\x20\t\r\n\f]";
 
             var sb = new StringBuilder()
