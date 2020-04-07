@@ -81,28 +81,33 @@ namespace CodeArts
             throw new NotImplementedException($"指定类型({interfaceType.FullName})不被支持!");
         }
 
-        private static object Empty(Type type)
+        /// <summary>
+        /// 空对象
+        /// </summary>
+        /// <param name="typeEmpty">类型</param>
+        /// <returns></returns>
+        public static object Empty(Type typeEmpty)
         {
-            if (type.IsValueType)
+            if (typeEmpty.IsValueType)
             {
-                return Activator.CreateInstance(type);
+                return Activator.CreateInstance(typeEmpty);
             }
 
-            if (type == typeof(string))
+            if (typeEmpty == typeof(string))
             {
                 return string.Empty;
             }
 
-            if (EmptyCache.TryGetValue(type, out Func<object> valueFactory))
+            if (EmptyCache.TryGetValue(typeEmpty, out Func<object> valueFactory))
             {
                 return valueFactory.Invoke();
             }
 
-            if (type.IsInterface)
+            if (typeEmpty.IsInterface)
             {
-                if (type.IsGenericType)
+                if (typeEmpty.IsGenericType)
                 {
-                    var conversionType = MakeGenericType(type);
+                    var conversionType = MakeGenericType(typeEmpty);
 
                     if (EmptyCache.TryGetValue(conversionType, out valueFactory))
                     {
@@ -112,22 +117,16 @@ namespace CodeArts
                     return Activator.CreateInstance(conversionType);
                 }
 
-                throw new NotImplementedException($"指定类型({type.FullName})不被支持!");
+                throw new NotImplementedException($"指定类型({typeEmpty.FullName})不被支持!");
             }
 
             try
             {
-                return Activator.CreateInstance(type);
+                return Activator.CreateInstance(typeEmpty, true);
             }
             catch { }
 
-            try
-            {
-                return Activator.CreateInstance(type, true);
-            }
-            catch { }
-
-            var typeCache = RuntimeTypeCache.Instance.GetCache(type);
+            var typeCache = RuntimeTypeCache.Instance.GetCache(typeEmpty);
 
             var itemCtor = typeCache.ConstructorStores
                   .OrderBy(x => x.ParameterStores.Count)
@@ -143,13 +142,13 @@ namespace CodeArts
                 return Empty(x.ParameterType);
             }).ToArray());
 
-            EmptyCache.TryAdd(type, valueFactory);
+            EmptyCache.TryAdd(typeEmpty, valueFactory);
 
             return valueFactory.Invoke();
         }
 
         /// <summary>
-        /// 空
+        /// 空对象
         /// </summary>
         /// <typeparam name="T">类型</typeparam>
         /// <returns></returns>

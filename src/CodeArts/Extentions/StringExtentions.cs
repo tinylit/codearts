@@ -1,12 +1,10 @@
 ﻿using CodeArts;
 using CodeArts.Config;
 using CodeArts.Runtime;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using static System.Linq.Expressions.Expression;
 
@@ -266,20 +264,6 @@ namespace System
 
             Type leftType = left.GetType();
             Type rightType = right.GetType();
-
-            if (leftType.IsEnum)
-            {
-                leftType = Enum.GetUnderlyingType(leftType);
-
-                left = Convert.ChangeType(left, leftType);
-            }
-
-            if (rightType.IsEnum)
-            {
-                rightType = Enum.GetUnderlyingType(rightType);
-
-                right = Convert.ChangeType(right, rightType);
-            }
 
             if (leftType.IsValueType && rightType.IsValueType)
             {
@@ -606,6 +590,24 @@ namespace System
                         }
                         break;
                 }
+            }
+
+            if (leftType.IsEnum)
+            {
+                leftType = Enum.GetUnderlyingType(leftType);
+
+                left = Convert.ChangeType(left, leftType);
+
+                left = string.Concat("[", left.ToString(), "]");
+            }
+
+            if (rightType.IsEnum)
+            {
+                rightType = Enum.GetUnderlyingType(rightType);
+
+                right = Convert.ChangeType(right, rightType);
+
+                right = string.Concat("[", right.ToString(), "]");
             }
 
             return settings.Convert(left, false) + settings.Convert(right, false);

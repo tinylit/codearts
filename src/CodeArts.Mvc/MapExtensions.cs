@@ -1,6 +1,8 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder.Extensions;
 #else
 using CodeArts.Mvc.Builder;
 using System.Web;
@@ -18,7 +20,6 @@ namespace CodeArts.Mvc
     /// </summary>
     public static class MapExtensions
     {
-
         /// <summary>
         /// 路由(HttpVerbs.Get)
         /// </summary>

@@ -16,11 +16,13 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using CodeArts.Exceptions;
-using System.Web;
 using System.Net;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
+
 namespace Microsoft.AspNetCore.Builder
 #else
+using System.Web;
+
 namespace CodeArts.Mvc.Builder
 #endif
 {
@@ -80,30 +82,14 @@ namespace CodeArts.Mvc.Builder
 
                     if (result.Success)
                     {
-                        string value = result.Data;
+                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
 
-                        if (value is null)
-                        {
-                            AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
-                        }
-                        else
-                        {
-                            int indexOf = value.IndexOf('=');
-
-                            if (indexOf > 0)
-                            {
-                                AuthCode.Set(value.Substring(0, indexOf), value.Substring(indexOf + 1), TimeSpan.FromMinutes(2D));
-                            }
-                            else
-                            {
-                                AuthCode.Set(md5, value, TimeSpan.FromMinutes(2D));
-                            }
-
-                            result.Data = null;
-                        }
+                        await context.Response.WriteJsonAsync(DResult.Ok());
                     }
-
-                    await context.Response.WriteJsonAsync(result);
+                    else
+                    {
+                        await context.Response.WriteJsonAsync(DResult.Error(result.Msg, result.Code));
+                    }
                 }
                 else
                 {
@@ -214,30 +200,14 @@ namespace CodeArts.Mvc.Builder
 
                     if (result.Success)
                     {
-                        string value = result.Data;
+                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
 
-                        if (value is null)
-                        {
-                            AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
-                        }
-                        else
-                        {
-                            int indexOf = value.IndexOf('=');
-
-                            if (indexOf > 0)
-                            {
-                                AuthCode.Set(value.Substring(0, indexOf), value.Substring(indexOf + 1), TimeSpan.FromMinutes(2D));
-                            }
-                            else
-                            {
-                                AuthCode.Set(md5, value, TimeSpan.FromMinutes(2D));
-                            }
-
-                            result.Data = null;
-                        }
+                        context.Response.WriteJson(DResult.Ok());
                     }
-
-                    context.Response.WriteJson(result);
+                    else
+                    {
+                        context.Response.WriteJson(DResult.Error(result.Msg, result.Code));
+                    }
                 }
                 else
                 {

@@ -402,7 +402,7 @@ namespace CodeArts.Implements
             //! 绝对匹配
             foreach (var item in typeStore.ConstructorStores)
             {
-                if (item.ParameterStores.Any(x => x.ParameterType == sourceType || x.IsOptional))
+                if (item.ParameterStores.All(x => x.ParameterType == sourceType || x.IsOptional))
                 {
                     return ByLikeCtor<TResult>(item, sourceType, conversionType);
                 }
@@ -411,7 +411,7 @@ namespace CodeArts.Implements
             //? 有继承关系
             foreach (var item in typeStore.ConstructorStores)
             {
-                if (item.ParameterStores.Any(x => x.ParameterType.IsAssignableFrom(sourceType) || x.IsOptional))
+                if (item.ParameterStores.All(x => x.ParameterType.IsAssignableFrom(sourceType) || x.IsOptional))
                 {
                     return ByLikeCtor<TResult>(item, sourceType, conversionType);
                 }

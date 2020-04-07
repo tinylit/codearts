@@ -101,13 +101,5 @@ namespace System
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
         public static object MapTo(this object obj, Type conversionType) => Map.Map(obj, conversionType);
-
-        /// <summary>
-        /// 对象不为 null 返回对象本身；对象为 null 时，会通过 new 创建新的对象。
-        /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="obj">对象</param>
-        /// <returns>对象实例</returns>
-        public static T OrEmpty<T>(this T obj) where T : class, new() => obj ?? new T();
     }
 }

@@ -222,8 +222,6 @@ namespace CodeArts.Config
         /// <returns></returns>
         public T Get<T>(string key, T defaultValue = default)
         {
-            key = key.Replace(':', '/');
-
             if (key.IndexOf('/') == -1)
             {
                 if (Configs.TryGetValue(key, out string value))

@@ -272,7 +272,14 @@ namespace CodeArts.Implements
 
                             if (item is null)
                             {
-                                arguments.Add(Default(info.ParameterType));
+                                if (info.IsOptional)
+                                {
+                                    arguments.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
+                                }
+                                else
+                                {
+                                    arguments.Add(Default(info.ParameterType));
+                                }
                             }
                             else
                             {
@@ -284,7 +291,14 @@ namespace CodeArts.Implements
 
                             if (item2 is null)
                             {
-                                arguments.Add(Default(info.ParameterType));
+                                if (info.IsOptional)
+                                {
+                                    arguments.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
+                                }
+                                else
+                                {
+                                    arguments.Add(Default(info.ParameterType));
+                                }
                             }
                             else
                             {
@@ -300,7 +314,14 @@ namespace CodeArts.Implements
 
                                 if (item4 is null)
                                 {
-                                    arguments.Add(Default(info.ParameterType));
+                                    if (info.IsOptional)
+                                    {
+                                        arguments.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
+                                    }
+                                    else
+                                    {
+                                        arguments.Add(Default(info.ParameterType));
+                                    }
                                 }
                                 else
                                 {

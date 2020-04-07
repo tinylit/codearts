@@ -44,7 +44,7 @@ namespace CodeArts
         /// 错误信息实体
         /// </summary>
         [XmlRoot("xml")]
-        private class ErrorResult<T> : DResult<T>, IResult
+        private class ErrorResult<T> : DResult<T>, IResult<T>, IResult
         {
             /// <summary>
             /// 用作Xml解析
@@ -73,7 +73,7 @@ namespace CodeArts
         /// 错误信息实体
         /// </summary>
         [XmlRoot("xml")]
-        private class ErrorResults<T> : DResults<T>, IResult
+        private class ErrorResults<T> : DResults<T>, IResults<T>, IResult<List<T>>, IResult
         {
             /// <summary>
             /// 用作Xml解析
