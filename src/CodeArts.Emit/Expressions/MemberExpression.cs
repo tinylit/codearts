@@ -27,10 +27,10 @@ namespace CodeArts.Emit.Expressions
             /// <summary>
             /// 加载成员数据。
             /// </summary>
-            /// <param name="iLGen">指令。</param>
-            public override void Emit(ILGenerator iLGen)
+            /// <param name="ilg">指令。</param>
+            public override void Emit(ILGenerator ilg)
             {
-                iLGen.Emit(OpCodes.Ldarg_0);
+                ilg.Emit(OpCodes.Ldarg_0);
             }
         }
 
@@ -68,7 +68,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 取值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen) => EmitCodes.EmitLoad(iLGen, this);
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg) => EmitCodes.EmitLoad(ilg, this);
     }
 }

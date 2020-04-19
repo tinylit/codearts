@@ -21,23 +21,23 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
             if (IsPrimitiveOrClass(ReturnType))
             {
-                EmitCodes.EmitDefaultValueOfType(iLGen, ReturnType);
+                EmitCodes.EmitDefaultValueOfType(ilg, ReturnType);
             }
             else if (ReturnType.IsValueType || ReturnType.IsGenericParameter)
             {
-                var local = iLGen.DeclareLocal(ReturnType);
-                iLGen.Emit(OpCodes.Ldloca_S, local);
-                iLGen.Emit(OpCodes.Initobj, ReturnType);
-                iLGen.Emit(OpCodes.Ldloc, local);
+                var local = ilg.DeclareLocal(ReturnType);
+                ilg.Emit(OpCodes.Ldloca_S, local);
+                ilg.Emit(OpCodes.Initobj, ReturnType);
+                ilg.Emit(OpCodes.Ldloc, local);
             }
             else if (ReturnType.IsByRef)
             {
-                EmitByRef(iLGen, ReturnType);
+                EmitByRef(ilg, ReturnType);
             }
             else
             {
@@ -45,18 +45,18 @@ namespace CodeArts.Emit.Expressions
             }
         }
 
-        private static void EmitByRef(ILGenerator iLGen, Type type)
+        private static void EmitByRef(ILGenerator ilg, Type type)
         {
             var elementType = type.GetElementType();
 
             if (IsPrimitiveOrClass(elementType))
             {
-                EmitCodes.EmitDefaultValueOfType(iLGen, elementType);
-                EmitCodes.EmitAssignIndirectOpCodeForType(iLGen, elementType);
+                EmitCodes.EmitDefaultValueOfType(ilg, elementType);
+                EmitCodes.EmitAssignIndirectOpCodeForType(ilg, elementType);
             }
             else if (elementType.IsGenericParameter || elementType.IsValueType)
             {
-                iLGen.Emit(OpCodes.Initobj, elementType);
+                ilg.Emit(OpCodes.Initobj, elementType);
             }
             else
             {

@@ -58,9 +58,9 @@ namespace CodeArts.Emit
         /// <summary>
         /// 发行指定类型的默认值。
         /// </summary>
-        /// <param name="iLGen">指令</param>
+        /// <param name="ilg">指令</param>
         /// <param name="type">类型</param>
-        public static void EmitDefaultValueOfType(ILGenerator iLGen, Type type)
+        public static void EmitDefaultValueOfType(ILGenerator ilg, Type type)
         {
             if (type.IsPrimitive)
             {
@@ -70,21 +70,21 @@ namespace CodeArts.Emit
                 {
                     case StackBehaviour.Pushi:
 
-                        iLGen.Emit(opCode, 0);
+                        ilg.Emit(opCode, 0);
 
                         if (type == typeof(long) || type == typeof(ulong))
                         {
-                            iLGen.Emit(OpCodes.Conv_I8);
+                            ilg.Emit(OpCodes.Conv_I8);
                         }
                         break;
                     case StackBehaviour.Pushr8:
-                        iLGen.Emit(opCode, 0D);
+                        ilg.Emit(opCode, 0D);
                         break;
                     case StackBehaviour.Pushi8:
-                        iLGen.Emit(opCode, 0L);
+                        ilg.Emit(opCode, 0L);
                         break;
                     case StackBehaviour.Pushr4:
-                        iLGen.Emit(opCode, 0F);
+                        ilg.Emit(opCode, 0F);
                         break;
                     default:
                         throw new NotSupportedException();
@@ -92,20 +92,20 @@ namespace CodeArts.Emit
             }
             else
             {
-                iLGen.Emit(OpCodes.Ldnull);
+                ilg.Emit(OpCodes.Ldnull);
             }
         }
 
         /// <summary>
         /// 发行转存类型。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="type">类型。</param>
-        public static void EmitAssignIndirectOpCodeForType(ILGenerator iLGen, Type type)
+        public static void EmitAssignIndirectOpCodeForType(ILGenerator ilg, Type type)
         {
             if (type.IsEnum)
             {
-                EmitAssignIndirectOpCodeForType(iLGen, Enum.GetUnderlyingType(type));
+                EmitAssignIndirectOpCodeForType(ilg, Enum.GetUnderlyingType(type));
                 return;
             }
 
@@ -122,28 +122,28 @@ namespace CodeArts.Emit
                     throw new ArgumentException("Type " + type + " could not be converted to a OpCode");
                 }
 
-                iLGen.Emit(opCode);
+                ilg.Emit(opCode);
             }
             else if (type.IsValueType)
             {
-                iLGen.Emit(OpCodes.Stobj, type);
+                ilg.Emit(OpCodes.Stobj, type);
             }
             else if (type.IsGenericParameter)
             {
-                iLGen.Emit(OpCodes.Stobj, type);
+                ilg.Emit(OpCodes.Stobj, type);
             }
             else
             {
-                iLGen.Emit(OpCodes.Stind_Ref);
+                ilg.Emit(OpCodes.Stind_Ref);
             }
         }
 
         /// <summary>
         /// 发行引用链。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="expression">成员。</param>
-        public static void EmitLoad(ILGenerator iLGen, Expression expression)
+        public static void EmitLoad(ILGenerator ilg, Expression expression)
         {
             if (expression is null)
             {
@@ -157,10 +157,10 @@ namespace CodeArts.Emit
                     return;
                 }
 
-                EmitLoad(iLGen, expression);
+                EmitLoad(ilg, expression);
             }
 
-            expression.Emit(iLGen);
+            expression.Emit(ilg);
         }
     }
 }

@@ -25,12 +25,12 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
-            body?.Emit(iLGen);
+            body?.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Ret);
+            ilg.Emit(OpCodes.Ret);
         }
     }
 }

@@ -61,42 +61,42 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
-            iLGen.BeginExceptionBlock();
+            ilg.BeginExceptionBlock();
 
-            body.Emit(iLGen);
+            body.Emit(ilg);
 
             if (ReturnType == typeof(void))
             {
                 foreach (var item in catchs)
                 {
-                    item.Emit(iLGen);
+                    item.Emit(ilg);
                 }
 
-                @finally?.Emit(iLGen);
+                @finally?.Emit(ilg);
 
-                iLGen.EndExceptionBlock();
+                ilg.EndExceptionBlock();
             }
             else
             {
-                var variable = iLGen.DeclareLocal(ReturnType);
+                var variable = ilg.DeclareLocal(ReturnType);
 
-                iLGen.Emit(OpCodes.Stloc, variable);
+                ilg.Emit(OpCodes.Stloc, variable);
 
                 foreach (var item in catchs)
                 {
-                    item.Emit(iLGen);
+                    item.Emit(ilg);
 
-                    iLGen.Emit(OpCodes.Stloc, variable);
+                    ilg.Emit(OpCodes.Stloc, variable);
                 }
 
-                @finally?.Emit(iLGen);
+                @finally?.Emit(ilg);
 
-                iLGen.EndExceptionBlock();
+                ilg.EndExceptionBlock();
 
-                iLGen.Emit(OpCodes.Ldloc, variable);
+                ilg.Emit(OpCodes.Ldloc, variable);
             }
         }
     }

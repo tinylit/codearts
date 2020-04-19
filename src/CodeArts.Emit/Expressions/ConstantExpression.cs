@@ -51,16 +51,16 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
             if (value is null)
             {
-                iLGen.Emit(OpCodes.Ldnull);
+                ilg.Emit(OpCodes.Ldnull);
             }
             else if (value is string text)
             {
-                iLGen.Emit(OpCodes.Ldstr, text);
+                ilg.Emit(OpCodes.Ldstr, text);
             }
             else
             {
@@ -69,19 +69,19 @@ namespace CodeArts.Emit.Expressions
                 switch (value)
                 {
                     case bool b:
-                        iLGen.Emit(code, b ? 1 : 0);
+                        ilg.Emit(code, b ? 1 : 0);
                         break;
                     case float f:
-                        iLGen.Emit(code, f);
+                        ilg.Emit(code, f);
                         break;
                     case double d:
-                        iLGen.Emit(code, d);
+                        ilg.Emit(code, d);
                         break;
                     case long l:
-                        iLGen.Emit(code, l);
+                        ilg.Emit(code, l);
                         break;
                     default:
-                        iLGen.Emit(code, Convert.ToInt32(value));
+                        ilg.Emit(code, Convert.ToInt32(value));
                         break;
                 }
             }

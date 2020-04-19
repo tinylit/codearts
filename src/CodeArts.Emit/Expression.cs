@@ -24,8 +24,8 @@ namespace CodeArts.Emit
         /// <summary>
         /// 加载数据。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public abstract void Emit(ILGenerator iLGen);
+        /// <param name="ilg">指令</param>
+        public abstract void Emit(ILGenerator ilg);
 
         /// <summary>
         /// 类型。

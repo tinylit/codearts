@@ -54,25 +54,25 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 取值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg)
         {
             switch (Position)
             {
                 case 0:
-                    iLGen.Emit(OpCodes.Ldarg_0);
+                    ilg.Emit(OpCodes.Ldarg_0);
                     break;
                 case 1:
-                    iLGen.Emit(OpCodes.Ldarg_1);
+                    ilg.Emit(OpCodes.Ldarg_1);
                     break;
                 case 2:
-                    iLGen.Emit(OpCodes.Ldarg_2);
+                    ilg.Emit(OpCodes.Ldarg_2);
                     break;
                 case 3:
-                    iLGen.Emit(OpCodes.Ldarg_3);
+                    ilg.Emit(OpCodes.Ldarg_3);
                     break;
                 default:
-                    iLGen.Emit(OpCodes.Ldarg_S, Position);
+                    ilg.Emit(OpCodes.Ldarg_S, Position);
                     break;
             }
         }
@@ -80,22 +80,22 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 将当前堆载顶部的数据赋值给变量。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Assign(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Assign(ILGenerator ilg)
         {
-            iLGen.Emit(OpCodes.Starg, Position);
+            ilg.Emit(OpCodes.Starg, Position);
         }
 
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator iLGen, Expression value)
+        protected override void AssignCore(ILGenerator ilg, Expression value)
         {
-            value.Emit(iLGen);
+            value.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Starg, Position);
+            ilg.Emit(OpCodes.Starg, Position);
         }
     }
 }

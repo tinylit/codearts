@@ -31,33 +31,33 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 取值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg)
         {
             if (isStatic)
             {
-                iLGen.Emit(OpCodes.Ldsfld, fieldInfo);
+                ilg.Emit(OpCodes.Ldsfld, fieldInfo);
             }
             else
             {
-                iLGen.Emit(OpCodes.Ldfld, fieldInfo);
+                ilg.Emit(OpCodes.Ldfld, fieldInfo);
             }
         }
 
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="value">值</param>
-        protected override void AssignCore(ILGenerator iLGen, Expression value)
+        protected override void AssignCore(ILGenerator ilg, Expression value)
         {
             if (isStatic)
             {
-                iLGen.Emit(OpCodes.Stsfld, fieldInfo);
+                ilg.Emit(OpCodes.Stsfld, fieldInfo);
             }
             else
             {
-                iLGen.Emit(OpCodes.Stfld, fieldInfo);
+                ilg.Emit(OpCodes.Stfld, fieldInfo);
             }
         }
     }

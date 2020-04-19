@@ -27,10 +27,10 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
-            expression.Emit(iLGen);
+            expression.Emit(ilg);
 
             Type fromType = expression.ReturnType;
 
@@ -57,24 +57,24 @@ namespace CodeArts.Emit.Expressions
 
                 if (code == default)
                 {
-                    iLGen.Emit(OpCodes.Unbox_Any, targetType);
+                    ilg.Emit(OpCodes.Unbox_Any, targetType);
                 }
                 else
                 {
-                    iLGen.Emit(OpCodes.Unbox, targetType);
+                    ilg.Emit(OpCodes.Unbox, targetType);
 
-                    Emit(iLGen, targetType);
+                    Emit(ilg, targetType);
                 }
             }
             else if (fromType.IsValueType)
             {
-                iLGen.Emit(OpCodes.Box, fromType);
+                ilg.Emit(OpCodes.Box, fromType);
 
-                Emit(iLGen, typeof(object), targetType);
+                Emit(ilg, typeof(object), targetType);
             }
             else
             {
-                Emit(iLGen, fromType, targetType);
+                Emit(ilg, fromType, targetType);
             }
         }
 

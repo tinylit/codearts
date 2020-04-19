@@ -128,45 +128,45 @@ namespace CodeArts.Emit
         /// <summary>
         /// 发行。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg)
         {
             if (GetMethod is null)
             {
                 throw new EmitException($"属性“{Name}”不可读!");
             }
 
-            iLGen.Emit(OpCodes.Callvirt, GetMethod.Value);
+            ilg.Emit(OpCodes.Callvirt, GetMethod.Value);
         }
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Assign(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Assign(ILGenerator ilg)
         {
             if (SetMethod is null)
             {
                 throw new EmitException($"属性“{Name}”不可写!");
             }
 
-            iLGen.Emit(OpCodes.Call, SetMethod.Value);
+            ilg.Emit(OpCodes.Call, SetMethod.Value);
         }
 
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator iLGen, Expression value)
+        protected override void AssignCore(ILGenerator ilg, Expression value)
         {
             if (SetMethod is null)
             {
                 throw new EmitException($"属性“{Name}”不可写!");
             }
 
-            value.Emit(iLGen);
+            value.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Call, SetMethod.Value);
+            ilg.Emit(OpCodes.Call, SetMethod.Value);
         }
     }
 }

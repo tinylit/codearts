@@ -17,15 +17,15 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public virtual void Assign(ILGenerator iLGen) => throw new NotImplementedException();
+        /// <param name="ilg">指令。</param>
+        public virtual void Assign(ILGenerator ilg) => throw new NotImplementedException();
 
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        public void Assign(ILGenerator iLGen, Expression value)
+        public void Assign(ILGenerator ilg, Expression value)
         {
             if (value is null)
             {
@@ -37,14 +37,14 @@ namespace CodeArts.Emit.Expressions
                 throw new EmitException("无返回值类型赋值不能用于赋值运算!");
             }
 
-            AssignCore(iLGen, value);
+            AssignCore(ilg, value);
         }
 
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected abstract void AssignCore(ILGenerator iLGen, Expression value);
+        protected abstract void AssignCore(ILGenerator ilg, Expression value);
     }
 }

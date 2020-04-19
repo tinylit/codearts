@@ -69,7 +69,7 @@ namespace CodeArts.Emit
 #else
                 var attributes = builder.MethodImplementationFlags;
 #endif
-                return (attributes & MethodImplAttributes.Runtime) != 0;
+                return (attributes & MethodImplAttributes.Runtime) != MethodImplAttributes.IL;
             }
         }
 

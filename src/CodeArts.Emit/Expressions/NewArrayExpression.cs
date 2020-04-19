@@ -47,11 +47,11 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
-            iLGen.Emit(OpCodes.Ldc_I4, size);
-            iLGen.Emit(OpCodes.Newarr, ReturnType);
+            ilg.Emit(OpCodes.Ldc_I4, size);
+            ilg.Emit(OpCodes.Newarr, ReturnType);
         }
 
         private static Type ArrayType<T>() => typeof(T[]);

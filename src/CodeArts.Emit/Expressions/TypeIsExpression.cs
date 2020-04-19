@@ -36,8 +36,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 取值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg)
         {
             var type = body.ReturnType;
 
@@ -48,11 +48,11 @@ namespace CodeArts.Emit.Expressions
             {
                 if (result == AnalyzeTypeIsResult.KnownTrue)
                 {
-                    iLGen.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
                 }
                 else
                 {
-                    iLGen.Emit(OpCodes.Ldc_I4_0);
+                    ilg.Emit(OpCodes.Ldc_I4_0);
                 }
 
                 return;
@@ -64,9 +64,9 @@ namespace CodeArts.Emit.Expressions
                 {
                     if (body is MemberExpression member)
                     {
-                        EmitCodes.EmitLoad(iLGen, member.Expression);
+                        EmitCodes.EmitLoad(ilg, member.Expression);
                         MethodInfo mi = type.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
-                        iLGen.Emit(OpCodes.Call, mi);
+                        ilg.Emit(OpCodes.Call, mi);
 
                         return;
                     }
@@ -74,26 +74,26 @@ namespace CodeArts.Emit.Expressions
                     throw new NotSupportedException();
                 }
 
-                body.Emit(iLGen);
+                body.Emit(ilg);
 
-                iLGen.Emit(OpCodes.Ldnull);
-                iLGen.Emit(OpCodes.Ceq);
-                iLGen.Emit(OpCodes.Ldc_I4_0);
-                iLGen.Emit(OpCodes.Ceq);
+                ilg.Emit(OpCodes.Ldnull);
+                ilg.Emit(OpCodes.Ceq);
+                ilg.Emit(OpCodes.Ldc_I4_0);
+                ilg.Emit(OpCodes.Ceq);
 
                 return;
             }
 
-            body.Emit(iLGen);
+            body.Emit(ilg);
 
             if (type.IsValueType)
             {
-                iLGen.Emit(OpCodes.Box, type);
+                ilg.Emit(OpCodes.Box, type);
             }
 
-            iLGen.Emit(OpCodes.Isinst, isType);
-            iLGen.Emit(OpCodes.Ldnull);
-            iLGen.Emit(OpCodes.Cgt_Un);
+            ilg.Emit(OpCodes.Isinst, isType);
+            ilg.Emit(OpCodes.Ldnull);
+            ilg.Emit(OpCodes.Cgt_Un);
         }
 
         private static AnalyzeTypeIsResult AnalyzeTypeIs(Type operandType, Type testType)

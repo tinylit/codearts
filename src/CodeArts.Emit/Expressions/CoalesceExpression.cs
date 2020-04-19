@@ -26,16 +26,16 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
-            left.Emit(iLGen);
-            iLGen.Emit(OpCodes.Dup);
-            var label = iLGen.DefineLabel();
-            iLGen.Emit(OpCodes.Brtrue_S, label);
-            iLGen.Emit(OpCodes.Pop);
-            right.Emit(iLGen);
-            iLGen.MarkLabel(label);
+            left.Emit(ilg);
+            ilg.Emit(OpCodes.Dup);
+            var label = ilg.DefineLabel();
+            ilg.Emit(OpCodes.Brtrue_S, label);
+            ilg.Emit(OpCodes.Pop);
+            right.Emit(ilg);
+            ilg.MarkLabel(label);
         }
     }
 }

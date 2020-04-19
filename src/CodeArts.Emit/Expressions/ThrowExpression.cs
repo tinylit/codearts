@@ -36,14 +36,14 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
             NewExpression exception = hasErrorMsg ? new NewExpression(ReturnType, new ConstantExpression(errorMsg)) : new NewExpression(ReturnType);
 
-            exception.Emit(iLGen);
+            exception.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Throw);
+            ilg.Emit(OpCodes.Throw);
         }
     }
 }

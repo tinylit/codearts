@@ -24,7 +24,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen) => variable.Emit(iLGen);
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg) => variable.Emit(ilg);
     }
 }

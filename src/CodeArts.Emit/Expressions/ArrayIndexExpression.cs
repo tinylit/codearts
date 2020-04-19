@@ -58,27 +58,27 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 取值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg)
         {
-            array.Emit(iLGen);
+            array.Emit(ilg);
 
             if (index == -1)
             {
-                indexExp.Emit(iLGen);
+                indexExp.Emit(ilg);
             }
             else
             {
-                iLGen.Emit(OpCodes.Ldc_I4, index);
+                ilg.Emit(OpCodes.Ldc_I4, index);
             }
 
             if (!ReturnType.IsValueType)
             {
-                iLGen.Emit(OpCodes.Ldelem_Ref);
+                ilg.Emit(OpCodes.Ldelem_Ref);
             }
             else if (ReturnType.IsEnum)
             {
-                iLGen.Emit(OpCodes.Ldelem, ReturnType);
+                ilg.Emit(OpCodes.Ldelem, ReturnType);
             }
             else
             {
@@ -86,36 +86,36 @@ namespace CodeArts.Emit.Expressions
                 {
                     case TypeCode.Boolean:
                     case TypeCode.SByte:
-                        iLGen.Emit(OpCodes.Ldelem_I1);
+                        ilg.Emit(OpCodes.Ldelem_I1);
                         break;
                     case TypeCode.Byte:
-                        iLGen.Emit(OpCodes.Ldelem_U1);
+                        ilg.Emit(OpCodes.Ldelem_U1);
                         break;
                     case TypeCode.Int16:
-                        iLGen.Emit(OpCodes.Ldelem_I2);
+                        ilg.Emit(OpCodes.Ldelem_I2);
                         break;
                     case TypeCode.Char:
                     case TypeCode.UInt16:
-                        iLGen.Emit(OpCodes.Ldelem_U2);
+                        ilg.Emit(OpCodes.Ldelem_U2);
                         break;
                     case TypeCode.Int32:
-                        iLGen.Emit(OpCodes.Ldelem_I4);
+                        ilg.Emit(OpCodes.Ldelem_I4);
                         break;
                     case TypeCode.UInt32:
-                        iLGen.Emit(OpCodes.Ldelem_U4);
+                        ilg.Emit(OpCodes.Ldelem_U4);
                         break;
                     case TypeCode.Int64:
                     case TypeCode.UInt64:
-                        iLGen.Emit(OpCodes.Ldelem_I8);
+                        ilg.Emit(OpCodes.Ldelem_I8);
                         break;
                     case TypeCode.Single:
-                        iLGen.Emit(OpCodes.Ldelem_R4);
+                        ilg.Emit(OpCodes.Ldelem_R4);
                         break;
                     case TypeCode.Double:
-                        iLGen.Emit(OpCodes.Ldelem_R8);
+                        ilg.Emit(OpCodes.Ldelem_R8);
                         break;
                     default:
-                        iLGen.Emit(OpCodes.Ldelem, ReturnType);
+                        ilg.Emit(OpCodes.Ldelem, ReturnType);
                         break;
                 }
             }
@@ -124,44 +124,44 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
+        /// <param name="ilg">指令。</param>
         /// <param name="value">值</param>
-        protected override void AssignCore(ILGenerator iLGen, Expression value)
+        protected override void AssignCore(ILGenerator ilg, Expression value)
         {
 
             if (index == -1)
             {
                 if (indexExp is VariableExpression variable)
                 {
-                    array.Emit(iLGen);
+                    array.Emit(ilg);
 
-                    iLGen.Emit(OpCodes.Ldc_I4, variable.Value);
+                    ilg.Emit(OpCodes.Ldc_I4, variable.Value);
                 }
                 else
                 {
-                    var local = iLGen.DeclareLocal(typeof(int));
+                    var local = ilg.DeclareLocal(typeof(int));
 
-                    indexExp.Emit(iLGen);
+                    indexExp.Emit(ilg);
 
-                    iLGen.Emit(OpCodes.Stloc, local);
+                    ilg.Emit(OpCodes.Stloc, local);
 
-                    array.Emit(iLGen);
+                    array.Emit(ilg);
 
-                    iLGen.Emit(OpCodes.Ldc_I4, local);
+                    ilg.Emit(OpCodes.Ldc_I4, local);
                 }
             }
             else
             {
-                array.Emit(iLGen);
+                array.Emit(ilg);
 
-                iLGen.Emit(OpCodes.Ldc_I4, index);
+                ilg.Emit(OpCodes.Ldc_I4, index);
             }
 
-            value.Emit(iLGen);
+            value.Emit(ilg);
 
             if (ReturnType.IsEnum)
             {
-                iLGen.Emit(OpCodes.Stelem, ReturnType);
+                ilg.Emit(OpCodes.Stelem, ReturnType);
             }
             else
             {
@@ -170,35 +170,35 @@ namespace CodeArts.Emit.Expressions
                     case TypeCode.Boolean:
                     case TypeCode.SByte:
                     case TypeCode.Byte:
-                        iLGen.Emit(OpCodes.Stelem_I1);
+                        ilg.Emit(OpCodes.Stelem_I1);
                         break;
                     case TypeCode.Char:
                     case TypeCode.Int16:
                     case TypeCode.UInt16:
-                        iLGen.Emit(OpCodes.Stelem_I2);
+                        ilg.Emit(OpCodes.Stelem_I2);
                         break;
                     case TypeCode.Int32:
                     case TypeCode.UInt32:
-                        iLGen.Emit(OpCodes.Stelem_I4);
+                        ilg.Emit(OpCodes.Stelem_I4);
                         break;
                     case TypeCode.Int64:
                     case TypeCode.UInt64:
-                        iLGen.Emit(OpCodes.Stelem_I8);
+                        ilg.Emit(OpCodes.Stelem_I8);
                         break;
                     case TypeCode.Single:
-                        iLGen.Emit(OpCodes.Stelem_R4);
+                        ilg.Emit(OpCodes.Stelem_R4);
                         break;
                     case TypeCode.Double:
-                        iLGen.Emit(OpCodes.Stelem_R8);
+                        ilg.Emit(OpCodes.Stelem_R8);
                         break;
                     default:
                         if (ReturnType.IsValueType)
                         {
-                            iLGen.Emit(OpCodes.Stelem, ReturnType);
+                            ilg.Emit(OpCodes.Stelem, ReturnType);
                         }
                         else
                         {
-                            iLGen.Emit(OpCodes.Stelem_Ref);
+                            ilg.Emit(OpCodes.Stelem_Ref);
                         }
                         break;
                 }

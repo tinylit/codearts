@@ -23,12 +23,12 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 声明。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        internal void Declare(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        internal void Declare(ILGenerator ilg)
         {
             if(local is null)
             {
-                local = iLGen.DeclareLocal(ReturnType);
+                local = ilg.DeclareLocal(ReturnType);
             }
         }
 
@@ -40,31 +40,31 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 取值。
         /// </summary>
-        /// <param name="iLGen">指令。</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令。</param>
+        public override void Emit(ILGenerator ilg)
         {
-            iLGen.Emit(OpCodes.Ldloc, Value);
+            ilg.Emit(OpCodes.Ldloc, Value);
         }
 
         /// <summary>
         /// 将当前堆载顶部的数据赋值给变量。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Assign(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Assign(ILGenerator ilg)
         {
-            iLGen.Emit(OpCodes.Stloc, Value);
+            ilg.Emit(OpCodes.Stloc, Value);
         }
 
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="iLGen">指令</param>
+        /// <param name="ilg">指令</param>
         /// <param name="value">值</param>
-        protected override void AssignCore(ILGenerator iLGen, Expression value)
+        protected override void AssignCore(ILGenerator ilg, Expression value)
         {
-            value.Emit(iLGen);
+            value.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Stloc, Value);
+            ilg.Emit(OpCodes.Stloc, Value);
         }
     }
 }

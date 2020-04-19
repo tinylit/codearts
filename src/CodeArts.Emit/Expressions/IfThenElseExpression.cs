@@ -72,81 +72,81 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="iLGen">指令</param>
-        public override void Emit(ILGenerator iLGen)
+        /// <param name="ilg">指令</param>
+        public override void Emit(ILGenerator ilg)
         {
             if (ReturnType == typeof(void))
             {
-                EmitVoid(iLGen, test, ifTrue, ifFalse);
+                EmitVoid(ilg, test, ifTrue, ifFalse);
             }
             else
             {
-                Emit(iLGen, test, ifTrue, ifFalse, ReturnType);
+                Emit(ilg, test, ifTrue, ifFalse, ReturnType);
             }
         }
 
-        private static void Emit(ILGenerator iLGen, Expression test, Expression ifTrue, Expression ifFalse, Type returnType)
+        private static void Emit(ILGenerator ilg, Expression test, Expression ifTrue, Expression ifFalse, Type returnType)
         {
-            var label = iLGen.DefineLabel();
-            var leave = iLGen.DefineLabel();
+            var label = ilg.DefineLabel();
+            var leave = ilg.DefineLabel();
 
-            test.Emit(iLGen);
+            test.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Brfalse_S, label);
+            ilg.Emit(OpCodes.Brfalse_S, label);
 
             if (returnType == ifTrue.ReturnType)
             {
-                ifTrue.Emit(iLGen);
+                ifTrue.Emit(ilg);
             }
             else
             {
-                new ConvertExpression(ifTrue, returnType).Emit(iLGen);
+                new ConvertExpression(ifTrue, returnType).Emit(ilg);
             }
 
-            iLGen.Emit(OpCodes.Br, leave);
+            ilg.Emit(OpCodes.Br, leave);
 
-            iLGen.MarkLabel(label);
+            ilg.MarkLabel(label);
 
             if (returnType == ifFalse.ReturnType)
             {
-                ifFalse.Emit(iLGen);
+                ifFalse.Emit(ilg);
             }
             else
             {
-                new ConvertExpression(ifFalse, returnType).Emit(iLGen);
+                new ConvertExpression(ifFalse, returnType).Emit(ilg);
             }
 
-            iLGen.MarkLabel(leave);
+            ilg.MarkLabel(leave);
         }
 
-        private static void EmitVoid(ILGenerator iLGen, Expression test, Expression ifTrue, Expression ifFalse)
+        private static void EmitVoid(ILGenerator ilg, Expression test, Expression ifTrue, Expression ifFalse)
         {
-            var label = iLGen.DefineLabel();
-            var leave = iLGen.DefineLabel();
+            var label = ilg.DefineLabel();
+            var leave = ilg.DefineLabel();
 
-            test.Emit(iLGen);
+            test.Emit(ilg);
 
-            iLGen.Emit(OpCodes.Brfalse_S, label);
+            ilg.Emit(OpCodes.Brfalse_S, label);
 
-            ifTrue.Emit(iLGen);
+            ifTrue.Emit(ilg);
 
             if (ifTrue.ReturnType != typeof(void))
             {
-                iLGen.Emit(OpCodes.Pop);
+                ilg.Emit(OpCodes.Pop);
             }
 
-            iLGen.Emit(OpCodes.Br, leave);
+            ilg.Emit(OpCodes.Br, leave);
 
-            iLGen.MarkLabel(label);
+            ilg.MarkLabel(label);
 
-            ifFalse.Emit(iLGen);
+            ifFalse.Emit(ilg);
 
             if (ifFalse.ReturnType != typeof(void))
             {
-                iLGen.Emit(OpCodes.Pop);
+                ilg.Emit(OpCodes.Pop);
             }
 
-            iLGen.MarkLabel(leave);
+            ilg.MarkLabel(leave);
         }
     }
 }
