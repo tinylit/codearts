@@ -6,7 +6,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 范围
     /// </summary>
-    public interface ITableRegions
+    public interface ITableInfo
     {
         /// <summary>
         /// 表实体类型

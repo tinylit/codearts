@@ -9,6 +9,7 @@ namespace Mvc.Core2_2
     /// <inheritdoc />
     public class Startup : JwtStartup
     {
+        /// <inheritdoc />
         public override void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             var loggerFactory = app.ApplicationServices.GetRequiredService<ILoggerFactory>();

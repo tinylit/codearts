@@ -105,7 +105,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 字段名称补充。
         /// </summary>
-        private static readonly Regex PatternFieldEmbody = new Regex(@"\[\w+\][\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[_a-zA-Z]\w*)", RegexOptions.Compiled);
+        private static readonly Regex PatternFieldEmbody = new Regex(@"\[\w+\][\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[_a-zA-Z]\w*)(?=[\x20\t\r\n\f]+[^\x20\t\r\n\f\(]|[^\x20\t\r\n\f\w\.\]\}\(]|[\x20\t\r\n\f]*$)", RegexOptions.Compiled);
 
         /// <summary>
         /// 别名字段
@@ -115,7 +115,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 独立参数字段
         /// </summary>
-        private static readonly Regex PatternSingleArgField = new Regex(@"\([\x20\t\r\n\f]*(?<name>(?!\d+)(?![_A-Z]+)(?!\b(max|min)\b)\w+)[\x20\t\r\n\f]*\)", RegexOptions.Compiled);
+        private static readonly Regex PatternSingleArgField = new Regex(@"(?<!with[\x20\t\r\n\f]*)\([\x20\t\r\n\f]*(?<name>(?!\d+)(?![_A-Z]+)(?!\b(max|min)\b)\w+)[\x20\t\r\n\f]*\)", RegexOptions.Compiled);
 
         /// <summary>
         /// 字段名称（创建别命令中）。
@@ -166,15 +166,15 @@ namespace CodeArts.ORM
         /// </summary>
         static SQL()
         {
-            var check = @"(?=[\x20\t\r\n\f]+[^\x20\t\r\n\f\(]|[^\x20\t\r\n\f\w\.\]\}\(]|[\x20\t\r\n\f]*$)";
             var whitespace = @"[\x20\t\r\n\f]";
+            var check = @"(?=[\x20\t\r\n\f]+[^\x20\t\r\n\f\(]|[^\x20\t\r\n\f\w\.\]\}\(]|[\x20\t\r\n\f]*$)";
 
             var sb = new StringBuilder()
                 .Append(",")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append(@"*[=,]") //? ,[name], ,[name]=[value]
+                    .Append(@"*(?=[=,])") //? ,[name], ,[name]=[value]
                 .Append(@"|\bcolumn")
                     .Append(whitespace)
                     .Append(@"+(?<name>(?!\d+)\w+)") //? 字段 column [name]
@@ -882,27 +882,27 @@ namespace CodeArts.ORM
             //? 检查并处理函数名称。
             sql = PatternConvincedMethod.Replace(sql, item =>
             {
-                 Group nameGrp = item.Groups["name"];
+                Group nameGrp = item.Groups["name"];
 
-                 string name = nameGrp.Value.ToUpper();
+                string name = nameGrp.Value.ToUpper();
 
-                 if (name == "LEN" || name == "LENGTH")
-                 {
-                     return settings.Length;
-                 }
+                if (name == "LEN" || name == "LENGTH")
+                {
+                    return settings.Length;
+                }
 
-                 if (name == "SUBSTRING" || name == "SUBSTR")
-                 {
-                     return settings.Substring;
-                 }
+                if (name == "SUBSTRING" || name == "SUBSTR")
+                {
+                    return settings.Substring;
+                }
 
-                 if (name == "INDEXOF")
-                 {
-                     return settings.IndexOf;
-                 }
+                if (name == "INDEXOF")
+                {
+                    return settings.IndexOf;
+                }
 
-                 return item.Value;
-             });
+                return item.Value;
+            });
 
             //? 表名称。
             sql = PatternTableToken.Replace(sql, item => settings.Name(item.Groups["name"].Value));

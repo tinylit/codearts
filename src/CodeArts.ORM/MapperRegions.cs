@@ -11,15 +11,15 @@ namespace CodeArts.ORM
     /// </summary>
     public static class MapperRegions
     {
-        private static readonly ConcurrentDictionary<Type, TableRegions> MapperCache =
-            new ConcurrentDictionary<Type, TableRegions>();
+        private static readonly ConcurrentDictionary<Type, TableInfo> MapperCache =
+            new ConcurrentDictionary<Type, TableInfo>();
 
         /// <summary>
         /// 表
         /// </summary>
-        private sealed class TableRegions : ITableRegions
+        private class TableInfo : ITableInfo
         {
-            public TableRegions(Type tableType, string tableName, List<string> keys, List<string> readOnlys, Dictionary<string, TokenAttribute> tokens, Dictionary<string, string> readWrites, Dictionary<string, string> readOrWrites)
+            public TableInfo(Type tableType, string tableName, List<string> keys, List<string> readOnlys, Dictionary<string, TokenAttribute> tokens, Dictionary<string, string> readWrites, Dictionary<string, string> readOrWrites)
             {
                 TableType = tableType ?? throw new ArgumentNullException(nameof(tableType));
                 TableName = tableName;
@@ -49,7 +49,7 @@ namespace CodeArts.ORM
 #endif
         }
 
-        private static TableRegions Aw_Resolve(Type type) => MapperCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), tableType =>
+        private static TableInfo Aw_Resolve(Type type) => MapperCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), tableType =>
          {
              var keys = new List<string>();
              var tokens = new Dictionary<string, TokenAttribute>();
@@ -92,7 +92,7 @@ namespace CodeArts.ORM
                  readOrWrites.Add(item.Name, item.Naming);
              }
 
-             return new TableRegions(tableType, typeStore.Naming, keys, readOnlys, tokens, readWrites, readOrWrites);
+             return new TableInfo(tableType, typeStore.Naming, keys, readOnlys, tokens, readWrites, readOrWrites);
          });
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="type">类型</param>
         /// <returns></returns>
-        public static ITableRegions Resolve(Type type)
+        public static ITableInfo Resolve(Type type)
         {
             if (type is null)
             {
@@ -119,6 +119,6 @@ namespace CodeArts.ORM
         /// </summary>
         /// <typeparam name="T">泛型参数</typeparam>
         /// <returns></returns>
-        public static ITableRegions Resolve<T>() where T : class => Aw_Resolve(typeof(T));
+        public static ITableInfo Resolve<T>() where T : class => Aw_Resolve(typeof(T));
     }
 }

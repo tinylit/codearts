@@ -119,7 +119,7 @@ namespace CodeArts.ORM
         /// <summary> 创建数据库适配器 </summary>
         /// <param name="providerName">供应商名称</param>
         /// <returns></returns>
-        public static IDbConnectionAdapter Create(string providerName)
+        public static IDbConnectionAdapter Get(string providerName)
         {
             if (providerName == null)
             {

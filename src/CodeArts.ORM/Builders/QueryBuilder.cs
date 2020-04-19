@@ -207,7 +207,7 @@ namespace CodeArts.ORM.Builders
             }
         }
 
-        private void BuildSingleField(string methodName, string prefix, ITableRegions regions)
+        private void BuildSingleField(string methodName, string prefix, ITableInfo regions)
         {
             IEnumerable<KeyValuePair<string, string>> names = regions.ReadOrWrites;
 
@@ -240,7 +240,7 @@ namespace CodeArts.ORM.Builders
 
         private Expression BuildSingleOneArgField(string name, Expression node)
         {
-            var regions = MakeTableRegions(node.Type);
+            var regions = MakeTableInfo(node.Type);
 
             string prefix = GetOrAddTablePrefix(regions.TableType);
 
@@ -411,7 +411,7 @@ namespace CodeArts.ORM.Builders
             }
         }
 
-        private void BuildColumns(ITableRegions regions)
+        private void BuildColumns(ITableInfo regions)
         {
             string prefix = GetOrAddTablePrefix(regions.TableType);
 
@@ -436,7 +436,7 @@ namespace CodeArts.ORM.Builders
             WriteMembers(prefix, names);
         }
 
-        private void MakeFrom(ITableRegions regions)
+        private void MakeFrom(ITableInfo regions)
         {
             buildFrom = false;
 
@@ -447,7 +447,7 @@ namespace CodeArts.ORM.Builders
 
         private void MakeSelectFrom(Type type)
         {
-            var regions = MakeTableRegions(type);
+            var regions = MakeTableInfo(type);
 
             if (buildSelect)
             {
@@ -983,7 +983,7 @@ namespace CodeArts.ORM.Builders
             switch (name)
             {
                 case MethodCall.From:
-                    if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableRegions, string> value))
+                    if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableInfo, string> value))
                         throw new DException("指定表名称不能为空!");
 
                     if (!buildFrom)
@@ -1028,7 +1028,7 @@ namespace CodeArts.ORM.Builders
 
             var type = parameter.Type;
 
-            var regions = MakeTableRegions(type);
+            var regions = MakeTableInfo(type);
 
             if (node.Body.NodeType == ExpressionType.Parameter)
             {

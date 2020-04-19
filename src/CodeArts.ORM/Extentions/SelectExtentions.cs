@@ -20,7 +20,7 @@ namespace System.Linq
         /// <param name="source">查询器</param>
         /// <param name="table">表名称工厂</param>
         /// <returns></returns>
-        public static IQueryable<TSource> From<TSource>(this IQueryable<TSource> source, Func<ITableRegions, string> table)
+        public static IQueryable<TSource> From<TSource>(this IQueryable<TSource> source, Func<ITableInfo, string> table)
         => source.Provider.CreateQuery<TSource>(Expression.Call(null, GetMethodInfo(From, source, table), new Expression[2] {
             source.Expression,
             Expression.Constant(table ?? throw new ArgumentNullException(nameof(table)))

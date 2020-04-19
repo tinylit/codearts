@@ -8,12 +8,14 @@ using CodeArts.ORM;
 
 namespace Mvc.Core
 {
+    /// <inheritdoc />
     public class Startup : JwtStartup
     {
+        /// <inheritdoc />
         public Startup() : base(new PathString("/api"))
         {
         }
-
+        /// <inheritdoc />
         public override void ConfigureServices(IServiceCollection services)
         {
             DbConnectionManager.AddAdapter(new MySqlAdapter());

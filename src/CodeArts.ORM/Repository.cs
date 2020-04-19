@@ -31,7 +31,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 数据库适配器
         /// </summary>
-        protected IDbConnectionAdapter DbAdapter => _DbProvider ?? (_DbProvider = DbConnectionManager.Create(ConnectionConfig.ProviderName));
+        protected IDbConnectionAdapter DbAdapter => _DbProvider ?? (_DbProvider = DbConnectionManager.Get(ConnectionConfig.ProviderName));
         /// <summary>
         /// SQL矫正设置
         /// </summary>
@@ -43,14 +43,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         private DbConfigAttribute GetAttribute() => mapperCache.GetOrAdd(GetType(), type =>
         {
-            var attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), false);
-
-            if (attr == null)
-            {
-                attr = (DbConfigAttribute)Attribute.GetCustomAttribute(type.BaseType, typeof(DbConfigAttribute), true);
-            }
-
-            return attr ?? throw new NotImplementedException("仓库类未指定数据库链接属性!");
+            return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), false) ?? (DbConfigAttribute)Attribute.GetCustomAttribute(type.BaseType, typeof(DbConfigAttribute), true) ?? throw new NotImplementedException("仓库类未指定数据库链接属性!");
         });
 
         /// <summary>
@@ -65,10 +58,12 @@ namespace CodeArts.ORM
             {
                 ConnectionConfig = attr.GetConfig();
 
-                if (!(_DbProvider is null || string.Equals(_DbProvider.ProviderName, ConnectionConfig.ProviderName, StringComparison.OrdinalIgnoreCase)))
+                if (_DbProvider is null || string.Equals(_DbProvider.ProviderName, ConnectionConfig.ProviderName, StringComparison.OrdinalIgnoreCase))
                 {
-                    _DbProvider = null;
+                    return;
                 }
+
+                _DbProvider = null;
             };
 
             return attr.GetConfig();
@@ -123,25 +118,12 @@ namespace CodeArts.ORM
     /// 数据仓储
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
-    public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IEnumerable, IQueryProvider
+    public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, ISelectable, IEnumerable
     {
-        private static ITableRegions tableRegions;
-
         /// <summary>
         /// 实体表信息
         /// </summary>
-        public static ITableRegions TableRegions
-        {
-            get
-            {
-                if (tableRegions is null)
-                {
-                    Interlocked.CompareExchange(ref tableRegions, MapperRegions.Resolve(typeof(T)), null);
-                }
-
-                return tableRegions;
-            }
-        }
+        public static ITableInfo TableInfo => DbMapper<T>.TableInfo;
 
         /// <summary>
         /// 构造函数
@@ -174,11 +156,10 @@ namespace CodeArts.ORM
         /// </summary>
         protected IEnumerable<T> Enumerable { private set; get; }
 
-        private IDbRepositoryProvider _DbProvider = null;
         /// <summary>
         /// 仓库供应器
         /// </summary>
-        protected virtual IDbRepositoryProvider DbProvider => _DbProvider ?? (_DbProvider = DbConnectionManager.Create(DbAdapter));
+        protected virtual IDbRepositoryProvider DbProvider => DbConnectionManager.Create(DbAdapter);
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
             if (expression == null)
@@ -254,7 +235,7 @@ namespace CodeArts.ORM
         /// 查询SQL验证
         /// </summary>
         /// <returns></returns>
-        protected virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
+        protected internal virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// 查询一条数据(未查询到数据)
@@ -277,9 +258,6 @@ namespace CodeArts.ORM
         /// <returns></returns>
         protected virtual TResult QueryFirst<TResult>(ISQL sql, object param = null, bool required = true, int? commandTimeout = null)
         {
-            if (!QueryAuthorize(sql))
-                throw new NonAuthorizeException();
-
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
@@ -324,9 +302,6 @@ namespace CodeArts.ORM
         /// <returns></returns>
         protected virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null, int? commandTimeout = null)
         {
-            if (!QueryAuthorize(sql))
-                throw new NonAuthorizeException();
-
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
@@ -360,6 +335,22 @@ namespace CodeArts.ORM
 
             return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters, commandTimeout);
 
+        }
+
+        TResult ISelectable.QueryFirst<TResult>(ISQL sql, object param, bool required, int? commandTimeout)
+        {
+            if (!QueryAuthorize(sql))
+                throw new NonAuthorizeException();
+
+            return QueryFirst<TResult>(sql, param, required, commandTimeout);
+        }
+
+        IEnumerable<TResult> ISelectable.Query<TResult>(ISQL sql, object param, int? commandTimeout)
+        {
+            if (!QueryAuthorize(sql))
+                throw new NonAuthorizeException();
+
+            return Query<TResult>(sql, param, commandTimeout);
         }
 
         private IEnumerator<T> GetEnumerator()

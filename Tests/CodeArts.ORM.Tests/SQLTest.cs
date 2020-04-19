@@ -709,7 +709,7 @@ namespace CodeArts.ORM.Tests
             DbConnectionManager.AddAdapter(new SqlServerAdapter());
             DbConnectionManager.AddProvider<CodeArtsProvider>();
 
-            var adapter = DbConnectionManager.Create(config.ProviderName);
+            var adapter = DbConnectionManager.Get(config.ProviderName);
             var connection = adapter.Create(config.ConnectionString);
             var provider = DbConnectionManager.Create(adapter);
 
@@ -916,6 +916,43 @@ WHERE YWDJID =@ddbh
 group by YWDJID,SPID 
 having sum(SPJE)<>0")
                 .ToString(settings);
+        }
+
+        [TestMethod]
+        public void TestYY() {
+            string sqlstr = @"select   max(c.customer_name)  as gmfmc,
+ isnull(max(c.tax_id),'') as gmfsbh,
+ isnull(max(c.tel),'') as gmfdzdh,
+ isnull(max(c.bank),'') + isnull(max(c.account_id),'') as gmfkhhjzh,
+ isnull(max(d.remark),max(a.str_out_bill_id)) as ddbh,
+ '' as  bm,
+ '' as ywy,
+ '1' AS invoiceType,
+ '1' AS autoKp,
+ sum(d.qty * d.price) as jshj,
+'661568807294' AS machineCode,
+ isnull(max(c.tel),'') as sprsjh,
+ (select isnull(dd.zdw_erpRawPreOrderId,replace(bill_id,'YS','YSB' )) from sls_quotation_bill dd with(readpast),str_out_bill aa with(readpast)
+         where aa.xsdd_id = dd.bill_id and aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as dsddh,
+ max(a.remark) as bz,
+ (select aa.sls_tax_id from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoicecode,
+ (select aa.sls_tax_no from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoiceno,
+ (select aa.sls_tax_date from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as ywrq
+from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+ str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+where  a.str_out_type_id in('4','B')
+and a.str_out_bill_id = d.str_out_bill_id
+and    djlx_id in ('02','03')
+and  a.str_out_bill_id=@ddbh
+group by  a.str_out_bill_id";
+            var sql = new SQL(sqlstr);
+
+            var sqlSettings = new SqlServerCorrectSettings();
+
+            sqlSettings.Formatters.Add(new CreateIfFormatter());
+            sqlSettings.Formatters.Add(new DropIfFormatter());
+
+            var query2 = sql.ToString(sqlSettings);
         }
     }
 }

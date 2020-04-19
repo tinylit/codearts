@@ -37,6 +37,16 @@ namespace CodeArts
             where TService : class
            => Nested<TService>.TryAdd(() => CodeArts.Singleton<TService>.Instance);
 
+
+        /// <summary>
+        /// 添加服务
+        /// </summary>
+        /// <param name="instance">实现</param>
+        /// <typeparam name="TService">服务类型</typeparam>
+        public static void TryAddSingleton<TService>(TService instance)
+            where TService : class
+            => TryAddSingleton(() => instance);
+
         /// <summary>
         /// 添加服务
         /// </summary>
@@ -66,6 +76,15 @@ namespace CodeArts
          => Nested<TService>.Instance ?? throw new NotImplementedException();
 
         /// <summary>
+        /// 监听指定类型单例变化。
+        /// </summary>
+        /// <typeparam name="TService">类型</typeparam>
+        /// <param name="listenSingletonChanged">监听单例变化</param>
+        public static void Watch<TService>(Action<TService> listenSingletonChanged)
+            where TService : class
+            => Nested<TService>.Listen(listenSingletonChanged);
+
+        /// <summary>
         /// 获取服务
         /// </summary>
         /// <typeparam name="TService">服务类型</typeparam>
@@ -90,16 +109,6 @@ namespace CodeArts
 
             return Nested<TService>.Instance ?? Nested<TService, TImplementation>.Instance;
         }
-
-        /// <summary>
-        /// 获取服务
-        /// </summary>
-        /// <typeparam name="TService">服务类型</typeparam>
-        /// <param name="factory">实现工厂</param>
-        /// <returns></returns>
-        public static TService Singleton<TService>(Func<TService> factory)
-            where TService : class
-            => Nested<TService>.Instance ?? factory.Invoke();
 
         /// <summary>
         /// 静态内部类
@@ -151,7 +160,9 @@ namespace CodeArts
                 if (defineService || _useBaseTryAdd)
                 {
                     if (defineService)
+                    {
                         _useBaseTryAdd = false;
+                    }
 
                     _lazy = new Lazy<TService>(factory);
 
@@ -237,7 +248,7 @@ namespace CodeArts
                             .OrderBy(x => x.ParameterStores.Count)
                             .FirstOrDefault() ?? throw new NotSupportedException($"服务“{typeStore.FullName}”不包含任何可用于依赖注入的构造函数!"));
 
-                    _lazy = new Lazy<TImplementation>(() => invoke.Invoke());
+                    _lazy = new Lazy<TImplementation>(invoke);
                 }
                 else
                 {
@@ -247,7 +258,7 @@ namespace CodeArts
 
                     var invoke = lamdaExp.Compile();
 
-                    _lazy = new Lazy<TImplementation>(() => invoke.Invoke());
+                    _lazy = new Lazy<TImplementation>(invoke);
                 }
 
                 DefaultCache[typeof(TService)] = typeof(Nested<TService, TImplementation>);

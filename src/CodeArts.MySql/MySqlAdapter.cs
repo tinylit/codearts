@@ -1,9 +1,7 @@
-﻿using MySql.Data.MySqlClient;
-using CodeArts.ORM;
+﻿using CodeArts.ORM;
 using CodeArts.ORM.MySql;
-using System;
+using MySql.Data.MySqlClient;
 using System.Data;
-using System.Data.Common;
 
 namespace CodeArts.MySql
 {

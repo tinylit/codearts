@@ -11,7 +11,7 @@ namespace CodeArts.ORM.Builders
     /// </summary>
     public class ExecuteBuilder<T> : Builder, IBuilder<T>
     {
-        private static readonly ITableRegions typeRegions;
+        private static readonly ITableInfo typeRegions;
         static ExecuteBuilder()
         {
             typeRegions = MapperRegions.Resolve(typeof(T));
@@ -186,7 +186,7 @@ namespace CodeArts.ORM.Builders
             {
                 case MethodCall.From:
 
-                    if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableRegions, string> value))
+                    if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableInfo, string> value))
                         throw new DException("指定表名称不能为空!");
 
                     SetTableFactory(value);
@@ -242,7 +242,14 @@ namespace CodeArts.ORM.Builders
                 case MethodCall.Delete:
                     Behavior = ExecuteBehavior.Delete;
 
-                    base.Visit(node.Arguments[0]);
+                    if (node.Arguments.Count > 1)
+                    {
+                        MakeWhereNode(node);
+                    }
+                    else
+                    {
+                        base.Visit(node.Arguments[0]);
+                    }
 
                     SQLWriter.AppendAt = 0;
 

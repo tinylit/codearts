@@ -17,7 +17,7 @@ namespace CodeArts.ORM
     /// 数据仓储（支持增删查改）
     /// </summary>
     /// <typeparam name="T">元素类型</typeparam>
-    public class DbRepository<T> : Repository<T>, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class, IEntiy
+    public class DbRepository<T> : Repository<T>, IDbRepository<T>, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class, IEntiy
     {
         /// <summary>
         /// 最大参数长度
@@ -81,7 +81,7 @@ namespace CodeArts.ORM
         /// </summary>
         private abstract class RouteExecuteable : IRouteExecuteable<T>, IEnumerable<T>, IEnumerable
         {
-            public RouteExecuteable(IEditable executer, IRouteExecuteProvider provider, IEnumerable<T> collect)
+            public RouteExecuteable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect)
             {
                 Editable = executer ?? throw new ArgumentNullException(nameof(executer));
                 this.collect = collect ?? throw new ArgumentNullException(nameof(collect));
@@ -97,14 +97,14 @@ namespace CodeArts.ORM
             }
 
             protected static readonly TypeStoreItem typeStore;
-            protected static readonly ITableRegions typeRegions;
+            protected static readonly ITableInfo typeRegions;
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
 
             private readonly IEnumerable<T> collect;
 
-            public IRouteExecuteProvider Provider { get; }
+            public IRouteExecuteProvider<T> Provider { get; }
 
             public IEditable Editable { get; }
 
@@ -129,14 +129,14 @@ namespace CodeArts.ORM
 
         private class Deleteable : RouteExecuteable, IDeleteable<T>
         {
-            public Deleteable(IEditable executer, IRouteExecuteProvider provider, IEnumerable<T> collect) : base(executer, provider, collect)
+            public Deleteable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect) : base(executer, provider, collect)
             {
                 wheres = defaultWhere;
             }
 
             private string[] wheres;
             private Func<T, string[]> where;
-            private Func<ITableRegions, string> from;
+            private Func<ITableInfo, string> from;
 
             public override int Execute(int? commandTimeout)
             {
@@ -183,10 +183,10 @@ namespace CodeArts.ORM
                         {
                             var keys = item.Key.Split(',');
 
-                            return Complex(TableRegions.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, index, parameters);
+                            return Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, index, parameters);
                         }
 
-                        return Simple(TableRegions.ReadWrites.First(x => x.Key == item.Key), item, index, parameters);
+                        return Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, index, parameters);
                     }));
 
                     return Editable.Excute(sql, parameters, commandTimeout);
@@ -240,13 +240,13 @@ namespace CodeArts.ORM
                                 parameters = new Dictionary<string, object>();
                             }
 
-                            sb.Append(Complex(TableRegions.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, group_index, parameters));
+                            sb.Append(Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, group_index, parameters));
                         }
                         else
                         {
                             parameter_count++;
 
-                            sb.Append(Simple(TableRegions.ReadWrites.First(x => x.Key == item.Key), item, group_index, parameters));
+                            sb.Append(Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, group_index, parameters));
                         }
 
                         group_index++;
@@ -450,7 +450,7 @@ namespace CodeArts.ORM
                 return sb.ToString();
             }
 
-            public IDeleteable<T> From(Func<ITableRegions, string> table)
+            public IDeleteable<T> From(Func<ITableInfo, string> table)
             {
                 from = table;
 
@@ -474,13 +474,13 @@ namespace CodeArts.ORM
 
         private class Insertable : RouteExecuteable, IInsertable<T>
         {
-            public Insertable(IEditable executer, IRouteExecuteProvider provider, IEnumerable<T> collect) : base(executer, provider, collect)
+            public Insertable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect) : base(executer, provider, collect)
             {
             }
 
             private string[] limits;
             private string[] excepts;
-            private Func<ITableRegions, string> from;
+            private Func<ITableInfo, string> from;
 
             public IInsertable<T> Except(string[] columns)
             {
@@ -587,7 +587,7 @@ namespace CodeArts.ORM
                 return Editable.Excute(sb.Append(";").ToString(), paramters, commandTimeout);
             }
 
-            public IInsertable<T> From(Func<ITableRegions, string> table)
+            public IInsertable<T> From(Func<ITableInfo, string> table)
             {
                 from = table ?? throw new ArgumentNullException(nameof(table));
 
@@ -606,14 +606,14 @@ namespace CodeArts.ORM
 
         private class Updateable : RouteExecuteable, IUpdateable<T>
         {
-            public Updateable(IEditable executer, IRouteExecuteProvider provider, IEnumerable<T> collect) : base(executer, provider, collect)
+            public Updateable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect) : base(executer, provider, collect)
             {
             }
 
             private string[] limits;
             private string[] excepts;
             private Func<T, string[]> where;
-            private Func<ITableRegions, T, string> from;
+            private Func<ITableInfo, T, string> from;
 
             public IUpdateable<T> Except(string[] columns)
             {
@@ -790,7 +790,7 @@ namespace CodeArts.ORM
                 return Editable.Excute(sb.ToString(), paramters, commandTimeout);
             }
 
-            public IUpdateable<T> From(Func<ITableRegions, string> table)
+            public IUpdateable<T> From(Func<ITableInfo, string> table)
             {
                 if (table is null)
                 {
@@ -802,7 +802,7 @@ namespace CodeArts.ORM
                 return this;
             }
 
-            public IUpdateable<T> From(Func<ITableRegions, T, string> table)
+            public IUpdateable<T> From(Func<ITableInfo, T, string> table)
             {
                 from = table ?? throw new ArgumentNullException(nameof(table));
 
@@ -839,88 +839,6 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 路由提供器
-        /// </summary>
-        private class RouteExecuteProvider : IRouteExecuteProvider
-        {
-            private static Func<TEntry, string[]> Conditional<TEntry>(ParameterExpression parameter, Expression test, MemberExpression ifTrue, MemberExpression ifFalse)
-            {
-                var bodyExp = Expression.Condition(test, Expression.Constant(ifTrue.Member.Name), Expression.Constant(ifFalse.Member.Name));
-
-                var lamdaExp = Expression.Lambda<Func<TEntry, string>>(bodyExp, parameter);
-
-                var invoke = lamdaExp.Compile();
-
-                return source => new string[] { invoke.Invoke(source) };
-            }
-
-            public string[] Except<TEntry, TColumn>(Expression<Func<TEntry, TColumn>> lamda)
-            {
-                if (lamda.Parameters.Count > 1)
-                    throw new DSyntaxErrorException();
-
-                var parameter = lamda.Parameters.First();
-
-                var body = lamda.Body;
-
-                switch (body.NodeType)
-                {
-                    case ExpressionType.Constant when body is ConstantExpression constant:
-                        switch (constant.Value)
-                        {
-                            case string text:
-                                return text.Split(',', ' ');
-                            case string[] arr:
-                                return arr;
-                            default:
-                                throw new NotImplementedException();
-                        }
-                    case ExpressionType.MemberAccess when body is MemberExpression member:
-                        return new string[] { member.Member.Name };
-                    case ExpressionType.MemberInit when body is MemberInitExpression memberInit:
-                        return memberInit.Bindings.Select(x => x.Member.Name).ToArray();
-                    case ExpressionType.New when body is NewExpression newExpression:
-                        return newExpression.Members.Select(x => x.Name).ToArray();
-                    case ExpressionType.Parameter:
-                        var storeItem = RuntimeTypeCache.Instance.GetCache(parameter.Type);
-                        return storeItem.PropertyStores
-                            .Where(x => x.CanRead && x.CanWrite)
-                            .Select(x => x.Name)
-                            .ToArray();
-                }
-                throw new NotImplementedException();
-            }
-
-            public string[] Limit<TEntry, TColumn>(Expression<Func<TEntry, TColumn>> lamda) => Except(lamda);
-
-            public Func<TEntry, string[]> Where<TEntry, TColumn>(Expression<Func<TEntry, TColumn>> lamda)
-            {
-                if (lamda.Parameters.Count > 1)
-                    throw new DSyntaxErrorException();
-
-                var parameter = lamda.Parameters.First();
-
-                var body = lamda.Body;
-
-                switch (body.NodeType)
-                {
-                    case ExpressionType.Coalesce when body is BinaryExpression binary && binary.Left is MemberExpression left && binary.Right is MemberExpression right:
-                        return Conditional<TEntry>(parameter, Expression.NotEqual(left, Expression.Default(binary.Type)), left, right);
-                    case ExpressionType.Conditional when body is ConditionalExpression conditional && conditional.IfTrue is MemberExpression left && conditional.IfFalse is MemberExpression right:
-                        return Conditional<TEntry>(parameter, conditional.Test, left, right);
-                    case ExpressionType.NewArrayInit when body.Type == typeof(string[]):
-                    case ExpressionType.Call when body is MethodCallExpression methodCall && methodCall.Method.ReturnType == typeof(string[]):
-                        return lamda.Compile() as Func<TEntry, string[]> ?? throw new NotImplementedException();
-                    default:
-
-                        var columns = Except(lamda);
-
-                        return source => columns;
-                }
-            }
-        }
-
-        /// <summary>
         /// 插入、更新、删除执行器
         /// </summary>
         /// <returns></returns>
@@ -930,7 +848,7 @@ namespace CodeArts.ORM
         /// 创建路由执行器
         /// </summary>
         /// <returns></returns>
-        protected virtual IRouteExecuteProvider CreateRouteExecuteProvider() => RuntimeServManager.Singleton<IRouteExecuteProvider, RouteExecuteProvider>();
+        protected virtual IRouteExecuteProvider<T> CreateRouteExecuteProvider() => RouteExecuter<T>.Instance;
 
         /// <summary>
         /// 插入路由执行器
@@ -994,7 +912,7 @@ namespace CodeArts.ORM
         /// 执行SQL验证
         /// </summary>
         /// <returns></returns>
-        protected virtual bool ExcuteAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase)) && sql.Tables.Any(x => string.Equals(x.Name, TableRegions.TableName, StringComparison.OrdinalIgnoreCase));
+        protected internal virtual bool ExcuteAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase)) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// 执行
@@ -1003,7 +921,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns>影响行</returns>
-        protected virtual int Excute(ISQL sql, object param = null, int? commandTimeout = null)
+        protected internal virtual int Excute(ISQL sql, object param = null, int? commandTimeout = null)
         {
             if (!ExcuteAuthorize(sql))
                 throw new NonAuthorizeException();

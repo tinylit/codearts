@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -56,9 +55,9 @@ namespace CodeArts.ORM.Builders
 
         private bool isIgnoreNullable = false; //忽略Nullable的成员
 
-        private ITableRegions _CurrentRegions = null;
+        private ITableInfo _CurrentRegions = null;
 
-        private Func<ITableRegions, string> tableFactory;
+        private Func<ITableInfo, string> tableFactory;
 
         private ConcurrentDictionary<Type, string> _PrefixCache;
 
@@ -185,7 +184,7 @@ namespace CodeArts.ORM.Builders
         /// 设置获取表名称的工厂
         /// </summary>
         /// <param name="table">工厂</param>
-        protected void SetTableFactory(Func<ITableRegions, string> table) => tableFactory = table;
+        protected void SetTableFactory(Func<ITableInfo, string> table) => tableFactory = table;
 
         private string MakePrefixFrom(Type type, string name, bool noCheck = false)
         {
@@ -201,13 +200,13 @@ namespace CodeArts.ORM.Builders
         /// 写入表名称
         /// </summary>
         /// <param name="tableType">表类型</param>
-        public void WriteTable(Type tableType) => WriteTable(MakeTableRegions(tableType));
+        public void WriteTable(Type tableType) => WriteTable(MakeTableInfo(tableType));
         /// <summary>
         /// 写入表名称
         /// </summary>
         /// <param name="tableRegions">表信息</param>
-        public void WriteTable(ITableRegions tableRegions) => SQLWriter.TableName(GetTableName(tableRegions), GetOrAddTablePrefix(tableRegions.TableType));
-        private string GetTableName(ITableRegions regions) => tableFactory?.Invoke(regions) ?? regions.TableName;
+        public void WriteTable(ITableInfo tableRegions) => SQLWriter.TableName(GetTableName(tableRegions), GetOrAddTablePrefix(tableRegions.TableType));
+        private string GetTableName(ITableInfo regions) => tableFactory?.Invoke(regions) ?? regions.TableName;
         /// <summary>
         /// Not 取反
         /// </summary>
@@ -458,7 +457,7 @@ namespace CodeArts.ORM.Builders
             return node;
         }
         /// <inheritdoc />
-        protected ITableRegions MakeTableRegions(Type type)
+        protected ITableInfo MakeTableInfo(Type type)
         {
             Type entityType = GetInitialType(type);
 
@@ -1217,7 +1216,7 @@ namespace CodeArts.ORM.Builders
         {
             string name = node.Member.Name;
 
-            var regions = MakeTableRegions(node.Expression.Type);
+            var regions = MakeTableInfo(node.Expression.Type);
 
             if (!regions.ReadOrWrites.TryGetValue(name, out string value))
                 throw new DSyntaxErrorException($"{name}不可读也不可写!");

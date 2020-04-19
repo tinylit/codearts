@@ -48,7 +48,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 执行提供器
         /// </summary>
-        IRouteExecuteProvider Provider { get; }
+        IRouteExecuteProvider<T> Provider { get; }
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="table">表名称</param>
         /// <returns></returns>
-        IDeleteable<T> From(Func<ITableRegions, string> table);
+        IDeleteable<T> From(Func<ITableInfo, string> table);
 
         /// <summary>
         /// 条件
@@ -90,7 +90,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="table">表名称</param>
         /// <returns></returns>
-        IInsertable<T> From(Func<ITableRegions, string> table);
+        IInsertable<T> From(Func<ITableInfo, string> table);
 
         /// <summary>
         /// 只更新或只插入的字段
@@ -132,14 +132,14 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="table">表名称</param>
         /// <returns></returns>
-        IUpdateable<T> From(Func<ITableRegions, string> table);
+        IUpdateable<T> From(Func<ITableInfo, string> table);
 
         /// <summary>
         /// 数据源
         /// </summary>
         /// <param name="table">表名称</param>
         /// <returns></returns>
-        IUpdateable<T> From(Func<ITableRegions, T, string> table);
+        IUpdateable<T> From(Func<ITableInfo, T, string> table);
 
         /// <summary>
         /// 只更新或只插入的字段

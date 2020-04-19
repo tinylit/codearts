@@ -18,12 +18,12 @@ namespace CodeArts.ORM
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
         /// <param name="source">源</param>
-        /// <param name="expression">条件表达式</param>
+        /// <param name="whereExp">条件表达式</param>
         /// <returns></returns>
-        public static IExecuteable<T> Where<T>(this IExecuteable<T> source, Expression<Func<T, bool>> expression)
-        => source.Provider.CreateExecute(Expression.Call(null, GetMethodInfo(Where, source, expression), new Expression[2] {
+        public static IExecuteable<T> Where<T>(this IExecuteable<T> source, Expression<Func<T, bool>> whereExp)
+        => source.Provider.CreateExecute(Expression.Call(null, GetMethodInfo(Where, source, whereExp), new Expression[2] {
             source.Expression,
-            Expression.Quote(expression)
+            whereExp
         }));
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace CodeArts.ORM
         /// <param name="source">源</param>
         /// <param name="table">获取表名称的工厂</param>
         /// <returns></returns>
-        public static IExecuteable<T> From<T>(this IExecuteable<T> source, Func<ITableRegions, string> table)
+        public static IExecuteable<T> From<T>(this IExecuteable<T> source, Func<ITableInfo, string> table)
         => source.Provider.CreateExecute(Expression.Call(null, GetMethodInfo(From, source, table), new Expression[2] {
             source.Expression,
             Expression.Constant(table)
@@ -57,12 +57,12 @@ namespace CodeArts.ORM
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
         /// <param name="source">源</param>
-        /// <param name="updater">更新的字段和值</param>
+        /// <param name="updateExp">更新的字段和值</param>
         /// <returns></returns>
-        public static int Update<T>(this IExecuteable<T> source, Expression<Func<T, T>> updater)
-        => source.Provider.Execute(Expression.Call(null, GetMethodInfo(Update, source, updater), new Expression[2] {
+        public static int Update<T>(this IExecuteable<T> source, Expression<Func<T, T>> updateExp)
+        => source.Provider.Execute(Expression.Call(null, GetMethodInfo(Update, source, updateExp), new Expression[2] {
             source.Expression,
-            Expression.Quote(updater)
+            updateExp
         }));
 
         /// <summary>
@@ -79,22 +79,25 @@ namespace CodeArts.ORM
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
         /// <param name="source">源</param>
-        /// <param name="expression">条件表达式</param>
+        /// <param name="whereExp">条件表达式</param>
         /// <returns></returns>
-        public static int Delete<T>(this IExecuteable<T> source, Expression<Func<T, bool>> expression)
-        => source.Where(expression).Delete();
+        public static int Delete<T>(this IExecuteable<T> source, Expression<Func<T, bool>> whereExp)
+        => source.Provider.Execute(Expression.Call(null, GetMethodInfo(Delete, source, whereExp), new Expression[2] {
+            source.Expression,
+            whereExp
+        }));
 
         /// <summary>
         /// 插入数据
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
         /// <param name="source">源</param>
-        /// <param name="selector">数据源</param>
+        /// <param name="querable">数据源</param>
         /// <returns></returns>
-        public static int Insert<T>(this IExecuteable<T> source, IQueryable<T> selector)
-            => source.Provider.Execute(Expression.Call(null, GetMethodInfo(Insert, source, selector), new Expression[2] {
+        public static int Insert<T>(this IExecuteable<T> source, IQueryable<T> querable)
+            => source.Provider.Execute(Expression.Call(null, GetMethodInfo(Insert, source, querable), new Expression[2] {
                 source.Expression,
-                selector.Expression
+                querable.Expression
             }));
 
     }
