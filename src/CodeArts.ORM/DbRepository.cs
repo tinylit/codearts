@@ -908,7 +908,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public int Insert(SQL sql, object param, int? commandTimeout)
+        public int Insert(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (ExcuteAuthorize(sql, CommandTypes.Insert))
             {
@@ -925,7 +925,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public int Update(SQL sql, object param, int? commandTimeout)
+        public int Update(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (ExcuteAuthorize(sql, CommandTypes.Update))
             {
@@ -942,7 +942,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public int Delete(SQL sql, object param, int? commandTimeout)
+        public int Delete(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (ExcuteAuthorize(sql, CommandTypes.Delete))
             {
@@ -987,7 +987,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
-        private int Execute(string sql, Dictionary<string, object> param, int? commandTimeout)
+        private int Execute(string sql, Dictionary<string, object> param, int? commandTimeout = null)
         {
             return DbExecuter.Execute(Connection, sql, param, commandTimeout);
         }
