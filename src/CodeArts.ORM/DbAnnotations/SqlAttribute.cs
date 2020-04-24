@@ -8,49 +8,26 @@ namespace CodeArts.DbAnnotations
     /// 语句
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public class SqlAttribute : CommandAttribute
+    public abstract class SqlAttribute : Attribute
     {
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="sql">SQL</param>
         /// <param name="commandType">命令类型</param>
-        public SqlAttribute(ISQL sql, CommandKind commandType) : base(commandType)
+        public SqlAttribute(string sql, UppercaseString commandType)
         {
-            UppercaseString uppercaseString;
-
-            switch (commandType)
-            {
-                case CommandKind.Insert:
-                    uppercaseString = CommandTypes.Insert;
-                    break;
-                case CommandKind.Delete:
-                    uppercaseString = CommandTypes.Delete;
-                    break;
-                case CommandKind.Query:
-                    uppercaseString = CommandTypes.Select;
-                    break;
-                case CommandKind.Update:
-                    uppercaseString = CommandTypes.Update;
-                    break;
-                default:
-                    uppercaseString = commandType.ToString();
-                    break;
-            }
-
-            if (Sql.Tables.All(x => x.CommandType == uppercaseString))
-            {
-                Sql = sql;
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
+            Sql = sql;
+            CommandType = commandType;
         }
 
         /// <summary>
         /// SQL
         /// </summary>
-        public ISQL Sql { get; }
+        public string Sql { get; }
+        /// <summary>
+        /// 命令。
+        /// </summary>
+        public UppercaseString CommandType { get; }
     }
 }

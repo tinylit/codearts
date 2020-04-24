@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Emit;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -24,20 +25,20 @@ namespace CodeArts.Proxies.Generators
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public DefaultProxyGenerator() : this(new ModuleScope())
+        public DefaultProxyGenerator() : this(new ModuleEmitter())
         {
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="scope">模块范围</param>
-        public DefaultProxyGenerator(ModuleScope scope) => Scope = scope ?? throw new ArgumentNullException(nameof(scope));
+        /// <param name="moduleEmitter">模块</param>
+        public DefaultProxyGenerator(ModuleEmitter moduleEmitter) => Value = moduleEmitter ?? throw new ArgumentNullException(nameof(moduleEmitter));
 
         /// <summary>
         /// 模块范围。
         /// </summary>
-        public ModuleScope Scope { get; }
+        public ModuleEmitter Value { get; }
 
         private static void ProxyInterfaceMethods(TypeBuilder typeBuilder, ILGenerator ilOfStaticCtor, FieldBuilder interceptorField, FieldBuilder instanceField, MethodInfo[] methods, ProxyOptions options)
         {
@@ -428,6 +429,14 @@ namespace CodeArts.Proxies.Generators
             {
                 throw new ArgumentException("指定类型不是接口!", nameof(interfaceType));
             }
+
+            var classEmitter = new ClassEmitter(Value, interfaceType.Name, TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit, typeof(object), new Type[] { interfaceType });
+
+            var instanceField = classEmitter.DefineField("instance", interfaceType, FieldAttributes.Private | FieldAttributes.InitOnly);
+
+            var interceptorField = classEmitter.DefineField("instance", interfaceType, FieldAttributes.Private | FieldAttributes.InitOnly);
+
+            var constructorBuilder = classEmitter.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { interfaceType, interceptorType });
 
             var moduleBuilder = Scope.Create(interfaceType);
 

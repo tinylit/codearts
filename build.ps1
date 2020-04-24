@@ -11,6 +11,7 @@ $packageOutputFolder = "$PSScriptRoot\.nupkgs"
 $projectsToBuild =
     'CodeArts',
     'CodeArts.Defaults',
+    'CodeArts.Emit',
 	'CodeArts.Proxies',
     'CodeArts.Mvc',
     'CodeArts.ORM',

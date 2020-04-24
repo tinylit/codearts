@@ -5,7 +5,7 @@ namespace CodeArts.ORM
     /// <summary>
     /// 数据库供应器
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public class DbConfigAttribute : Attribute
     {
         private readonly string configName;

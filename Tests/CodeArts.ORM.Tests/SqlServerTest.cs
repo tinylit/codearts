@@ -1,12 +1,9 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using CodeArts.ORM;
 using CodeArts.ORM.Domain;
 using CodeArts.ORM.Exceptions;
-using CodeArts.ORM.MySql;
-using CodeArts.ORM.SqlServer;
 using CodeArts.ORM.Tests;
 using CodeArts.SqlServer;
-using CodeArts.SqlServer.Formatters;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,8 +11,6 @@ using System.Linq;
 using System.Text;
 using UnitTest.Domain.Entities;
 using UnitTest.Dtos;
-using System.Transactions;
-using CodeArts.Exceptions;
 
 namespace UnitTest
 {

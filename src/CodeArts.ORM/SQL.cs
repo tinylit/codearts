@@ -60,7 +60,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 插入命令。
         /// </summary>
-        private static readonly Regex PatternInsert = new Regex(@"\binsert[\x20\t\r\n\f]+into[\x20\t\r\n\f]+(\w+\.)*(?<name>\w+)[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternInsert = new Regex(@"\binsert[\x20\t\r\n\f]+into[\x20\t\r\n\f]+(\w+\.)*(?<name>\w+)(?=[\x20\t\r\n\f]*\()", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 修改命令。

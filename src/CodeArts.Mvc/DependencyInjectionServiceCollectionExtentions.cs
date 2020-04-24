@@ -59,7 +59,9 @@ namespace CodeArts.Mvc.DependencyInjection
                 {
                     return type.GetConstructors()
                     .Where(x => x.IsPublic)
-                    .SelectMany(x => x.GetParameters().Select(y => y.ParameterType));
+                    .SelectMany(x => x.GetParameters()
+                        .Select(y => y.ParameterType)
+                    );
 
                 })
                 .Where(x => x.IsClass || x.IsInterface)
@@ -71,6 +73,29 @@ namespace CodeArts.Mvc.DependencyInjection
                 .ToList();
 
             var dic = new Dictionary<Type, object>();
+
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+            bool isSingleton = "di:singleton".Config(true);
+#else
+            bool isSingleton = "di-singleton".Config(true);
+#endif
+            assemblyTypes
+            .Where(x => x.IsDefined(typeof(TypeGenAttribute), false))
+            .ForEach(x =>
+            {
+                var attr = (TypeGenAttribute)Attribute.GetCustomAttribute(x, typeof(TypeGenAttribute), false);
+
+                var implementationType = attr.TypeGen.Create(x);
+
+                if (isSingleton)
+                {
+                    services.AddSingleton(x, implementationType);
+                }
+                else
+                {
+                    services.AddTransient(x, implementationType);
+                }
+            });
 
             parameterTypes.ForEach(type =>
             {
@@ -94,8 +119,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                         var coreTypes = parameters.Where(x => x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
                             .Select(x => assemblyTypes
-                                .Where(y => y.IsClass && !y.IsAbstract && x.ParameterType.IsAssignableFrom(y))
-                                .First()
+                                .FirstOrDefault(y => y.IsClass && !y.IsAbstract && x.ParameterType.IsAssignableFrom(y))
                             ).ToList();
 
 
@@ -114,11 +138,8 @@ namespace CodeArts.Mvc.DependencyInjection
                                 {
                                     return x.DefaultValue;
                                 }
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-                                if ("di:singleton".Config(true))
-#else
-                                if ("di-singleton".Config(true))
-#endif
+
+                                if (isSingleton)
                                 {
                                     if (dic.TryGetValue(x.ParameterType, out object instance))
                                     {
@@ -127,7 +148,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                                     if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
                                     {
-                                        var coreType = coreTypes.First(y => x.ParameterType.IsAssignableFrom(y));
+                                        var coreType = coreTypes.FirstOrDefault(y => x.ParameterType.IsAssignableFrom(y)) ?? throw new NotImplementedException($"未找到“{x.ParameterType}”的实现类!");
 
                                         if (!dic.TryGetValue(coreType, out instance))
                                         {
@@ -142,7 +163,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                                 if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
                                 {
-                                    return Activator.CreateInstance(coreTypes.First(y => x.ParameterType.IsAssignableFrom(y)));
+                                    return Activator.CreateInstance(coreTypes.FirstOrDefault(y => x.ParameterType.IsAssignableFrom(y)) ?? throw new NotImplementedException($"未找到“{x.ParameterType}”的实现类!"));
                                 }
 
                                 return Activator.CreateInstance(x.ParameterType);

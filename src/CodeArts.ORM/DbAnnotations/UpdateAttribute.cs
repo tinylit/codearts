@@ -13,7 +13,7 @@ namespace CodeArts.DbAnnotations
         /// 构造函数。
         /// </summary>
         /// <param name="sql">SQL</param>
-        public UpdateAttribute(SQL sql) : base(sql, CommandKind.Update)
+        public UpdateAttribute(string sql) : base(sql, CommandTypes.Update)
         {
         }
     }

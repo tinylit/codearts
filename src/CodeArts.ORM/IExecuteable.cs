@@ -34,9 +34,9 @@ namespace CodeArts.ORM
     public interface IRouteExecuteable<T> : IEnumerable<T>, IEnumerable
     {
         /// <summary>
-        /// 可编辑能力
+        /// 矫正配置。
         /// </summary>
-        IEditable Editable { get; }
+        ISQLCorrectSimSettings Settings { get; }
 
         /// <summary>
         /// 执行指令

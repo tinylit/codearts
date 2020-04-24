@@ -13,7 +13,7 @@ namespace CodeArts.DbAnnotations
         /// 构造函数。
         /// </summary>
         /// <param name="sql">SQL</param>
-        public DeleteAttribute(SQL sql) : base(sql, CommandKind.Delete)
+        public DeleteAttribute(string sql) : base(sql, CommandTypes.Delete)
         {
         }
     }

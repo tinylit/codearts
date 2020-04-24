@@ -8,7 +8,7 @@ namespace CodeArts.ORM
     /// 仓储基本接口。
     /// </summary>
     /// <typeparam name="T">类型</typeparam>
-    public interface IDbRepository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class, IEntiy
+    public interface IDbRepository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IEnumerable where T : class, IEntiy
     {
     }
 }

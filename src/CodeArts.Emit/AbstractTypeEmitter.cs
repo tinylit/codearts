@@ -12,11 +12,14 @@ namespace CodeArts.Emit
     /// <summary>
     /// 抽象类。
     /// </summary>
-    public class AbstractTypeEmitter
+    public abstract class AbstractTypeEmitter
     {
         private readonly TypeBuilder builder;
         private readonly List<MethodEmitter> methods = new List<MethodEmitter>();
-        private readonly Dictionary<string, FieldExpression> fields = new Dictionary<string, FieldExpression>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<ConstructorEmitter> constructors = new List<ConstructorEmitter>();
+        private readonly Dictionary<MethodEmitter, MethodInfo> overrides = new Dictionary<MethodEmitter, MethodInfo>();
+        private readonly Dictionary<string, FieldEmitter> fields = new Dictionary<string, FieldEmitter>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, PropertyEmitter> properties = new Dictionary<string, PropertyEmitter>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
         /// 构造函数。
         /// </summary>
@@ -35,19 +38,31 @@ namespace CodeArts.Emit
             {
                 if (builder.IsInterface)
                 {
-                    throw new InvalidOperationException("This emitter represents an interface; interfaces have no base types.");
+                    throw new InvalidOperationException("接口不具有“BaseType”属性!");
                 }
                 return builder.BaseType;
             }
         }
 
-
-        public FieldExpression CreateField(string name, Type fieldType)
+        /// <summary>
+        /// 创建字段。
+        /// </summary>
+        /// <param name="name">名称。</param>
+        /// <param name="fieldType">类型。</param>
+        /// <returns></returns>
+        public FieldEmitter DefineField(string name, Type fieldType)
         {
-            return CreateField(name, fieldType, true);
+            return DefineField(name, fieldType, true);
         }
 
-        public FieldExpression CreateField(string name, Type fieldType, bool serializable)
+        /// <summary>
+        /// 创建字段。
+        /// </summary>
+        /// <param name="name">名称。</param>
+        /// <param name="fieldType">类型。</param>
+        /// <param name="serializable">能否序列化。</param>
+        /// <returns></returns>
+        public FieldEmitter DefineField(string name, Type fieldType, bool serializable)
         {
             var atts = FieldAttributes.Private;
 
@@ -56,44 +71,294 @@ namespace CodeArts.Emit
                 atts |= FieldAttributes.NotSerialized;
             }
 
-            return CreateField(name, fieldType, atts);
+            return DefineField(name, fieldType, atts);
         }
 
-        public FieldExpression CreateField(string name, Type fieldType, FieldAttributes atts)
+        /// <summary>
+        /// 创建字段。
+        /// </summary>
+        /// <param name="name">名称。</param>
+        /// <param name="fieldType">类型。</param>
+        /// <param name="atts">属性。</param>
+        /// <returns></returns>
+        public FieldEmitter DefineField(string name, Type fieldType, FieldAttributes atts)
         {
-            var reference = new FieldExpression(builder.DefineField(name, fieldType, atts));
+            var reference = new FieldEmitter(name, fieldType, atts);
 
             fields.Add(name, reference);
 
             return reference;
         }
 
-        public MethodEmitter CreateMethod(string name, MethodAttributes attrs, Type returnType)
+        /// <summary>
+        /// 创建属性。
+        /// </summary>
+        /// <param name="name">名称。</param>
+        /// <param name="attributes">属性。</param>
+        /// <param name="propertyType">类型。</param>
+        /// <returns></returns>
+        public PropertyEmitter DefineProperty(string name, PropertyAttributes attributes, Type propertyType) => DefineProperty(name, attributes, propertyType, null);
+
+        /// <summary>
+        /// 创建属性。
+        /// </summary>
+        /// <param name="name">名称。</param>
+        /// <param name="attributes">属性。</param>
+        /// <param name="propertyType">类型。</param>
+        /// <param name="arguments">参数。</param>
+        /// <returns></returns>
+        public PropertyEmitter DefineProperty(string name, PropertyAttributes attributes, Type propertyType, Type[] arguments)
+        {
+            var propEmitter = new PropertyEmitter(name, attributes, propertyType, arguments);
+            properties.Add(name, propEmitter);
+            return propEmitter;
+        }
+
+        /// <summary>
+        /// 创建方法。
+        /// </summary>
+        /// <param name="name">名称。</param>
+        /// <param name="attrs">属性。</param>
+        /// <param name="returnType">类型。</param>
+        /// <returns></returns>
+        public MethodEmitter DefineMethod(string name, MethodAttributes attrs, Type returnType)
         {
             var member = new MethodEmitter(name, attrs, returnType);
             methods.Add(member);
             return member;
         }
 
-        public PropertyEmitter CreateProperty(string name, PropertyAttributes attributes, Type propertyType, Type[] arguments)
+        /// <summary>
+        /// 实现接口方法或重写方法。
+        /// </summary>
+        /// <param name="methodEmitter">方法。</param>
+        /// <param name="methodInfoDeclaration">被重写或实现的方法。</param>
+        public void DefineMethodOverride(MethodEmitter methodEmitter, MethodInfo methodInfoDeclaration)
         {
-            var propEmitter = new PropertyEmitter(this, name, attributes, propertyType, arguments);
-            properties.Add(propEmitter);
-            return propEmitter;
+            if (methodEmitter is null)
+            {
+                throw new ArgumentNullException(nameof(methodEmitter));
+            }
+
+            if (methodInfoDeclaration is null)
+            {
+                throw new ArgumentNullException(nameof(methodInfoDeclaration));
+            }
+
+            overrides.Add(methodEmitter, methodInfoDeclaration);
         }
 
+        /// <summary>
+        /// 声明构造函数。
+        /// </summary>
+        /// <param name="attributes">属性。</param>
+        /// <returns></returns>
+        public ConstructorEmitter DefineConstructor(MethodAttributes attributes) => DefineConstructor(attributes, CallingConventions.Standard);
 
         /// <summary>
-        /// 创建类型。
+        /// 声明构造函数。
+        /// </summary>
+        /// <param name="attributes">属性。</param>
+        /// <param name="conventions">调用约定。</param>
+        /// <returns></returns>
+        public ConstructorEmitter DefineConstructor(MethodAttributes attributes, CallingConventions conventions)
+        {
+            var member = new ConstructorEmitter(BaseType, attributes, conventions);
+            constructors.Add(member);
+            return member;
+        }
+
+        /// <summary>
+        /// 创建默认构造函数。
         /// </summary>
         /// <returns></returns>
-        public Type CreateType()
+        public void DefineDefaultConstructor()
         {
+            constructors.Add(new ConstructorEmitter(BaseType, MethodAttributes.Public));
+        }
+
+        /// <summary>
+        /// 自定义标记。
+        /// </summary>
+        /// <param name="attribute">标记。</param>
+        public void DefineCustomAttribute(CustomAttributeBuilder attribute)
+        {
+            builder.SetCustomAttribute(attribute);
+        }
+
+        /// <summary>
+        /// 自定义标记。
+        /// </summary>
+        /// <typeparam name="TAttribute">标记类型。</typeparam>
+        public void DefineCustomAttribute<TAttribute>() where TAttribute : Attribute => DefineCustomAttribute(new CustomAttributeBuilder(typeof(TAttribute).GetConstructor(Type.EmptyTypes), new object[0]));
+
+        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
+        {
+            var value = argument.Value;
+
+            if (value is IEnumerable<CustomAttributeTypedArgument> values)
+            {
+                //special case for handling arrays in attributes
+                var arguments = GetArguments(values);
+
+                var array = new object[arguments.Length];
+                arguments.CopyTo(array, 0);
+                return array;
+            }
+
+            return value;
+        }
+
+        private static object[] GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments)
+        {
+            var arguments = new List<object>();
+
+            foreach (var item in constructorArguments)
+            {
+                arguments.Add(ReadAttributeValue(item));
+            }
+
+            return arguments.ToArray();
+        }
+
+        private static void GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs)
+        {
+            var types = new List<Type>();
+            var args = new List<object>();
+
+            foreach (var item in constructorArguments)
+            {
+                types.Add(item.ArgumentType);
+                args.Add(ReadAttributeValue(item));
+            }
+
+            constructorArgTypes = types.ToArray();
+            constructorArgs = args.ToArray();
+        }
+
+        private static void GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues)
+        {
+            var propertyList = new List<PropertyInfo>();
+            var propertyValuesList = new List<object>();
+            var fieldList = new List<FieldInfo>();
+            var fieldValuesList = new List<object>();
+            foreach (var argument in namedArguments)
+            {
+#if NET40
+				if (argument.MemberInfo.MemberType == MemberTypes.Field)
+				{
+					fieldList.Add(argument.MemberInfo as FieldInfo);
+					fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+				}
+				else
+				{
+					propertyList.Add(argument.MemberInfo as PropertyInfo);
+					propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+				}
+#else
+                if (argument.IsField)
+                {
+                    fieldList.Add(attributeType.GetField(argument.MemberName));
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+#endif
+            }
+
+            properties = propertyList.ToArray();
+            propertyValues = propertyValuesList.ToArray();
+            fields = fieldList.ToArray();
+            fieldValues = fieldValuesList.ToArray();
+        }
+
+        /// <summary>
+        /// 自定义标记。
+        /// </summary>
+        /// <param name="attributeData">标记信息参数。</param>
+        public void DefineCustomAttribute(CustomAttributeData attributeData)
+        {
+            GetArguments(attributeData.ConstructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs);
+
+#if NET40
+			var constructor = attributeData.Constructor;
+#else
+            var constructor = attributeData.AttributeType.GetConstructor(constructorArgTypes);
+#endif
+
+            GetSettersAndFields(
+#if NET40
+                null,
+#else
+                attributeData.AttributeType,
+#endif
+                attributeData.NamedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues);
+
+            builder.SetCustomAttribute(new CustomAttributeBuilder(constructor,
+                                            constructorArgs,
+                                            properties,
+                                            propertyValues,
+                                            fields,
+                                            fieldValues));
+        }
+
+        /// <summary>
+        /// 发行。
+        /// </summary>
+        protected virtual Type Emit()
+        {
+            if (!builder.IsInterface && constructors.Count == 0)
+            {
+                DefineDefaultConstructor();
+            }
+
+            foreach (FieldEmitter emitter in fields.Values)
+            {
+                emitter.Emit(builder.DefineField(emitter.Name, emitter.ReturnType, emitter.Attributes));
+            }
+
+            foreach (ConstructorEmitter emitter in constructors)
+            {
+                emitter.Emit(builder.DefineConstructor(emitter.Attributes, emitter.Conventions, emitter.Parameters.Select(x => x.ReturnType).ToArray()));
+            }
+
+            foreach (MethodEmitter emitter in methods)
+            {
+                var method = builder.DefineMethod(emitter.Name, emitter.Attributes, CallingConventions.Standard, emitter.ReturnType, emitter.Parameters.Select(x => x.ReturnType).ToArray());
+
+                emitter.Emit(method);
+
+                if (overrides.TryGetValue(emitter, out MethodInfo methodInfo))
+                {
+                    builder.DefineMethodOverride(method, methodInfo);
+                }
+            }
+
+            foreach (PropertyEmitter emitter in properties.Values)
+            {
+                emitter.Emit(builder.DefineProperty(emitter.Name, emitter.Attributes, emitter.ReturnType, emitter.ParameterTypes));
+            }
+
 #if NETSTANDARD2_0
             return builder.CreateTypeInfo().AsType();
 #else
             return builder.CreateType();
 #endif
         }
+
+        /// <summary>
+        /// 是否已创建。
+        /// </summary>
+        /// <returns></returns>
+        public bool IsCreated() => builder.IsCreated();
+
+        /// <summary>
+        /// 创建类型。
+        /// </summary>
+        /// <returns></returns>
+        public virtual Type CreateType() => Emit();
     }
 }

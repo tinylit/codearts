@@ -16,7 +16,7 @@ namespace CodeArts.ORM
         /// <param name="required">是否必须</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        TResult QueryFirst<TResult>(ISQL sql, object param = null, bool required = true, int? commandTimeout = null);
+        TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null);
 
         /// <summary>
         /// 查询所有结果。
@@ -26,6 +26,6 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null, int? commandTimeout = null);
+        IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null);
     }
 }

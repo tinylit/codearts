@@ -81,10 +81,11 @@ namespace CodeArts.ORM
         /// </summary>
         private abstract class RouteExecuteable : IRouteExecuteable<T>, IEnumerable<T>, IEnumerable
         {
-            public RouteExecuteable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect)
+            public RouteExecuteable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, IEnumerable<T> collect, Func<string, Dictionary<string, object>, int?, int> executer)
             {
-                Editable = executer ?? throw new ArgumentNullException(nameof(executer));
                 this.collect = collect ?? throw new ArgumentNullException(nameof(collect));
+                this.executer = executer ?? throw new ArgumentNullException(nameof(executer));
+                this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
                 Provider = provider ?? throw new ArgumentNullException(nameof(provider));
             }
 
@@ -101,14 +102,13 @@ namespace CodeArts.ORM
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
-
+            private readonly ISQLCorrectSimSettings settings;
             private readonly IEnumerable<T> collect;
+            private readonly Func<string, Dictionary<string, object>, int?, int> executer;
 
             public IRouteExecuteProvider<T> Provider { get; }
 
-            public IEditable Editable { get; }
-
-            protected ISQLCorrectSimSettings Settings => Editable.Settings;
+            public ISQLCorrectSimSettings Settings => settings;
 
             public int ExecuteCommand(int? commandTimeout = null)
             {
@@ -122,6 +122,8 @@ namespace CodeArts.ORM
 
             public abstract int Execute(int? commandTimeout);
 
+            public int Execute(string sql, Dictionary<string, object> param, int? commandTimeout) => executer.Invoke(sql, param, commandTimeout);
+
             public IEnumerator<T> GetEnumerator() => collect.GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -129,7 +131,7 @@ namespace CodeArts.ORM
 
         private class Deleteable : RouteExecuteable, IDeleteable<T>
         {
-            public Deleteable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect) : base(executer, provider, collect)
+            public Deleteable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, IEnumerable<T> collect, Func<string, Dictionary<string, object>, int?, int> executer) : base(settings, provider, collect, executer)
             {
                 wheres = defaultWhere;
             }
@@ -189,7 +191,7 @@ namespace CodeArts.ORM
                         return Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, index, parameters);
                     }));
 
-                    return Editable.Excute(sql, parameters, commandTimeout);
+                    return Execute(sql, parameters, commandTimeout);
                 }
 
                 int group_index = 0;
@@ -205,7 +207,7 @@ namespace CodeArts.ORM
                     {
                         if (parameter_count >= MAX_PARAMETERS_COUNT)
                         {
-                            affected_rows += Editable.Excute(sb.ToString(), parameters);
+                            affected_rows += Execute(sb.ToString(), parameters, commandTimeout);
 
                             sb.Clear();
 
@@ -229,7 +231,7 @@ namespace CodeArts.ORM
 
                             if (parameter_count > MAX_PARAMETERS_COUNT)
                             {
-                                affected_rows += Editable.Excute(sb.ToString(), parameters);
+                                affected_rows += Execute(sb.ToString(), parameters, commandTimeout);
 
                                 sb.Clear();
 
@@ -252,7 +254,7 @@ namespace CodeArts.ORM
                         group_index++;
                     }
 
-                    affected_rows += Editable.Excute(sb.ToString(), parameters, commandTimeout);
+                    affected_rows += Execute(sb.ToString(), parameters, commandTimeout);
 
                     transaction.Complete();
                 }
@@ -287,7 +289,7 @@ namespace CodeArts.ORM
 
                     var sql = Simple(column, list, 0, parameters);
 
-                    return Editable.Excute(sql, parameters, commandTimeout);
+                    return Execute(sql, parameters, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -300,7 +302,7 @@ namespace CodeArts.ORM
 
                         var sql = Simple(column, list.Skip(i).Take(MAX_PARAMETERS_COUNT), 0, parameters);
 
-                        affected_rows += Editable.Excute(sql, parameters, commandTimeout);
+                        affected_rows += Execute(sql, parameters, commandTimeout);
                     }
 
                     transaction.Complete();
@@ -323,7 +325,7 @@ namespace CodeArts.ORM
 
                     var sql = Complex(columns, list, 0, parameters);
 
-                    return Editable.Excute(sql, parameters, commandTimeout);
+                    return Execute(sql, parameters, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -337,7 +339,7 @@ namespace CodeArts.ORM
 
                         var sql = Complex(columns, list.Skip(i).Take(offset), 0, parameters);
 
-                        affected_rows += Editable.Excute(sql, parameters, commandTimeout);
+                        affected_rows += Execute(sql, parameters, commandTimeout);
                     }
 
                     transaction.Complete();
@@ -474,7 +476,7 @@ namespace CodeArts.ORM
 
         private class Insertable : RouteExecuteable, IInsertable<T>
         {
-            public Insertable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect) : base(executer, provider, collect)
+            public Insertable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, IEnumerable<T> collect, Func<string, Dictionary<string, object>, int?, int> executer) : base(settings, provider, collect, executer)
             {
             }
 
@@ -584,7 +586,7 @@ namespace CodeArts.ORM
                         })), ")");
                     })));
 
-                return Editable.Excute(sb.Append(";").ToString(), paramters, commandTimeout);
+                return Execute(sb.Append(";").ToString(), paramters, commandTimeout);
             }
 
             public IInsertable<T> From(Func<ITableInfo, string> table)
@@ -606,7 +608,7 @@ namespace CodeArts.ORM
 
         private class Updateable : RouteExecuteable, IUpdateable<T>
         {
-            public Updateable(IEditable executer, IRouteExecuteProvider<T> provider, IEnumerable<T> collect) : base(executer, provider, collect)
+            public Updateable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, IEnumerable<T> collect, Func<string, Dictionary<string, object>, int?, int> executer) : base(settings, provider, collect, executer)
             {
             }
 
@@ -787,7 +789,7 @@ namespace CodeArts.ORM
                         .Append(";");
                 });
 
-                return Editable.Excute(sb.ToString(), paramters, commandTimeout);
+                return Execute(sb.ToString(), paramters, commandTimeout);
             }
 
             public IUpdateable<T> From(Func<ITableInfo, string> table)
@@ -862,7 +864,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="collect">项目集合</param>
         /// <returns></returns>
-        public virtual IInsertable<T> AsInsertable(IEnumerable<T> collect) => new Insertable(this, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)));
+        public virtual IInsertable<T> AsInsertable(IEnumerable<T> collect) => new Insertable(Settings, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)), Execute);
 
         /// <summary>
         /// 更新路由执行器
@@ -876,7 +878,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="collect">项目集合</param>
         /// <returns></returns>
-        public virtual IUpdateable<T> AsUpdateable(IEnumerable<T> collect) => new Updateable(this, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)));
+        public virtual IUpdateable<T> AsUpdateable(IEnumerable<T> collect) => new Updateable(Settings, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)), Execute);
 
         /// <summary>
         /// 删除路由执行器
@@ -890,7 +892,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="collect">项目集合</param>
         /// <returns></returns>
-        public virtual IDeleteable<T> AsDeleteable(IEnumerable<T> collect) => new Deleteable(this, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)));
+        public virtual IDeleteable<T> AsDeleteable(IEnumerable<T> collect) => new Deleteable(Settings, CreateRouteExecuteProvider(), collect ?? throw new ArgumentNullException(nameof(collect)), Execute);
 
         /// <summary>
         /// 表达式分析
@@ -903,16 +905,92 @@ namespace CodeArts.ORM
         /// 执行语句
         /// </summary>
         /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
+        /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        int IEditable.Excute(string sql, Dictionary<string, object> parameters, int? commandTimeout) => DbExecuter.Execute(Connection, sql, parameters, commandTimeout);
+        public int Insert(SQL sql, object param, int? commandTimeout)
+        {
+            if (ExcuteAuthorize(sql, CommandTypes.Insert))
+            {
+                return Execute(sql, param, commandTimeout);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        public int Update(SQL sql, object param, int? commandTimeout)
+        {
+            if (ExcuteAuthorize(sql, CommandTypes.Update))
+            {
+                return Execute(sql, param, commandTimeout);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        public int Delete(SQL sql, object param, int? commandTimeout)
+        {
+            if (ExcuteAuthorize(sql, CommandTypes.Delete))
+            {
+                return Execute(sql, param, commandTimeout);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// 执行SQL验证。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual bool ExcuteAuthorize(ISQL sql, UppercaseString commandType)
+        {
+            if (sql.Tables.All(x => x.CommandType == CommandTypes.Select))
+            {
+                return false;
+            }
+
+            return sql.Tables.All(x => x.CommandType == CommandTypes.Select || x.CommandType == commandType && string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
+        }
 
         /// <summary>
         /// 执行SQL验证
         /// </summary>
         /// <returns></returns>
-        protected internal virtual bool ExcuteAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase)) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
+        protected virtual bool ExcuteAuthorize(ISQL sql)
+        {
+            if (sql.Tables.All(x => x.CommandType == CommandTypes.Select))
+            {
+                return false;
+            }
+
+            return sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// 执行。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        private int Execute(string sql, Dictionary<string, object> param, int? commandTimeout)
+        {
+            return DbExecuter.Execute(Connection, sql, param, commandTimeout);
+        }
 
         /// <summary>
         /// 执行
@@ -921,17 +999,19 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns>影响行</returns>
-        protected internal virtual int Excute(ISQL sql, object param = null, int? commandTimeout = null)
+        protected virtual int Execute(ISQL sql, object param = null, int? commandTimeout = null)
         {
             if (!ExcuteAuthorize(sql))
+            {
                 throw new NonAuthorizeException();
+            }
 
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
                     throw new DSyntaxErrorException("参数不匹配!");
 
-                return DbExecuter.Execute(Connection, sql.ToString(Settings), null, commandTimeout);
+                return Execute(sql.ToString(Settings), null, commandTimeout);
             }
 
             var type = param.GetType();
@@ -943,7 +1023,7 @@ namespace CodeArts.ORM
 
                 var token = sql.Parameters.First();
 
-                return DbExecuter.Execute(Connection, sql.ToString(Settings), new Dictionary<string, object>
+                return Execute(sql.ToString(Settings), new Dictionary<string, object>
                 {
                     [token.Name] = param
                 }, commandTimeout);
@@ -957,7 +1037,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            return DbExecuter.Execute(Connection, sql.ToString(Settings), parameters, commandTimeout);
+            return Execute(sql.ToString(Settings), parameters, commandTimeout);
         }
     }
 }

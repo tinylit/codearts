@@ -10,9 +10,9 @@ namespace CodeArts.Emit
     /// <summary>
     /// 方法。
     /// </summary>
-    public class MethodEmitter : BlockExpression
+    public class MethodEmitter : BlockAst
     {
-        private readonly List<ParameterExpression> parameters = new List<ParameterExpression>();
+        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
         private MethodBuilder builder;
         private int parameterIndex = 0;
 
@@ -31,7 +31,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 成员。
         /// </summary>
-        public MethodInfo Value => builder ?? throw new NotImplementedException();
+        public MethodBuilder Value => builder ?? throw new NotImplementedException();
         /// <summary>
         /// 方法的名称。
         /// </summary>
@@ -44,7 +44,15 @@ namespace CodeArts.Emit
         /// <summary>
         /// 参数。
         /// </summary>
-        public ParameterExpression[] Parameters => parameters.ToArray();
+        public ParamterEmitter[] Parameters => parameters.ToArray();
+
+        /// <summary>
+        /// 声明参数。
+        /// </summary>
+        /// <param name="parameterType">参数类型</param>
+        /// <param name="strParamName">名称</param>
+        /// <returns></returns>
+        public ParamterEmitter DefineParameter(Type parameterType, string strParamName) => DefineParameter(parameterType, ParameterAttributes.None, strParamName);
 
         /// <summary>
         /// 声明参数。
@@ -53,9 +61,9 @@ namespace CodeArts.Emit
         /// <param name="attributes">属性</param>
         /// <param name="strParamName">名称</param>
         /// <returns></returns>
-        public ParameterExpression DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
+        public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
         {
-            var parameter = new ParameterExpression(parameterType, ++parameterIndex, attributes, strParamName);
+            var parameter = new ParamterEmitter(parameterType, ++parameterIndex, attributes, strParamName);
             parameters.Add(parameter);
             return parameter;
         }
@@ -76,22 +84,23 @@ namespace CodeArts.Emit
         /// <summary>
         /// 发行。
         /// </summary>
+        /// <param name="builder">构造器。</param>
         public void Emit(MethodBuilder builder)
         {
             this.builder = builder;
 
             foreach (var item in parameters)
             {
-                builder.DefineParameter(item.Position, item.Attributes, item.ParameterName);
+                item.Emit(builder.DefineParameter(item.Position, item.Attributes, item.ParameterName));
             }
 
             if (!ImplementedByRuntime && IsEmpty)
             {
-                Append(new NopExpression());
-                Append(new ReturnExpression());
+                Append(new VoidAst());
+                Append(new ReturnAst());
             }
 
-            base.Emit(builder.GetILGenerator());
+            base.Load(builder.GetILGenerator());
         }
     }
 }

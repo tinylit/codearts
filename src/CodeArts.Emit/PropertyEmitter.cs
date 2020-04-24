@@ -1,6 +1,6 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
-using System.Linq;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -9,10 +9,11 @@ namespace CodeArts.Emit
     /// <summary>
     /// 属性。
     /// </summary>
-    public class PropertyEmitter : MemberExpression
+    [DebuggerDisplay("{Name} ({ReturnType})")]
+    public class PropertyEmitter : MemberAst
     {
-        private MethodEmitter GetMethod;
-        private MethodEmitter SetMethod;
+        private MethodEmitter _Getter;
+        private MethodEmitter _Setter;
 
         /// <summary>
         /// 构造函数。
@@ -51,77 +52,69 @@ namespace CodeArts.Emit
         /// 属性的参数类型。
         /// </summary>
         public Type[] ParameterTypes { get; }
+
         /// <summary>
-        /// 创建Get方法。
+        /// 设置Get方法。
         /// </summary>
-        /// <param name="attrs">属性。</param>
+        /// <param name="getter">数据获取器</param>
         /// <returns></returns>
-        public MethodEmitter CreateGetMethod(MethodAttributes attrs)
+        public PropertyEmitter SetGetMethod(MethodEmitter getter)
         {
-            if (GetMethod != null)
+            if (getter is null)
             {
-                throw new InvalidOperationException("A get method exists");
+                throw new ArgumentNullException(nameof(getter));
             }
 
-            GetMethod = new MethodEmitter("Get" + Name, attrs, ReturnType);
-
-            if (ParameterTypes != null)
+            if (_Getter != null)
             {
-                int i = 0;
-                Array.ForEach(ParameterTypes, type =>
-                {
-                    GetMethod.DefineParameter(type, ParameterAttributes.None, Name + "_" + i++);
-                });
+                throw new InvalidOperationException("已存在一个数据获取器!");
             }
 
-            return GetMethod;
+            _Getter = getter;
+
+            return this;
         }
         /// <summary>
         /// 创建Set方法。
         /// </summary>
-        /// <param name="attrs">属性。</param>
+        /// <param name="setter">数据设置器</param>
         /// <returns></returns>
-        public MethodEmitter CreateSetMethod(MethodAttributes attrs)
+        public PropertyEmitter SetSetMethod(MethodEmitter setter)
         {
-            if (SetMethod != null)
+            if (setter is null)
             {
-                throw new InvalidOperationException("A get method exists");
+                throw new ArgumentNullException(nameof(setter));
             }
 
-            SetMethod = new MethodEmitter("Set" + Name, attrs, typeof(void));
-
-            int i = 0;
-
-            if (ParameterTypes != null)
+            if (_Setter != null)
             {
-                Array.ForEach(ParameterTypes, type =>
-                {
-                    GetMethod.DefineParameter(type, ParameterAttributes.None, Name + "_" + i++);
-                });
+                throw new InvalidOperationException("已存在一个数据设置器!");
             }
 
-            SetMethod.DefineParameter(ReturnType, ParameterAttributes.None, Name + "_" + i++);
+            _Setter = setter;
 
-            return SetMethod;
+            return this;
         }
 
         /// <summary>
         /// 发行。
         /// </summary>
         /// <param name="builder">类型构造器。</param>
-        public void Emit(TypeBuilder builder)
+        public void Emit(PropertyBuilder builder)
         {
-            var property = builder.DefineProperty(Name, Attributes, ReturnType, ParameterTypes);
-
-            if (GetMethod != null)
+            if (_Getter is null && _Setter is null)
             {
-
-                property.SetGetMethod(builder.DefineMethod(GetMethod.Name, GetMethod.Attributes, GetMethod.ReturnType, GetMethod.Parameters.Select(x => x.ReturnType).ToArray()));
+                throw new InvalidOperationException($"属性不能既不可读，也不可写!");
             }
 
-            if (SetMethod != null)
+            if (_Getter != null)
             {
-                property.SetSetMethod(builder.DefineMethod(SetMethod.Name, SetMethod.Attributes, SetMethod.ReturnType, SetMethod.Parameters.Select(x => x.ReturnType).ToArray()));
+                builder.SetGetMethod(_Getter.Value);
+            }
+
+            if (_Setter != null)
+            {
+                builder.SetSetMethod(_Setter.Value);
             }
         }
 
@@ -129,14 +122,14 @@ namespace CodeArts.Emit
         /// 发行。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Emit(ILGenerator ilg)
+        public override void Load(ILGenerator ilg)
         {
-            if (GetMethod is null)
+            if (_Getter is null)
             {
-                throw new EmitException($"属性“{Name}”不可读!");
+                throw new AstException($"属性“{Name}”不可读!");
             }
 
-            ilg.Emit(OpCodes.Callvirt, GetMethod.Value);
+            ilg.Emit(OpCodes.Callvirt, _Getter.Value);
         }
         /// <summary>
         /// 赋值。
@@ -144,12 +137,12 @@ namespace CodeArts.Emit
         /// <param name="ilg">指令。</param>
         public override void Assign(ILGenerator ilg)
         {
-            if (SetMethod is null)
+            if (_Setter is null)
             {
-                throw new EmitException($"属性“{Name}”不可写!");
+                throw new AstException($"属性“{Name}”不可写!");
             }
 
-            ilg.Emit(OpCodes.Call, SetMethod.Value);
+            ilg.Emit(OpCodes.Call, _Setter.Value);
         }
 
         /// <summary>
@@ -157,16 +150,16 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, Expression value)
+        protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
-            if (SetMethod is null)
+            if (_Setter is null)
             {
-                throw new EmitException($"属性“{Name}”不可写!");
+                throw new AstException($"属性“{Name}”不可写!");
             }
 
-            value.Emit(ilg);
+            value.Load(ilg);
 
-            ilg.Emit(OpCodes.Call, SetMethod.Value);
+            ilg.Emit(OpCodes.Call, _Setter.Value);
         }
     }
 }

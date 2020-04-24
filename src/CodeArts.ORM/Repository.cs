@@ -235,7 +235,7 @@ namespace CodeArts.ORM
         /// 查询SQL验证
         /// </summary>
         /// <returns></returns>
-        protected internal virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
+        protected virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// 查询一条数据(未查询到数据)
@@ -245,7 +245,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirstOrDefault<TResult>(ISQL sql, object param = null, int? commandTimeout = null) => QueryFirst<TResult>(sql, param, false, commandTimeout);
+        public virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null) => QueryFirst<TResult>(sql, param, false, commandTimeout);
 
         /// <summary>
         /// 查询一条数据
@@ -256,8 +256,13 @@ namespace CodeArts.ORM
         /// <param name="required">是否必须返回数据(为真时数据库无数据会抛异常)</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirst<TResult>(ISQL sql, object param = null, bool required = true, int? commandTimeout = null)
+        public virtual TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null)
         {
+            if (!QueryAuthorize(sql))
+            {
+                throw new NonAuthorizeException();
+            }
+
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
@@ -300,8 +305,13 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        protected virtual IEnumerable<TResult> Query<TResult>(ISQL sql, object param = null, int? commandTimeout = null)
+        public virtual IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null)
         {
+            if (!QueryAuthorize(sql))
+            {
+                throw new NonAuthorizeException();
+            }
+
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
@@ -335,22 +345,6 @@ namespace CodeArts.ORM
 
             return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters, commandTimeout);
 
-        }
-
-        TResult ISelectable.QueryFirst<TResult>(ISQL sql, object param, bool required, int? commandTimeout)
-        {
-            if (!QueryAuthorize(sql))
-                throw new NonAuthorizeException();
-
-            return QueryFirst<TResult>(sql, param, required, commandTimeout);
-        }
-
-        IEnumerable<TResult> ISelectable.Query<TResult>(ISQL sql, object param, int? commandTimeout)
-        {
-            if (!QueryAuthorize(sql))
-                throw new NonAuthorizeException();
-
-            return Query<TResult>(sql, param, commandTimeout);
         }
 
         private IEnumerator<T> GetEnumerator()

@@ -810,9 +810,31 @@ namespace CodeArts.ORM.Tests
         }
 
         [TestMethod]
-        public void TestExec()
+        public void TestSQL()
         {
+            string sqlstr = @"if not exists(select * from t_ZBDZ_returnFPCode where billid=@ddbh and newFPcode=@invoiceNo)
+INSERT INTO t_ZBDZ_returnFPCode
+(billid,newFPcode)
+VALUES
+(@ddbh,@invoiceNo+''+convert(char(10),@kprq,23))";
 
+            var sql = new SQL(sqlstr);
+
+
+            var settings = new SqlServerCorrectSettings();
+
+            var sql2 = new SQL(@"PRAGMA foreign_keys = OFF;
+
+                                -- ----------------------------
+                                -- Table structure for yep_work_cache
+                                -- ----------------------------
+	                            CREATE TABLE IF NOT EXISTS [yep_work_cache] (
+		                            [Id] TEXT NOT NULL,
+		                            [Timestamp]  INTEGER,
+		                            PRIMARY KEY ([Id])
+                                )");
+
+            var value = sql.ToString(settings);
         }
 
         [TestMethod]
@@ -829,6 +851,20 @@ namespace CodeArts.ORM.Tests
             var settings = new Oracle.OracleCorrectSettings();
 
             var scalar = sql.ToString(settings);
+        }
+
+        [TestMethod]
+        public void TestSQL2()
+        {
+            var sqlstr = @"insert into EINVOICE_SEND(sadoc,total,invoiceid,invoicedate,flag) 
+select @ddbh,@jshj,@invoiceNo, to_date(@kprq,'yyyy-mm-dd hh24:mi:ss'),'1' from dual 
+where not exists(select * from EINVOICE_SEND where sadoc=@ddbh and invoiceid=@invoiceNo)";
+
+            var settings = new Oracle.OracleCorrectSettings();
+
+            var sql = new SQL(sqlstr);
+
+            var value = sql.ToString(settings);
         }
 
         [TestMethod]
@@ -919,7 +955,8 @@ having sum(SPJE)<>0")
         }
 
         [TestMethod]
-        public void TestYY() {
+        public void TestYY()
+        {
             string sqlstr = @"select   max(c.customer_name)  as gmfmc,
  isnull(max(c.tax_id),'') as gmfsbh,
  isnull(max(c.tel),'') as gmfdzdh,

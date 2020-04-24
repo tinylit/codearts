@@ -10,6 +10,9 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Net.Http.Headers;
 using Mvc.Core.Dtos;
 using System.ComponentModel.DataAnnotations;
+using CodeArts.ORM;
+using Mvc.Core.Domain.Entities;
+using System.Linq;
 
 namespace Mvc.Core.Controllers
 {
@@ -35,6 +38,13 @@ namespace Mvc.Core.Controllers
         public bool AopTest() => true;
     }
 
+    /// <inheritdoc />
+    [DbConfig]
+    [TypeGen(typeof(DbTypeGen))]
+    public interface IUserDependency : IDbMapper<User>, IRepository<User>
+    {
+
+    }
 
     /// <summary>
     /// 默认
@@ -43,14 +53,17 @@ namespace Mvc.Core.Controllers
     [Route("api/[controller]")]
     public class ValuesController : BaseController<UserDto>
     {
+        private readonly IUserDependency userDependency;
         private readonly IDependency dependency;
 
         /// <summary>
         /// 构造函数
         /// </summary>
+        /// <param name="userDependency">用户注入</param>
         /// <param name="dependency">依赖注入</param>
-        public ValuesController(IDependency dependency)
+        public ValuesController(IUserDependency userDependency, IDependency dependency)
         {
+            this.userDependency = userDependency;
             this.dependency = dependency;
         }
 
@@ -62,6 +75,7 @@ namespace Mvc.Core.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
+            var userDto = userDependency.Where(x => x.Id == 100).FirstOrDefault();
             return new string[] { "value1", "value2" };
         }
 
