@@ -190,120 +190,13 @@ namespace CodeArts.Emit
         /// 自定义标记。
         /// </summary>
         /// <typeparam name="TAttribute">标记类型。</typeparam>
-        public void DefineCustomAttribute<TAttribute>() where TAttribute : Attribute => DefineCustomAttribute(new CustomAttributeBuilder(typeof(TAttribute).GetConstructor(Type.EmptyTypes), new object[0]));
-
-        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
-        {
-            var value = argument.Value;
-
-            if (value is IEnumerable<CustomAttributeTypedArgument> values)
-            {
-                //special case for handling arrays in attributes
-                var arguments = GetArguments(values);
-
-                var array = new object[arguments.Length];
-                arguments.CopyTo(array, 0);
-                return array;
-            }
-
-            return value;
-        }
-
-        private static object[] GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments)
-        {
-            var arguments = new List<object>();
-
-            foreach (var item in constructorArguments)
-            {
-                arguments.Add(ReadAttributeValue(item));
-            }
-
-            return arguments.ToArray();
-        }
-
-        private static void GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs)
-        {
-            var types = new List<Type>();
-            var args = new List<object>();
-
-            foreach (var item in constructorArguments)
-            {
-                types.Add(item.ArgumentType);
-                args.Add(ReadAttributeValue(item));
-            }
-
-            constructorArgTypes = types.ToArray();
-            constructorArgs = args.ToArray();
-        }
-
-        private static void GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues)
-        {
-            var propertyList = new List<PropertyInfo>();
-            var propertyValuesList = new List<object>();
-            var fieldList = new List<FieldInfo>();
-            var fieldValuesList = new List<object>();
-            foreach (var argument in namedArguments)
-            {
-#if NET40
-				if (argument.MemberInfo.MemberType == MemberTypes.Field)
-				{
-					fieldList.Add(argument.MemberInfo as FieldInfo);
-					fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-				}
-				else
-				{
-					propertyList.Add(argument.MemberInfo as PropertyInfo);
-					propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-				}
-#else
-                if (argument.IsField)
-                {
-                    fieldList.Add(attributeType.GetField(argument.MemberName));
-                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-                else
-                {
-                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
-                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-#endif
-            }
-
-            properties = propertyList.ToArray();
-            propertyValues = propertyValuesList.ToArray();
-            fields = fieldList.ToArray();
-            fieldValues = fieldValuesList.ToArray();
-        }
+        public void DefineCustomAttribute<TAttribute>() where TAttribute : Attribute, new() => DefineCustomAttribute(EmitUtils.CreateCustomAttribute<TAttribute>());
 
         /// <summary>
         /// 自定义标记。
         /// </summary>
         /// <param name="attributeData">标记信息参数。</param>
-        public void DefineCustomAttribute(CustomAttributeData attributeData)
-        {
-            GetArguments(attributeData.ConstructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs);
-
-#if NET40
-			var constructor = attributeData.Constructor;
-#else
-            var constructor = attributeData.AttributeType.GetConstructor(constructorArgTypes);
-#endif
-
-            GetSettersAndFields(
-#if NET40
-                null,
-#else
-                attributeData.AttributeType,
-#endif
-                attributeData.NamedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues);
-
-            builder.SetCustomAttribute(new CustomAttributeBuilder(constructor,
-                                            constructorArgs,
-                                            properties,
-                                            propertyValues,
-                                            fields,
-                                            fieldValues));
-        }
+        public void DefineCustomAttribute(CustomAttributeData attributeData) => DefineCustomAttribute(EmitUtils.CreateCustomAttribute(attributeData));
 
         /// <summary>
         /// 发行。

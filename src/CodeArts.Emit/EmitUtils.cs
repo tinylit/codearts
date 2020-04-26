@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -10,7 +11,7 @@ namespace CodeArts.Emit
     /// <summary>
     /// 工具
     /// </summary>
-    public static class EmitCodes
+    public static class EmitUtils
     {
         private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
 
@@ -18,7 +19,7 @@ namespace CodeArts.Emit
         private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
         private static readonly Dictionary<object, int> ConstantCache = new Dictionary<object, int>();
-        private static readonly MethodInfo GetConstantMethod = typeof(EmitCodes).GetMethod(nameof(GetConstant), BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        private static readonly MethodInfo GetConstantMethod = typeof(EmitUtils).GetMethod(nameof(GetConstant), BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 
         private static object GetConstant(int index)
         {
@@ -760,6 +761,130 @@ namespace CodeArts.Emit
         }
         #endregion
 
+        #region CreateCustomAttribute
+        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
+        {
+            var value = argument.Value;
+
+            if (value is IEnumerable<CustomAttributeTypedArgument> values)
+            {
+                //special case for handling arrays in attributes
+                var arguments = GetArguments(values);
+
+                var array = new object[arguments.Length];
+                arguments.CopyTo(array, 0);
+                return array;
+            }
+
+            return value;
+        }
+
+        private static object[] GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments)
+        {
+            var arguments = new List<object>();
+
+            foreach (var item in constructorArguments)
+            {
+                arguments.Add(ReadAttributeValue(item));
+            }
+
+            return arguments.ToArray();
+        }
+
+        private static void GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs)
+        {
+            var types = new List<Type>();
+            var args = new List<object>();
+
+            foreach (var item in constructorArguments)
+            {
+                types.Add(item.ArgumentType);
+                args.Add(ReadAttributeValue(item));
+            }
+
+            constructorArgTypes = types.ToArray();
+            constructorArgs = args.ToArray();
+        }
+
+        private static void GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues)
+        {
+            var propertyList = new List<PropertyInfo>();
+            var propertyValuesList = new List<object>();
+            var fieldList = new List<FieldInfo>();
+            var fieldValuesList = new List<object>();
+            foreach (var argument in namedArguments)
+            {
+#if NET40
+				if (argument.MemberInfo.MemberType == MemberTypes.Field)
+				{
+					fieldList.Add(argument.MemberInfo as FieldInfo);
+					fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+				}
+				else
+				{
+					propertyList.Add(argument.MemberInfo as PropertyInfo);
+					propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+				}
+#else
+                if (argument.IsField)
+                {
+                    fieldList.Add(attributeType.GetField(argument.MemberName));
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+#endif
+            }
+
+            properties = propertyList.ToArray();
+            propertyValues = propertyValuesList.ToArray();
+            fields = fieldList.ToArray();
+            fieldValues = fieldValuesList.ToArray();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 设置指定类型的常量。
+        /// </summary>
+        /// <param name="defaultValue">默认值。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        public static object SetConstantOfType(object defaultValue, Type conversionType)
+        {
+            if (defaultValue is null)
+            {
+                if (!conversionType.IsValueType || conversionType.IsNullable())
+                {
+                    return defaultValue;
+                }
+
+                throw new NotSupportedException($"默认值为“null”,不能作为“{conversionType}”的默认值!");
+            }
+
+            var valueType = defaultValue.GetType();
+
+            if (valueType == conversionType)
+            {
+                return defaultValue;
+            }
+
+            if (conversionType.IsNullable())
+            {
+                conversionType = Nullable.GetUnderlyingType(conversionType);
+            }
+
+            if (valueType == conversionType)
+            {
+                return defaultValue;
+            }
+
+            return Convert.ChangeType(defaultValue, conversionType, CultureInfo.InvariantCulture);
+        }
+
         /// <summary>
         /// 发行常量。
         /// </summary>
@@ -1009,6 +1134,44 @@ namespace CodeArts.Emit
             {
                 EmitNumericConversion(ilg, typeFrom, typeTo, isChecked);
             }
+        }
+
+        /// <summary>
+        /// 创建自定义标记。
+        /// </summary>
+        /// <typeparam name="TAttribute">标记类型。</typeparam>
+        /// <returns></returns>
+        public static CustomAttributeBuilder CreateCustomAttribute<TAttribute>() where TAttribute : Attribute, new() => new CustomAttributeBuilder(typeof(TAttribute).GetConstructor(Type.EmptyTypes), new object[0]);
+
+        /// <summary>
+        /// 创建自定义标记。
+        /// </summary>
+        /// <param name="attributeData">属性数据。</param>
+        /// <returns></returns>
+        public static CustomAttributeBuilder CreateCustomAttribute(CustomAttributeData attributeData)
+        {
+            GetArguments(attributeData.ConstructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs);
+
+#if NET40
+			var constructor = attributeData.Constructor;
+#else
+            var constructor = attributeData.AttributeType.GetConstructor(constructorArgTypes);
+#endif
+
+            GetSettersAndFields(
+#if NET40
+                null,
+#else
+                attributeData.AttributeType,
+#endif
+                attributeData.NamedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues);
+
+            return new CustomAttributeBuilder(constructor,
+                                             constructorArgs,
+                                             properties,
+                                             propertyValues,
+                                             fields,
+                                             fieldValues);
         }
     }
 }

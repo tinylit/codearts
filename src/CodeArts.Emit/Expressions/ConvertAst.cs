@@ -47,7 +47,7 @@ namespace CodeArts.Emit.Expressions
                 return;
             }
 
-            EmitCodes.EmitConvertToType(ilg, typeFrom, convertToType.IsByRef ? convertToType.GetElementType() : convertToType, true);
+            EmitUtils.EmitConvertToType(ilg, typeFrom, convertToType.IsByRef ? convertToType.GetElementType() : convertToType, true);
         }
     }
 }

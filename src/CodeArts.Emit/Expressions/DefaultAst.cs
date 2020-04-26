@@ -28,12 +28,12 @@ namespace CodeArts.Emit.Expressions
             {
                 var elementType = ReturnType.GetElementType();
 
-                EmitCodes.EmitDefaultValueOfType(ilg, elementType);
-                EmitCodes.EmitConvertToType(ilg, ReturnType, elementType);
+                EmitUtils.EmitDefaultValueOfType(ilg, elementType);
+                EmitUtils.EmitConvertToType(ilg, ReturnType, elementType);
             }
             else
             {
-                EmitCodes.EmitDefaultValueOfType(ilg, ReturnType);
+                EmitUtils.EmitDefaultValueOfType(ilg, ReturnType);
             }
         }
     }

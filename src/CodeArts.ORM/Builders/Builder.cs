@@ -149,7 +149,7 @@ namespace CodeArts.ORM.Builders
                 }
             }
 
-            return GetEntityType(GetRealType(type), throwsError);
+            return GetRealType(GetEntityType(type, throwsError));
         }
         /// <summary>
         /// 获取或设置表别名
@@ -545,7 +545,10 @@ namespace CodeArts.ORM.Builders
         /// <returns></returns>
         protected Type GetEntityType(Type repositoryType, bool throwsError = true)
         {
-            if (EntryCache.TryGetValue(repositoryType, out Type value)) return value;
+            if (EntryCache.TryGetValue(repositoryType, out Type value))
+            {
+                return value;
+            }
 
             Type baseType = repositoryType;
 
@@ -555,7 +558,10 @@ namespace CodeArts.ORM.Builders
                 {
                     foreach (Type type in baseType.GetGenericArguments())
                     {
-                        if (type.IsValueType || !type.IsClass || type == typeof(string)) continue;
+                        if (type.IsValueType || !type.IsClass || type == typeof(string))
+                        {
+                            continue;
+                        }
 
                         return EntryCache.GetOrAdd(repositoryType, type);
                     }
@@ -633,9 +639,13 @@ namespace CodeArts.ORM.Builders
                     throw new DSyntaxErrorException();
 
                 if (node.Arguments.Count == 0)
+                {
                     SQLWriter.Parameter(node.GetValueFromExpression());
+                }
                 else
+                {
                     base.Visit(node.Arguments[0]);
+                }
 
                 return node;
             }
@@ -643,7 +653,9 @@ namespace CodeArts.ORM.Builders
             var members = FilterMembers(node.Members);
 
             if (members.Count() == 0)
+            {
                 throw new DException("未指定查询字段!");
+            }
 
             members.ForEach((member, index) =>
             {

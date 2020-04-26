@@ -132,18 +132,37 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.OpenBrace();
 
+            buildExists = true;
+
             if (node.Arguments.Count == 1)
             {
-                VisitBuilder(node.Arguments[0]);
+                base.Visit(node.Arguments[0]);
             }
             else
             {
-                buildExists = true;
+                bool whereIsNotEmpty = false;
 
-                VisitBuilder(node);
+                WriteAppendAtFix(() =>
+                {
+                    base.Visit(node.Arguments[0]);
 
-                buildExists = false;
+                    if (whereIsNotEmpty)
+                    {
+                        _whereSwitch.Execute();
+                    }
+                }, () =>
+                {
+                    int length = SQLWriter.Length;
+
+                    BuildWhere = true;
+                    base.Visit(node.Arguments[1]);
+                    BuildWhere = false;
+
+                    whereIsNotEmpty = SQLWriter.Length > length;
+                });
             }
+
+            buildExists = false;
 
             SQLWriter.CloseBrace();
 
@@ -158,10 +177,37 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.WriteAnd();
 
-                WrapNot(() =>
+                //? 初始参数。
+                buildUnion = false;
+
+                buildSelect = true;
+
+                buildJoin = false;
+
+                buildFrom = true;
+
+                buildExists = false;
+
+                buildCast = false;
+
+                useCast = false;
+
+                isDistinct = false;
+
+                inSelect = false;
+
+                isAggregation = false; // 聚合函数
+
+                isNoParameterCount = false;//是否为Count函数
+
+                isContainsOrderBy = false; //包含OrderBy
+
+                isOrderByReverse = false; //倒序
+
+                WrapNot(() => _whereSwitch.UnWrap(() => _fromSwitch.UnWrap(() => _orderBySwitch.UnWrap(() =>
                 {
                     VisitExists(node);
-                });
+                }))));
             }
             else
             {
@@ -222,7 +268,25 @@ namespace CodeArts.ORM.Builders
 
                 if (name == MethodCall.Count || node.Arguments.Count == 1)
                 {
-                    SQLWriter.Write("1");
+                    if (buildJoin || buildUnion)
+                    {
+                        SQLWriter.Write("1");
+                    }
+                    else
+                    {
+                        var tableInfo = MakeTableInfo(node.Arguments[0].Type);
+
+                        if (tableInfo.Keys.Count() == 1)
+                        {
+                            string prefix = GetOrAddTablePrefix(tableInfo.TableType);
+
+                            WriteMembers(prefix, tableInfo.ReadOrWrites.Where(x => tableInfo.Keys.Contains(x.Key)));
+                        }
+                        else
+                        {
+                            SQLWriter.Write("1");
+                        }
+                    }
                 }
                 else
                 {
@@ -296,7 +360,25 @@ namespace CodeArts.ORM.Builders
 
                 if (isNoParameterCount || node.Arguments.Count == 1)
                 {
-                    SQLWriter.Write("1");
+                    if (buildJoin || buildUnion)
+                    {
+                        SQLWriter.Write("1");
+                    }
+                    else
+                    {
+                        var tableInfo = MakeTableInfo(node.Arguments[0].Type);
+
+                        if (tableInfo.Keys.Count() == 1)
+                        {
+                            string prefix = GetOrAddTablePrefix(tableInfo.TableType);
+
+                            WriteMembers(prefix, tableInfo.ReadOrWrites.Where(x => tableInfo.Keys.Contains(x.Key)));
+                        }
+                        else
+                        {
+                            SQLWriter.Write("1");
+                        }
+                    }
                 }
                 else
                 {
@@ -396,7 +478,7 @@ namespace CodeArts.ORM.Builders
             {
                 SQLWriter.Name(prefix, kv.Current.Value);
 
-                if (kv.Current.Key.ToLower() != kv.Current.Value.ToLower())
+                if (!(isNoParameterCount || kv.Current.Key.ToLower() == kv.Current.Value.ToLower()))
                 {
                     SQLWriter.As(kv.Current.Key);
                 }
@@ -420,6 +502,11 @@ namespace CodeArts.ORM.Builders
             string prefix = GetOrAddTablePrefix(regions.TableType);
 
             IEnumerable<KeyValuePair<string, string>> names = regions.ReadOrWrites;
+
+            if (buildExists && regions.Keys.Any())
+            {
+                names = regions.ReadOrWrites.Where(x => regions.Keys.Contains(x.Key));
+            }
 
             if (buildCast)
             {
@@ -648,20 +735,13 @@ namespace CodeArts.ORM.Builders
             switch (name)
             {
                 case MethodCall.Any:
-
-                    if (Parent is QueryBuilder builder && builder.buildExists)
-                    {
-                        return MakeExistsNode(node);
-                    }
-
-                    if (Parent?.BuildWhere ?? BuildWhere)
-                    {
-                        return VisitExists(node);
-                    }
-
-                    if (buildSelect && Parent is null)
+                    if (Parent is null)
                     {
                         SQLWriter.Select();
+                    }
+                    else if (Parent.BuildWhere)
+                    {
+                        return VisitExists(node);
                     }
 
                     SQLWriter.Write("CASE WHEN ");
@@ -676,37 +756,31 @@ namespace CodeArts.ORM.Builders
 
                     return node;
                 case MethodCall.All:
-
-                    if (Parent is QueryBuilder builder2 && builder2.buildExists)
+                    if (Parent is null)
                     {
-                        return MakeExistsNode(node);
+                        SQLWriter.Select();
                     }
-
-                    if (Parent?.BuildWhere ?? BuildWhere)
+                    else if (Parent.BuildWhere)
                     {
                         SQLWriter.OpenBrace();
 
                         VisitMethodAll(node);
 
                         SQLWriter.CloseBrace();
+
+                        return node;
                     }
-                    else
-                    {
-                        if (buildSelect && Parent is null)
-                        {
-                            SQLWriter.Select();
-                        }
 
-                        SQLWriter.Write("CASE WHEN ");
+                    SQLWriter.Write("CASE WHEN ");
 
-                        VisitMethodAll(node);
+                    VisitMethodAll(node);
 
-                        SQLWriter.Write(" THEN ");
-                        SQLWriter.Parameter("__variable_true", true);
-                        SQLWriter.Write(" ELSE ");
-                        SQLWriter.Parameter("__variable_false", false);
-                        SQLWriter.Write(" END");
-                    }
+                    SQLWriter.Write(" THEN ");
+                    SQLWriter.Parameter("__variable_true", true);
+                    SQLWriter.Write(" ELSE ");
+                    SQLWriter.Parameter("__variable_false", false);
+                    SQLWriter.Write(" END");
+
                     return node;
                 case MethodCall.ElementAt:
                 case MethodCall.ElementAtOrDefault:

@@ -1,6 +1,8 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -14,6 +16,9 @@ namespace CodeArts.Emit
     {
         private MethodEmitter _Getter;
         private MethodEmitter _Setter;
+        private object defaultValue;
+        private bool hasDefaultValue = false;
+        private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         /// <summary>
         /// 构造函数。
@@ -97,6 +102,31 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
+        /// 设置默认值。
+        /// </summary>
+        /// <param name="defaultValue">默认值。</param>
+        public void SetConstant(object defaultValue)
+        {
+            hasDefaultValue = true;
+
+            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, ReturnType);
+        }
+
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="customBuilder">属性。</param>
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            if (customBuilder is null)
+            {
+                throw new ArgumentNullException(nameof(customBuilder));
+            }
+
+            customAttributes.Add(customBuilder);
+        }
+
+        /// <summary>
         /// 发行。
         /// </summary>
         /// <param name="builder">类型构造器。</param>
@@ -116,6 +146,16 @@ namespace CodeArts.Emit
             {
                 builder.SetSetMethod(_Setter.Value);
             }
+
+            if (hasDefaultValue)
+            {
+                builder.SetConstant(defaultValue);
+            }
+
+            foreach (var item in customAttributes)
+            {
+                builder.SetCustomAttribute(item);
+            }
         }
 
         /// <summary>
@@ -131,6 +171,7 @@ namespace CodeArts.Emit
 
             ilg.Emit(OpCodes.Callvirt, _Getter.Value);
         }
+
         /// <summary>
         /// 赋值。
         /// </summary>

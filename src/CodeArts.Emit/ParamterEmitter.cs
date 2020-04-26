@@ -1,7 +1,7 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -16,6 +16,7 @@ namespace CodeArts.Emit
         private object defaultValue;
         private ParameterBuilder builder;
         private bool hasDefaultValue = false;
+        private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         /// <summary>
         /// 标记。
@@ -60,40 +61,23 @@ namespace CodeArts.Emit
         /// <param name="defaultValue">默认值。</param>
         public void SetConstant(object defaultValue)
         {
-            this.defaultValue = defaultValue;
-
             hasDefaultValue = true;
 
-            Type parameterType = ReturnType;
+            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, ReturnType);
+        }
 
-            if (defaultValue is null)
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="customBuilder">属性。</param>
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            if (customBuilder is null)
             {
-                if (!parameterType.IsValueType || parameterType.IsNullable())
-                {
-                    return;
-                }
-
-                throw new NotSupportedException($"默认值为“null”,不能作为“{parameterType}”的默认值!");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
 
-            var valueType = defaultValue.GetType();
-
-            if (valueType == parameterType)
-            {
-                return;
-            }
-
-            if (parameterType.IsNullable())
-            {
-                parameterType = Nullable.GetUnderlyingType(parameterType);
-            }
-
-            if (valueType == parameterType)
-            {
-                return;
-            }
-
-            this.defaultValue = System.Convert.ChangeType(defaultValue, parameterType, CultureInfo.InvariantCulture);
+            customAttributes.Add(customBuilder);
         }
 
         /// <summary>
@@ -102,11 +86,16 @@ namespace CodeArts.Emit
         /// <param name="builder">构造器。</param>
         public virtual void Emit(ParameterBuilder builder)
         {
-            this.builder = builder;
+            this.builder = builder ?? throw new ArgumentNullException(nameof(builder));
 
             if (hasDefaultValue)
             {
                 builder.SetConstant(defaultValue);
+            }
+
+            foreach (var item in customAttributes)
+            {
+                builder.SetCustomAttribute(item);
             }
         }
     }

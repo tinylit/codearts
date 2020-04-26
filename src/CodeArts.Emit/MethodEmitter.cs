@@ -12,9 +12,10 @@ namespace CodeArts.Emit
     /// </summary>
     public class MethodEmitter : BlockAst
     {
-        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
         private MethodBuilder builder;
         private int parameterIndex = 0;
+        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
+        private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         /// <summary>
         /// 构造函数。
@@ -32,10 +33,12 @@ namespace CodeArts.Emit
         /// 成员。
         /// </summary>
         public MethodBuilder Value => builder ?? throw new NotImplementedException();
+
         /// <summary>
         /// 方法的名称。
         /// </summary>
         public string Name { get; }
+
         /// <summary>
         /// 方法的属性。
         /// </summary>
@@ -68,6 +71,20 @@ namespace CodeArts.Emit
             return parameter;
         }
 
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="customBuilder">属性。</param>
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            if (customBuilder is null)
+            {
+                throw new ArgumentNullException(nameof(customBuilder));
+            }
+
+            customAttributes.Add(customBuilder);
+        }
+
         private bool ImplementedByRuntime
         {
             get
@@ -92,6 +109,11 @@ namespace CodeArts.Emit
             foreach (var item in parameters)
             {
                 item.Emit(builder.DefineParameter(item.Position, item.Attributes, item.ParameterName));
+            }
+
+            foreach (var item in customAttributes)
+            {
+                builder.SetCustomAttribute(item);
             }
 
             if (!ImplementedByRuntime && IsEmpty)

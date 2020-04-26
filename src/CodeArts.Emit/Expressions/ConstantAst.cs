@@ -35,6 +35,6 @@ namespace CodeArts.Emit.Expressions
         /// 生成。
         /// </summary>
         /// <param name="ilg">指令</param>
-        public override void Load(ILGenerator ilg) => EmitCodes.EmitConstantOfType(ilg, value, ReturnType);
+        public override void Load(ILGenerator ilg) => EmitUtils.EmitConstantOfType(ilg, value, ReturnType);
     }
 }
