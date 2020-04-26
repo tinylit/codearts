@@ -910,7 +910,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public int Insert(SQL sql, object param = null, int? commandTimeout = null)
         {
-            if (ExcuteAuthorize(sql, CommandTypes.Insert))
+            if (ExecuteAuthorize(sql, CommandTypes.Insert))
             {
                 return Execute(sql, param, commandTimeout);
             }
@@ -927,7 +927,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public int Update(SQL sql, object param = null, int? commandTimeout = null)
         {
-            if (ExcuteAuthorize(sql, CommandTypes.Update))
+            if (ExecuteAuthorize(sql, CommandTypes.Update))
             {
                 return Execute(sql, param, commandTimeout);
             }
@@ -944,7 +944,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public int Delete(SQL sql, object param = null, int? commandTimeout = null)
         {
-            if (ExcuteAuthorize(sql, CommandTypes.Delete))
+            if (ExecuteAuthorize(sql, CommandTypes.Delete))
             {
                 return Execute(sql, param, commandTimeout);
             }
@@ -956,7 +956,7 @@ namespace CodeArts.ORM
         /// 执行SQL验证。
         /// </summary>
         /// <returns></returns>
-        protected virtual bool ExcuteAuthorize(ISQL sql, UppercaseString commandType)
+        protected virtual bool ExecuteAuthorize(ISQL sql, UppercaseString commandType)
         {
             if (sql.Tables.All(x => x.CommandType == CommandTypes.Select))
             {
@@ -970,7 +970,7 @@ namespace CodeArts.ORM
         /// 执行SQL验证
         /// </summary>
         /// <returns></returns>
-        protected virtual bool ExcuteAuthorize(ISQL sql)
+        protected virtual bool ExecuteAuthorize(ISQL sql)
         {
             if (sql.Tables.All(x => x.CommandType == CommandTypes.Select))
             {
@@ -1001,7 +1001,7 @@ namespace CodeArts.ORM
         /// <returns>影响行</returns>
         protected virtual int Execute(ISQL sql, object param = null, int? commandTimeout = null)
         {
-            if (!ExcuteAuthorize(sql))
+            if (!ExecuteAuthorize(sql))
             {
                 throw new NonAuthorizeException();
             }

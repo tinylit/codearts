@@ -872,6 +872,34 @@ namespace UnitTest
         }
 
         [TestMethod]
+        public void JoinTest4()
+        {
+            var y = 100;
+            var str = "1";
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var userWx = new UserWeChatRepository();
+            var result = from x in user.Where(x => x.Id > 0)
+                         join d in details.Where(d => d.Id < y)
+                         on x.Id equals d.Id
+                         join w in userWx
+                         on x.Id equals w.Uid
+                         where x.Username.Contains(str)
+                         orderby x.Id, d.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, w.Openid, OOID = d.Id, DDD = y };
+
+            var list = result.Count();
+
+            /**
+             * SELECT [x].[uid] AS [Id], ([x].[uid] + @__variable_1) AS [OldId], [d].[uid] AS [OOID], @y AS [DDD] 
+             * FROM [fei_users] [x] 
+             * LEFT JOIN [fei_userdetails] [d] 
+             * ON [x].[uid]=[d].[uid] 
+             * WHERE ((([x].[uid] > @__variable_2) AND ([d].[uid] < @y)) AND [x].[username] LIKE @str) ORDER BY [x].[uid] DESC, [d].[registertime]
+             */
+        }
+
+        [TestMethod]
         public void JoinCountTest2()
         {
             var id = 100;

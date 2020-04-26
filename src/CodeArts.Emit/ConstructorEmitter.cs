@@ -167,9 +167,9 @@ namespace CodeArts.Emit
             if (IsEmpty)
             {
                 InvokeBaseConstructor();
-
-                Append(new ReturnAst());
             }
+
+            Append(new ReturnAst());
 
             foreach (var item in parameters)
             {

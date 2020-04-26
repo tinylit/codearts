@@ -21,14 +21,14 @@ namespace CodeArts.ORM.Builders
 
         private int skip = -1;
 
-        private bool isUnion = false;
-
         private StringBuilder orderby;
         #endregion
 
+        private bool buildUnion = false;
+
         private bool buildSelect = true;
 
-        private bool isJoin = false;
+        private bool buildJoin = false;
 
         private bool buildFrom = true;
 
@@ -100,7 +100,7 @@ namespace CodeArts.ORM.Builders
 
             base.Evaluate(writer, node);
 
-            if (take > 0 || skip > 0 || isUnion && orderby.Length > 0)
+            if (take > 0 || skip > 0 || buildUnion && orderby.Length > 0)
             {
                 var length = writer.Length - index;
 
@@ -134,11 +134,10 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.OpenBrace();
 
-            bool join = isJoin;
+            bool join = buildJoin;
             bool isNot = SQLWriter.Not;
 
-            isJoin = false;
-            buildSelect = buildFrom = true;
+            buildJoin = false;
 
             if (node.Arguments.Count == 1)
             {
@@ -182,7 +181,7 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.CloseBrace();
 
-            isJoin = join;
+            buildJoin = join;
             SQLWriter.Not = isNot;
 
             return node;
@@ -196,10 +195,12 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.WriteAnd();
 
-                WrapNot(() => _fromSwitch.UnWrap(() => _whereSwitch.UnWrap(() => _orderBySwitch.UnWrap(() =>
+                buildSelect = buildFrom = true;
+
+                WrapNot(() => UnWrap(() =>
                 {
                     VisitExists(node);
-                }))));
+                }));
             }
             else
             {
@@ -269,7 +270,7 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.CloseBrace();
 
-                if (isUnion)
+                if (buildUnion)
                 {
                     SQLWriter.From();
                     SQLWriter.OpenBrace();
@@ -287,7 +288,7 @@ namespace CodeArts.ORM.Builders
                 }
             });
 
-            if (isUnion)
+            if (buildUnion)
             {
                 SQLWriter.CloseBrace();
                 SQLWriter.WhiteSpace();
@@ -349,21 +350,60 @@ namespace CodeArts.ORM.Builders
             return BuildSingleOneArgField(name, node);
         }
 
+        private Expression JoinWhereMethod(Expression node)
+        {
+            if (node.NodeType == ExpressionType.Call)
+            {
+                while (node is MethodCallExpression methodCall)
+                {
+                    if (methodCall.Method.Name == MethodCall.Join)
+                    {
+                        break;
+                    }
+
+                    if (methodCall.Method.Name == MethodCall.Where)
+                    {
+                        SQLWriter.WriteAnd();
+
+                        BuildWhere = true;
+                        base.Visit(methodCall.Arguments[1]);
+                        BuildWhere = false;
+
+                        node = methodCall.Arguments[0];
+
+                        continue;
+                    }
+
+                    throw new DSyntaxErrorException($"在连接函数中，禁止使用“{methodCall.Method.Name}”函数!");
+                }
+            }
+
+            return node;
+        }
+
         private Expression JoinMethod(MethodCallExpression node)
         {
+            bool buildJoinTmp = buildJoin;
+
+            var sb = new StringBuilder();
+
+            var leftNode = node.Arguments[0];
+            var rightNode = node.Arguments[1];
+
             WriteAppendAtFix(() =>
             {
-                isJoin = true;
+                buildJoin = true;
 
                 buildFrom = true;
 
-                base.Visit(node.Arguments[0]);
+                base.Visit(leftNode);
 
                 buildFrom = true;
 
-                base.Visit(node.Arguments[1]);
+                base.Visit(rightNode);
 
                 buildFrom = false;
+
             }, () =>
             {
                 SQLWriter.Write(" ON ");
@@ -375,10 +415,15 @@ namespace CodeArts.ORM.Builders
                 SQLWriter.Equal();
 
                 base.Visit(node.Arguments[3]);
+
+                leftNode = JoinWhereMethod(node.Arguments[0]);
+
+                rightNode = JoinWhereMethod(node.Arguments[1]);
             });
 
             return node;
         }
+
         /// <summary>
         /// 写入指定成员
         /// </summary>
@@ -474,7 +519,7 @@ namespace CodeArts.ORM.Builders
 
                 BuildSingleOneArgField(name, node);
 
-                if (isUnion)
+                if (buildUnion)
                 {
                     _fromSwitch.Execute();
                     SQLWriter.OpenBrace();
@@ -526,7 +571,7 @@ namespace CodeArts.ORM.Builders
                 WriteAppendAtFix(() =>
                 {
                     buildSelect = select;
-                    buildFrom = from && !isJoin;//Join函数
+                    buildFrom = from && !buildJoin;//Join函数
 
                     if (buildSelect || buildFrom)
                     {
@@ -810,11 +855,13 @@ namespace CodeArts.ORM.Builders
 
                     base.Visit(node.Arguments[0]);
 
-                    if (isAggregation) return node;
-
-                    if (isUnion)
+                    if (isAggregation)
                     {
-                        SQLWriter.HasWriteReturn = true;
+                        return node;
+                    }
+
+                    if (buildUnion)
+                    {
                         SQLWriter.AddWriter(orderby);
                     }
 
@@ -827,9 +874,8 @@ namespace CodeArts.ORM.Builders
                         SQLWriter.WriteDesc();
                     }
 
-                    if (isUnion)
+                    if (buildUnion)
                     {
-                        SQLWriter.HasWriteReturn = false;
                         SQLWriter.RemoveWriter(orderby);
                     }
                     return node;
@@ -844,10 +890,14 @@ namespace CodeArts.ORM.Builders
                 case MethodCall.Select:
 
                     if (_MethodLevel > 1)
+                    {
                         throw new DSyntaxErrorException($"请将函数({name})置于查询最后一个包含入参的函数之后!");
+                    }
 
                     if (isNoParameterCount)
+                    {
                         return base.Visit(node.Arguments[0]);
+                    }
 
                     buildSelect = false;
 
@@ -857,7 +907,10 @@ namespace CodeArts.ORM.Builders
 
                     WriteAppendAtFix(() =>
                     {
-                        if (isDistinct) SQLWriter.Distinct();
+                        if (isDistinct)
+                        {
+                            SQLWriter.Distinct();
+                        }
 
                         buildFrom = inSelect = true;
                         base.Visit(node.Arguments[1]);
@@ -881,12 +934,12 @@ namespace CodeArts.ORM.Builders
 
                     buildSelect = false;
 
-                    if (isUnion)
+                    if (buildUnion)
                     {
                         SQLWriter.RemoveWriter(orderby);
                     }
 
-                    isUnion = false;
+                    buildUnion = false;
 
                     VisitBuilder(node.Arguments[0]);
 
@@ -901,7 +954,7 @@ namespace CodeArts.ORM.Builders
 
                     VisitBuilder(node.Arguments[1]);
 
-                    isUnion = true;
+                    buildUnion = true;
 
                     if (orderby is null)
                     {
@@ -924,25 +977,33 @@ namespace CodeArts.ORM.Builders
                         .First();
 
                     if (node.Type == castToType)
+                    {
                         return base.Visit(node.Arguments[0]);
+                    }
 
                     useCast = true;
 
                     _TypeCache.GetOrAdd(type, _ => GetInitialType(castToType));
 
                     if (!buildSelect)
+                    {
                         return base.Visit(node.Arguments[0]);//? 说明Cast函数在Select函数之前，不需要进行函数分析!
+                    }
 
                     var entry = RuntimeTypeCache.Instance.GetCache(type);
 
                     if (_CastList is null)
+                    {
                         _CastList = entry.PropertyStores
                             .Select(x => x.Name.ToLower())
                             .ToList();
+                    }
                     else //? 取交集
+                    {
                         _CastList = _CastList
-                            .Intersect(entry.PropertyStores.Select(x => x.Name.ToLower()))
-                            .ToList();
+                           .Intersect(entry.PropertyStores.Select(x => x.Name.ToLower()))
+                           .ToList();
+                    }
 
                     if (_CastList.Count == 0)
                     {
@@ -984,15 +1045,21 @@ namespace CodeArts.ORM.Builders
             {
                 case MethodCall.From:
                     if (!(node.Arguments[1].GetValueFromExpression() is Func<ITableInfo, string> value))
+                    {
                         throw new DException("指定表名称不能为空!");
+                    }
 
                     if (!buildFrom)
+                    {
                         base.Visit(node.Arguments[0]);
+                    }
 
                     SetTableFactory(value);
 
                     if (buildFrom)
+                    {
                         return base.Visit(node.Arguments[0]);
+                    }
 
                     return node;
                 case MethodCall.TimeOut:
@@ -1065,7 +1132,7 @@ namespace CodeArts.ORM.Builders
             if (node.Parameters.Count > 1)
                 throw new DSyntaxErrorException("不支持多个参数!");
 
-            if (isJoin || isUnion)
+            if (buildJoin || buildUnion)
             {
                 base.Visit(node.Body);
 
@@ -1108,7 +1175,7 @@ namespace CodeArts.ORM.Builders
         /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            if (isUnion) return node;
+            if (buildUnion) return node;
 
             return base.VisitParameter(node);
         }
@@ -1140,11 +1207,11 @@ namespace CodeArts.ORM.Builders
         private string ToSQL(string value)
         {
             if (take > 0 || skip > 0)
-                return isUnion ?
+                return buildUnion ?
                     settings.PageUnionSql(value, take, skip, orderby.ToString()) :
                     settings.PageSql(value, take, skip);
 
-            if (isUnion && orderby.Length > 0)
+            if (buildUnion && orderby.Length > 0)
             {
                 return string.Concat("SELECT * FROM (", value, ") ", settings.Name("CTE_UNION"), " ", orderby.ToString());
             }

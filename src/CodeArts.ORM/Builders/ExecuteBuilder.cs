@@ -32,7 +32,9 @@ namespace CodeArts.ORM.Builders
                 base.Evaluate(node);
 
                 if (list.Count == 0)
+                {
                     throw new DSyntaxErrorException("插入语句不支持匿名字段!");
+                }
 
                 SQLWriter.AppendAt = index;
 

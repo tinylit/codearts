@@ -36,10 +36,6 @@ namespace CodeArts.ORM
         /// 写入位置
         /// </summary>
         internal int AppendAt = -1;
-        /// <summary>
-        /// 有写入器时，不向当前写入器写入内容。
-        /// </summary>
-        internal bool HasWriteReturn { get; set; }
 
         /// <summary>
         /// 内容长度
@@ -412,13 +408,13 @@ namespace CodeArts.ORM
         /// 添加写入器(有数据变化的时候或写入到写入器中)。
         /// </summary>
         /// <param name="builder">写入器。</param>
-        public void AddWriter(StringBuilder builder) => builders.Add(builder ?? throw new ArgumentNullException(nameof(builder)));
+        internal void AddWriter(StringBuilder builder) => builders.Add(builder ?? throw new ArgumentNullException(nameof(builder)));
 
         /// <summary>
         /// 移除写入器。
         /// </summary>
         /// <param name="builder">写入器。</param>
-        public void RemoveWriter(StringBuilder builder) => builders.Remove(builder);
+        internal void RemoveWriter(StringBuilder builder) => builders.Remove(builder);
 
         /// <summary>
         /// 清空写入器。
@@ -438,7 +434,7 @@ namespace CodeArts.ORM
             {
                 builders.ForEach(writer => writer.Append(value));
 
-                if (HasWriteReturn) return;
+                return;
             }
 
             if (AppendAt > -1)
