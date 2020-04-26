@@ -134,55 +134,20 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.OpenBrace();
 
-            bool join = buildJoin;
-            bool isNot = SQLWriter.Not;
-
-            buildJoin = false;
-
             if (node.Arguments.Count == 1)
             {
-                UnWrap(() =>
-                {
-                    buildExists = true;
-
-                    base.Visit(node.Arguments[0]);
-
-                    buildExists = false;
-                });
+                VisitBuilder(node.Arguments[0]);
             }
             else
             {
-                UnWrap(() =>
-                {
-                    int length = 0;
+                buildExists = true;
 
-                    WriteAppendAtFix(() =>
-                    {
-                        buildExists = true;
+                VisitBuilder(node);
 
-                        base.Visit(node.Arguments[0]);
-
-                        buildExists = false;
-
-                    }, () =>
-                    {
-                        base.Visit(node.Arguments[1]);
-
-                        length = SQLWriter.Length;
-
-                    }, index =>
-                    {
-                        SQLWriter.AppendAt = SQLWriter.Length - (length - index);
-
-                        _whereSwitch.Execute();
-                    });
-                });
+                buildExists = false;
             }
 
             SQLWriter.CloseBrace();
-
-            buildJoin = join;
-            SQLWriter.Not = isNot;
 
             return node;
         }
@@ -195,12 +160,10 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.WriteAnd();
 
-                buildSelect = buildFrom = true;
-
-                WrapNot(() => UnWrap(() =>
+                WrapNot(() =>
                 {
                     VisitExists(node);
-                }));
+                });
             }
             else
             {
@@ -404,6 +367,8 @@ namespace CodeArts.ORM.Builders
 
                 buildFrom = false;
 
+                buildJoin = buildJoinTmp;
+
             }, () =>
             {
                 SQLWriter.Write(" ON ");
@@ -460,12 +425,6 @@ namespace CodeArts.ORM.Builders
         {
             string prefix = GetOrAddTablePrefix(regions.TableType);
 
-            if (buildExists && regions.Keys.Any())
-            {
-                WriteMembers(prefix, regions.ReadOrWrites.Where(x => regions.Keys.Any(y => y == x.Key)));
-                return;
-            }
-
             IEnumerable<KeyValuePair<string, string>> names = regions.ReadOrWrites;
 
             if (buildCast)
@@ -500,7 +459,10 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.Select();
 
-                if (isDistinct) SQLWriter.Distinct();
+                if (isDistinct)
+                {
+                    SQLWriter.Distinct();
+                }
 
                 BuildColumns(regions);
             }
@@ -667,7 +629,15 @@ namespace CodeArts.ORM.Builders
             {
                 case MethodCall.Any:
 
-                    if (Parent?.BuildWhere ?? BuildWhere) return VisitExists(node);
+                    if (Parent is QueryBuilder builder && builder.buildExists)
+                    {
+                        return MakeWhereNode(node);
+                    }
+
+                    if (Parent?.BuildWhere ?? BuildWhere)
+                    {
+                        return VisitExists(node);
+                    }
 
                     if (buildSelect && Parent is null)
                     {
@@ -686,6 +656,11 @@ namespace CodeArts.ORM.Builders
 
                     return node;
                 case MethodCall.All:
+
+                    if (Parent is QueryBuilder builder2 && builder2.buildExists)
+                    {
+                        return MakeWhereNode(node);
+                    }
 
                     if (Parent?.BuildWhere ?? BuildWhere)
                     {
