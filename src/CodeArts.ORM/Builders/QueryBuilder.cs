@@ -126,8 +126,6 @@ namespace CodeArts.ORM.Builders
 
         private bool InCastList(string name) => _CastList is null || _CastList.Contains(name.ToLower());
 
-        private void UnWrap(Action action) => _fromSwitch.UnWrap(() => _whereSwitch.UnWrap(() => _orderBySwitch.UnWrap(action)));
-
         private Expression VisitExists(MethodCallExpression node)
         {
             SQLWriter.Exists();
@@ -346,8 +344,6 @@ namespace CodeArts.ORM.Builders
 
         private Expression JoinMethod(MethodCallExpression node)
         {
-            bool buildJoinTmp = buildJoin;
-
             var sb = new StringBuilder();
 
             var leftNode = node.Arguments[0];
@@ -366,8 +362,6 @@ namespace CodeArts.ORM.Builders
                 base.Visit(rightNode);
 
                 buildFrom = false;
-
-                buildJoin = buildJoinTmp;
 
             }, () =>
             {
@@ -521,6 +515,32 @@ namespace CodeArts.ORM.Builders
             return node;
         }
 
+        private Expression MakeExistsNode(MethodCallExpression node)
+        {
+            bool whereIsNotEmpty = false;
+
+            WriteAppendAtFix(() =>
+            {
+                base.Visit(node.Arguments[0]);
+
+                if (whereIsNotEmpty)
+                {
+                    _whereSwitch.Execute();
+                }
+            }, () =>
+            {
+                int length = SQLWriter.Length;
+
+                BuildWhere = true;
+                base.Visit(node.Arguments[1]);
+                BuildWhere = false;
+
+                whereIsNotEmpty = SQLWriter.Length > length;
+            });
+
+            return node;
+        }
+
         private Expression MakeWhere(MethodCallExpression node)
         {
             if (buildFrom || buildSelect)
@@ -631,7 +651,7 @@ namespace CodeArts.ORM.Builders
 
                     if (Parent is QueryBuilder builder && builder.buildExists)
                     {
-                        return MakeWhereNode(node);
+                        return MakeExistsNode(node);
                     }
 
                     if (Parent?.BuildWhere ?? BuildWhere)
@@ -659,7 +679,7 @@ namespace CodeArts.ORM.Builders
 
                     if (Parent is QueryBuilder builder2 && builder2.buildExists)
                     {
-                        return MakeWhereNode(node);
+                        return MakeExistsNode(node);
                     }
 
                     if (Parent?.BuildWhere ?? BuildWhere)
