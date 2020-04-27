@@ -19,7 +19,7 @@ namespace UnitTest
     [TestClass]
     public class MySqlTest
     {
-        private static bool isCompleted;
+        private static bool isCompleted = true;
 
         private readonly MySqlUserRespository userSingleton = Singleton<MySqlUserRespository>.Instance;
         private readonly AuthShipRepository authShipSingleton = Singleton<AuthShipRepository>.Instance;

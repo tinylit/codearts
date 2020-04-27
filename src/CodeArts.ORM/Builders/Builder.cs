@@ -1101,49 +1101,58 @@ namespace CodeArts.ORM.Builders
 
         private void VisitEvaluate(Expression node)
         {
-            if (node.NodeType == ExpressionType.Call && node is MethodCallExpression methodCall)
+            switch (node)
             {
-                Type declaringType = methodCall.Method.DeclaringType;
-
-                if (declaringType == typeof(Queryable) || declaringType == typeof(SelectExtentions))
-                {
-                    switch (methodCall.Method.Name)
+                case MethodCallExpression methodCall when methodCall.Method.DeclaringType == typeof(Queryable) || methodCall.Method.DeclaringType == typeof(SelectExtentions):
                     {
-                        case MethodCall.Any:
-                        case MethodCall.All:
+                        switch (methodCall.Method.Name)
+                        {
+                            case MethodCall.Any:
+                            case MethodCall.All:
 
-                            VisitBuilder(node);
-                            break;
-                        case MethodCall.Contains when methodCall.Arguments[1] is MemberExpression member && member.Expression?.NodeType == ExpressionType.Parameter:
+                                VisitBuilder(node);
 
-                            base.Visit(member.Expression);
+                                break;
+                            case MethodCall.Contains when methodCall.Arguments[1] is MemberExpression member && member.Expression?.NodeType == ExpressionType.Parameter:
 
-                            VisitParameterMember(member);
+                                base.Visit(member.Expression);
 
-                            SQLWriter.Contains();
+                                VisitParameterMember(member);
 
-                            SQLWriter.OpenBrace();
+                                SQLWriter.Contains();
 
-                            VisitBuilder(methodCall.Arguments[0]);
+                                SQLWriter.OpenBrace();
 
-                            SQLWriter.CloseBrace();
+                                VisitBuilder(methodCall.Arguments[0]);
 
-                            break;
-                        default:
+                                SQLWriter.CloseBrace();
 
-                            SQLWriter.OpenBrace();
+                                break;
+                            default:
 
-                            VisitBuilder(node);
+                                SQLWriter.OpenBrace();
 
-                            SQLWriter.CloseBrace();
-                            break;
+                                VisitBuilder(node);
+
+                                SQLWriter.CloseBrace();
+
+                                break;
+                        }
+                        break;
                     }
-
-                    return;
-                }
+                case UnaryExpression unary when unary.NodeType == ExpressionType.Not:
+                    WrapNot(() =>
+                    {
+                        VisitEvaluate(unary.Operand);
+                    });
+                    break;
+                case UnaryExpression unary:
+                    VisitEvaluate(unary.Operand);
+                    break;
+                default:
+                    base.Visit(node);
+                    break;
             }
-
-            base.Visit(node);
         }
 
         /// <summary>
@@ -1679,8 +1688,10 @@ namespace CodeArts.ORM.Builders
                     return base.VisitUnary(node);
                 });
             }
+
             return base.VisitUnary(node);
         }
+
         /// <inheritdoc />
         protected override Expression VisitSwitch(SwitchExpression node)
         {
