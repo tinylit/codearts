@@ -6,6 +6,7 @@ skip_commits:
     - '**/*.txt'
     - '**/*.png'
     - '**/*.jpg'
+    - '**/*.svg'
     - '**/*.json'
     - '**/*.config'
     - '**/*.sln'
