@@ -9,7 +9,7 @@ namespace CodeArts.ORM.Builders
     /// <summary>
     /// 执行构造器
     /// </summary>
-    public class ExecuteBuilder<T> : Builder, IBuilder<T>
+    public class ExecuteBuilder<T> : Builder, IExecuteBuilder<T>
     {
         private static readonly ITableInfo typeRegions;
         static ExecuteBuilder()

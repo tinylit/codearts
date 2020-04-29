@@ -12,30 +12,35 @@ namespace CodeArts.ORM
     /// </summary>
     public static class DbConnectionManager
     {
-        private static readonly ConcurrentDictionary<string, Func<IDbConnectionAdapter, RepositoryProvider>> FactoryProviders;
+        private static readonly Dictionary<string, Func<IDbConnectionAdapter, RepositoryProvider>> FactoryProviders;
 
         private static readonly ConcurrentDictionary<string, IDbConnectionAdapter> Adapters;
 
-        private static readonly ConcurrentDictionary<string, RepositoryProvider> Providers;
+        private static readonly Dictionary<IDbConnectionAdapter, RepositoryProvider> Providers;
 
         /// <summary>
         /// 静态构造函数
         /// </summary>
         static DbConnectionManager()
         {
-            Providers = new ConcurrentDictionary<string, RepositoryProvider>();
+            Providers = new Dictionary<IDbConnectionAdapter, RepositoryProvider>();
             Adapters = new ConcurrentDictionary<string, IDbConnectionAdapter>();
-            FactoryProviders = new ConcurrentDictionary<string, Func<IDbConnectionAdapter, RepositoryProvider>>();
+            FactoryProviders = new Dictionary<string, Func<IDbConnectionAdapter, RepositoryProvider>>();
         }
 
-        /// <summary> 添加适配器 </summary>
+        /// <summary> 注册适配器 </summary>
         /// <param name="adapter">适配器</param>
-        public static void AddAdapter(IDbConnectionAdapter adapter)
+        public static void RegisterAdapter(IDbConnectionAdapter adapter)
         {
             if (adapter == null)
+            {
                 throw new ArgumentNullException(nameof(adapter));
+            }
+
             if (string.IsNullOrWhiteSpace(adapter.ProviderName))
+            {
                 throw new DException("数据库适配器名称不能为空!");
+            }
 
             Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (_, _2) => adapter);
         }
@@ -43,11 +48,11 @@ namespace CodeArts.ORM
         /// <summary>
         /// 为当前所有为指定仓库供应器的适配器添加此仓库供应器
         /// </summary>
-        public static void AddProvider<T>() where T : RepositoryProvider
+        public static void RegisterProvider<T>() where T : RepositoryProvider
         {
             foreach (string key in Adapters.Keys)
             {
-                AddProvider<T>(key);
+                RegisterProvider<T>(key);
             }
         }
 
@@ -57,31 +62,34 @@ namespace CodeArts.ORM
         /// <param name="providerName">供应商名称</param>
         /// <exception cref="ArgumentException">providerName不能为Null或空字符串!</exception>
         /// <exception cref="NotImplementedException">供应器类型必须包含公共构造函数!</exception>
-        public static void AddProvider<T>(string providerName) where T : RepositoryProvider
+        public static void RegisterProvider<T>(string providerName) where T : RepositoryProvider
         {
             if (string.IsNullOrEmpty(providerName))
             {
                 throw new ArgumentException("数据库适配器名称不能为空", nameof(providerName));
             }
-            string key = providerName.ToLower();
-            if (FactoryProviders.ContainsKey(key))
-                return;
-            var type = typeof(T);
-            var infos = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
-            if (infos.Length == 0)
+
+            var instanceType = typeof(T);
+            var constructors = instanceType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
+
+            if (constructors.Length == 0)
             {
                 throw new NotImplementedException("数据仓促必须提供公共构造函数!");
             }
-            var info = infos.First();
-            var parameters = info.GetParameters();
-            if (parameters.Length == 0)
+
+            string key = providerName.ToLower();
+
+            if (constructors.Any(x => x.GetParameters().Length == 0))
             {
-                FactoryProviders.TryAdd(key, adapter =>
-                {
-                    return Activator.CreateInstance<T>();
-                });
+                FactoryProviders[key] = adapter => Activator.CreateInstance<T>();
+
                 return;
             }
+
+            var constructor = constructors.OrderBy(x => x.GetParameters().Length).First();
+
+            var parameters = constructor.GetParameters();
+
             var list = new List<Func<IDbConnectionAdapter, object>>();
 
             parameters.ForEach(item =>
@@ -108,12 +116,7 @@ namespace CodeArts.ORM
                 }
             });
 
-            FactoryProviders.TryAdd(key, adapter =>
-            {
-                var args = list.ConvertAll(factoty => factoty(adapter));
-
-                return (RepositoryProvider)Activator.CreateInstance(type, args.ToArray());
-            });
+            FactoryProviders[key] = adapter => (RepositoryProvider)constructor.Invoke(list.ConvertAll(factoty => factoty(adapter)).ToArray());
         }
 
         /// <summary> 创建数据库适配器 </summary>
@@ -132,7 +135,9 @@ namespace CodeArts.ORM
             }
 
             if (Adapters.TryGetValue(providerName.ToLower(), out var adapter))
+            {
                 return adapter;
+            }
 
             throw new DException($"不支持的适配器：{providerName}");
         }
@@ -151,11 +156,15 @@ namespace CodeArts.ORM
 
             string key = adapter.ProviderName.ToLower();
 
-            if (Providers.TryGetValue(key, out RepositoryProvider provider))
+            if (Providers.TryGetValue(adapter, out RepositoryProvider provider))
+            {
                 return provider;
+            }
 
             if (FactoryProviders.TryGetValue(key, out Func<IDbConnectionAdapter, RepositoryProvider> factory))
-                return Providers.GetOrAdd(key, _ => factory(adapter));
+            {
+                return Providers.GetOrAdd(adapter, factory.Invoke(adapter));
+            }
 
             throw new DException($"不支持的供应商：{adapter.ProviderName}");
         }

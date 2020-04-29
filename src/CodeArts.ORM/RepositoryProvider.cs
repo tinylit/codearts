@@ -41,7 +41,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <typeparam name="T">实体类型</typeparam>
         /// <returns></returns>
-        public virtual IBuilder<T> Create<T>() => new ExecuteBuilder<T>(Settings);
+        public virtual IExecuteBuilder<T> Create<T>() => new ExecuteBuilder<T>(Settings);
 
         /// <summary>
         /// 查询独立实体

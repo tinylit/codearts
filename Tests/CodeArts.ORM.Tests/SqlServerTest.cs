@@ -17,14 +17,14 @@ namespace UnitTest
     [TestClass]
     public class SqlServerTest
     {
-        private static bool isCompleted = true;
+        private static bool isCompleted;
 
         [TestInitialize]
         public void Initialize()
         {
             var adapter = new SqlServerAdapter();
-            DbConnectionManager.AddAdapter(adapter);
-            DbConnectionManager.AddProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterAdapter(adapter);
+            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
             if (isCompleted) return;
 

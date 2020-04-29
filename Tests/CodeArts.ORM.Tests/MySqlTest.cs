@@ -33,8 +33,8 @@ namespace UnitTest
 
             adapter.Settings.Visitters.Add(new ConvertVisitter());
 
-            DbConnectionManager.AddAdapter(adapter);
-            DbConnectionManager.AddProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterAdapter(adapter);
+            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
             if (isCompleted) return;
 

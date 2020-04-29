@@ -999,6 +999,7 @@ namespace CodeArts.ORM.Builders
                     return JoinMethod(node);
                 case MethodCall.Union:
                 case MethodCall.Concat:
+                case MethodCall.Except:
                 case MethodCall.Intersect:
 
                     buildSelect = false;
@@ -1012,13 +1013,17 @@ namespace CodeArts.ORM.Builders
 
                     VisitBuilder(node.Arguments[0]);
 
-                    if (name == MethodCall.Intersect)
+                    switch (name)
                     {
-                        SQLWriter.Write(" INTERSECT ");
-                    }
-                    else
-                    {
-                        SQLWriter.Write(MethodCall.Union == name ? " UNION " : " UNION ALL ");
+                        case MethodCall.Intersect:
+                            SQLWriter.Write(" INTERSECT ");
+                            break;
+                        case MethodCall.Except:
+                            SQLWriter.Write(" EXCEPT ");
+                            break;
+                        default:
+                            SQLWriter.Write(MethodCall.Union == name ? " UNION " : " UNION ALL ");
+                            break;
                     }
 
                     VisitBuilder(node.Arguments[1]);

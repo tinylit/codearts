@@ -57,7 +57,7 @@ namespace CodeArts.ORM
     /// 增删改
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
-    public interface IBuilder<T> : IBuilder
+    public interface IExecuteBuilder<T> : IBuilder
     {
         /// <summary>
         /// 执行行为

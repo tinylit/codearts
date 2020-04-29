@@ -30,8 +30,8 @@ namespace CodeArts.ORM.Tests
         public void MyTestMethod()
         {
             var adapter = new SqlServerAdapter();
-            DbConnectionManager.AddAdapter(adapter);
-            DbConnectionManager.AddProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterAdapter(adapter);
+            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
             IUser user = (IUser)System.Activator.CreateInstance(new DbTypeGen().Create(typeof(IUser)));
 

@@ -181,6 +181,11 @@ namespace CodeArts.ORM
         /// </summary>
         public const string Intersect = "Intersect"; //? INTERSECT
 
+        /// <summary>
+        /// 排它 => EXCEPT
+        /// </summary>
+        public const string Except = "Except"; //? EXCEPT
+
 
         /** 以下为 string 扩展 */
         public const string IsNullOrEmpty = "IsNullOrEmpty";
@@ -211,17 +216,15 @@ namespace CodeArts.ORM
         /// 更新
         /// </summary>
         public const string Update = nameof(Executeable.Update); //"Update";
+
         /// <summary>
         /// 删除
         /// </summary>
         public const string Delete = nameof(Executeable.Delete); // "Delete";
+
         /// <summary>
         /// 插入
         /// </summary>
         public const string Insert = nameof(Executeable.Insert); // "Insert";
-
-        /** 以下不支持 */
-
-        internal const string Except = "Except";
     }
 }

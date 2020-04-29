@@ -14,7 +14,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
         /// <returns></returns>
-        IBuilder<T> Create<T>();
+        IExecuteBuilder<T> Create<T>();
 
         /// <summary>
         /// 执行增删改功能

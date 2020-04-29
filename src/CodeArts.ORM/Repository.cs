@@ -341,7 +341,9 @@ namespace CodeArts.ORM
             }
 
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+            {
                 throw new DSyntaxErrorException("参数不匹配!");
+            }
 
             return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters, commandTimeout);
 

@@ -18,8 +18,8 @@ namespace Mvc.Core
         /// <inheritdoc />
         public override void ConfigureServices(IServiceCollection services)
         {
-            DbConnectionManager.AddAdapter(new MySqlAdapter());
-            DbConnectionManager.AddProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterAdapter(new MySqlAdapter());
+            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
             services.AddGrpc();
 
