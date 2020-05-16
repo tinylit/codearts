@@ -255,6 +255,117 @@ namespace System
             public static readonly Func<T, string, DefaultSettings, object> GetPropertyValue;
         }
 
+        private static class IgnoreCaseNested<T>
+        {
+            private static bool Compare(string arg1, string arg2)
+            {
+                return string.Equals(arg1, arg2, StringComparison.OrdinalIgnoreCase);
+            }
+            /// <summary>
+            /// 静态构造函数
+            /// </summary>
+            static IgnoreCaseNested()
+            {
+                var type = typeof(T);
+
+                var typeStore = RuntimeTypeCache.Instance.GetCache(type);
+
+                var defaultCst = Constant(string.Empty);
+
+                var parameterExp = Parameter(type, "source");
+
+                var nameExp = Parameter(typeof(string), "name");
+
+                var settingsExp = Parameter(SettingsType, "settings");
+
+                var preserveUnknownExp = Property(settingsExp, "PreserveUnknownPropertyToken");
+
+                var nullValueExp = Property(settingsExp, "NullValue");
+
+                var sysConvertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
+
+                var namingMethod = typeof(StringExtentions).GetMethod(nameof(ToNamingCase), BindingFlags.Public | BindingFlags.Static);
+
+                MethodInfo comparison = typeof(IgnoreCaseNested<T>).GetMethod(nameof(Compare), BindingFlags.NonPublic | BindingFlags.Static);
+
+                var propertyStores = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).ToList();
+
+                var enumerCase = propertyStores.Select(info =>
+                  {
+                      Type memberType = info.MemberType;
+
+                      ConstantExpression nameCst = Constant(info.Name);
+
+                      MemberExpression propertyExp = Property(parameterExp, info.Name);
+
+                      var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
+
+                      if (memberType.IsValueType)
+                      {
+                          Expression valueExp = Expression.Convert(propertyExp, typeof(object));
+
+                          if (memberType.IsNullable())
+                          {
+                              return SwitchCase(Condition(Equal(valueExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), valueExp)), namingCst);
+                          }
+
+                          if (memberType.IsEnum)
+                          {
+                              return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType)))), namingCst);
+                          }
+
+                          return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), valueExp), namingCst);
+                      }
+
+                      return SwitchCase(Condition(Equal(propertyExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), propertyExp)), namingCst);
+                  });
+
+                var bodyExp = Call(null, ConcatMethod, Constant("{"), nameExp, Constant("}"));
+
+                var switchExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Condition(preserveUnknownExp, bodyExp, defaultCst), comparison, enumerCase);
+
+                var lamda = Lambda<Func<T, string, DefaultSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
+
+                Convert = lamda.Compile();
+
+                var enumerCase2 = propertyStores.Select(info =>
+                {
+                    Type memberType = info.MemberType;
+
+                    var nameCst = Constant(info.Name);
+
+                    var propertyExp = Property(parameterExp, info.Name);
+
+                    var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
+
+                    var valueExp = Expression.Convert(propertyExp, typeof(object));
+
+                    if (memberType.IsEnum)
+                    {
+                        return SwitchCase(Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType))), namingCst);
+                    }
+
+                    return SwitchCase(valueExp, namingCst);
+                });
+
+                var switchExp2 = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), null, enumerCase2);
+
+                var lamda2 = Lambda<Func<T, string, DefaultSettings, object>>(switchExp2, parameterExp, nameExp, settingsExp);
+
+                GetPropertyValue = lamda2.Compile();
+            }
+
+            /// <summary>
+            /// 调用
+            /// </summary>
+            public static readonly Func<T, string, DefaultSettings, string> Convert;
+
+            /// <summary>
+            /// 获取属性值。
+            /// </summary>
+            public static readonly Func<T, string, DefaultSettings, object> GetPropertyValue;
+        }
+
         private static object Add(DefaultSettings settings, object left, object right)
         {
             if (left is null || right is null)
@@ -650,17 +761,22 @@ namespace System
                 var tokenGrp = match.Groups["token"];
 
                 if (!tokenGrp.Success)
+                {
+                    if (settings.IgnoreCase)
+                    {
+                        return IgnoreCaseNested<T>.Convert(source, nameGrp.Value, settings);
+                    }
+
                     return Nested<T>.Convert(source, nameGrp.Value, settings);
+                }
 
                 object result = null;
 
-                var nameCap = nameGrp.Captures.GetEnumerator();
-
                 var tokenCap = tokenGrp.Captures.GetEnumerator();
 
-                while (nameCap.MoveNext())
+                foreach (Capture item in nameGrp.Captures)
                 {
-                    result = Add(settings, result, Nested<T>.GetPropertyValue(source, ((Capture)nameCap.Current).Value, settings));
+                    result = Add(settings, result, settings.IgnoreCase ? IgnoreCaseNested<T>.GetPropertyValue(source, item.Value, settings) : Nested<T>.GetPropertyValue(source, item.Value, settings));
 
                     if (!tokenCap.MoveNext())
                     {

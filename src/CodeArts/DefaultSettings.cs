@@ -30,6 +30,11 @@ namespace CodeArts
         /// <returns></returns>
         public virtual string NullValue => string.Empty;
 
+        /// <summary>
+        /// 命名规范后，属性名称比较忽略分大小写。默认：否。
+        /// </summary>
+        public virtual bool IgnoreCase { get; set; }
+
         private string dateFormatString;
 
         /// <summary>
