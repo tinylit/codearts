@@ -303,7 +303,7 @@ namespace CodeArts.ORM
 
             PatternField = new Regex(sb.ToString(), RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-            sb = new StringBuilder();
+            sb.Clear();
 
             sb.Append("^")
                 .Append(whitespace)

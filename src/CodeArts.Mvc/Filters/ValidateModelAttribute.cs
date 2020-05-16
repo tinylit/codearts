@@ -1,15 +1,16 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿using System;
+using System.Net;
+using System.Text;
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 #else
 using System.Net.Http;
-using System.Text;
 using System.Web.Http.Controllers;
 using System.Web.Http.ModelBinding;
 using CodeArts.Serialize.Json;
 #endif
-using System.Net;
 
 namespace CodeArts.Mvc.Filters
 {
@@ -35,38 +36,106 @@ namespace CodeArts.Mvc.Filters
             if (context.ModelState.ErrorCount == 0)
                 return;
 
-            string message = string.Empty;
+            bool flag = false;
+
+            var sb = new StringBuilder();
 
             foreach (ModelStateEntry entry in context.ModelState.Values)
             {
                 foreach (ModelError item in entry.Errors)
                 {
-                    message = item.ErrorMessage;
+                    string message = item.ErrorMessage;
 
-                    if (!string.IsNullOrWhiteSpace(message))
-                        goto label_error;
+                    if (message.IsEmpty())
+                    {
+                        if (item.Exception is null)
+                        {
+                            continue;
+                        }
 
-                    if (item.Exception is null)
-                        continue;
+                        message = item.Exception.Message;
+                    }
 
-                    message = item.Exception.Message;
+                    if (flag)
+                    {
+                        sb.AppendLine();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
 
-                    goto label_error;
+                    sb.Append(message);
                 }
             }
 
-            return;
-
-        label_error:
-
-
             int code = (int)HttpStatusCode.OK;
-            context.Result = new JsonResult(DResult.Error(message))
+
+            context.Result = new JsonResult(DResult.Error(sb.ToString(), StatusCodes.Forbidden))
             {
                 StatusCode = code
             };
+
             context.HttpContext.Response.StatusCode = code;
         }
+
+        /// <summary>
+        /// 出错时结果验证。
+        /// </summary>
+        /// <param name="context">异常上下文</param>
+        public override void OnResultExecuting(ResultExecutingContext context)
+        {
+            //? 验证是否通过
+            if (context.ModelState.IsValid)
+                return;
+
+            //? 0条错误信息
+            if (context.ModelState.ErrorCount == 0)
+                return;
+
+            bool flag = false;
+
+            var sb = new StringBuilder();
+
+            foreach (ModelStateEntry entry in context.ModelState.Values)
+            {
+                foreach (ModelError item in entry.Errors)
+                {
+                    string message = item.ErrorMessage;
+
+                    if (message.IsEmpty())
+                    {
+                        if (item.Exception is null)
+                        {
+                            continue;
+                        }
+
+                        message = item.Exception.Message;
+                    }
+
+                    if (flag)
+                    {
+                        sb.AppendLine();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    sb.Append(message);
+                }
+            }
+
+            int code = (int)HttpStatusCode.OK;
+
+            context.Result = new JsonResult(DResult.Error(sb.ToString(), StatusCodes.Forbidden))
+            {
+                StatusCode = code
+            };
+
+            context.HttpContext.Response.StatusCode = code;
+        }
+
 #else
         public override void OnActionExecuting(HttpActionContext context)
         {
@@ -76,33 +145,45 @@ namespace CodeArts.Mvc.Filters
             //? 0条错误信息
             if (context.ModelState.Count == 0)
                 return;
-            string message = string.Empty;
+
+            bool flag = false;
+
+            var sb = new StringBuilder();
+
 
             foreach (ModelState entry in context.ModelState.Values)
             {
                 foreach (ModelError item in entry.Errors)
                 {
-                    message = item.ErrorMessage;
+                    string message = item.ErrorMessage;
 
-                    if (!string.IsNullOrWhiteSpace(message))
-                        goto label_error;
+                    if (message.IsEmpty())
+                    {
+                        if (item.Exception is null)
+                        {
+                            continue;
+                        }
 
-                    if (item.Exception is null)
-                        continue;
+                        message = item.Exception.Message;
+                    }
 
-                    message = item.Exception.Message;
+                    if (flag)
+                    {
+                        sb.AppendLine();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
 
-                    goto label_error;
+                    sb.Append(message);
                 }
             }
 
-            return;
-
-        label_error:
             context.Response = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(JsonHelper.ToJson(DResult.Error(message)), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonHelper.ToJson(DResult.Error(sb.ToString(), StatusCodes.Forbidden)), Encoding.UTF8, "application/json")
             };
         }
 #endif

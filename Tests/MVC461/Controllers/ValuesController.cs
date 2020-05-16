@@ -85,7 +85,6 @@ namespace MVC461.Controllers
         [HttpGet]
         public IEnumerable<object> Get()
         {
-            "".Config<string>();
             return new object[] { TestEnum.Normal, 1000000uL, 10000000000000000000uL };
         }
 
@@ -125,7 +124,7 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         [HttpGet]
         [ActionName("login")]
-        public DResult Login(string account, string password)
+        public DResult Login(string account, [Required][MinLength(15)]string password)
         {
             return DResult.Ok(new
             {

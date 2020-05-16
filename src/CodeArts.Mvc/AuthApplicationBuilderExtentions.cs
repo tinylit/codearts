@@ -64,9 +64,9 @@ namespace CodeArts.Mvc.Builder
                 if (context.Request.Path.HasValue)
                 {
                     var result = await $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path.Value}".AsRequestable()
-                      .ToQueryString(context.Request.QueryString.ToString())
-                      .ToQueryString($"authCode={code}")
-                      .Json<ServResult<string>>()
+                      .AppendQueryString(context.Request.QueryString.ToString())
+                      .AppendQueryString($"authCode={code}")
+                      .JsonCast<ServResult<string>>()
                       .Catch(e =>
                       {
                           if (e.Response is HttpWebResponse response)
@@ -178,9 +178,9 @@ namespace CodeArts.Mvc.Builder
 #else
                     var result = await api.AsRequestable()
 #endif
-                        .ToQueryString(context.Request.QueryString.ToString())
-                        .ToQueryString($"authCode={code}")
-                        .Json<ServResult<string>>()
+                        .AppendQueryString(context.Request.QueryString.ToString())
+                        .AppendQueryString($"authCode={code}")
+                        .JsonCast<ServResult<string>>()
                         .Catch(e =>
                         {
                             if (e.Response is HttpWebResponse response)
@@ -299,13 +299,13 @@ namespace CodeArts.Mvc.Builder
         {
             var request = uri
                 .AsRequestable()
-                .ToQueryString(context.Request.QueryString.ToString());
+                .AppendQueryString(context.Request.QueryString.ToString());
 
             string contentType = context.Request.ContentType?.ToLower() ?? string.Empty;
 
             if (contentType.Contains("application/x-www-form-urlencoded"))
             {
-                request.ToForm(context.Request.Form);
+                request.Form(context.Request.Form);
             }
             else if (contentType.Contains("application/json") || contentType.Contains("application/xml"))
             {
@@ -320,11 +320,11 @@ namespace CodeArts.Mvc.Builder
 
                     if (contentType.Contains("application/json"))
                     {
-                        request.ToJson(body);
+                        request.Json(body);
                     }
                     else
                     {
-                        request.ToXml(body);
+                        request.Xml(body);
                     }
                 }
 #else
@@ -334,11 +334,11 @@ namespace CodeArts.Mvc.Builder
                     {
                         if (contentType.Contains("application/json"))
                         {
-                            request.ToJson(reader.ReadToEnd());
+                            request.Json(reader.ReadToEnd());
                         }
                         else
                         {
-                            request.ToXml(reader.ReadToEnd());
+                            request.Xml(reader.ReadToEnd());
                         }
                     }
                 }
@@ -354,15 +354,15 @@ namespace CodeArts.Mvc.Builder
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 var result = await request
-                        .Json<ServResult<Dictionary<string, object>>>()
+                        .JsonCast<ServResult<Dictionary<string, object>>>()
                         .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(10000));
 #elif NET40
                 var result = request
-                        .Json<ServResult<Dictionary<string, object>>>()
+                        .JsonCast<ServResult<Dictionary<string, object>>>()
                         .Request(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
 #else
                 var result = await request
-                        .Json<ServResult<Dictionary<string, object>>>()
+                        .JsonCast<ServResult<Dictionary<string, object>>>()
                         .RequestAsync(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
 #endif
                 if (result.Success)

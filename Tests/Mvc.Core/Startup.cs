@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using CodeArts.Mvc;
 using CodeArts.MySql;
 using CodeArts.ORM;
+using System.ComponentModel.DataAnnotations;
 
 namespace Mvc.Core
 {
@@ -22,6 +23,11 @@ namespace Mvc.Core
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
             services.AddGrpc();
+
+            ModelValidator.CustomValidate<RequiredAttribute>((attr, context) =>
+            {
+                return $"{context.DisplayName}Îª±ØÌî×Ö¶Î!";
+            });
 
             base.ConfigureServices(services);
         }

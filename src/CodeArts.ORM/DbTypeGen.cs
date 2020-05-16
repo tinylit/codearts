@@ -164,6 +164,15 @@ namespace CodeArts.ORM
 
             foreach (var item in storeItem.Type.GetCustomAttributesData())
             {
+#if NET40
+                if (item.Constructor.DeclaringType == typeof(TypeGenAttribute))
+#else
+                if (item.AttributeType == typeof(TypeGenAttribute))
+#endif
+                {
+                    continue;
+                }
+
                 classEmitter.DefineCustomAttribute(item);
             }
 
@@ -176,7 +185,7 @@ namespace CodeArts.ORM
                     var paramter = ctor.DefineParameter(y.ParameterType, y.Attributes, y.Name);
 
 #if NET40
-                    if(y.IsOptional)
+                    if (y.IsOptional)
 #else
                     if (y.HasDefaultValue)
 #endif
@@ -205,7 +214,7 @@ namespace CodeArts.ORM
                     var paramter = method.DefineParameter(y.ParameterType, y.Info.Attributes, y.Name);
 
 #if NET40
-                    if(y.IsOptional)
+                    if (y.IsOptional)
 #else
                     if (y.HasDefaultValue)
 #endif

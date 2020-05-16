@@ -17,7 +17,7 @@ namespace CodeArts.Tests
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var value = "http://www.baidu.com".AsRequestable()
-                 .ToQueryString(new
+                 .AppendQueryString(new
                  {
                      wd = "sql",
                      rsv_spt = 1,
@@ -27,8 +27,8 @@ namespace CodeArts.Tests
                      rsv_idx = 2,
                      ie = "utf8"
                  })
-                 .Json(new Dictionary<string, string>())
-                 .Catch((s, e) =>
+                 .JsonCast(new Dictionary<string, string>())
+                 .JsonCatch((s, e) =>
                  {
                      return new Dictionary<string, string>();
                  })
@@ -50,8 +50,8 @@ namespace CodeArts.Tests
             };
 
             var token = "http://localhost:56324/login".AsRequestable()
-                .ToQueryString("?account=ljl&password=liujialin&debug=true")
-                .Json(entry, NamingType.CamelCase)
+                .AppendQueryString("?account=ljl&password=liujialin&debug=true")
+                .JsonCast(entry, NamingType.CamelCase)
                 .Catch(e => entry)
                 .Get();
 
@@ -75,8 +75,9 @@ namespace CodeArts.Tests
                 timestamp = DateTime.Now
             };
 
+
             var token = await "http://localhost:56324/login".AsRequestable()
-                .ToQueryString("?account=ljl&password=liujialin&debug=true")
+                .AppendQueryString("?account=ljl&password=liujialin&debug=true")
                 .TryThen((requestable, e) =>
                 {
                     //对请求的参数或Headers进行调整。如：令牌认证。 requestable.AppendHeader("Authorization", "{token}");
@@ -93,7 +94,7 @@ namespace CodeArts.Tests
                 {
 
                 })
-                .Json(entry, NamingType.CamelCase)
+                .JsonCast(entry, NamingType.CamelCase)
                 .Catch(e => entry)
                 .Finally(() =>
                 {
@@ -191,13 +192,13 @@ namespace CodeArts.Tests
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var value = await "http://localhost:49683/weatherforecast".AsRequestable()
-             .ToForm(new
+             .Form(new
              {
                  Date = DateTime.Now,
                  TemperatureC = 1,
                  Summary = 50
              })
-             .Json(new Dictionary<string, string>())
+             .JsonCast(new Dictionary<string, string>())
              .PostAsync();
         }
     }

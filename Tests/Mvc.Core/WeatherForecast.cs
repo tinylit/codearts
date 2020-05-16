@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Mvc.Core
 {
@@ -15,6 +16,7 @@ namespace Mvc.Core
         public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 
         /// <inheritdoc />
+        [Required]
         public string Summary { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 namespace System.Collections
 {
@@ -18,12 +19,16 @@ namespace System.Collections
             var enumerator = source.GetEnumerator();
 
             if (!enumerator.MoveNext())
+            {
                 return string.Empty;
+            }
 
             while (enumerator.Current is null)
             {
                 if (!enumerator.MoveNext())
+                {
                     return string.Empty;
+                }
             }
 
             var sb = new StringBuilder();
@@ -33,7 +38,9 @@ namespace System.Collections
             while (enumerator.MoveNext())
             {
                 if (enumerator.Current is null)
+                {
                     continue;
+                }
 
                 sb.Append(separator)
                     .Append(enumerator.Current);
@@ -50,9 +57,21 @@ namespace System.Collections
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
         public static void ForEach<T>(this IEnumerable source, Action<T> action)
         {
-            foreach (T item in source)
+            if (action is null)
             {
-                action.Invoke(item);
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            if (source is IList<T> list)
+            {
+                list.ForEach(action);
+            }
+            else
+            {
+                foreach (T item in source)
+                {
+                    action.Invoke(item);
+                }
             }
         }
 
@@ -64,10 +83,16 @@ namespace System.Collections
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
         public static void ForEach<T>(this IEnumerable source, Action<T, int> action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             int index = -1;
+
             foreach (T item in source)
             {
-                action.Invoke(item, index += 1);
+                action.Invoke(item, ++index);
             }
         }
     }
@@ -105,7 +130,7 @@ namespace System.Collections.Generic
             int index = -1;
             foreach (T item in source)
             {
-                action.Invoke(item, index += 1);
+                action.Invoke(item, ++index);
             }
         }
     }

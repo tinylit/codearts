@@ -1,17 +1,15 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder.Extensions;
-#else
-using CodeArts.Mvc.Builder;
-using System.Web;
-using System.IO;
-#endif
-using CodeArts.Exceptions;
-using System;
+﻿using System;
 using System.Net;
 using System.Text;
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+#else
+using System.IO;
+using System.Web;
+using CodeArts.Mvc.Builder;
+#endif
+using CodeArts.Exceptions;
 
 namespace CodeArts.Mvc
 {
@@ -188,20 +186,20 @@ namespace CodeArts.Mvc
                 }
 #endif
 
-                var request = uri.AsRequestable().ToQueryString(context.Request.QueryString.ToString());
+                var request = uri.AsRequestable().AppendQueryString(context.Request.QueryString.ToString());
 
                 var token = context.Request.Headers["Authorization"];
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    request.AppendHeader("Authorization", token);
+                    request.AssignHeader("Authorization", token);
                 }
 
                 string contentType = context.Request.ContentType?.ToLower() ?? string.Empty;
 
                 if (contentType.Contains("application/x-www-form-urlencoded"))
                 {
-                    request.ToForm(context.Request.Form);
+                    request.Form(context.Request.Form);
                 }
                 else if (contentType.Contains("application/json") || contentType.Contains("application/xml"))
                 {
@@ -216,11 +214,11 @@ namespace CodeArts.Mvc
 
                         if (contentType.Contains("application/json"))
                         {
-                            request.ToJson(body);
+                            request.Json(body);
                         }
                         else
                         {
-                            request.ToXml(body);
+                            request.Xml(body);
                         }
                     }
 #else
@@ -230,11 +228,11 @@ namespace CodeArts.Mvc
                         {
                             if (contentType.Contains("application/json"))
                             {
-                                request.ToJson(reader.ReadToEnd());
+                                request.Json(reader.ReadToEnd());
                             }
                             else
                             {
-                                request.ToXml(reader.ReadToEnd());
+                                request.Xml(reader.ReadToEnd());
                             }
                         }
                     }

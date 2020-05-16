@@ -8,7 +8,6 @@ using System.IdentityModel.Tokens.Jwt;
 #else
 using System.Web.Http;
 using JWT;
-using JWT.Algorithms;
 using JWT.Serializers;
 #endif
 

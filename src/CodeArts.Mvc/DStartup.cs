@@ -10,6 +10,7 @@ using CodeArts.Config;
 using CodeArts.Serialize.Json;
 using CodeArts.Mvc.Converters;
 using Microsoft.Extensions.Logging;
+using CodeArts.Mvc.Validators.DataAnnotations;
 #if NETCOREAPP3_1
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
@@ -120,6 +121,9 @@ namespace CodeArts.Mvc
                    .AddMvc(options =>
                    {
                        options.EnableEndpointRouting = false;
+
+                       options.ModelValidatorProviders.Add(new DataAnnotationsModelValidatorProvider());
+
                        //自定义异常捕获
                        options.Filters.Add<DExceptionFilter>();
                    })
@@ -134,6 +138,8 @@ namespace CodeArts.Mvc
             => services
                 .AddMvc(options =>
                 {
+                    options.ModelValidatorProviders.Add(new DataAnnotationsModelValidatorProvider());
+
                     //自定义异常捕获
                     options.Filters.Add<DExceptionFilter>();
                 })

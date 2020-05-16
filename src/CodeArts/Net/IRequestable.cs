@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using System.Xml;
@@ -127,13 +128,13 @@ namespace CodeArts.Net
         /// <typeparam name="T">返回类型</typeparam>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IJsonRequestable<T> Json<T>(NamingType namingType = NamingType.CamelCase) where T : class;
+        IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
         /// <typeparam name="T">返回类型</typeparam>
         /// <returns></returns>
-        IXmlRequestable<T> Xml<T>() where T : class;
+        IXmlRequestable<T> XmlCast<T>() where T : class;
 
         /// <summary>
         /// 数据返回JSON格式的结果，将转为指定类型(匿名对象)
@@ -142,14 +143,14 @@ namespace CodeArts.Net
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <param name="namingType">命名规范</param>
         /// <returns></returns>
-        IJsonRequestable<T> Json<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
+        IJsonRequestable<T> JsonCast<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型(匿名对象)
         /// </summary>
         /// <typeparam name="T">匿名类型</typeparam>
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <returns></returns>
-        IXmlRequestable<T> Xml<T>(T anonymousTypeObject) where T : class;
+        IXmlRequestable<T> XmlCast<T>(T anonymousTypeObject) where T : class;
     }
 
     /// <summary>
@@ -210,47 +211,73 @@ namespace CodeArts.Net
     public interface IRequestableBase
     {
         /// <summary>
-        /// 添加包含与请求或响应相关联的协议头。
+        /// 指定包含与请求或响应相关联的协议头。
         /// </summary>
         /// <param name="header">协议头</param>
         /// <param name="value">内容</param>
         /// <returns></returns>
-        IRequestable AppendHeader(string header, string value);
+        IRequestable AssignHeader(string header, string value);
 
         /// <summary>
-        /// 添加包含与请求或响应相关联的协议头。
+        /// 指定包含与请求或响应相关联的协议头。
         /// </summary>
         /// <param name="headers">协议头</param>
         /// <returns></returns>
-        IRequestable AppendHeaders(IEnumerable<KeyValuePair<string, string>> headers);
+        IRequestable AssignHeaders(IEnumerable<KeyValuePair<string, string>> headers);
 
         /// <summary>
         /// 请求参数。
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable ToQueryString(string param);
+        IRequestable AppendQueryString(string param);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="name">参数名称</param>
+        /// <param name="value">参数值</param>
+        /// <returns></returns>
+        IRequestable AppendQueryString(string name, string value);
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="name">参数名称</param>
+        /// <param name="value">参数值</param>
+        /// <param name="dateFormatString">日期格式化</param>
+        /// <returns></returns>
+        IRequestable AppendQueryString(string name, DateTime value, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
+
+        /// <summary>
+        /// 请求参数。?id=1&amp;name="yep"
+        /// </summary>
+        /// <param name="name">参数名称</param>
+        /// <param name="value">参数值</param>
+        /// <returns></returns>
+        IRequestable AppendQueryString<T>(string name, T value);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<string> param);
+        IRequestable AppendQueryString(IEnumerable<string> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, string>> param);
+        IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, string>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
+        /// <param name="dateFormatString">日期格式化</param>
         /// <returns></returns>
-        IRequestable ToQueryString(IEnumerable<KeyValuePair<string, DateTime>> param);
+        IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, DateTime>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
@@ -258,15 +285,16 @@ namespace CodeArts.Net
         /// <typeparam name="T">值类型</typeparam>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable ToQueryString<T>(IEnumerable<KeyValuePair<string, T>> param);
+        IRequestable AppendQueryString<T>(IEnumerable<KeyValuePair<string, T>> param);
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"
         /// </summary>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
+        /// <param name="dateFormatString">日期格式化</param>
         /// <returns></returns>
-        IRequestable ToQueryString(object param, NamingType namingType = NamingType.UrlCase);
+        IRequestable AppendQueryString(object param, NamingType namingType = NamingType.UrlCase, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
     }
 
     /// <summary>
@@ -277,9 +305,9 @@ namespace CodeArts.Net
         /// <summary>
         /// content-type = "application/json"
         /// </summary>
-        /// <param name="param">参数</param>
+        /// <param name="json">参数</param>
         /// <returns></returns>
-        IRequestable ToJson(string param);
+        IRequestable Json(string json);
         /// <summary>
         ///  content-type = "application/json"
         /// </summary>
@@ -287,41 +315,41 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToJson<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
+        IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
         /// <summary>
         /// content-type = "application/xml";
         /// </summary>
-        /// <param name="param">参数</param>
+        /// <param name="xml">参数</param>
         /// <returns></returns>
-        IRequestable ToXml(string param);
+        IRequestable Xml(string xml);
         /// <summary>
         /// content-type = "application/xml";
         /// </summary>
         /// <typeparam name="T">参数类型</typeparam>
         /// <param name="param">参数</param>
         /// <returns></returns>
-        IRequestable ToXml<T>(T param) where T : class;
+        IRequestable Xml<T>(T param) where T : class;
+        /// <summary>
+        /// content-type = "application/x-www-form-urlencoded";
+        /// </summary>
+        /// <param name="json">JSON格式的参数</param>
+        /// <param name="namingType">命名规则</param>
+        /// <returns></returns>
+        IRequestable Form(string json, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm(string param, NamingType namingType = NamingType.Normal);
+        IRequestable Form(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal);
-        /// <summary>
-        /// content-type = "application/x-www-form-urlencoded";
-        /// </summary>
-        /// <param name="param">参数</param>
-        /// <param name="namingType">命名规则</param>
-        /// <returns></returns>
-        IRequestable ToForm(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal);
+        IRequestable Form(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
@@ -329,15 +357,21 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal);
+        IRequestable Form<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal);
+        /// <summary>
+        /// 属性名称按照<see cref="NamingAttribute"/>标记分析。
+        /// content-type = "application/x-www-form-urlencoded";
+        /// </summary>
+        /// <param name="param">参数</param>
+        /// <returns></returns>
+        IRequestable Form(object param);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";
         /// </summary>
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable ToForm(object param, NamingType namingType = NamingType.Normal);
-
+        IRequestable Form(object param, NamingType namingType);
         /// <summary>
         /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
         /// 多个条件是或的关系。
@@ -345,21 +379,18 @@ namespace CodeArts.Net
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
         IThenRequestable TryIf(Predicate<WebException> match);
-
         /// <summary>
         /// 如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
         /// </summary>
         /// <param name="then">异常处理事件</param>
         /// <returns></returns>
         IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
-
         /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
         ICatchRequestable Catch(Action<WebException> log);
-
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
@@ -449,21 +480,21 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
+        IResultCatchRequestable<T> XmlCatch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        IXmlCatchRequestable<T> Catch(Action<string, XmlException> log);
+        IXmlCatchRequestable<T> XmlCatch(Action<string, XmlException> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IXmlResultCatchRequestable<T> Catch(Func<string, XmlException, T> returnValue);
+        IXmlResultCatchRequestable<T> XmlCatch(Func<string, XmlException, T> returnValue);
 
         /// <summary>
         /// 始终执行的动作
@@ -483,21 +514,21 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
+        IResultCatchRequestable<T> JsonCatch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        IJsonCatchRequestable<T> Catch(Action<string, Exception> log);
+        IJsonCatchRequestable<T> JsonCatch(Action<string, Exception> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IJsonResultCatchRequestable<T> Catch(Func<string, Exception, T> returnValue);
+        IJsonResultCatchRequestable<T> JsonCatch(Func<string, Exception, T> returnValue);
 
         /// <summary>
         /// 始终执行的动作
@@ -672,14 +703,14 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        IJsonCatchRequestable<T> Catch(Action<string, Exception> log);
+        IJsonCatchRequestable<T> JsonCatch(Action<string, Exception> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IJsonResultCatchRequestable<T> Catch(Func<string, Exception, T> returnValue);
+        IJsonResultCatchRequestable<T> JsonCatch(Func<string, Exception, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
@@ -707,14 +738,14 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        IXmlCatchRequestable<T> Catch(Action<string, XmlException> log);
+        IXmlCatchRequestable<T> XmlCatch(Action<string, XmlException> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IXmlResultCatchRequestable<T> Catch(Func<string, XmlException, T> returnValue);
+        IXmlResultCatchRequestable<T> XmlCatch(Func<string, XmlException, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
