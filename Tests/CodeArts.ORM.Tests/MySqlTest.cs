@@ -1,21 +1,20 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using CodeArts;
+﻿using CodeArts;
 using CodeArts.MySql;
 using CodeArts.ORM;
 using CodeArts.ORM.Tests.Domain;
 using CodeArts.ORM.Tests.Domain.Entities;
+using Dapper;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
+using System.Text;
 using UnitTest.Domain;
 using UnitTest.Dtos;
 using UnitTest.Enums;
 using UnitTest.Visiters;
-using System.Text;
-using Dapper;
-using System.Data.SqlClient;
-using MySql.Data.MySqlClient;
 
 namespace UnitTest
 {
@@ -41,34 +40,14 @@ namespace UnitTest
 
             if (isCompleted) return;
 
-            var connectionString = "server=rm-wz9i0tp5zhl9u29n8ao.mysql.rds.aliyuncs.com;port=3306;user=fei;password=HUHihihhe78393h372h0; database=yep.v3.admin;maxpoolsize=500";
-
-            //SqlMapper.PurgeQueryCache();
-
-            var conn = new MySqlConnection(connectionString);
-
-            try
-            {
-                var data = conn.QueryFirst<int>(@"
-declare @data table(Id int not null, A int null, B int null, C varchar(20), D int null, E int null)
-insert @data (Id, A, B, C, D, E) values 
-	(1,null,null,null,null,null),
-	(2,42,42,'abc',2,2)
-select max(A) from @data where Id>2");
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
+            var connectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;";
 
             using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
             {
-
-
                 try
                 {
                     connection.Open();
+
                     using (var command = connection.CreateCommand())
                     {
                         command.CommandType = System.Data.CommandType.Text;
