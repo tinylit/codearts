@@ -1,4 +1,5 @@
 ﻿using CodeArts.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Web.Http;
 
 namespace Mvc461
@@ -11,6 +12,11 @@ namespace Mvc461
         public override void Configuration(HttpConfiguration config)
         {
             base.Configuration(config);
+
+            ModelValidator.CustomValidate<RequiredAttribute>((attr, context) =>
+            {
+                return $"{context.DisplayName}为必填字段!";
+            });
         }
     }
 }

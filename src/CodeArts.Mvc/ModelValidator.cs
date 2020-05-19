@@ -1,8 +1,12 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+#else
+using System.Web.Http.Metadata;
+using System.Web.Http.Validation;
+#endif
 
 namespace CodeArts.Mvc
 {
@@ -11,7 +15,7 @@ namespace CodeArts.Mvc
     /// </summary>
     public static class ModelValidator
     {
-        private static readonly object _emptyValidationContextInstance = new object();        
+        private static readonly object _emptyValidationContextInstance = new object();
         private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>> ValidationCache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>>();
 
         /// <summary>
@@ -43,7 +47,7 @@ namespace CodeArts.Mvc
 
             ValidationCache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context, value);
         }
-
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         /// <summary>
         /// 数据验证
         /// </summary>
@@ -99,6 +103,64 @@ namespace CodeArts.Mvc
                 }
             }
         }
+#else
+        /// <summary>
+        /// 数据验证
+        /// </summary>
+        /// <param name="validator">验证器</param>
+        /// <param name="metadata">模型数据</param>
+        /// <param name="validationAttribute">验证属性</param>
+        /// <param name="container">数据</param>
+        public static IEnumerable<ModelValidationResult> Validate(System.Web.Http.Validation.ModelValidator validator, ModelMetadata metadata, ValidationAttribute validationAttribute, object container)
+        {
+            if (validator is null)
+            {
+                throw new ArgumentNullException(nameof(validator));
+            }
+
+            if (metadata is null)
+            {
+                throw new ArgumentNullException(nameof(metadata));
+            }
+
+            if (validationAttribute is null)
+            {
+                throw new ArgumentNullException(nameof(validationAttribute));
+            }
+
+            if (ValidationCache.TryGetValue(validationAttribute.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
+            {
+                var memberName = metadata.GetDisplayName();
+                var context = new ValidationContext(
+                     container ?? metadata.Model ?? _emptyValidationContextInstance,
+                     null,
+                     null)
+                {
+                    DisplayName = metadata.GetDisplayName(),
+                    MemberName = memberName
+                };
+
+                ValidationResult validation = validationAttribute.GetValidationResult(metadata.Model, context);
+
+                if (validation == ValidationResult.Success)
+                {
+                    yield break;
+                }
+
+                yield return new ModelValidationResult
+                {
+                    MemberName = memberName,
+                    Message = invoke.Invoke(validationAttribute, context, metadata.Model)
+                };
+            }
+            else
+            {
+                foreach (var validationResult in validator.Validate(metadata, container))
+                {
+                    yield return validationResult;
+                }
+            }
+        }
+#endif
     }
 }
-#endif

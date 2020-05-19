@@ -70,6 +70,12 @@ namespace MVC461.Controllers
         public string Name { get; set; }
     }
 
+    public class ValueModel
+    {
+        [Required]
+        public string value { get; set; }
+    }
+
     /// <inheritdoc />
     public class ValuesController : BaseController
     {
@@ -109,7 +115,7 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         // PUT api/values/5
         [HttpPut]
-        public void Put(int id, [FromBody]string value)
+        public void Put(int id, [FromBody]ValueModel value)
         {
 
         }

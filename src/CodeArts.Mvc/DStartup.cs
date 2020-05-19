@@ -228,6 +228,9 @@ using System.Linq;
 using System;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
+using System.Web.Http.Metadata;
+using CodeArts.Mvc.Providers;
+using System.Web.Http.ModelBinding;
 
 namespace CodeArts.Mvc
 {
@@ -303,6 +306,18 @@ namespace CodeArts.Mvc
                 .JsonFormatter
                 .SerializerSettings
                 .ContractResolver = new ContractResolver();
+
+            ModelBinderConfig.ValueRequiredErrorMessageProvider = (context, metadata, value) =>
+            {
+                return string.Empty;
+            };
+
+            ModelBinderConfig.TypeConversionErrorMessageProvider = (context, metadata, value) =>
+            {
+                return string.Empty;
+            };
+
+            config.Services.Replace(typeof(ModelMetadataProvider), new DataAnnotationsModelMetadataProvider(config.Services.GetService(typeof(ModelMetadataProvider)) as System.Web.Http.Metadata.Providers.DataAnnotationsModelMetadataProvider));
 
 #if NET45 || NET451 || NET452 || NET461
             if (useSwaggerUi)
