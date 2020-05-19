@@ -20,28 +20,8 @@ namespace CodeArts.ORM
         private static readonly Type[] supportGenericTypes = new Type[] { typeof(IDbMapper<>), typeof(IDbRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEnumerable<>) };
         private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEnumerable) };
         private static readonly ConcurrentDictionary<Type, Type> TypeCache = new ConcurrentDictionary<Type, Type>();
-        private static readonly ConcurrentDictionary<Assembly, ModuleBuilder> ModuleCache = new ConcurrentDictionary<Assembly, ModuleBuilder>();
         private static readonly MethodInfo DictionaryAdd = typeof(Dictionary<string, object>).GetMethod("Add", BindingFlags.Public | BindingFlags.Instance);
 
-        /// <summary>
-        /// 创建模块。
-        /// </summary>
-        /// <returns></returns>
-        public ModuleBuilder CreateModule(Type type) => ModuleCache.GetOrAdd(type.Assembly, assembly =>
-        {
-            var name = assembly.GetName().Name;
-
-            var assemblyName = new AssemblyName(name + ".DbPxy");
-
-#if NET40
-            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-#elif NET45 || NET451 || NET452 || NET461
-            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-#else
-            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-#endif
-            return assemblyBuilder.DefineDynamicModule(name + ".DbDynamic");
-        });
         /// <summary>
         /// 创建类型。
         /// </summary>
