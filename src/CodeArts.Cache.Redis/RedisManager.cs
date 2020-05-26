@@ -19,10 +19,7 @@ namespace CodeArts.Cache
         /// </summary>
         public static RedisManager Instance => Lazy.Value;
 
-        private RedisManager()
-        {
-            _connections = new ConcurrentDictionary<string, ConnectionMultiplexer>();
-        }
+        private RedisManager() => _connections = new ConcurrentDictionary<string, ConnectionMultiplexer>();
 
         #endregion
 
@@ -39,10 +36,7 @@ namespace CodeArts.Cache
         /// <param name="connectionString">连接字符串</param>
         /// <param name="name">命名</param>
         /// <returns></returns>
-        private ConnectionMultiplexer GetConnection(string connectionString, string name = "default")
-        {
-            return _connections.GetOrAdd(name, p => Connect(ConfigurationOptions.Parse(connectionString)));
-        }
+        private ConnectionMultiplexer GetConnection(string connectionString, string name = "default") => _connections.GetOrAdd(name, p => Connect(ConfigurationOptions.Parse(connectionString)));
 
         /// <summary>
         /// 连接实现
@@ -59,10 +53,7 @@ namespace CodeArts.Cache
         /// <param name="connectionString">连接字符串</param>
         /// <param name="defaultDb">默认仓储</param>
         /// <returns></returns>
-        public IDatabase GetDatabase(string connectionString, int defaultDb = 0)
-        {
-            return GetConnection(connectionString).GetDatabase(defaultDb);
-        }
+        public IDatabase GetDatabase(string connectionString, int defaultDb = 0) => GetConnection(connectionString).GetDatabase(defaultDb);
 
         /// <summary>
         /// 释放
@@ -77,7 +68,9 @@ namespace CodeArts.Cache
             foreach (var conn in _connections.Values)
             {
                 conn.Close();
+                conn.Dispose();
             }
+
             _connections.Clear();
         }
     }

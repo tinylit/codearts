@@ -66,7 +66,7 @@ namespace CodeArts.Cache
 
             if (value.HasValue)
             {
-                return value.Box();
+                return value.ToString();
             }
 
             return null;
@@ -93,19 +93,19 @@ namespace CodeArts.Cache
 
             var type = typeof(T);
 
-            if (type == typeof(object))
-            {
-                return (T)value.Box();
-            }
-
             string valueStr = value;
+
+            if (type == typeof(string) || type == typeof(object))
+            {
+                return (T)(object)valueStr;
+            }
 
             if (valueStr.IsEmpty())
             {
                 return default;
             }
 
-            return (type == typeof(string) || type.IsValueType) ? valueStr.CastTo<T>() : JsonHelper.Json<T>(valueStr);
+            return type.IsValueType ? valueStr.CastTo<T>() : JsonHelper.Json<T>(valueStr);
 
         }
 
