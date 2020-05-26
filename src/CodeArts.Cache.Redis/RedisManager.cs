@@ -14,6 +14,9 @@ namespace CodeArts.Cache
         private static readonly Lazy<RedisManager> Lazy =
             new Lazy<RedisManager>(() => new RedisManager());
 
+        /// <summary>
+        /// 实例
+        /// </summary>
         public static RedisManager Instance => Lazy.Value;
 
         private RedisManager()
