@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>3.5.0.1</Version>
+		<Version>3.5.0.5</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>A Linq to SQL ORM framework.</Description>
@@ -24,10 +24,6 @@
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' ">
 		<Reference Include="System.Transactions" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' Or '$(TargetFramework)'=='netstandard2.1'">
-		<PackageReference Include="System.Reflection.Emit" Version="4.6.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' ">

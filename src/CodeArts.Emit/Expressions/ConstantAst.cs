@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -28,7 +27,14 @@ namespace CodeArts.Emit.Expressions
         /// <param name="type">值类型</param>
         public ConstantAst(object value, Type type) : base(type ?? value?.GetType() ?? typeof(object))
         {
-            this.value = value;
+            if (value is null || value.GetType() == ReturnType || ReturnType.IsAssignableFrom(value.GetType()))
+            {
+                this.value = value;
+            }
+            else
+            {
+                throw new NotSupportedException($"常量值类型({value.GetType()})和指定类型({ReturnType})无法进行转换!");
+            }
         }
 
         /// <summary>
