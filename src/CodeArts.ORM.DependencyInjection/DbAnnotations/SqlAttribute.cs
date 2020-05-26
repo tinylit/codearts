@@ -1,6 +1,4 @@
-﻿using CodeArts.ORM;
-using System;
-using System.Linq;
+﻿using System;
 
 namespace CodeArts.DbAnnotations
 {
@@ -17,6 +15,16 @@ namespace CodeArts.DbAnnotations
         /// <param name="commandType">命令类型</param>
         public SqlAttribute(string sql, UppercaseString commandType)
         {
+            if (sql is null)
+            {
+                throw new ArgumentNullException(nameof(sql));
+            }
+
+            if (sql.Length == 0)
+            {
+                throw new ArgumentException(nameof(sql));
+            }
+
             Sql = sql;
             CommandType = commandType;
         }
