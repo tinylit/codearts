@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CodeArts.Defaults\CodeArts.Defaults.csproj" />
+    <ProjectReference Include="..\CodeArts\CodeArts.csproj" />
   </ItemGroup>
   
 </Project>
