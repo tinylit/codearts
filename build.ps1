@@ -11,10 +11,12 @@ $packageOutputFolder = "$PSScriptRoot\.nupkgs"
 $projectsToBuild =
     'CodeArts',
     'CodeArts.Defaults',
+    'CodeArts.Cache.Redis',
     'CodeArts.Emit',
 	'CodeArts.Proxies',
     'CodeArts.Mvc',
     'CodeArts.ORM',
+    'CodeArts.ORM.DependencyInjection',
     'CodeArts.MySql',
 	'CodeArts.SignalR',
     'CodeArts.SqlServer',

@@ -1,39 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-	  <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>3.5.0.0</Version>
-    <Authors>Tiny Lit</Authors>
-    <Company>Tiny Lit</Company>
-    <Description>A Linq to SQL ORM framework.</Description>
-	  <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
-    <ApplicationIcon></ApplicationIcon>
-    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Version>3.5.0.1</Version>
+		<Authors>Tiny Lit</Authors>
+		<Company>Tiny Lit</Company>
+		<Description>A Linq to SQL ORM framework.</Description>
+		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
+		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+		<ApplicationIcon></ApplicationIcon>
+		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
+		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+	</PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' ">
-	  <Reference Include="System.Transactions" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-  </ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
+		<Reference Include="System.ComponentModel.DataAnnotations" />
+	</ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' Or '$(TargetFramework)'=='netstandard2.1'">
-    <PackageReference Include="System.Reflection.Emit" Version="4.6.0" />
-  </ItemGroup>
-  
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.5.0" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\CodeArts.Emit\CodeArts.Emit.csproj" />
-    <ProjectReference Include="..\CodeArts\CodeArts.csproj" />
-  </ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' ">
+		<Reference Include="System.Transactions" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' Or '$(TargetFramework)'=='netstandard2.1'">
+		<PackageReference Include="System.Reflection.Emit" Version="4.6.0" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' ">
+		<PackageReference Include="System.ComponentModel.Annotations" Version="4.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\CodeArts\CodeArts.csproj" />
+	</ItemGroup>
 
 </Project>

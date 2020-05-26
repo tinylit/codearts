@@ -120,10 +120,11 @@ namespace CodeArts.ORM
     /// <typeparam name="T">实体类型</typeparam>
     public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, ISelectable, IEnumerable
     {
+        private static ITableInfo tableInfo;
         /// <summary>
         /// 实体表信息
         /// </summary>
-        public static ITableInfo TableInfo => DbMapper<T>.TableInfo;
+        public static ITableInfo TableInfo => tableInfo ?? (tableInfo = MapperRegions.Resolve(typeof(T)));
 
         /// <summary>
         /// 构造函数

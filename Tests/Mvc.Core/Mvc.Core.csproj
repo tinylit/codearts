@@ -20,7 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj" />
-    <ProjectReference Include="..\..\src\CodeArts.ORM\CodeArts.ORM.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.ORM.DependencyInjection\CodeArts.ORM.DependencyInjection.csproj" />
   </ItemGroup>
 
 </Project>
