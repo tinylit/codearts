@@ -11,6 +11,9 @@ using CodeArts.Serialize.Json;
 using CodeArts.Mvc.Converters;
 using Microsoft.Extensions.Logging;
 using CodeArts.Mvc.Validators.DataAnnotations;
+using System.Linq;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.SwaggerUI;
 #if NETCOREAPP3_1
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
@@ -75,36 +78,42 @@ namespace CodeArts.Mvc
 
             if (useSwaggerUi)
             {
-#if NETCOREAPP3_1
                 //增加XML文档解析
-                services.AddSwaggerGen(c =>
-                {
-                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-
-                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                    foreach (var file in files)
-                    {
-                        c.IncludeXmlComments(file);
-                    }
-
-                    c.CustomSchemaIds(x => x.FullName);
-                });
-#else
-                //增加XML文档解析
-                services.AddSwaggerGen(c =>
-                {
-                    c.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
-
-                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                    foreach (var file in files)
-                    {
-                        c.IncludeXmlComments(file);
-                    }
-
-                    c.CustomSchemaIds(x => x.FullName);
-                });
-#endif
+                services.AddSwaggerGen(ConfigureSwaggerGen);
             }
+        }
+
+        /// <summary>
+        /// 配置SwaggerGen。
+        /// </summary>
+        /// <param name="options">SwaggerGen配置项</param>
+        protected virtual void ConfigureSwaggerGen(SwaggerGenOptions options)
+        {
+#if NETCOREAPP3_1
+            options.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new OpenApiInfo { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+#else
+            options.SwaggerDoc("swagger:version".Config(Consts.SwaggerVersion), new Info { Title = "swagger:title".Config(Consts.SwaggerTitle), Version = "v3" });
+#endif
+
+            var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+
+            foreach (var file in files)
+            {
+                options.IncludeXmlComments(file);
+            }
+
+            options.CustomSchemaIds(x => x.FullName);
+
+            options.ResolveConflictingActions(actions => actions.First());
+        }
+
+        /// <summary>
+        /// 配置SwaggerUI。
+        /// </summary>
+        /// <param name="options">SwaggerUI配置项</param>
+        protected virtual void ConfigureSwaggerUI(SwaggerUIOptions options)
+        {
+            options.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
         }
 
         /// <summary>
@@ -203,10 +212,7 @@ namespace CodeArts.Mvc
             if (useSwaggerUi)
             {
                 app.UseSwagger()
-                    .UseSwaggerUI(c =>
-                    {
-                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                    });
+                    .UseSwaggerUI(ConfigureSwaggerUI);
             }
 #endif
         }
@@ -230,7 +236,6 @@ using System.Web.Http;
 using System.Web.Http.Dependencies;
 using System.Web.Http.Metadata;
 using CodeArts.Mvc.Providers;
-using System.Web.Http.ModelBinding;
 
 namespace CodeArts.Mvc
 {
@@ -243,8 +248,20 @@ namespace CodeArts.Mvc
     /// </summary>
     public class DStartup
     {
-        private readonly bool useSwaggerUi;
+
         private readonly bool useDependencyInjection;
+
+#if NET40
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        public DStartup(bool useDependencyInjection = true)
+        {
+            this.useDependencyInjection = useDependencyInjection;
+        }
+#else
+        private readonly bool useSwaggerUi;
 
         /// <summary>
         /// 构造函数
@@ -256,6 +273,7 @@ namespace CodeArts.Mvc
             this.useSwaggerUi = useSwaggerUi;
             this.useDependencyInjection = useDependencyInjection;
         }
+#endif
 
         /// <summary>
         /// 属性名称解析规则
@@ -274,7 +292,7 @@ namespace CodeArts.Mvc
         /// <param name="config">配置</param>
         public virtual void Configuration(HttpConfiguration config)
         {
-#if NET45 || NET451 || NET452 || NET461
+#if !NET40
             // Web API 路由
             config.MapHttpAttributeRoutes();
 
@@ -307,53 +325,14 @@ namespace CodeArts.Mvc
                 .SerializerSettings
                 .ContractResolver = new ContractResolver();
 
-            ModelBinderConfig.ValueRequiredErrorMessageProvider = (context, metadata, value) =>
-            {
-                return string.Empty;
-            };
-
-            ModelBinderConfig.TypeConversionErrorMessageProvider = (context, metadata, value) =>
-            {
-                return string.Empty;
-            };
-
             config.Services.Replace(typeof(ModelMetadataProvider), new DataAnnotationsModelMetadataProvider(config.Services.GetService(typeof(ModelMetadataProvider)) as System.Web.Http.Metadata.Providers.DataAnnotationsModelMetadataProvider));
 
-#if NET45 || NET451 || NET452 || NET461
+#if !NET40
             if (useSwaggerUi)
             {
                 //? SwaggerUi
-                config.EnableSwagger(c =>
-                {
-                    c.Schemes(new[] { "http", "https" });
-
-                    c.SingleApiVersion("swagger-version".Config(Consts.SwaggerVersion), "swagger-title".Config(Consts.SwaggerTitle));
-
-                    var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
-                    foreach (var file in files)
-                    {
-                        c.IncludeXmlComments(file);
-                    }
-
-                    if (Directory.Exists(AppDomain.CurrentDomain.RelativeSearchPath))
-                    {
-                        var relativeFiles = Directory.GetFiles(AppDomain.CurrentDomain.RelativeSearchPath, "*.xml", SearchOption.TopDirectoryOnly);
-                        foreach (var file in relativeFiles)
-                        {
-                            c.IncludeXmlComments(file);
-                        }
-                    }
-
-                    c.IgnoreObsoleteProperties();
-
-                    c.DescribeAllEnumsAsStrings();
-
-                    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
-
-                }).EnableSwaggerUi(c =>
-                {
-                    c.DocExpansion(DocExpansion.List);
-                });
+                config.EnableSwagger(ConfigureSwagger)
+                    .EnableSwaggerUi(ConfigureSwaggerUi);
             }
 #endif
 
@@ -368,6 +347,50 @@ namespace CodeArts.Mvc
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
         }
+
+#if !NET40
+        /// <summary>
+        /// 配置Swagger。
+        /// </summary>
+        /// <param name="config">Swagger文档配置项</param>
+        protected virtual void ConfigureSwagger(SwaggerDocsConfig config)
+        {
+            config.Schemes(new[] { "http", "https" });
+
+            config.SingleApiVersion("swagger-version".Config(Consts.SwaggerVersion), "swagger-title".Config(Consts.SwaggerTitle));
+
+            var files = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+
+            foreach (var file in files)
+            {
+                config.IncludeXmlComments(file);
+            }
+
+            if (Directory.Exists(AppDomain.CurrentDomain.RelativeSearchPath))
+            {
+                var relativeFiles = Directory.GetFiles(AppDomain.CurrentDomain.RelativeSearchPath, "*.xml", SearchOption.TopDirectoryOnly);
+                foreach (var file in relativeFiles)
+                {
+                    config.IncludeXmlComments(file);
+                }
+            }
+
+            config.IgnoreObsoleteProperties();
+
+            config.DescribeAllEnumsAsStrings();
+
+            config.UseFullTypeNameInSchemaIds();
+
+            config.ResolveConflictingActions(actions => actions.First());
+        }
+
+        /// <summary>
+        /// 配置SwaggerUi。
+        /// </summary>
+        /// <param name="config">SwaggerUi配置项</param>
+        protected virtual void ConfigureSwaggerUi(SwaggerUiConfig config) => config.DocExpansion(DocExpansion.List);
+
+#endif
 
         /// <summary>
         /// 配置依赖注入。

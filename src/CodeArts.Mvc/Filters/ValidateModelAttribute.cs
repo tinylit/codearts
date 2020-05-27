@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 #else
 using System.Net.Http;
+using System.Web.Http.Filters;
 using System.Web.Http.Controllers;
 using System.Web.Http.ModelBinding;
 using CodeArts.Serialize.Json;
@@ -15,11 +16,7 @@ using CodeArts.Serialize.Json;
 namespace CodeArts.Mvc.Filters
 {
     /// <summary> 模型验证过滤器 </summary>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-    public class ValidateModelAttribute : Microsoft.AspNetCore.Mvc.Filters.ActionFilterAttribute
-#else
-    public class ValidateModelAttribute : System.Web.Http.Filters.ActionFilterAttribute
-#endif
+    public class ValidateModelAttribute : ActionFilterAttribute
     {
         /// <summary>
         /// 出错时验证。

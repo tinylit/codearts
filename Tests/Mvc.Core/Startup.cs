@@ -22,7 +22,7 @@ namespace Mvc.Core
             DbConnectionManager.RegisterAdapter(new MySqlAdapter());
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
-            services.AddGrpc();
+            //services.AddGrpc();
 
             ModelValidator.CustomValidate<RequiredAttribute>((attr, context) =>
             {
@@ -37,15 +37,15 @@ namespace Mvc.Core
         {
             base.Configure(app.MapPost("/test", "/api/values/test"), env);
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapGrpcService<PushService>();
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapGrpcService<PushService>();
 
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
-                });
-            });
+            //    endpoints.MapGet("/", async context =>
+            //    {
+            //        await context.Response.WriteAsync("Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
+            //    });
+            //});
         }
     }
 }

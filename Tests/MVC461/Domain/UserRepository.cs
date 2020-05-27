@@ -6,7 +6,7 @@ namespace Mvc461.Domain
     /// <summary>
     /// 用户仓库
     /// </summary>
-    [DbConfig("connectionStrings:default")]
+    [DbConfig]
     public class UserRepository : DbRepository<User>
     {
     }
