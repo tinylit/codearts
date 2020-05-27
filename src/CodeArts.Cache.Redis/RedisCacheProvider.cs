@@ -18,8 +18,9 @@ namespace CodeArts.Cache
         static RedisCacheProvider() => Caches = new ConcurrentDictionary<string, ICache>();
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数（获取配置中名为“redis”的值）
         /// </summary>
+        /// <param name="defaultDb">获取数据库的ID。</param>
         public RedisCacheProvider(int defaultDb = 0) : this("redis".Config<string>(), defaultDb)
         {
         }
@@ -27,6 +28,8 @@ namespace CodeArts.Cache
         /// <summary>
         /// 构造函数
         /// </summary>
+        /// <param name="connectString">链接</param>
+        /// <param name="defaultDb">获取数据库的ID。</param>
         public RedisCacheProvider(string connectString, int defaultDb = 0)
         {
             this.connectString = connectString ?? throw new ArgumentNullException(nameof(connectString));

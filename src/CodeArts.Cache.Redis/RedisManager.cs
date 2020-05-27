@@ -25,24 +25,10 @@ namespace CodeArts.Cache
 
         #region 连接
 
-        /// <summary>
-        /// Redis连接对象管理
-        /// </summary>
         private readonly ConcurrentDictionary<string, ConnectionMultiplexer> _connections;
 
-        /// <summary>
-        /// 获取Redis对象
-        /// </summary>
-        /// <param name="connectionString">连接字符串</param>
-        /// <param name="name">命名</param>
-        /// <returns></returns>
         private ConnectionMultiplexer GetConnection(string connectionString, string name = "default") => _connections.GetOrAdd(name, p => Connect(ConfigurationOptions.Parse(connectionString)));
 
-        /// <summary>
-        /// 连接实现
-        /// </summary>
-        /// <param name="configOpts"></param>
-        /// <returns></returns>
         private ConnectionMultiplexer Connect(ConfigurationOptions configOpts) => ConnectionMultiplexer.Connect(configOpts);
 
         #endregion
@@ -51,7 +37,7 @@ namespace CodeArts.Cache
         /// 数据库操作对象
         /// </summary>
         /// <param name="connectionString">连接字符串</param>
-        /// <param name="defaultDb">默认仓储</param>
+        /// <param name="defaultDb">获取数据库的ID。</param>
         /// <returns></returns>
         public IDatabase GetDatabase(string connectionString, int defaultDb = 0) => GetConnection(connectionString).GetDatabase(defaultDb);
 
