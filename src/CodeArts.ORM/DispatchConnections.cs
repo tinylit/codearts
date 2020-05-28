@@ -24,7 +24,6 @@ namespace CodeArts.ORM
         {
             private bool _clearTimerRun;
             private readonly Timer _clearTimer;
-            private readonly static object _lockObj = new object();
             private readonly ConcurrentDictionary<string, List<DbConnection>> connectionCache = new ConcurrentDictionary<string, List<DbConnection>>();
 
             public DefaultConnections()
@@ -60,16 +59,13 @@ namespace CodeArts.ORM
                     }
                 }
 
-                lock (_lockObj)
+                list.ForEach(key =>
                 {
-                    list.ForEach(key =>
+                    if (connectionCache.TryRemove(key, out List<DbConnection> connections) && connections.Count > 0)
                     {
-                        if (connectionCache.TryRemove(key, out List<DbConnection> connections) && connections.Count > 0)
-                        {
-                            connectionCache.TryAdd(key, connections);
-                        }
-                    });
-                }
+                        connectionCache.TryAdd(key, connections);
+                    }
+                });
 
                 if (connectionCache.Count == 0)
                 {
@@ -86,12 +82,7 @@ namespace CodeArts.ORM
             /// <returns></returns>
             public IDbConnection Create(string connectionString, IDbConnectionAdapter adapter, bool useCache = true)
             {
-                List<DbConnection> connections;
-
-                lock (_lockObj)
-                {
-                    connections = connectionCache.GetOrAdd(connectionString, _ => new List<DbConnection>());
-                }
+                List<DbConnection> connections = connectionCache.GetOrAdd(connectionString, _ => new List<DbConnection>());
 
                 foreach (var item in connections)
                 {

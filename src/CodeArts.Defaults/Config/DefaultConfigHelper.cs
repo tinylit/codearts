@@ -1,8 +1,8 @@
 ﻿#if NETSTANDARD2_0 ||NETSTANDARD2_1
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace CodeArts.Config
 {
@@ -17,7 +17,7 @@ namespace CodeArts.Config
         /// 获取默认配置
         /// </summary>
         /// <returns></returns>
-        static IConfigurationBuilder ConfigurationBuilder()
+        private static IConfigurationBuilder ConfigurationBuilder()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 
@@ -46,6 +46,8 @@ namespace CodeArts.Config
 
             return builder;
         }
+
+        private readonly ConcurrentDictionary<string, IConfiguration> _cache = new ConcurrentDictionary<string, IConfiguration>();
 
         /// <summary>
         /// 构造函数
@@ -91,8 +93,11 @@ namespace CodeArts.Config
         /// <param name="state">状态</param>
         private void ConfigChanged(object state)
         {
+            _cache.Clear();
+
             OnConfigChanged?.Invoke(state);
             _callbackRegistration?.Dispose();
+
             _callbackRegistration = _config.GetReloadToken()
                 .RegisterChangeCallback(ConfigChanged, state);
         }
@@ -106,15 +111,18 @@ namespace CodeArts.Config
         /// <returns></returns>
         public T Get<T>(string key, T defaultValue = default)
         {
-            //简单类型直接获取其值
             try
             {
                 var type = typeof(T);
-                if (type.IsSimpleType())
-                    return _config.GetValue(key, defaultValue);
 
-                //其他复杂类型
-                return _config.GetSection(key).Get<T>();
+                //简单类型直接获取其值
+                if (type.IsSimpleType())
+                {
+                    return _config.GetValue(key, defaultValue);
+                }
+
+                // 复杂类型
+                return _cache.GetOrAdd(key, name => _config.GetSection(name)).Get<T>();
             }
             catch
             {
@@ -123,7 +131,12 @@ namespace CodeArts.Config
         }
 
         /// <summary> 重新加载配置 </summary>
-        public void Reload() { _config.Reload(); }
+        public void Reload()
+        {
+            _cache.Clear();
+
+            _config.Reload();
+        }
     }
 }
 #else
