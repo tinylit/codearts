@@ -152,11 +152,6 @@ using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.DependencyInjection;
 #if !NET40
 using Swashbuckle.Application;
-using Swashbuckle.Swagger;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web.Http.Description;
-using System.Web.Http.Filters;
 #endif
 
 namespace CodeArts.Mvc

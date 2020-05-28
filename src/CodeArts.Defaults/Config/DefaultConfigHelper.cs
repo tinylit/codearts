@@ -19,22 +19,25 @@ namespace CodeArts.Config
         /// <returns></returns>
         static IConfigurationBuilder ConfigurationBuilder()
         {
-            string currentDir = AppDomain.CurrentDomain.BaseDirectory;
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 
-            Debug(() =>
+            string variable = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            if (string.Equals(variable, "Development", StringComparison.OrdinalIgnoreCase))
             {
                 string dir = Directory.GetCurrentDirectory();
 
                 if (File.Exists(Path.Combine(dir, "appsettings.json")))
                 {
-                    currentDir = dir;
+                    baseDir = dir;
                 }
-            });
+
+            }
 
             var builder = new ConfigurationBuilder()
-                 .SetBasePath(currentDir);
+                 .SetBasePath(baseDir);
 
-            var path = Path.Combine(currentDir, "appsettings.json");
+            var path = Path.Combine(baseDir, "appsettings.json");
 
             if (File.Exists(path))
             {
@@ -43,9 +46,6 @@ namespace CodeArts.Config
 
             return builder;
         }
-
-        [Conditional("DEBUG")]
-        static void Debug(Action action) => action.Invoke();
 
         /// <summary>
         /// 构造函数

@@ -11,7 +11,18 @@ namespace CodeArts
     /// <typeparam name="T">元素类型</typeparam>
     public class PagedList<T> : IEnumerable<T>, IEnumerable
     {
+        private readonly bool isEmpty;
         private readonly IQueryable<T> list;
+
+        /// <summary>
+        /// 空集合。
+        /// </summary>
+        public static readonly PagedList<T> Empty = new PagedList<T>();
+
+        /// <summary>
+        /// 私有构造函数
+        /// </summary>
+        private PagedList() => isEmpty = true;
 
         /// <summary>
         /// 构造函数
@@ -42,13 +53,26 @@ namespace CodeArts
         /// <summary>
         /// 总数
         /// </summary>
-        public int Count => list.Count();
+        public int Count => isEmpty ? 0 : list.Count();
 
         /// <summary>
         /// 获取迭代器
         /// </summary>
         /// <returns></returns>
-        public IEnumerator<T> GetEnumerator() => list.Skip(Size * Page).Take(Size).GetEnumerator();
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (isEmpty)
+            {
+                yield break;
+            }
+            else
+            {
+                foreach (T item in list.Skip(Size * Page).Take(Size))
+                {
+                    yield return item;
+                }
+            }
+        }
 
         /// <summary>
         /// 获取迭代器
