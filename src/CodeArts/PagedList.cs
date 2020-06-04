@@ -61,17 +61,12 @@ namespace CodeArts
         /// <returns></returns>
         public IEnumerator<T> GetEnumerator()
         {
-            if (isEmpty)
-            {
-                yield break;
-            }
-            else
-            {
-                foreach (T item in list.Skip(Size * Page).Take(Size))
-                {
-                    yield return item;
-                }
-            }
+            IEnumerable<T> enumerable = isEmpty ? 
+                Enumerable.Empty<T>() 
+                : 
+                list.Skip(Size * Page).Take(Size);
+
+            return enumerable.GetEnumerator();
         }
 
         /// <summary>

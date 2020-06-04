@@ -20,6 +20,7 @@ namespace CodeArts.ORM
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> mapperCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
         private IDbConnectionAdapter _DbProvider = null;
+
         /// <summary>
         /// 链接配置
         /// </summary>
