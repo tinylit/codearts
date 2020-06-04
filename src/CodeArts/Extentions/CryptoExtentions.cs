@@ -73,6 +73,21 @@ namespace System
         /// <returns></returns>
         public static string Encrypt(this string data, string key, string secret, CryptoKind kind = CryptoKind.DES)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (secret is null)
+            {
+                throw new ArgumentNullException(nameof(secret));
+            }
+
             ICryptoTransform crypto = null;
 
             using (var algorithm = GetSymmetricAlgorithm(kind))
@@ -117,6 +132,21 @@ namespace System
         /// <returns></returns>
         public static string Decrypt(this string data, string key, string secret, CryptoKind kind = CryptoKind.DES)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (secret is null)
+            {
+                throw new ArgumentNullException(nameof(secret));
+            }
+
             ICryptoTransform crypto = null;
 
             using (var algorithm = GetSymmetricAlgorithm(kind))
@@ -159,6 +189,16 @@ namespace System
         /// <returns></returns>
         public static string RsaEncrypt(this string data, string publicKey)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (publicKey is null)
+            {
+                throw new ArgumentNullException(nameof(publicKey));
+            }
+
             using (var rsa = RSA.Create())
             {
                 rsa.FromXmlString(publicKey);
@@ -203,6 +243,11 @@ namespace System
         /// <returns></returns>
         public static string Md5(this string data, Encoding encoding = null, bool toUpperCase = true)
         {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
             byte[] buffer = null;
 
             using (var md5 = MD5.Create())

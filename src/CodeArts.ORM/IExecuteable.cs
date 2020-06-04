@@ -31,7 +31,7 @@ namespace CodeArts.ORM
     /// 路由执行力
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
-    public interface IRouteExecuteable<T> : IEnumerable<T>, IEnumerable
+    public interface IRouteExecuteable<T>
     {
         /// <summary>
         /// 矫正配置。

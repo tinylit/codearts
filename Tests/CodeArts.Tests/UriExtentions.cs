@@ -53,6 +53,8 @@ namespace CodeArts.Tests
                 .AppendQueryString("?account=ljl&password=liujialin&debug=true")
                 .JsonCast(entry, NamingType.CamelCase)
                 .Catch(e => entry)
+                .If(x => x == entry)
+                .RetryCount(1)
                 .Get();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()

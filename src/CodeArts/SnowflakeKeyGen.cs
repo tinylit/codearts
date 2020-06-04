@@ -9,9 +9,11 @@ namespace CodeArts
     {
         private class SnowflakeKey : Key
         {
-            public SnowflakeKey(long value) : base(value)
-            {
-            }
+            public SnowflakeKey(long value) : base(value) { }
+
+            public override int WorkId => (int)(Value >> workerIdShift & maxWorkerId);
+
+            public override int DataCenterId => (int)(Value >> datacenterIdShift & maxDatacenterId);
 
             public override DateTime ToUniversalTime() => UtcBase.AddMilliseconds(Value >> timestampLeftShift);
         }
@@ -49,7 +51,6 @@ namespace CodeArts
             this.datacenterId = datacenterId;
         }
 
-        private static readonly long _timestamp = 0L;
         private static readonly int workerIdBits = 5;
         private static readonly int datacenterIdBits = 5;
 
@@ -95,7 +96,7 @@ namespace CodeArts
 
             lastTimestamp = timestamp;
 
-            return ((timestamp - _timestamp) << timestampLeftShift)
+            return (timestamp << timestampLeftShift)
                     | (datacenterId << datacenterIdShift)
                     | (workerId << workerIdShift)
                     | sequence;

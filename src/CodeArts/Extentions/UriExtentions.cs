@@ -54,8 +54,147 @@ namespace System
 #endif
         }
 
+        private class ThenRequestableExtend<T> : Requestable<T>, IThenRequestableExtend<T>, IRetryThenRequestableExtend<T>, IRetryIntervalThenRequestableExtend<T>
+        {
+            private int maxRetires = 1;
+            private int millisecondsTimeout = -1;
+            private Func<T, int, int> interval;
+
+            private readonly IRequestable<T> requestable;
+            private readonly List<Predicate<T>> predicates = new List<Predicate<T>>();
+
+            public ThenRequestableExtend(IRequestable<T> requestable, Predicate<T> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                predicates.Add(predicate);
+
+                this.requestable = requestable;
+            }
+
+            public IThenRequestableExtend<T> Or(Predicate<T> match)
+            {
+                if (match is null)
+                {
+                    throw new ArgumentNullException(nameof(match));
+                }
+
+                predicates.Add(match);
+
+                return this;
+            }
+
+            public override T Request(string method, int timeout = 5000)
+            {
+                int times = 0;
+                do
+                {
+                    T result = requestable.Request(method, timeout);
+
+                    if (++times <= maxRetires && predicates.Any(x => x.Invoke(result)))
+                    {
+                        if (interval != null)
+                        {
+                            millisecondsTimeout = interval.Invoke(result, times);
+                        }
+
+                        if (millisecondsTimeout > -1)
+                        {
+                            Thread.Sleep(millisecondsTimeout);
+                        }
+
+                        continue;
+                    }
+
+                    return result;
+
+                } while (true);
+            }
+#if !NET40
+            public override async Task<T> RequestAsync(string method, int timeout = 5000)
+            {
+                int times = 0;
+
+                do
+                {
+                    T result = await requestable.RequestAsync(method, timeout);
+
+                    if (++times <= maxRetires && predicates.Any(x => x.Invoke(result)))
+                    {
+                        if (interval != null)
+                        {
+                            millisecondsTimeout = interval.Invoke(result, times);
+                        }
+
+                        if (millisecondsTimeout > -1)
+                        {
+                            await Task.Delay(millisecondsTimeout);
+                        }
+
+                        continue;
+                    }
+
+                    return result;
+
+                } while (true);
+            }
+#endif
+
+            public IRetryThenRequestableExtend<T> RetryCount(int retryCount)
+            {
+                if (retryCount < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(retryCount), "重试次数必须大于零。");
+                }
+
+                maxRetires = Math.Max(retryCount, maxRetires);
+
+                return this;
+            }
+
+            public IRetryIntervalThenRequestableExtend<T> RetryInterval(int millisecondsTimeout)
+            {
+                if (millisecondsTimeout < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), "重试时间间隔不能小于零。");
+                }
+
+                this.millisecondsTimeout = millisecondsTimeout;
+
+                return this;
+            }
+
+            public IRetryIntervalThenRequestableExtend<T> RetryInterval(Func<T, int, int> interval)
+            {
+                if (interval is null)
+                {
+                    throw new ArgumentNullException(nameof(interval));
+                }
+
+                this.interval = interval;
+
+                return this;
+            }
+        }
+
+        private abstract class RequestableExtend<T> : Requestable<T>, IRequestableExtend<T>
+        {
+            public IThenRequestableExtend<T> If(Predicate<T> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                return new ThenRequestableExtend<T>(this, predicate);
+            }
+        }
+
         #region 补充
-        private class CatchRequestable : Requestable<string>, ICatchRequestable, IResultStringCatchRequestable
+        private class CatchRequestable : RequestableExtend<string>, ICatchRequestable, IResultStringCatchRequestable
         {
             private Action<WebException> log;
             private Func<WebException, string> returnValue;
@@ -200,7 +339,7 @@ namespace System
             public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
         }
 
-        private class FinallyRequestable : Requestable<string>, IFinallyRequestable, IFinallyStringRequestable
+        private class FinallyRequestable : RequestableExtend<string>, IFinallyRequestable, IFinallyStringRequestable
         {
             private readonly Action log;
             private readonly IRequestable<string> requestable;
@@ -299,7 +438,7 @@ namespace System
             public IXmlRequestable<T> XmlCast<T>(T anonymousTypeObject) where T : class => XmlCast<T>();
         }
 
-        private class IIFThenRequestable : Requestable<string>, IThenRequestable, IRetryThenRequestable, IRetryIntervalThenRequestable
+        private class IIFThenRequestable : RequestableExtend<string>, IThenRequestable, IRetryThenRequestable, IRetryIntervalThenRequestable
         {
             private int maxRetires = 1;
             private int millisecondsTimeout = -1;
@@ -578,7 +717,7 @@ namespace System
 #endif
         }
 
-        private class ThenRequestable : Requestable<string>, IThenConditionRequestable, IThenAndConditionRequestable
+        private class ThenRequestable : RequestableExtend<string>, IThenConditionRequestable, IThenAndConditionRequestable
         {
             private volatile bool isAllocated = false;
 
@@ -810,7 +949,7 @@ namespace System
 #endif
         }
 
-        private class ResultCatchRequestable<T> : Requestable<T>, IResultCatchRequestable<T>
+        private class ResultCatchRequestable<T> : RequestableExtend<T>, IResultCatchRequestable<T>
         {
             private readonly IRequestable<T> requestable;
             private readonly Func<WebException, T> returnValue;
@@ -851,7 +990,7 @@ namespace System
 
         }
 
-        private class JsonCatchRequestable<T> : Requestable<T>, IJsonCatchRequestable<T>, IJsonResultCatchRequestable<T>
+        private class JsonCatchRequestable<T> : RequestableExtend<T>, IJsonCatchRequestable<T>, IJsonResultCatchRequestable<T>
         {
             private Action<string, Exception> log;
             private Func<string, Exception, T> returnValue;
@@ -986,7 +1125,7 @@ namespace System
 
         }
 
-        private class JsonResultCatchRequestable<T> : Requestable<T>, IJsonResultCatchRequestable<T>
+        private class JsonResultCatchRequestable<T> : RequestableExtend<T>, IJsonResultCatchRequestable<T>
         {
             private readonly IRequestable<string> requestable;
             private readonly Func<string, Exception, T> returnValue;
@@ -1046,7 +1185,7 @@ namespace System
 
         }
 
-        private class XmlCatchRequestable<T> : Requestable<T>, IXmlCatchRequestable<T>, IXmlResultCatchRequestable<T>
+        private class XmlCatchRequestable<T> : RequestableExtend<T>, IXmlCatchRequestable<T>, IXmlResultCatchRequestable<T>
         {
             private Action<string, XmlException> log;
             private Func<string, XmlException, T> returnValue;
@@ -1165,7 +1304,7 @@ namespace System
 
         }
 
-        private class XmlResultCatchRequestable<T> : Requestable<T>, IXmlResultCatchRequestable<T>
+        private class XmlResultCatchRequestable<T> : RequestableExtend<T>, IXmlResultCatchRequestable<T>
         {
             private readonly IRequestable<string> requestable;
             private readonly Func<string, XmlException, T> returnValue;
@@ -1209,7 +1348,7 @@ namespace System
 #endif
         }
 
-        private class Finallyequestable<T> : Requestable<T>, IFinallyRequestable<T>
+        private class Finallyequestable<T> : RequestableExtend<T>, IFinallyRequestable<T>
         {
             private readonly IRequestable<T> requestable;
             private readonly Action log;
@@ -1245,7 +1384,7 @@ namespace System
             }
 #endif
         }
-        private class FinallyStringRequestable : Requestable<string>, IFinallyStringRequestable
+        private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestable
         {
             private readonly IRequestable<string> requestable;
             private readonly Action log;
@@ -1283,7 +1422,7 @@ namespace System
         }
         #endregion
 
-        private class Requestable : Requestable<string>, IRequestable
+        private class Requestable : RequestableExtend<string>, IRequestable
         {
             private Uri __uri;
             private string __data;
@@ -1648,7 +1787,7 @@ namespace System
 #endif
         }
 
-        private class ResultStringCatchRequestable : Requestable<string>, IResultStringCatchRequestable
+        private class ResultStringCatchRequestable : RequestableExtend<string>, IResultStringCatchRequestable
         {
             private readonly IRequestable<string> requestable;
             private readonly Func<WebException, string> returnValue;
@@ -1688,7 +1827,7 @@ namespace System
 #endif
         }
 
-        private class JsonRequestable<T> : Requestable<T>, IJsonRequestable<T>
+        private class JsonRequestable<T> : RequestableExtend<T>, IJsonRequestable<T>
         {
             private readonly IRequestable<string> requestable;
 
@@ -1721,7 +1860,7 @@ namespace System
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
         }
 
-        private class XmlRequestable<T> : Requestable<T>, IXmlRequestable<T>
+        private class XmlRequestable<T> : RequestableExtend<T>, IXmlRequestable<T>
         {
             private readonly IRequestable<string> requestable;
 

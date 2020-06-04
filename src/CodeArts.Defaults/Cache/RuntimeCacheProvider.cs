@@ -21,8 +21,21 @@ namespace CodeArts.Cache
         public bool Enabled { get; set; }
 
         /// <summary> 获取缓存对象 </summary>
-        /// <param name="name">缓存名称</param>
+        /// <param name="regionName">缓存名称</param>
         /// <returns></returns>
-        public ICache GetCache(string name) => Caches.GetOrAdd(name, _ => new RuntimeCache(name));
+        public ICache GetCache(string regionName)
+        {
+            if (regionName is null)
+            {
+                throw new System.ArgumentNullException(nameof(regionName));
+            }
+
+            if (string.IsNullOrWhiteSpace(regionName))
+            {
+                throw new System.ArgumentException("参数不能为空或空格字符!", nameof(regionName));
+            }
+
+            return Caches.GetOrAdd(regionName, name => new RuntimeCache(name));
+        }
     }
 }

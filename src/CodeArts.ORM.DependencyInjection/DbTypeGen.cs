@@ -137,7 +137,7 @@ namespace CodeArts.ORM
 
         private Type Create(TypeStoreItem storeItem, Type repositoryType, Type typeArgument, Type[] interfaces)
         {
-            var moduleEmitter = new ModuleEmitter();
+            var moduleEmitter = new ModuleEmitter("CodeArts.ORM.DependencyInjection");
 
             var classEmitter = new ClassEmitter(moduleEmitter, storeItem.Naming + "Respository", TypeAttributes.Public, repositoryType, interfaces);
 

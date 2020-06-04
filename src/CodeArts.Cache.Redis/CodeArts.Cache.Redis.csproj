@@ -6,7 +6,7 @@
 		<RootNamespace>CodeArts.Cache</RootNamespace>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>1.5.1.1</Version>
+		<Version>1.5.1.2</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>Redis-based caching.</Description>

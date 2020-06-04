@@ -10,7 +10,6 @@ namespace CodeArts.Net
     /// <summary>
     /// 请求能力
     /// </summary>
-    /// <typeparam name="T">结果数据</typeparam>
     public interface IRequestable<T>
     {
         /// <summary>
@@ -114,7 +113,84 @@ namespace CodeArts.Net
         /// <returns></returns>
         Task<T> RequestAsync(string method, int timeout = 5000);
 #endif
+    }
 
+    /// <summary>
+    /// 请求能力扩展
+    /// </summary>
+    public interface IRequestableExtend<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 结果请求结果满足<paramref name="predicate"/>时，会重复请求。
+        /// </summary>
+        /// <param name="predicate">结果验证函数</param>
+        /// <returns></returns>
+        IThenRequestableExtend<T> If(Predicate<T> predicate);
+    }
+
+    /// <summary>
+    /// 重试迭代请求能力扩展。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IRetryIntervalThenRequestableExtend<T> : IRequestable<T>
+    {
+    }
+
+    /// <summary>
+    /// 重试请求能力
+    /// </summary>
+    public interface IRetryThenRequestableExtend<T> : IRequestable<T>
+    {
+#if NET40
+        /// <summary>
+        /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求<see cref="System.Threading.Thread.Sleep(int)"/>。
+        /// </summary>
+        /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
+        /// <returns></returns>
+#else
+        /// <summary>
+        /// 失败后，间隔<paramref name="millisecondsTimeout"/>毫秒后重试请求。【同步请求：<see cref="System.Threading.Thread.Sleep(int)"/>】或【异步请求：<see cref="Task.Delay(int)"/>】。
+        /// </summary>
+        /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
+        /// <returns></returns>
+#endif
+        IRetryIntervalThenRequestableExtend<T> RetryInterval(int millisecondsTimeout);
+
+#if NET40
+        /// <summary>
+        /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求<see cref="System.Threading.Thread.Sleep(int)"/>。
+        /// </summary>
+        /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。单位：毫秒。</param>
+        /// <returns></returns>
+#else
+        /// <summary>
+        /// 失败后，间隔<paramref name="interval"/>毫秒后重试请求。【同步请求：<see cref="System.Threading.Thread.Sleep(int)"/>】或【异步请求：<see cref="Task.Delay(int)"/>】。
+        /// </summary>
+        /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。单位：毫秒</param>
+        /// <returns></returns>
+#endif
+        IRetryIntervalThenRequestableExtend<T> RetryInterval(Func<T, int, int> interval);
+    }
+
+    /// <summary>
+    /// 延续能力的请求
+    /// </summary>
+    public interface IThenRequestableExtend<T> : IRequestable<T>
+    {
+        /// <summary>
+        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
+        /// 多个条件之间是或的关系。
+        /// </summary>
+        /// <param name="match">判断是否重试请求</param>
+        /// <returns></returns>
+        IThenRequestableExtend<T> Or(Predicate<T> match);
+
+        /// <summary>
+        /// 设置重试次数。
+        /// </summary>
+        /// <param name="retryCount">最大重试次数。</param>
+        /// <returns></returns>
+        IRetryThenRequestableExtend<T> RetryCount(int retryCount);
     }
 
     /// <summary>
@@ -300,7 +376,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 请求
     /// </summary>
-    public interface IRequestable : IRequestable<string>, IRequestableBase, IFileRequestable, ICastRequestable
+    public interface IRequestable : IRequestableExtend<string>, IRequestableBase, IFileRequestable, ICastRequestable
     {
         /// <summary>
         /// content-type = "application/json"
@@ -409,7 +485,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 字符串结果
     /// </summary>
-    public interface IResultStringCatchRequestable : IRequestable<string>
+    public interface IResultStringCatchRequestable : IRequestableExtend<string>
     {
         /// <summary>
         /// 始终执行的动作
@@ -422,15 +498,14 @@ namespace CodeArts.Net
     /// <summary>
     /// 结束
     /// </summary>
-    public interface IFinallyStringRequestable : IRequestable<string>
+    public interface IFinallyStringRequestable : IRequestableExtend<string>
     {
-
     }
 
     /// <summary>
     /// 异常处理的请求
     /// </summary>
-    public interface ICatchRequestable : IRequestable<string>, ICastRequestable, IFileRequestable
+    public interface ICatchRequestable : IRequestableExtend<string>, ICastRequestable, IFileRequestable
     {
         /// <summary>
         /// 捕获Web异常
@@ -457,7 +532,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 结束
     /// </summary>
-    public interface IFinallyRequestable : IRequestable<string>, ICastRequestable, IFileRequestable
+    public interface IFinallyRequestable : IRequestableExtend<string>, ICastRequestable, IFileRequestable
     {
 
     }
@@ -465,7 +540,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 结束
     /// </summary>
-    public interface IFinallyRequestable<T> : IRequestable<T>
+    public interface IFinallyRequestable<T> : IRequestableExtend<T>
     {
 
     }
@@ -473,7 +548,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 异常处理能力
     /// </summary>
-    public interface IXmlCatchRequestable<T> : IRequestable<T>
+    public interface IXmlCatchRequestable<T> : IRequestableExtend<T>
     {
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
@@ -507,7 +582,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 异常处理能力
     /// </summary>
-    public interface IJsonCatchRequestable<T> : IRequestable<T>
+    public interface IJsonCatchRequestable<T> : IRequestableExtend<T>
     {
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
@@ -541,7 +616,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 异常处理能力
     /// </summary>
-    public interface IResultCatchRequestable<T> : IRequestable<T>
+    public interface IResultCatchRequestable<T> : IRequestableExtend<T>
     {
         /// <summary>
         /// 始终执行的动作
@@ -691,7 +766,7 @@ namespace CodeArts.Net
     /// 请求能力
     /// </summary>
     /// <typeparam name="T">结果数据</typeparam>
-    public interface IJsonRequestable<T> : IRequestable<T>
+    public interface IJsonRequestable<T> : IRequestableExtend<T>
     {
         /// <summary>
         /// 命名规则
@@ -731,7 +806,7 @@ namespace CodeArts.Net
     /// 请求能力
     /// </summary>
     /// <typeparam name="T">结果数据</typeparam>
-    public interface IXmlRequestable<T> : IRequestable<T>
+    public interface IXmlRequestable<T> : IRequestableExtend<T>
     {
         /// <summary>
         /// 捕获Web异常

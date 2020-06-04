@@ -14,5 +14,13 @@ namespace CodeArts.Cache
         /// <summary> 二级缓存，分布式 </summary>
         [Description("二级缓存")]
         Second = 2,
+
+        /// <summary> 三级缓存，预留 </summary>
+        [Description("三级缓存")]
+        Third = 4,
+
+        /// <summary> 四级缓存，预留 </summary>
+        [Description("四级缓存")]
+        Fourth = 8
     }
 }

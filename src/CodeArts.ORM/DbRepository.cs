@@ -85,7 +85,7 @@ namespace CodeArts.ORM
             {
                 this.collect = collect ?? throw new ArgumentNullException(nameof(collect));
                 this.executer = executer ?? throw new ArgumentNullException(nameof(executer));
-                this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+                this.Settings = settings ?? throw new ArgumentNullException(nameof(settings));
                 Provider = provider ?? throw new ArgumentNullException(nameof(provider));
             }
 
@@ -102,13 +102,12 @@ namespace CodeArts.ORM
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
-            private readonly ISQLCorrectSimSettings settings;
             private readonly IEnumerable<T> collect;
             private readonly Func<string, Dictionary<string, object>, int?, int> executer;
 
             public IRouteExecuteProvider<T> Provider { get; }
 
-            public ISQLCorrectSimSettings Settings => settings;
+            public ISQLCorrectSimSettings Settings { get; private set; }
 
             public int ExecuteCommand(int? commandTimeout = null)
             {

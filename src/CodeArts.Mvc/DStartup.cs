@@ -102,6 +102,10 @@ namespace CodeArts.Mvc
                 options.IncludeXmlComments(file);
             }
 
+            options.IgnoreObsoleteActions();
+
+            options.IgnoreObsoleteProperties();
+
             options.CustomSchemaIds(x => x.FullName);
 
             options.ResolveConflictingActions(actions => actions.First());
@@ -374,6 +378,8 @@ namespace CodeArts.Mvc
                     config.IncludeXmlComments(file);
                 }
             }
+
+            config.IgnoreObsoleteActions();
 
             config.IgnoreObsoleteProperties();
 

@@ -41,6 +41,19 @@ namespace CodeArts.Cache
         /// </summary>
         /// <param name="regionName">缓存区域名称</param>
         /// <returns></returns>
-        public ICache GetCache(string regionName) => Caches.GetOrAdd(regionName, name => new RedisCache(name, connectString, defaultDb));
+        public ICache GetCache(string regionName)
+        {
+            if (regionName is null)
+            {
+                throw new ArgumentNullException(nameof(regionName));
+            }
+
+            if (string.IsNullOrWhiteSpace(regionName))
+            {
+                throw new ArgumentException("参数不能为空或空格字符!", nameof(regionName));
+            }
+
+            return Caches.GetOrAdd(regionName, name => new RedisCache(name, connectString, defaultDb));
+        }
     }
 }

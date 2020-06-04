@@ -4,24 +4,34 @@ using System.Diagnostics;
 namespace CodeArts
 {
     /// <summary>
-    /// 主键
+    /// 主键。
     /// </summary>
     [DebuggerDisplay("{Value}")]
     public abstract class Key : IEquatable<Key>, IEquatable<long>, IComparable<Key>, IComparable<long>
     {
         /// <summary>
-        /// 主键
+        /// 主键。
         /// </summary>
         /// <param name="value">键值</param>
         public Key(long value) => Value = value;
 
         /// <summary>
-        /// 值
+        /// 值。
         /// </summary>
         public long Value { get; }
 
         /// <summary>
-        /// 隐式转换为长整型
+        /// 工作机号。
+        /// </summary>
+        public abstract int WorkId { get; }
+
+        /// <summary>
+        /// 机房（数据中心）。
+        /// </summary>
+        public abstract int DataCenterId { get; }
+
+        /// <summary>
+        /// 隐式转换为长整型。
         /// </summary>
         /// <param name="key">主键</param>
         public static implicit operator long(Key key) => key?.Value ?? 0L;

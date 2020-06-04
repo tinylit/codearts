@@ -29,30 +29,55 @@ namespace CodeArts.Cache
         }
 
         /// <summary>
-        /// 设置缓存供应商
+        /// 设置缓存供应器。
         /// </summary>
-        /// <param name="provider">供应商</param>
+        /// <param name="provider">供应器</param>
         /// <param name="level">缓存层级</param>
         /// <returns></returns>
-        public static bool TryAddProvider(ICacheProvider provider, CacheLevel level = CacheLevel.First) => CacheProvider.TryAdd(level, provider);
+        public static bool TryAddProvider(ICacheProvider provider, CacheLevel level = CacheLevel.First)
+        {
+            if (provider is null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
+
+            return CacheProvider.TryAdd(level, provider);
+        }
 
         /// <summary>
-        /// 移除缓存供应商
+        /// 强制添加缓存供应器。
+        /// </summary>
+        /// <param name="provider">供应器</param>
+        /// <param name="level">缓存层级</param>
+        /// <returns></returns>
+        public static void ForceAddProvider(ICacheProvider provider, CacheLevel level = CacheLevel.First)
+        {
+            if (provider is null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
+
+            CacheProvider.AddOrUpdate(level, provider, (_, _2) => provider);
+        }
+
+
+        /// <summary>
+        /// 移除缓存供应器。
         /// </summary>
         /// <param name="level">缓存等级</param>
         /// <returns></returns>
         public static bool TryRemoveProvider(CacheLevel level) => CacheProvider.TryRemove(level, out _);
 
         /// <summary>
-        /// 获取服务商
+        /// 获取供应器。
         /// </summary>
         /// <param name="level">缓存等级</param>
         /// <param name="provider">缓存供应器</param>
         /// <returns></returns>
         public static bool TryGetProvider(CacheLevel level, out ICacheProvider provider) => CacheProvider.TryGetValue(level, out provider);
 
-        /// <summary> 清空适配器 </summary>
-        public static void ClearAdapter() => CacheProvider.Clear();
+        /// <summary> 清空供应器 </summary>
+        public static void ClearProvider() => CacheProvider.Clear();
 
         /// <summary>
         /// 获取服务商的指定缓存服务

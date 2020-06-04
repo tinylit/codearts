@@ -42,6 +42,15 @@ namespace CodeArts.Emit
         /// 构造函数。
         /// </summary>
         /// <param name="moduleName">程序集名称。</param>
+        public ModuleEmitter(string moduleName)
+            : this(moduleName, string.Concat(moduleName, ".dll"))
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="moduleName">程序集名称。</param>
         /// <param name="assemblyPath">程序集地址</param>
         public ModuleEmitter(string moduleName, string assemblyPath)
             : this(false, new NamingProvider(), moduleName, assemblyPath)
@@ -99,6 +108,16 @@ namespace CodeArts.Emit
         /// </summary>
         public ModuleEmitter()
             : this(DEFAULT_ASSEMBLY_NAME, DEFAULT_FILE_NAME)
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// </summary>
+        /// <param name="moduleName">程序集名称。</param>
+        public ModuleEmitter(string moduleName)
+            : this(moduleName, string.Concat(moduleName, ".dll"))
         {
         }
         /// <summary>

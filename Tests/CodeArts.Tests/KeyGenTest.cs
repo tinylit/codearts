@@ -11,6 +11,13 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Test()
         {
+            var key = KeyGen.Create(6674160059951501312);
+
+            RuntimeServManager.TryAddSingleton<IKeyGen>(new SnowflakeKeyGen(5, 12));
+
+            var id = KeyGen.New();
+
+
             var list = new List<Key>();
             for (int i = 0; i < 100000; i++)
             {

@@ -24,6 +24,7 @@ namespace CodeArts.ORM
         /// 链接配置
         /// </summary>
         protected IReadOnlyConnectionConfig ConnectionConfig { private set; get; }
+
         /// <summary>
         /// 数据库链接
         /// </summary>

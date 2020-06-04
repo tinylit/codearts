@@ -109,6 +109,13 @@ namespace System
         public static bool IsNull(this string value) => value is null;
 
         /// <summary>
+        /// 是否不为NULL。
+        /// </summary>
+        /// <param name="value">字符串</param>
+        /// <returns></returns>
+        public static bool IsNotNull(this string value) => !(value is null);
+
+        /// <summary>
         /// 指示指定的字符串是 null 或是 空字符串 ("")。
         /// </summary>
         /// <param name="value">字符串</param>
@@ -116,11 +123,11 @@ namespace System
         public static bool IsEmpty(this string value) => value is null || value.Length == 0;
 
         /// <summary>
-        /// 原内容不为null时，返回原字符，否则返回空字符串（""）。
+        /// 指示指定的字符串不是 null 且不是 空字符串 ("")。
         /// </summary>
         /// <param name="value">字符串</param>
         /// <returns></returns>
-        public static string OrEmpty(this string value) => value ?? string.Empty;
+        public static bool IsNotEmpty(this string value) => value?.Length > 0;
 
         /// <summary>
         /// 内容是邮箱。
