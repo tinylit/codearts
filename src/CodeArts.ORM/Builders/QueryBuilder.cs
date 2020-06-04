@@ -602,32 +602,6 @@ namespace CodeArts.ORM.Builders
             return node;
         }
 
-        private Expression MakeExistsNode(MethodCallExpression node)
-        {
-            bool whereIsNotEmpty = false;
-
-            WriteAppendAtFix(() =>
-            {
-                base.Visit(node.Arguments[0]);
-
-                if (whereIsNotEmpty)
-                {
-                    _whereSwitch.Execute();
-                }
-            }, () =>
-            {
-                int length = SQLWriter.Length;
-
-                BuildWhere = true;
-                base.Visit(node.Arguments[1]);
-                BuildWhere = false;
-
-                whereIsNotEmpty = SQLWriter.Length > length;
-            });
-
-            return node;
-        }
-
         private Expression MakeWhere(MethodCallExpression node)
         {
             if (buildFrom || buildSelect)

@@ -114,7 +114,6 @@ namespace CodeArts.Emit
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// </summary>
         /// <param name="moduleName">程序集名称。</param>
         public ModuleEmitter(string moduleName)
             : this(moduleName, string.Concat(moduleName, ".dll"))
