@@ -67,7 +67,7 @@ namespace CodeArts.Mvc.Builder
                       .AppendQueryString(context.Request.QueryString.ToString())
                       .AppendQueryString($"authCode={code}")
                       .JsonCast<ServResult<string>>()
-                      .Catch(e =>
+                      .WebCatch(e =>
                       {
                           if (e.Response is HttpWebResponse response)
                           {
@@ -181,7 +181,7 @@ namespace CodeArts.Mvc.Builder
                         .AppendQueryString(context.Request.QueryString.ToString())
                         .AppendQueryString($"authCode={code}")
                         .JsonCast<ServResult<string>>()
-                        .Catch(e =>
+                        .WebCatch(e =>
                         {
                             if (e.Response is HttpWebResponse response)
                             {

@@ -54,7 +54,7 @@ namespace System
 #endif
         }
 
-        private class ThenRequestableExtend<T> : Requestable<T>, IThenRequestableExtend<T>, IRetryThenRequestableExtend<T>, IRetryIntervalThenRequestableExtend<T>
+        private class VerifyRequestableExtend<T> : Requestable<T>, IVerifyRequestableExtend<T>, IAgainVerifyRequestableExtend<T>, IAgainIntervalVerifyRequestableExtend<T>
         {
             private int maxRetires = 1;
             private int millisecondsTimeout = -1;
@@ -63,7 +63,7 @@ namespace System
             private readonly IRequestable<T> requestable;
             private readonly List<Predicate<T>> predicates = new List<Predicate<T>>();
 
-            public ThenRequestableExtend(IRequestable<T> requestable, Predicate<T> predicate)
+            public VerifyRequestableExtend(IRequestable<T> requestable, Predicate<T> predicate)
             {
                 if (predicate is null)
                 {
@@ -75,14 +75,14 @@ namespace System
                 this.requestable = requestable;
             }
 
-            public IThenRequestableExtend<T> Or(Predicate<T> match)
+            public IVerifyRequestableExtend<T> And(Predicate<T> predicate)
             {
-                if (match is null)
+                if (predicate is null)
                 {
-                    throw new ArgumentNullException(nameof(match));
+                    throw new ArgumentNullException(nameof(predicate));
                 }
 
-                predicates.Add(match);
+                predicates.Add(predicate);
 
                 return this;
             }
@@ -94,7 +94,12 @@ namespace System
                 {
                     T result = requestable.Request(method, timeout);
 
-                    if (++times <= maxRetires && predicates.Any(x => x.Invoke(result)))
+                    if (predicates.All(x => x.Invoke(result)))
+                    {
+                        return result;
+                    }
+
+                    if (++times <= maxRetires)
                     {
                         if (interval != null)
                         {
@@ -122,7 +127,12 @@ namespace System
                 {
                     T result = await requestable.RequestAsync(method, timeout);
 
-                    if (++times <= maxRetires && predicates.Any(x => x.Invoke(result)))
+                    if (predicates.All(x => x.Invoke(result)))
+                    {
+                        return result;
+                    }
+
+                    if (++times <= maxRetires)
                     {
                         if (interval != null)
                         {
@@ -143,7 +153,7 @@ namespace System
             }
 #endif
 
-            public IRetryThenRequestableExtend<T> RetryCount(int retryCount)
+            public IAgainVerifyRequestableExtend<T> AgainCount(int retryCount)
             {
                 if (retryCount < 1)
                 {
@@ -155,7 +165,7 @@ namespace System
                 return this;
             }
 
-            public IRetryIntervalThenRequestableExtend<T> RetryInterval(int millisecondsTimeout)
+            public IAgainIntervalVerifyRequestableExtend<T> AgainInterval(int millisecondsTimeout)
             {
                 if (millisecondsTimeout < 0)
                 {
@@ -167,7 +177,7 @@ namespace System
                 return this;
             }
 
-            public IRetryIntervalThenRequestableExtend<T> RetryInterval(Func<T, int, int> interval)
+            public IAgainIntervalVerifyRequestableExtend<T> AgainInterval(Func<T, int, int> interval)
             {
                 if (interval is null)
                 {
@@ -182,14 +192,14 @@ namespace System
 
         private abstract class RequestableExtend<T> : Requestable<T>, IRequestableExtend<T>
         {
-            public IThenRequestableExtend<T> If(Predicate<T> predicate)
+            public IVerifyRequestableExtend<T> DataVerify(Predicate<T> predicate)
             {
                 if (predicate is null)
                 {
                     throw new ArgumentNullException(nameof(predicate));
                 }
 
-                return new ThenRequestableExtend<T>(this, predicate);
+                return new VerifyRequestableExtend<T>(this, predicate);
             }
         }
 
@@ -208,7 +218,7 @@ namespace System
                 this.log = log ?? throw new ArgumentNullException(nameof(log));
             }
 
-            public ICatchRequestable Catch(Action<WebException> log)
+            public ICatchRequestable WebCatch(Action<WebException> log)
             {
                 if (log is null)
                 {
@@ -220,7 +230,7 @@ namespace System
                 return this;
             }
 
-            public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue)
+            public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue)
             {
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
 
@@ -466,14 +476,14 @@ namespace System
 
             public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
 
-            public IThenRequestable Or(Predicate<WebException> match)
+            public IThenRequestable Or(Predicate<WebException> predicate)
             {
-                if (match is null)
+                if (predicate is null)
                 {
-                    throw new ArgumentNullException(nameof(match));
+                    throw new ArgumentNullException(nameof(predicate));
                 }
 
-                predicates.Add(match);
+                predicates.Add(predicate);
 
                 return this;
             }
@@ -546,9 +556,9 @@ namespace System
                 } while (true);
             }
 
-            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, file, log);
+            public ICatchRequestable WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
 
-            public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+            public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
             public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
@@ -771,9 +781,9 @@ namespace System
                 }
             }
 
-            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, file, log);
+            public ICatchRequestable WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
 
-            public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+            public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
             public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
 
@@ -1674,9 +1684,9 @@ namespace System
 
             public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
 
-            public ICatchRequestable Catch(Action<WebException> log) => new CatchRequestable(this, this, log);
+            public ICatchRequestable WebCatch(Action<WebException> log) => new CatchRequestable(this, this, log);
 
-            public IResultStringCatchRequestable Catch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+            public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
             public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, this, log);
 
@@ -1855,7 +1865,7 @@ namespace System
 
             public IJsonResultCatchRequestable<T> JsonCatch(Func<string, Exception, T> returnValue) => new JsonResultCatchRequestable<T>(requestable, returnValue, NamingType);
 
-            public IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
         }
@@ -1885,7 +1895,7 @@ namespace System
 
             public IXmlResultCatchRequestable<T> XmlCatch(Func<string, XmlException, T> returnValue) => new XmlResultCatchRequestable<T>(requestable, returnValue);
 
-            public IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
         }

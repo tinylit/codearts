@@ -52,9 +52,9 @@ namespace CodeArts.Tests
             var token = "http://localhost:56324/login".AsRequestable()
                 .AppendQueryString("?account=ljl&password=liujialin&debug=true")
                 .JsonCast(entry, NamingType.CamelCase)
-                .Catch(e => entry)
-                .If(x => x == entry)
-                .RetryCount(1)
+                .WebCatch(e => entry)
+                .DataVerify(x => x == entry)
+                .AgainCount(1)
                 .Get();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()
@@ -90,14 +90,14 @@ namespace CodeArts.Tests
                 .Or(e => true)
                 .RetryCount(2) // 设置重试次数
                 .RetryInterval(500)//重试间隔时长。
-                .Catch(e => { })
-                .Catch(e => { })
+                .WebCatch(e => { })
+                .WebCatch(e => { })
                 .Finally(() =>
                 {
 
                 })
                 .JsonCast(entry, NamingType.CamelCase)
-                .Catch(e => entry)
+                .WebCatch(e => entry)
                 .Finally(() =>
                 {
 
@@ -129,7 +129,7 @@ namespace CodeArts.Tests
                     })
                     .If(e => true)
                     .TryIf(e => true)
-                    .Catch(e => { })
+                    .WebCatch(e => { })
                     .Finally(() =>
                     {
                         if (File.Exists(fileName))

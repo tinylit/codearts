@@ -121,25 +121,25 @@ namespace CodeArts.Net
     public interface IRequestableExtend<T> : IRequestable<T>
     {
         /// <summary>
-        /// 结果请求结果满足<paramref name="predicate"/>时，会重复请求。
+        /// 结果请求结果不满足<paramref name="predicate"/>时，会重复请求。
         /// </summary>
         /// <param name="predicate">结果验证函数</param>
         /// <returns></returns>
-        IThenRequestableExtend<T> If(Predicate<T> predicate);
+        IVerifyRequestableExtend<T> DataVerify(Predicate<T> predicate);
     }
 
     /// <summary>
     /// 重试迭代请求能力扩展。
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IRetryIntervalThenRequestableExtend<T> : IRequestable<T>
+    public interface IAgainIntervalVerifyRequestableExtend<T> : IRequestable<T>
     {
     }
 
     /// <summary>
     /// 重试请求能力
     /// </summary>
-    public interface IRetryThenRequestableExtend<T> : IRequestable<T>
+    public interface IAgainVerifyRequestableExtend<T> : IRequestable<T>
     {
 #if NET40
         /// <summary>
@@ -154,7 +154,7 @@ namespace CodeArts.Net
         /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
         /// <returns></returns>
 #endif
-        IRetryIntervalThenRequestableExtend<T> RetryInterval(int millisecondsTimeout);
+        IAgainIntervalVerifyRequestableExtend<T> AgainInterval(int millisecondsTimeout);
 
 #if NET40
         /// <summary>
@@ -169,28 +169,28 @@ namespace CodeArts.Net
         /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。单位：毫秒</param>
         /// <returns></returns>
 #endif
-        IRetryIntervalThenRequestableExtend<T> RetryInterval(Func<T, int, int> interval);
+        IAgainIntervalVerifyRequestableExtend<T> AgainInterval(Func<T, int, int> interval);
     }
 
     /// <summary>
     /// 延续能力的请求
     /// </summary>
-    public interface IThenRequestableExtend<T> : IRequestable<T>
+    public interface IVerifyRequestableExtend<T> : IRequestable<T>
     {
         /// <summary>
-        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
-        /// 多个条件之间是或的关系。
+        /// 结果请求结果不满足<paramref name="predicate"/>时，会重复请求。
+        /// 多个条件之间是且的关系。
         /// </summary>
-        /// <param name="match">判断是否重试请求</param>
+        /// <param name="predicate">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestableExtend<T> Or(Predicate<T> match);
+        IVerifyRequestableExtend<T> And(Predicate<T> predicate);
 
         /// <summary>
         /// 设置重试次数。
         /// </summary>
         /// <param name="retryCount">最大重试次数。</param>
         /// <returns></returns>
-        IRetryThenRequestableExtend<T> RetryCount(int retryCount);
+        IAgainVerifyRequestableExtend<T> AgainCount(int retryCount);
     }
 
     /// <summary>
@@ -466,13 +466,13 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> log);
+        ICatchRequestable WebCatch(Action<WebException> log);
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultStringCatchRequestable Catch(Func<WebException, string> returnValue);
+        IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue);
 
         /// <summary>
         /// 始终执行的动作
@@ -512,14 +512,14 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="log">记录异常信息</param>
         /// <returns></returns>
-        ICatchRequestable Catch(Action<WebException> log);
+        ICatchRequestable WebCatch(Action<WebException> log);
 
         /// <summary>
         /// 捕获Web异常，并返回结果（返回最后一次的结果）。
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultStringCatchRequestable Catch(Func<WebException, string> returnValue);
+        IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue);
 
         /// <summary>
         /// 始终执行的动作
@@ -646,12 +646,12 @@ namespace CodeArts.Net
     public interface IThenRequestable : ICatchRequestable, IFileRequestable
     {
         /// <summary>
-        /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
+        /// 如果请求异常，会调用【<paramref name="predicate"/>】，判断是否重试请求。
         /// 多个条件之间是或的关系。
         /// </summary>
-        /// <param name="match">判断是否重试请求</param>
+        /// <param name="predicate">判断是否重试请求</param>
         /// <returns></returns>
-        IThenRequestable Or(Predicate<WebException> match);
+        IThenRequestable Or(Predicate<WebException> predicate);
 
         /// <summary>
         /// 设置重试次数。
@@ -792,7 +792,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
+        IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 始终执行的动作
@@ -827,7 +827,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultCatchRequestable<T> Catch(Func<WebException, T> returnValue);
+        IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 始终执行的动作
