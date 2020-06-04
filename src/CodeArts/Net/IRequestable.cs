@@ -132,14 +132,14 @@ namespace CodeArts.Net
     /// 重试迭代请求能力扩展。
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IAgainIntervalVerifyRequestableExtend<T> : IRequestable<T>
+    public interface IResendIntervalVerifyRequestableExtend<T> : IRequestable<T>
     {
     }
 
     /// <summary>
     /// 重试请求能力
     /// </summary>
-    public interface IAgainVerifyRequestableExtend<T> : IRequestable<T>
+    public interface IResendVerifyRequestableExtend<T> : IRequestable<T>
     {
 #if NET40
         /// <summary>
@@ -154,7 +154,7 @@ namespace CodeArts.Net
         /// <param name="millisecondsTimeout">失败后，间隔多久重试。单位：毫秒</param>
         /// <returns></returns>
 #endif
-        IAgainIntervalVerifyRequestableExtend<T> AgainInterval(int millisecondsTimeout);
+        IResendIntervalVerifyRequestableExtend<T> ResendInterval(int millisecondsTimeout);
 
 #if NET40
         /// <summary>
@@ -169,7 +169,7 @@ namespace CodeArts.Net
         /// <param name="interval">第一个参数：异常，第二个参数：第N次重试，返回间隔多少时间重试请求。单位：毫秒</param>
         /// <returns></returns>
 #endif
-        IAgainIntervalVerifyRequestableExtend<T> AgainInterval(Func<T, int, int> interval);
+        IResendIntervalVerifyRequestableExtend<T> ResendInterval(Func<T, int, int> interval);
     }
 
     /// <summary>
@@ -190,7 +190,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="retryCount">最大重试次数。</param>
         /// <returns></returns>
-        IAgainVerifyRequestableExtend<T> AgainCount(int retryCount);
+        IResendVerifyRequestableExtend<T> ResendCount(int retryCount);
     }
 
     /// <summary>

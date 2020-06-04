@@ -54,7 +54,7 @@ namespace System
 #endif
         }
 
-        private class VerifyRequestableExtend<T> : Requestable<T>, IVerifyRequestableExtend<T>, IAgainVerifyRequestableExtend<T>, IAgainIntervalVerifyRequestableExtend<T>
+        private class VerifyRequestableExtend<T> : Requestable<T>, IVerifyRequestableExtend<T>, IResendVerifyRequestableExtend<T>, IResendIntervalVerifyRequestableExtend<T>
         {
             private int maxRetires = 1;
             private int millisecondsTimeout = -1;
@@ -153,7 +153,7 @@ namespace System
             }
 #endif
 
-            public IAgainVerifyRequestableExtend<T> AgainCount(int retryCount)
+            public IResendVerifyRequestableExtend<T> ResendCount(int retryCount)
             {
                 if (retryCount < 1)
                 {
@@ -165,7 +165,7 @@ namespace System
                 return this;
             }
 
-            public IAgainIntervalVerifyRequestableExtend<T> AgainInterval(int millisecondsTimeout)
+            public IResendIntervalVerifyRequestableExtend<T> ResendInterval(int millisecondsTimeout)
             {
                 if (millisecondsTimeout < 0)
                 {
@@ -177,7 +177,7 @@ namespace System
                 return this;
             }
 
-            public IAgainIntervalVerifyRequestableExtend<T> AgainInterval(Func<T, int, int> interval)
+            public IResendIntervalVerifyRequestableExtend<T> ResendInterval(Func<T, int, int> interval)
             {
                 if (interval is null)
                 {

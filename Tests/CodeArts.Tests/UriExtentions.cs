@@ -54,7 +54,7 @@ namespace CodeArts.Tests
                 .JsonCast(entry, NamingType.CamelCase)
                 .WebCatch(e => entry)
                 .DataVerify(x => x == entry)
-                .AgainCount(1)
+                .ResendCount(1)
                 .Get();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()
