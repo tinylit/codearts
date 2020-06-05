@@ -148,13 +148,21 @@ namespace CodeArts.Mvc
             {
                 var value = kv.Value;
 
-                if (value is null) continue;
+                if (value is null)
+                {
+                    continue;
+                }
 
                 var key = kv.Key.ToLower();
 
                 if (ClaimTypes.TryGetValue(key, out string type))
                 {
                     identity.AddClaim(new Claim(type, value.ToString(), "http://www.w3.org/2001/XMLSchema#string"));
+                }
+
+                if (string.Equals(key, "role", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
                 }
 
                 var dataType = value.GetType();
