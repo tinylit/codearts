@@ -1482,7 +1482,7 @@ namespace CodeArts.Implements
 
             void Config<T>(StoreItem<T> item, Expression node) where T : MemberInfo
             {
-                list.Add(Assign(maptoExp, Call(null, methodG, valueExp, Constant(item.Name), Constant(item.MemberType), thisExp)));
+                list.Add(Assign(maptoExp, Call(null, methodG, valueExp, Constant(item.Naming), Constant(item.MemberType), thisExp)));
 
                 list.Add(IfThen(NotEqual(maptoExp, nullExp), Assign(node, Convert(maptoExp, item.MemberType))));
             }
@@ -1598,7 +1598,7 @@ namespace CodeArts.Implements
             {
                 typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
+                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
                 });
             }
 
@@ -1606,7 +1606,7 @@ namespace CodeArts.Implements
             {
                 typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
+                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
                 });
             }
 
@@ -1665,7 +1665,7 @@ namespace CodeArts.Implements
             {
                 typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
+                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
                 });
             }
 
@@ -1673,7 +1673,7 @@ namespace CodeArts.Implements
             {
                 typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
+                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
                 });
             }
 
@@ -1729,7 +1729,7 @@ namespace CodeArts.Implements
             {
                 typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
+                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
                 });
             }
 
@@ -1737,7 +1737,7 @@ namespace CodeArts.Implements
             {
                 typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
+                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
                 });
             }
 
@@ -1791,7 +1791,7 @@ namespace CodeArts.Implements
             {
                 typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
+                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
                 });
             }
 
@@ -1799,7 +1799,7 @@ namespace CodeArts.Implements
             {
                 typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
                 {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Name), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
+                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
                 });
             }
 

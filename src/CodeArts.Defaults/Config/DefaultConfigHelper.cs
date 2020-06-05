@@ -52,7 +52,11 @@ namespace CodeArts.Config
         /// <summary>
         /// 构造函数
         /// </summary>
+#if NETSTANDARD2_1
+        public DefaultConfigHelper() : this(_builder ??= ConfigurationBuilder())
+#else
         public DefaultConfigHelper() : this(_builder ?? (_builder = ConfigurationBuilder()))
+#endif
         {
 
         }

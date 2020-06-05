@@ -1,6 +1,7 @@
 ﻿using CodeArts.Mvc.Filters;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -85,7 +86,11 @@ namespace CodeArts.Mvc
                     var tokenHandler = new JwtSecurityTokenHandler();
                     var value = authorize.ToString();
                     var values = value.Split(' ');
+#if NETCOREAPP3_1
+                    var token = tokenHandler.ReadJwtToken(values[^1]);
+#else
                     var token = tokenHandler.ReadJwtToken(values[values.Length - 1]);
+#endif
                     _user = token.Payload.MapTo<TUser>();
 #else
                     var serializer = new JsonNetSerializer();

@@ -6,6 +6,7 @@ using CodeArts.Mvc;
 using CodeArts.MySql;
 using CodeArts.ORM;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace Mvc.Core
 {

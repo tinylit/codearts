@@ -49,8 +49,12 @@ namespace Microsoft.Extensions.Logging
 #endif
 
         private static ILoggerFactory factory;
-        private static ILoggerFactory Factory => factory ?? (factory = (_serviceProvider ?? (_serviceProvider = _services?.BuildServiceProvider()))?.GetRequiredService<ILoggerFactory>());
 
+#if NETCOREAPP3_1
+        private static ILoggerFactory Factory => factory ??= (_serviceProvider ??= _services?.BuildServiceProvider())?.GetRequiredService<ILoggerFactory>();
+#else
+        private static ILoggerFactory Factory => factory ?? (factory = (_serviceProvider ?? (_serviceProvider = _services?.BuildServiceProvider()))?.GetRequiredService<ILoggerFactory>());
+#endif
         /// <summary>
         /// 获取一个日志记录器。
         /// </summary>

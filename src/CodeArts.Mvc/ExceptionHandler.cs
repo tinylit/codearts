@@ -17,7 +17,11 @@ namespace CodeArts.Exceptions
     {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
         private static ILogger logger;
+#if NETCOREAPP3_1
+        private static ILogger Logger => logger ??= LoggerManager.GetLogger(typeof(ExceptionHandler));
+#else
         private static ILogger Logger => logger ?? (logger = LoggerManager.GetLogger(typeof(ExceptionHandler)));
+#endif
 #else
         private static ILog logger;
         private static ILog Logger => logger ?? (logger = LogManager.GetLogger(typeof(ExceptionHandler)));
