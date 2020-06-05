@@ -20,7 +20,7 @@ namespace CodeArts.ORM
         private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEnumerable) };
         private static readonly ConcurrentDictionary<Type, Type> TypeCache = new ConcurrentDictionary<Type, Type>();
         private static readonly MethodInfo DictionaryAdd = typeof(Dictionary<string, object>).GetMethod("Add", BindingFlags.Public | BindingFlags.Instance);
-
+        private static readonly MethodInfo MapTo = typeof(ObjectExtentions).GetMethod(nameof(ObjectExtentions.MapTo), new Type[] { typeof(object), typeof(Type) });
         /// <summary>
         /// 创建类型。
         /// </summary>
@@ -229,27 +229,33 @@ namespace CodeArts.ORM
 
                                     var valueType = typeof(IEnumerable<>).MakeGenericType(typeArguments);
 
+
+                                    var queryMethod = repositoryType.GetMethod(nameof(ISelectable.Query), new Type[] { typeof(SQL), typeof(object), typeof(int?) })
+                                    .MakeGenericMethod(typeArguments);
+
+                                    var bodyQuery = Call(queryMethod, thisArg, sql, variable_params, timeOut);
+
                                     if (valueType == x.MemberType)
                                     {
-                                        var queryMethod = repositoryType.GetMethod(nameof(ISelectable.Query), new Type[] { typeof(SQL), typeof(object), typeof(int?) }).MakeGenericMethod(typeArguments);
-
-                                        var bodyQuery = Call(queryMethod, thisArg, sql, variable_params, timeOut);
-
-                                        method.Append(bodyQuery);
-
-                                        method.Append(Return());
+                                        method.Append(Return(bodyQuery));
 
                                         break;
                                     }
 
-                                    if (valueType.IsAssignableFrom(x.MemberType))
-                                    {
-                                        throw new NotSupportedException($"集合类型，仅支持“IEnumerable<>”类型的返回结果!");
-                                    }
+                                    var variable = method.DeclareVariable(valueType);
+
+                                    method.Append(Assign(variable, bodyQuery));
+
+                                    var valueCast = Call(MapTo, Convert(variable, typeof(object)), Constant(x.MemberType));
+
+                                    method.Append(Return(Convert(valueCast, x.MemberType)));
+
+                                    break;
                                 }
                             }
 
-                            var queryFirstMethod = repositoryType.GetMethod(nameof(ISelectable.QueryFirst), new Type[] { typeof(SQL), typeof(object), typeof(bool), typeof(int?) }).MakeGenericMethod(x.MemberType);
+                            var queryFirstMethod = repositoryType.GetMethod(nameof(ISelectable.QueryFirst), new Type[] { typeof(SQL), typeof(object), typeof(bool), typeof(int?) })
+                            .MakeGenericMethod(x.MemberType);
 
                             var bodyQueryFirst = Call(queryFirstMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(required), Constant(timeOutAttr?.Value, typeof(int?)));
 

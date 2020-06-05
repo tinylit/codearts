@@ -996,6 +996,11 @@ namespace CodeArts.Emit
                             return;
                         }
 
+                        if (value.GetType() != valueType)
+                        {
+                            value = Convert.ChangeType(value, valueType);
+                        }
+
                         if (!ConstantCache.TryGetValue(value, out int key))
                         {
                             ConstantCache.Add(value, key = ConstantCache.Count);

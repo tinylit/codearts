@@ -234,9 +234,19 @@ namespace CodeArts
 
                 var conversionType = typeof(TImplementation);
 
-                var baseType = conversionType.BaseType;
+                var baseType = conversionType.BaseType ?? typeof(object);
 
-                if (baseType is null || !baseType.IsGenericType || baseType.GetGenericTypeDefinition() != typeof(DesignMode.Singleton<>))
+                if (baseType.IsGenericType && baseType.GetGenericTypeDefinition() == typeof(DesignMode.Singleton<>))
+                {
+                    var propertyExp = Property(null, conversionType, "Instance");
+
+                    var lamdaExp = Lambda<Func<TImplementation>>(propertyExp);
+
+                    var invoke = lamdaExp.Compile();
+
+                    _lazy = new Lazy<TImplementation>(invoke);
+                }
+                else
                 {
                     var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
@@ -247,16 +257,6 @@ namespace CodeArts
                             .Where(x => x.ParameterStores.Count == 0 || x.ParameterStores.All(y => y.IsOptional || y.ParameterType.IsInterface || y.ParameterType.IsClass))
                             .OrderBy(x => x.ParameterStores.Count)
                             .FirstOrDefault() ?? throw new NotSupportedException($"服务“{typeStore.FullName}”不包含任何可用于依赖注入的构造函数!"));
-
-                    _lazy = new Lazy<TImplementation>(invoke);
-                }
-                else
-                {
-                    var propertyExp = Property(null, conversionType, "Instance");
-
-                    var lamdaExp = Lambda<Func<TImplementation>>(propertyExp);
-
-                    var invoke = lamdaExp.Compile();
 
                     _lazy = new Lazy<TImplementation>(invoke);
                 }
