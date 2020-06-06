@@ -36,6 +36,8 @@ namespace CodeArts.ORM.Tests
             IUser user = (IUser)System.Activator.CreateInstance(new DbTypeGen().Create(typeof(IUser)));
 
             var userDto = user.GetUser(10, 100);
+
+            Assert.IsFalse(userDto is null);
         }
     }
 }

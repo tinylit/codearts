@@ -6,6 +6,177 @@ using System.Linq;
 
 namespace CodeArts.Tests
 {
+    /// <summary>
+    /// 用户角色
+    /// </summary>
+    [Flags]
+    public enum UserRoleEnum
+    {
+        #region 客户
+        /// <summary>
+        /// 用户
+        /// </summary>
+        Normal = 1 << 0,
+
+        /// <summary>
+        /// 开票员
+        /// </summary>
+        Kpr = 1 << 1,
+
+        /// <summary>
+        /// 默认开票员
+        /// </summary>
+        DefaultKpr = 1 << 2,
+
+        /// <summary>
+        /// 代理开票员
+        /// </summary>
+        ProxyKpr = 1 << 3,
+
+        /// <summary>
+        /// 代理管理员
+        /// </summary>
+        ProxyAdministrator = 1 << 4,
+
+        /// <summary>
+        /// 管理员
+        /// </summary>
+        Administrator = 1 << 5,
+
+        /// <summary>
+        /// 团队管理员
+        /// </summary>
+        TeamAdministrator = 1 << 6,
+
+        /// <summary>
+        /// 公司管理员
+        /// </summary>
+        CompanyAdministrator = 1 << 7,
+
+        /// <summary>
+        /// 分区管理员
+        /// </summary>
+        AreaAdministrator = 1 << 8,
+
+        /// <summary>
+        /// 集团管理员
+        /// </summary>
+        GroupAdministrator = 1 << 9,
+
+        #endregion
+
+        #region 系统
+        /// <summary>
+        /// 开发者
+        /// </summary>
+        Developer = 1 << 10,
+        /// <summary>
+        /// 维护人
+        /// </summary>
+        Maintainer = 1 << 11,
+        /// <summary>
+        /// 拥有者
+        /// </summary>
+        Owner = 1 << 12
+        #endregion
+
+    }
+    /// <summary>
+    /// 用户
+    /// </summary>
+    public class User
+    {
+        /// <summary>
+        /// 用户ID
+        /// </summary>
+        public long Id { get; set; }
+
+        /// <summary>
+        /// 机构ID
+        /// </summary>
+        public long OrgId { get; set; }
+
+        /// <summary>
+        /// 公司ID
+        /// </summary>
+        public long CompanyId { get; set; }
+
+        /// <summary>
+        /// 账户
+        /// </summary>
+        public string Account { get; set; }
+
+        /// <summary>
+        /// 名称
+        /// </summary>
+        public string UserName { get; set; }
+
+        /// <summary>
+        /// 头像
+        /// </summary>
+        public string UserAvatar { get; set; }
+
+        /// <summary>
+        /// 公司名称
+        /// </summary>
+        public string CompanyName { get; set; }
+
+        /// <summary>
+        /// 手机号
+        /// </summary>
+        public string Tel { get; set; }
+
+        /// <summary>
+        /// 邮箱
+        /// </summary>
+        public string Mail { get; set; }
+
+        /// <summary>
+        /// 角色
+        /// </summary>
+        public int Sex { get; set; }
+
+        /// <summary>
+        /// 角色
+        /// </summary>
+        [Naming("roleenum")]
+        public UserRoleEnum Role { get; set; }
+
+        /// <summary>
+        /// 角色
+        /// </summary>
+        [Naming("role")]
+        public string RoleString { get; set; }
+
+        /// <summary>
+        /// 状态
+        /// </summary>
+        public int Status { get; set; }
+
+        /// <summary>
+        /// 时间戳（登录的时间戳，可作为单点登录依据）
+        /// </summary>
+        public long Timestamp { get; set; }
+
+        /// <summary>
+        /// 创建日期时间戳
+        /// </summary>
+        public DateTime Registered { get; set; }
+
+        /// <summary>
+        /// 最后一次修改日期时间戳
+        /// </summary>
+        public DateTime Modified { get; set; }
+    }
+
+    public class User2
+    {
+        /// <summary>
+        /// 角色
+        /// </summary>
+        [Naming("roleenum")]
+        public int Role { get; set; }
+    }
     public class CopyTest
     {
         public int Id { get; set; }
@@ -207,6 +378,20 @@ namespace CodeArts.Tests
                 A = 100,
                 B = "10000"
             };
+
+            var dic = new Dictionary<string, object>
+            {
+                ["sex"] = 1,
+                ["roleenum"] = 32
+            };
+
+            var user = dic.MapTo<User>();
+
+            var user2 = new User2 { Role = 32 };
+
+            var user3 = user2.MapTo<User>();
+
+            var user4 = user3.MapTo<User2>();
 
             var t2 = t1.MapTo<T2>();
 

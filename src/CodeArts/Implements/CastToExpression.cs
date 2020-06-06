@@ -199,6 +199,11 @@ namespace CodeArts.Implements
             {
                 if (typeof(IConvertible).IsAssignableFrom(sourceType))
                 {
+                    if (conversionType.IsEnum)
+                    {
+                        return source => (TResult)Enum.ToObject(conversionType, source);
+                    }
+
                     return source => (TResult)System.Convert.ChangeType(source, conversionType);
                 }
             }
