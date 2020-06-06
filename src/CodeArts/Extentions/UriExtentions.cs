@@ -1448,7 +1448,12 @@ namespace System
             }
             public IRequestable AssignHeader(string header, string value)
             {
-                __headers[header] = value;
+                if (header is null)
+                {
+                    throw new ArgumentNullException(nameof(header));
+                }
+
+                __headers[header] = value ?? string.Empty;
 
                 return this;
             }
@@ -1461,12 +1466,19 @@ namespace System
 
                 return this;
             }
-            public IRequestable Xml(string param)
+            public IRequestable Body(string body, string contentType)
             {
-                __data = param;
+                if (contentType is null)
+                {
+                    throw new ArgumentNullException(nameof(contentType));
+                }
 
-                return AssignHeader("Content-Type", "application/xml");
+                __data = body ?? throw new ArgumentNullException(nameof(body));
+
+                return AssignHeader("Content-Type", contentType);
             }
+
+            public IRequestable Xml(string param) => Body(param, "application/xml");
             public IRequestable Xml<T>(T param) where T : class => Xml(XmlHelper.XmlSerialize(param));
             public IRequestable Form(string param, NamingType namingType = NamingType.Normal)
                 => Form(JsonHelper.Json<Dictionary<string, string>>(param, namingType));
@@ -1565,12 +1577,7 @@ namespace System
 
                 return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
             }
-            public IRequestable Json(string param)
-            {
-                __data = param;
-
-                return AssignHeader("Content-Type", "application/json");
-            }
+            public IRequestable Json(string param) => Body(param, "application/json");
             public IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
                 => Json(JsonHelper.ToJson(param, namingType));
             public IRequestable AppendQueryString(string param)

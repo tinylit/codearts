@@ -131,13 +131,14 @@ namespace Mvc.Core.Controllers
         /// <param name="password"></param>
         /// <returns></returns>
         [HttpGet("login")]
-        public DResult Login(string account, [Required]string password)
+        public DResult Login(string account, [Required] string password)
         {
             dependency.AopTest();
             return DResult.Ok(new
             {
                 id = 100000,
                 name = account,
+                role = "Admin",
                 account = account
             });
         }
@@ -167,7 +168,7 @@ namespace Mvc.Core.Controllers
         /// <returns></returns>
         [Authorize]
         [HttpPost("test")]
-        public DResult Test([FromBody]WeatherForecast weather)
+        public DResult Test([FromBody] WeatherForecast weather)
         {
             return DResult.Ok(MyUser);
         }

@@ -11,9 +11,12 @@ namespace CodeArts.Cache
         /// <summary>
         /// 缓存对象
         /// </summary>
-        private static readonly ConcurrentDictionary<string, ICache> Caches;
+        private readonly ConcurrentDictionary<string, ICache> Caches;
 
-        static RuntimeCacheProvider() => Caches = new ConcurrentDictionary<string, ICache>();
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        public RuntimeCacheProvider() => Caches = new ConcurrentDictionary<string, ICache>();
 
         /// <summary>
         /// 获取 缓存是否可用

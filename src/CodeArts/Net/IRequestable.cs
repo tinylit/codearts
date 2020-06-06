@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -378,6 +379,14 @@ namespace CodeArts.Net
     /// </summary>
     public interface IRequestable : IRequestableExtend<string>, IRequestableBase, IFileRequestable, ICastRequestable
     {
+        /// <summary>
+        /// body中传输。
+        /// </summary>
+        /// <param name="body">body内容</param>
+        /// <param name="contentType">Content-Type类型</param>
+        /// <returns></returns>
+        IRequestable Body(string body, string contentType);
+
         /// <summary>
         /// content-type = "application/json"
         /// </summary>

@@ -1071,6 +1071,7 @@ namespace CodeArts.ORM.Builders
                  _PrefixCache.GetOrAdd(type, name);
              });
         }
+
         /// <summary>
         /// Lamda 分析
         /// </summary>

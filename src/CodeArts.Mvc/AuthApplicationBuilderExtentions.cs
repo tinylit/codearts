@@ -36,7 +36,7 @@ namespace CodeArts.Mvc.Builder
         /// <summary>
         /// 验证码
         /// </summary>
-        public static ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.Second);
+        public static ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.First);
 
         /// <summary>
         /// 登录配置。
@@ -54,7 +54,7 @@ namespace CodeArts.Mvc.Builder
         {
             return app.Map(basePath.Add("/authCode"), builder => builder.Run(async context =>
             {
-                string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
+                string code = CreateRandomCode("captcha:length".Config(Consts.CaptchaLength)); //验证码的字符为4个
 
                 string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
                 string url = context.GetRefererUrlStrings();
@@ -82,7 +82,7 @@ namespace CodeArts.Mvc.Builder
 
                     if (result.Success)
                     {
-                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
 
                         await context.Response.WriteJsonAsync(DResult.Ok());
                     }
@@ -95,7 +95,7 @@ namespace CodeArts.Mvc.Builder
                 {
                     byte[] bytes = CreateValidateGraphic(code);
 
-                    AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+                    AuthCode.Set(md5, code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
 
                     await context.Response.WriteImageAsync(bytes);
                 }
@@ -163,7 +163,7 @@ namespace CodeArts.Mvc.Builder
             return app.Map(authCode, async context =>
 #endif
             {
-                string code = CreateRandomCode("captcha:length".Config(4)); //验证码的字符为4个
+                string code = CreateRandomCode("captcha-length".Config(Consts.CaptchaLength)); //验证码的字符为4个
                 string id = context.GetRemoteMacAddress() ?? context.GetRemoteIpAddress();
                 string url = context.GetRefererUrlStrings();
 
@@ -200,7 +200,7 @@ namespace CodeArts.Mvc.Builder
 
                     if (result.Success)
                     {
-                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromMinutes(2D));
+                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromSeconds("captcha-timeout".Config(Consts.CaptchaTimeout)));
 
                         context.Response.WriteJson(DResult.Ok());
                     }
@@ -213,7 +213,7 @@ namespace CodeArts.Mvc.Builder
                 {
                     byte[] bytes = CreateValidateGraphic(code);
 
-                    AuthCode.Set(md5, code, TimeSpan.FromMinutes(2D));
+                    AuthCode.Set(md5, code, TimeSpan.FromSeconds("captcha-timeout".Config(Consts.CaptchaTimeout)));
 
                     context.Response.WriteImage(bytes);
                 }
@@ -307,7 +307,7 @@ namespace CodeArts.Mvc.Builder
             {
                 request.Form(context.Request.Form);
             }
-            else if (contentType.Contains("application/json") || contentType.Contains("application/xml"))
+            else if (contentType.IsNotEmpty())
             {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
@@ -318,35 +318,17 @@ namespace CodeArts.Mvc.Builder
 
                     var body = Encoding.UTF8.GetString(buffer);
 
-                    if (contentType.Contains("application/json"))
-                    {
-                        request.Json(body);
-                    }
-                    else
-                    {
-                        request.Xml(body);
-                    }
+                    request.Body(body, contentType);
                 }
 #else
                 if (context.Request.InputStream.Length > 0)
                 {
                     using (var reader = new StreamReader(context.Request.InputStream))
                     {
-                        if (contentType.Contains("application/json"))
-                        {
-                            request.Json(reader.ReadToEnd());
-                        }
-                        else
-                        {
-                            request.Xml(reader.ReadToEnd());
-                        }
+                        request.Body(reader.ReadToEnd(), contentType);
                     }
                 }
 #endif
-            }
-            else if (!string.IsNullOrEmpty(contentType))
-            {
-                return DResult.Error($"未实现({contentType})类型传输!");
             }
 
             try
@@ -355,15 +337,18 @@ namespace CodeArts.Mvc.Builder
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 var result = await request
                         .JsonCast<ServResult<Dictionary<string, object>>>()
-                        .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(10000));
+                        .JsonCatch((s, e) => ServResult.Error<Dictionary<string, object>>($"内容({s})不是有效的JSON数据。异常信息:{e.Message}"))
+                        .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(Consts.MapTimeout));
 #elif NET40
                 var result = request
                         .JsonCast<ServResult<Dictionary<string, object>>>()
-                        .Request(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
+                        .JsonCatch((s, e) => ServResult.Error<Dictionary<string, object>>($"内容({s})不是有效的JSON数据。异常信息:{e.Message}"))
+                        .Request(context.Request.HttpMethod ?? "GET", "map-timeout".Config(Consts.MapTimeout));
 #else
                 var result = await request
                         .JsonCast<ServResult<Dictionary<string, object>>>()
-                        .RequestAsync(context.Request.HttpMethod ?? "GET", "map:timeout".Config(10000));
+                        .JsonCatch((s, e) => ServResult.Error<Dictionary<string, object>>($"内容({s})不是有效的JSON数据。异常信息:{e.Message}"))
+                        .RequestAsync(context.Request.HttpMethod ?? "GET", "map-timeout".Config(Consts.MapTimeout));
 #endif
                 if (result.Success)
                 {

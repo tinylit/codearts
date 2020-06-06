@@ -9,7 +9,7 @@ namespace CodeArts
     /// </summary>
     public sealed class RuntimeTypeCache : DesignMode.Singleton<RuntimeTypeCache>
     {
-        private static readonly ConcurrentDictionary<RuntimeTypeHandle, TypeStoreItem> Cache = new ConcurrentDictionary<RuntimeTypeHandle, TypeStoreItem>();
+        private readonly ConcurrentDictionary<RuntimeTypeHandle, TypeStoreItem> Cache = new ConcurrentDictionary<RuntimeTypeHandle, TypeStoreItem>();
 
         /// <summary>
         /// 私有构造函数

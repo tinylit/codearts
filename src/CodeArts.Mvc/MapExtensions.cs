@@ -134,7 +134,6 @@ namespace CodeArts.Mvc
         /// <param name="httpVerbs">请求方式</param>
         /// <param name="destinationPath">获取目标地址</param>
         /// <returns></returns>
-
         public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, Func<PathString> destinationPath)
         {
             if (destinationPath is null)
@@ -201,7 +200,7 @@ namespace CodeArts.Mvc
                 {
                     request.Form(context.Request.Form);
                 }
-                else if (contentType.Contains("application/json") || contentType.Contains("application/xml"))
+                else if (contentType.IsNotEmpty())
                 {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                     if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
@@ -212,46 +211,23 @@ namespace CodeArts.Mvc
 
                         var body = Encoding.UTF8.GetString(buffer);
 
-                        if (contentType.Contains("application/json"))
-                        {
-                            request.Json(body);
-                        }
-                        else
-                        {
-                            request.Xml(body);
-                        }
+                        request.Body(body, contentType);
                     }
 #else
                     if (context.Request.InputStream.Length > 0)
                     {
                         using (var reader = new StreamReader(context.Request.InputStream))
                         {
-                            if (contentType.Contains("application/json"))
-                            {
-                                request.Json(reader.ReadToEnd());
-                            }
-                            else
-                            {
-                                request.Xml(reader.ReadToEnd());
-                            }
+                            request.Body(reader.ReadToEnd(), contentType);
                         }
                     }
 #endif
-                }
-                else if (!string.IsNullOrEmpty(contentType))
-                {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-                    await context.Response.WriteJsonAsync(DResult.Error($"未实现({contentType})类型传输!"));
-#else
-                    context.Response.WriteJson(DResult.Error($"未实现({contentType})类型传输!"));
-#endif
-                    return;
                 }
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
                 {
-                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(10000)));
+                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)));
                 }
                 catch (WebException e)
                 {
@@ -262,9 +238,9 @@ namespace CodeArts.Mvc
                 try
                 {
 #if NET40
-                    context.Response.Write(request.Request(method ?? "GET", "map-timeout".Config(10000)));
+                    context.Response.Write(request.Request(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
 #else
-                    context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(10000)));
+                    context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
 #endif
                 }
                 catch (WebException e)
