@@ -160,9 +160,8 @@ namespace CodeArts.ORM
                         throw new DException("未指定删除条件!");
 
                     var columns = typeRegions.ReadWrites
-                        .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
-                        .OrderBy(x => x.Key)
-                        .Select(x => x.Key)
+                        .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
+                        .Select(x => x.Value)
                         .ToArray();
 
                     if (columns.Length == 0)
@@ -645,7 +644,9 @@ namespace CodeArts.ORM
                 if (!columns.Any())
                     throw new DException("未指定更新字段!");
 
-                columns = columns.Union(typeRegions.ReadWrites.Where(x => typeRegions.Tokens.Any(y => x.Key == y.Key)));
+                columns = columns.Union(typeRegions.ReadWrites
+                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
+                    );
 
                 int parameter_count = 0;
 
@@ -661,13 +662,22 @@ namespace CodeArts.ORM
                         throw new DException("未指定更新条件");
 
                     var where_columns = typeRegions.ReadWrites
-                            .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
-                            .OrderBy(x => x.Key)
-                            .Select(x => x.Key)
+                            .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
+                            .Select(x => x.Value)
                             .ToArray();
 
                     if (where_columns.Length == 0)
-                        throw new DException("未指定删除条件!");
+                        throw new DException("未指定更新条件!");
+
+                    if (typeRegions.Tokens.Count > 0)
+                    {
+                        where_columns = where_columns
+                        .Concat(typeRegions.ReadOrWrites
+                            .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
+                            .Select(x => x.Value))
+                        .Distinct()
+                        .ToArray();
+                    }
 
                     parameter_count += where_columns.Length;
 
@@ -676,7 +686,11 @@ namespace CodeArts.ORM
 
                 int token_count = typeRegions.Tokens.Count;
 
-                var insert_columns = columns.Union(typeRegions.ReadWrites.Where(x => typeRegions.Tokens.Any(y => x.Key == y.Key))).ToList();
+                var insert_columns = columns
+                    .Union(typeRegions.ReadWrites
+                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
+                    )
+                    .ToList();
 
                 parameter_count += (insert_columns.Count + token_count) * list.Count;
 
@@ -731,7 +745,7 @@ namespace CodeArts.ORM
                     var context = new ValidationContext(entry, null, null);
 
                     string whereStr = string.Join(" AND ", typeRegions.ReadWrites
-                    .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value) || typeRegions.Tokens.Any(y => x.Key == y.Key))
+                    .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
                     .Select(kv =>
                     {
                         string parameterKey = index == 0 ?
@@ -765,12 +779,14 @@ namespace CodeArts.ORM
                         .Append(" SET ")
                         .Append(string.Join(",", columns.Select(kv =>
                         {
-                            var name = typeRegions.Tokens.ContainsKey(kv.Key) ? $"__token_{kv.Key.ToUrlCase()}" : kv.Key.ToUrlCase();
+                            var name = typeRegions.Tokens.ContainsKey(kv.Key)
+                            ? $"__token_{kv.Value}"
+                            : kv.Value;
 
-                            string parameterKey = index == 0 ?
-                                name
-                                :
-                                $"{name}_{index}";
+                            string parameterKey = index == 0
+                            ? name
+                            :
+                            $"{name}_{index}";
 
                             var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
