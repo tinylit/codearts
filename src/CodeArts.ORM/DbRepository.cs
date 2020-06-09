@@ -159,7 +159,7 @@ namespace CodeArts.ORM
                     if (wheres.Length == 0)
                         throw new DException("未指定删除条件!");
 
-                    var columns = typeRegions.ReadWrites
+                    var columns = typeRegions.ReadOrWrites
                         .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
                         .Select(x => x.Value)
                         .ToArray();
@@ -183,10 +183,10 @@ namespace CodeArts.ORM
                         {
                             var keys = item.Key.Split(',');
 
-                            return Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, index, parameters);
+                            return Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Value)).ToList(), item, index, parameters);
                         }
 
-                        return Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, index, parameters);
+                        return Simple(TableInfo.ReadWrites.First(x => x.Value == item.Key), item, index, parameters);
                     }));
 
                     return Execute(sql, parameters, commandTimeout);
@@ -684,19 +684,17 @@ namespace CodeArts.ORM
                     dicRoot.Add(new KeyValuePair<T, string[]>(item, where_columns));
                 });
 
-                int token_count = typeRegions.Tokens.Count;
-
-                var insert_columns = columns
+                var update_columns = columns
                     .Union(typeRegions.ReadWrites
                         .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
                     )
                     .ToList();
 
-                parameter_count += (insert_columns.Count + token_count) * list.Count;
+                parameter_count += update_columns.Count * list.Count;
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
-                    return Execute(dicRoot, insert_columns, commandTimeout);
+                    return Execute(dicRoot, update_columns, commandTimeout);
                 }
 
                 int affected_rows = 0;
@@ -709,21 +707,21 @@ namespace CodeArts.ORM
 
                     foreach (var item in dicRoot)
                     {
-                        parameter_count += insert_columns.Count + token_count + item.Value.Length;
+                        parameter_count += update_columns.Count + item.Value.Length;
 
                         if (parameter_count > MAX_PARAMETERS_COUNT)
                         {
-                            affected_rows += Execute(dic, insert_columns, commandTimeout);
+                            affected_rows += Execute(dic, update_columns, commandTimeout);
 
                             dic = new List<KeyValuePair<T, string[]>>();
 
-                            parameter_count = insert_columns.Count + token_count + item.Value.Length;
+                            parameter_count = update_columns.Count + item.Value.Length;
                         }
 
                         dic.Add(new KeyValuePair<T, string[]>(item.Key, item.Value));
                     }
 
-                    affected_rows += Execute(dic, insert_columns, commandTimeout);
+                    affected_rows += Execute(dic, update_columns, commandTimeout);
 
                     transaction.Complete();
                 }
