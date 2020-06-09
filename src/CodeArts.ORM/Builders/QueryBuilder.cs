@@ -1117,6 +1117,13 @@ namespace CodeArts.ORM.Builders
                     base.Visit(node.Arguments[0]);
 
                     return node;
+                case MethodCall.MissingError:
+
+                    MissingDataError = node.Arguments[1].GetValueFromExpression()?.ToString();
+
+                    base.Visit(node.Arguments[0]);
+
+                    return node;
                 default:
                     return VisitFormatterMethodCall(node);
             }
@@ -1252,6 +1259,10 @@ namespace CodeArts.ORM.Builders
         /// </summary>
         public object DefaultValue { private set; get; }
 
+        /// <summary>
+        /// 未查询到数据时，异常消息。
+        /// </summary>
+        public string MissingDataError { private set; get; }
         private string ToSQL(string value)
         {
             if (take > 0 || skip > 0)

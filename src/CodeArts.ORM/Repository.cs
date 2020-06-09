@@ -258,8 +258,9 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="required">是否必须返回数据(为真时数据库无数据会抛异常)</param>
         /// <param name="commandTimeout">超时时间</param>
+        /// <param name="missingMsg">未查询到数据时，异常信息。仅【<paramref name="required"/>】为“true”的时候有效。</param>
         /// <returns></returns>
-        public virtual TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null)
+        public virtual TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null, string missingMsg = null)
         {
             if (!QueryAuthorize(sql))
             {
@@ -271,7 +272,7 @@ namespace CodeArts.ORM
                 if (sql.Parameters.Count > 0)
                     throw new DSyntaxErrorException("参数不匹配!");
 
-                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), null, required, default, commandTimeout);
+                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), null, required, default, commandTimeout, missingMsg);
             }
 
             var type = param.GetType();
@@ -286,7 +287,7 @@ namespace CodeArts.ORM
                 return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
                 {
                     [Settings.ParamterName(token.Name)] = param
-                }, required, default, commandTimeout);
+                }, required, default, commandTimeout, missingMsg);
             }
 
             if (!(param is Dictionary<string, object> parameters))
@@ -297,7 +298,7 @@ namespace CodeArts.ORM
             if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
                 throw new DSyntaxErrorException("参数不匹配!");
 
-            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), parameters, required, default, commandTimeout);
+            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), parameters, required, default, commandTimeout, missingMsg);
         }
 
         /// <summary>

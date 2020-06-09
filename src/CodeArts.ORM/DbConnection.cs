@@ -16,6 +16,7 @@ namespace CodeArts.ORM
         /// </summary>
         private class DbCommand : IDbCommand
         {
+            private bool isAlive = false;
             private readonly IDbCommand command;
             private readonly List<IDataReader> dataReaders = new List<IDataReader>();
 
@@ -108,7 +109,7 @@ namespace CodeArts.ORM
             /// <summary>
             /// 存活的。
             /// </summary>
-            public bool IsAlive => !dataReaders.TrueForAll(x => x.IsClosed);
+            public bool IsAlive => isAlive || !dataReaders.TrueForAll(x => x.IsClosed);
 
             /// <summary>
             /// 执行并生成读取器。
@@ -144,7 +145,19 @@ namespace CodeArts.ORM
             /// 执行返回首行首列。
             /// </summary>
             /// <returns></returns>
-            public object ExecuteScalar() => command.ExecuteScalar();
+            public object ExecuteScalar()
+            {
+                isAlive = true;
+
+                try
+                {
+                    return command.ExecuteScalar();
+                }
+                finally
+                {
+                    isAlive = false;
+                }
+            }
 
             /// <summary>
             /// 准备就绪。

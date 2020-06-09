@@ -13,10 +13,11 @@ namespace CodeArts.ORM
         /// <typeparam name="TResult">结果类型</typeparam>
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
-        /// <param name="required">是否必须</param>
+        /// <param name="required">是否必须返回结果</param>
         /// <param name="commandTimeout">超时时间</param>
+        /// <param name="missingMsg">未查询到数据时，异常信息。仅【<paramref name="required"/>】为“true”的时候有效。</param>
         /// <returns></returns>
-        TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null);
+        TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null, string missingMsg = null);
 
         /// <summary>
         /// 查询所有结果。

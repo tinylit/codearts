@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace CodeArts.ORM
 {
@@ -211,6 +212,9 @@ namespace CodeArts.ORM
 
         /** 超时时长 */
         public const string TimeOut = nameof(SelectExtentions.TimeOut);// "TimeOut"
+
+        /** 未查询到数据的异常消息(仅对最终的结果类型为【<see cref="string"/>】或【未继承<seealso cref="IEnumerable{T}"/>】的数据时，有效)。 */
+        public const string MissingError = nameof(SelectExtentions.MissingError);// "MissingError"
 
         /// <summary>
         /// 更新

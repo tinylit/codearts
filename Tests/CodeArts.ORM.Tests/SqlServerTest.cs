@@ -1449,5 +1449,26 @@ namespace UnitTest
                     Username = x.Username.Substring(0, 4)
                 });
         }
+
+        [TestMethod]
+        public void MissingErrorTest()
+        {
+            var user = new UserRepository();
+
+            string errMsg = "未查询到用户信息!";
+
+            try
+            {
+                var userEntry = user.Where(x => x.Id > 10 && x.Id < 10)
+                    .MissingError(errMsg)
+                    .First();
+
+                Assert.Fail();
+            }
+            catch (DRequiredException e)
+            {
+                Assert.IsTrue(errMsg == e.Message);
+            }
+        }
     }
 }

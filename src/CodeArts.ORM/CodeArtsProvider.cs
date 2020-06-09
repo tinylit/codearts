@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Threading;
 
 namespace CodeArts.ORM
 {
@@ -214,9 +213,10 @@ namespace CodeArts.ORM
         /// <param name="reqiured">是否必须。</param>
         /// <param name="defaultValue">默认</param>
         /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="missingMsg">未查询到数据时的异常信息</param>
         /// <exception cref="DRequiredException">必须且数据库未查询到数据</exception>
         /// <returns></returns>
-        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default, int? commandTimeout = null)
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default, int? commandTimeout = null, string missingMsg = null)
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
@@ -259,7 +259,7 @@ namespace CodeArts.ORM
                         }
                         else if (reqiured)
                         {
-                            throw new DRequiredException();
+                            throw new DRequiredException(missingMsg);
                         }
 
                         while (dr.NextResult()) { /* ignore subsequent result sets */ }

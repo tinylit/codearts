@@ -205,6 +205,7 @@ namespace CodeArts.ORM
                 });
 
                 bool required = false;
+                string missingMsg = null;
                 var sqlAttribute = x.GetCustomAttribute<SqlAttribute>() ?? throw new NotSupportedException($"方法“{x.Name}”未指定操作指令!");
                 var timeOutAttr = x.GetCustomAttribute<TimeOutAttribute>();
 
@@ -215,6 +216,7 @@ namespace CodeArts.ORM
                 {
                     case SelectAttribute selectAttribute:
                         required = selectAttribute.Required;
+                        missingMsg = selectAttribute.MissingMsg;
                         goto default;
                     default:
                         if (sqlAttribute.CommandType == CommandTypes.Select)
@@ -254,10 +256,10 @@ namespace CodeArts.ORM
                                 }
                             }
 
-                            var queryFirstMethod = repositoryType.GetMethod(nameof(ISelectable.QueryFirst), new Type[] { typeof(SQL), typeof(object), typeof(bool), typeof(int?) })
+                            var queryFirstMethod = repositoryType.GetMethod(nameof(ISelectable.QueryFirst), new Type[] { typeof(SQL), typeof(object), typeof(bool), typeof(int?), typeof(string) })
                             .MakeGenericMethod(x.MemberType);
 
-                            var bodyQueryFirst = Call(queryFirstMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(required), Constant(timeOutAttr?.Value, typeof(int?)));
+                            var bodyQueryFirst = Call(queryFirstMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(required), Constant(timeOutAttr?.Value, typeof(int?)), Constant(missingMsg, typeof(string)));
 
                             method.Append(Return(Convert(bodyQueryFirst, x.MemberType)));
 

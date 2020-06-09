@@ -18,7 +18,7 @@ namespace CodeArts.ORM.Exceptions
         /// 构造函数
         /// </summary>
         /// <param name="message">错误信息</param>
-        public DRequiredException(string message) : base(message)
+        public DRequiredException(string message) : base(message ?? DefaultError)
         {
         }
     }

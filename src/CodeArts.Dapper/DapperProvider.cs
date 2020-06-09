@@ -28,8 +28,9 @@ namespace CodeArts.Dapper
         /// <param name="required">是否必须</param>
         /// <param name="defaultValue">默认值</param>
         /// <param name="commandTimeout">超时时间</param>
+        /// <param name="missingMsg">未查询到数据异常</param>
         /// <returns></returns>
-        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null)
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null, string missingMsg = null)
         {
             if (required)
                 return conn.QueryFirst<T>(sql, parameters, commandTimeout: commandTimeout);

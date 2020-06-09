@@ -51,6 +51,11 @@ namespace CodeArts.ORM
         /// 默认值
         /// </summary>
         object DefaultValue { get; }
+
+        /// <summary>
+        /// 未查询到数据异常。
+        /// </summary>
+        string MissingDataError { get; }
     }
 
     /// <summary>

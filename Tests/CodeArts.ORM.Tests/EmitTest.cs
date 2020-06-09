@@ -17,7 +17,7 @@ namespace CodeArts.ORM.Tests
     public interface IUser : IDbMapper<FeiUsers>
     {
         [Select("SELECT * FROM fei_users WHERE uid>={id} AND uid<{max_id}")]
-        List<FeiUsers> GetUser(int id, int max_id);
+        List<FeiUsers> GetUsers(int id, int max_id);
 
         [Select("SELECT * FROM fei_users WHERE uid={id}")]
         FeiUsers GetUser(int id);
@@ -35,9 +35,11 @@ namespace CodeArts.ORM.Tests
 
             IUser user = (IUser)System.Activator.CreateInstance(new DbTypeGen().Create(typeof(IUser)));
 
-            var userDto = user.GetUser(10, 100);
+            var users = user.GetUsers(10, 100);
 
-            Assert.IsFalse(userDto is null);
+            Assert.IsFalse(users is null);
+
+            var userDto = user.GetUser(91);
         }
     }
 }

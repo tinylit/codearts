@@ -1,5 +1,6 @@
 ﻿using CodeArts.ORM;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -38,6 +39,27 @@ namespace System.Linq
             source.Expression,
             Expression.Constant(commandTimeout)
         }));
+
+        /// <summary>
+        /// 未查询到数据的异常消息。仅支持以下方法（其它方法不生效）：
+        /// <br/><see cref="Queryable.First{TSource}(IQueryable{TSource})"/>
+        /// <br/><seealso cref="Queryable.First{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>
+        /// <br/><seealso cref="Queryable.Last{TSource}(IQueryable{TSource})"/>
+        /// <br/><seealso cref="Queryable.Last{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>
+        /// <br/><seealso cref="Queryable.Single{TSource}(IQueryable{TSource})"/>
+        /// <br/><seealso cref="Queryable.Single{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>
+        /// <br/><seealso cref="Queryable.ElementAt{TSource}(IQueryable{TSource}, int)"/>
+        /// </summary>
+        /// <typeparam name="TSource">资源类型</typeparam>
+        /// <param name="source">查询器</param>
+        /// <param name="errMsg">错误信息</param>
+        /// <returns></returns>
+        public static IQueryable<TSource> MissingError<TSource>(this IQueryable<TSource> source, string errMsg)
+           => source.Provider.CreateQuery<TSource>(Expression.Call(null, GetMethodInfo(MissingError, source, errMsg), new Expression[2] {
+            source.Expression,
+            Expression.Constant(errMsg)
+        }));
+
 
         /// <summary>
         /// SQL

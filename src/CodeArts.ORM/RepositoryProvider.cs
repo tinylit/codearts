@@ -53,8 +53,9 @@ namespace CodeArts.ORM
         /// <param name="required">是否必须</param>
         /// <param name="defaultValue">默认值</param>
         /// <param name="commandTimeout">执行超时时间</param>
+        /// <param name="missingMsg">未查询到数据时的异常信息</param>
         /// <returns></returns>
-        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null);
+        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
 
         /// <summary>
         /// 查询列表集合
@@ -110,7 +111,7 @@ namespace CodeArts.ORM
 
                         if (value is TResult defaultValue)
                         {
-                            return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue, builder.TimeOut);
+                            return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue, builder.TimeOut, builder.MissingDataError);
                         }
 
                         Type conversionType = typeof(TResult);
@@ -122,13 +123,13 @@ namespace CodeArts.ORM
                                 throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
                             }
 
-                            return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut);
+                            return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut, builder.MissingDataError);
                         }
 
                         throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
                     }
 
-                    return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut);
+                    return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut, builder.MissingDataError);
                 }
                 catch (DbException db)
                 {
