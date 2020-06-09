@@ -54,8 +54,8 @@ namespace System.Linq
         /// <param name="source">查询器</param>
         /// <param name="errMsg">错误信息</param>
         /// <returns></returns>
-        public static IQueryable<TSource> MissingError<TSource>(this IQueryable<TSource> source, string errMsg)
-           => source.Provider.CreateQuery<TSource>(Expression.Call(null, GetMethodInfo(MissingError, source, errMsg), new Expression[2] {
+        public static IQueryable<TSource> NoResultError<TSource>(this IQueryable<TSource> source, string errMsg)
+           => source.Provider.CreateQuery<TSource>(Expression.Call(null, GetMethodInfo(NoResultError, source, errMsg), new Expression[2] {
             source.Expression,
             Expression.Constant(errMsg)
         }));

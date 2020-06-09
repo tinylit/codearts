@@ -1460,7 +1460,7 @@ namespace UnitTest
             try
             {
                 var userEntry = user.Where(x => x.Id > 10 && x.Id < 10)
-                    .MissingError(errMsg)
+                    .NoResultError(errMsg)
                     .First();
 
                 Assert.Fail();

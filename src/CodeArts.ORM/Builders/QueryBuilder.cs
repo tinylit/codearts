@@ -1117,7 +1117,7 @@ namespace CodeArts.ORM.Builders
                     base.Visit(node.Arguments[0]);
 
                     return node;
-                case MethodCall.MissingError:
+                case MethodCall.NoResultError:
 
                     MissingDataError = node.Arguments[1].GetValueFromExpression()?.ToString();
 

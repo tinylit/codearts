@@ -214,7 +214,7 @@ namespace CodeArts.ORM
         public const string TimeOut = nameof(SelectExtentions.TimeOut);// "TimeOut"
 
         /** 未查询到数据的异常消息(仅对最终的结果类型为【<see cref="string"/>】或【未继承<seealso cref="IEnumerable{T}"/>】的数据时，有效)。 */
-        public const string MissingError = nameof(SelectExtentions.MissingError);// "MissingError"
+        public const string NoResultError = nameof(SelectExtentions.NoResultError);// "NoResultError"
 
         /// <summary>
         /// 更新
