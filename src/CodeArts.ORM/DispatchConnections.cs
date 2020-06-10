@@ -39,6 +39,7 @@ namespace CodeArts.ORM
             {
 
                 var list = new List<string>();
+
                 foreach (var kv in connectionCache)
                 {
                     kv.Value.RemoveAll(x =>
@@ -90,7 +91,6 @@ namespace CodeArts.ORM
                     {
                         return item;
                     }
-
                 }
 
                 var connection = new DbConnection(adapter.Create(connectionString), adapter.ConnectionHeartbeat);

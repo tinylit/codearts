@@ -613,11 +613,15 @@ namespace CodeArts.Implements
                 var typeArguments = conversionType.GetGenericArguments();
 
                 if (typeDefinition == typeof(IDictionary<,>))
+                {
                     return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
 
 #if !NET40
                 if (typeDefinition == typeof(IReadOnlyDictionary<,>))
+                {
                     return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
 #endif
 
                 if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
@@ -625,27 +629,25 @@ namespace CodeArts.Implements
                     var typeArgument = typeArguments.First();
 
                     if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    {
                         return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
-
-                    throw new InvalidCastException();
+                    }
                 }
 
 #if !NET40
-                if (typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+                else if (typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
                 {
                     var typeArgument = typeArguments.First();
 
                     if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    {
                         return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
-
-                    throw new InvalidCastException();
+                    }
                 }
 #endif
-
-                throw new InvalidCastException();
             }
 
-            return null;
+            throw new InvalidCastException();
         }
 
         /// <summary>
@@ -664,7 +666,9 @@ namespace CodeArts.Implements
                 var type = item.GetGenericTypeDefinition();
 
                 if (type == typeof(IDictionary<,>))
+                {
                     return ByDataRowToDictionaryLike<TResult>(sourceType, conversionType, type.GetGenericArguments());
+                }
 
                 if (type == typeof(ICollection<>))
                 {
@@ -673,9 +677,9 @@ namespace CodeArts.Implements
                     var typeArgument = typeArguments.First();
 
                     if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    {
                         return ByDataRowToCollectionLike<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
-
-                    throw new InvalidCastException();
+                    }
                 }
             }
 
@@ -1174,7 +1178,7 @@ namespace CodeArts.Implements
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIDataRecordToByCommon<TResult>(TypeStoreItem typeStore, Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByIDataRecordToCommon<TResult>(TypeStoreItem typeStore, Type sourceType, Type conversionType)
         {
             var method = ServiceCtor.Method;
 
@@ -1336,7 +1340,7 @@ namespace CodeArts.Implements
             var typeStore = RuntimeTypeCache.Instance.GetCache(conversionType);
 
             if (typeStore.ConstructorStores.Any(x => x.ParameterStores.Count == 0))
-                return ByIDataRecordToByCommon<TResult>(typeStore, sourceType, conversionType);
+                return ByIDataRecordToCommon<TResult>(typeStore, sourceType, conversionType);
 
             return ByIDataRecordToComplex<TResult>(typeStore, sourceType, conversionType);
         }

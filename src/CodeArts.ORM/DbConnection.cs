@@ -327,6 +327,7 @@ namespace CodeArts.ORM
                 commands.Add(command);
             }
         }
+
         private void Remove(DbCommand command)
         {
             commands.Remove(command);

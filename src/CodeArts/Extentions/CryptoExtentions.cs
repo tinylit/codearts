@@ -68,10 +68,10 @@ namespace System
         /// </summary>
         /// <param name="data">内容</param>
         /// <param name="key">键</param>
-        /// <param name="secret">密钥</param>
-        /// <param name="kind">减密方式</param>
+        /// <param name="iv">初始化向量</param>
+        /// <param name="kind">加密方式</param>
         /// <returns></returns>
-        public static string Encrypt(this string data, string key, string secret, CryptoKind kind = CryptoKind.DES)
+        public static string Encrypt(this string data, string key, string iv, CryptoKind kind = CryptoKind.DES)
         {
             if (data is null)
             {
@@ -83,9 +83,9 @@ namespace System
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (secret is null)
+            if (iv is null)
             {
-                throw new ArgumentNullException(nameof(secret));
+                throw new ArgumentNullException(nameof(iv));
             }
 
             ICryptoTransform crypto = null;
@@ -94,13 +94,13 @@ namespace System
             {
                 var rgbKey = Encoding.ASCII.GetBytes(key);
 
-                var rgbIV = Encoding.ASCII.GetBytes(secret);
+                var rgbIV = Encoding.ASCII.GetBytes(iv);
 
                 if (!algorithm.ValidKeySize(rgbKey.Length * 8))
                     throw new ArgumentOutOfRangeException(nameof(key));
 
                 if (algorithm.IV.Length != rgbIV.Length)
-                    throw new ArgumentOutOfRangeException(nameof(secret));
+                    throw new ArgumentOutOfRangeException(nameof(iv));
 
                 crypto = algorithm.CreateEncryptor(rgbKey, rgbIV);
             }
@@ -127,10 +127,10 @@ namespace System
         /// </summary>
         /// <param name="data">内容</param>
         /// <param name="key">键</param>
-        /// <param name="secret">密钥</param>
+        /// <param name="iv">初始化向量</param>
         /// <param name="kind">减密方式</param>
         /// <returns></returns>
-        public static string Decrypt(this string data, string key, string secret, CryptoKind kind = CryptoKind.DES)
+        public static string Decrypt(this string data, string key, string iv, CryptoKind kind = CryptoKind.DES)
         {
             if (data is null)
             {
@@ -142,9 +142,9 @@ namespace System
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (secret is null)
+            if (iv is null)
             {
-                throw new ArgumentNullException(nameof(secret));
+                throw new ArgumentNullException(nameof(iv));
             }
 
             ICryptoTransform crypto = null;
@@ -153,13 +153,13 @@ namespace System
             {
                 var rgbKey = Encoding.ASCII.GetBytes(key);
 
-                var rgbIV = Encoding.ASCII.GetBytes(secret);
+                var rgbIV = Encoding.ASCII.GetBytes(iv);
 
                 if (!algorithm.ValidKeySize(rgbKey.Length * 8))
                     throw new ArgumentOutOfRangeException(nameof(key));
 
                 if (algorithm.IV.Length != rgbIV.Length)
-                    throw new ArgumentOutOfRangeException(nameof(secret));
+                    throw new ArgumentOutOfRangeException(nameof(iv));
 
                 crypto = algorithm.CreateDecryptor(rgbKey, rgbIV);
             }

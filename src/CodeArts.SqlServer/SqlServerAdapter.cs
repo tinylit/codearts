@@ -26,7 +26,7 @@ namespace CodeArts.SqlServer
         /// <summary>
         /// 心跳
         /// </summary>
-        public virtual double ConnectionHeartbeat => 5D;
+        public virtual double ConnectionHeartbeat { get; set; } = 5D;
 
         /// <summary> 创建数据库连接 </summary>
         /// <returns></returns>

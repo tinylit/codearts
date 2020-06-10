@@ -22,5 +22,21 @@ namespace CodeArts.Tests
 
             var text = @enum.GetText();
         }
+
+        [TestMethod]
+        public void ToValueString()
+        {
+            var text = RoleEnum.User.ToValueString();
+
+            var text2 = RoleEnum.Admin.ToValueString();
+        }
+
+        [TestMethod]
+        public void ToValueStringFlags()
+        {
+            var @enum = RoleFlagsEnum.User | RoleFlagsEnum.Admin;
+
+            var text = @enum.ToValueString();
+        }
     }
 }

@@ -17,7 +17,7 @@ namespace CodeArts.ORM
         string ProviderName { get; }
 
         /// <summary>
-        /// 链接心跳（链接可以在心跳活动时间内被重用不需要重新分配链接，单位：分钟，最小5分钟，最大60分钟）
+        /// 链接心跳（链接可以在心跳活动时间内被重用不需要重新分配链接，单位：分钟）
         /// </summary>
         double ConnectionHeartbeat { get; }
 

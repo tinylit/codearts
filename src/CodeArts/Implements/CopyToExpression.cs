@@ -216,36 +216,7 @@ namespace CodeArts.Implements
 
             if (conversionType == sourceType)
             {
-                commonCtor.ParameterStores.ForEach(info =>
-                {
-                    if (Kind == PatternKind.Property || Kind == PatternKind.All)
-                    {
-                        var item = typeStore.PropertyStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
-
-                        if (!(item is null))
-                        {
-                            ParameterConfig(info, Property(valueExp, item.Member));
-
-                            return;
-                        }
-                    }
-
-                    if (Kind == PatternKind.Field || Kind == PatternKind.All)
-                    {
-                        var item = typeStore.FieldStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
-
-                        if (item is null)
-                        {
-                            arguments.Add(Default(info.ParameterType));
-                        }
-                        else
-                        {
-                            ParameterConfig(info, Field(valueExp, item.Member));
-                        }
-                    }
-                });
-
-                list.Add(Assign(targetExp, New(commonCtor.Member, arguments)));
+                Createinstance(typeStore);
 
                 if (Kind == PatternKind.Property || Kind == PatternKind.All)
                 {
@@ -263,86 +234,18 @@ namespace CodeArts.Implements
             {
                 var typeCache = RuntimeTypeCache.Instance.GetCache(sourceType);
 
-                commonCtor.ParameterStores.ForEach(info =>
-                {
-                    switch (Kind)
-                    {
-                        case PatternKind.Property:
-                            var item = typeCache.PropertyStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
-
-                            if (item is null)
-                            {
-                                if (info.IsOptional)
-                                {
-                                    arguments.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
-                                }
-                                else
-                                {
-                                    arguments.Add(Default(info.ParameterType));
-                                }
-                            }
-                            else
-                            {
-                                ParameterConfig(info, Property(valueExp, item.Member));
-                            }
-                            break;
-                        case PatternKind.Field:
-                            var item2 = typeCache.FieldStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
-
-                            if (item2 is null)
-                            {
-                                if (info.IsOptional)
-                                {
-                                    arguments.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
-                                }
-                                else
-                                {
-                                    arguments.Add(Default(info.ParameterType));
-                                }
-                            }
-                            else
-                            {
-                                ParameterConfig(info, Field(valueExp, item2.Member));
-                            }
-                            break;
-                        case PatternKind.All:
-                            var item3 = typeCache.PropertyStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
-
-                            if (item3 is null)
-                            {
-                                var item4 = typeCache.FieldStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
-
-                                if (item4 is null)
-                                {
-                                    if (info.IsOptional)
-                                    {
-                                        arguments.Add(Convert(Constant(info.DefaultValue), info.ParameterType));
-                                    }
-                                    else
-                                    {
-                                        arguments.Add(Default(info.ParameterType));
-                                    }
-                                }
-                                else
-                                {
-                                    ParameterConfig(info, Field(valueExp, item4.Member));
-                                }
-                            }
-                            else
-                            {
-                                ParameterConfig(info, Property(valueExp, item3.Member));
-                            }
-                            break;
-                    }
-                });
-
-                list.Add(Assign(targetExp, New(commonCtor.Member, arguments)));
+                Createinstance(typeCache);
 
                 if (Kind == PatternKind.Property || Kind == PatternKind.All)
                 {
                     typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>
                     {
-                        var item = typeCache.PropertyStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
+                        var item = typeCache.PropertyStores
+                        .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
+                        ?? typeCache.PropertyStores
+                        .FirstOrDefault(x => x.CanRead && x.Naming == info.Naming)
+                        ?? typeCache.PropertyStores
+                        .FirstOrDefault(x => x.CanRead && (x.Name == info.Naming || x.Naming == info.Name));
 
                         if (item is null) return;
 
@@ -354,7 +257,12 @@ namespace CodeArts.Implements
                 {
                     typeStore.FieldStores.Where(x => x.CanWrite).ForEach(info =>
                     {
-                        var item = typeCache.FieldStores.FirstOrDefault(x => x.CanRead && x.Name == info.Name);
+                        var item = typeCache.FieldStores
+                        .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
+                        ?? typeCache.FieldStores
+                        .FirstOrDefault(x => x.CanRead && x.Naming == info.Naming)
+                        ?? typeCache.FieldStores
+                        .FirstOrDefault(x => x.CanRead && (x.Name == info.Naming || x.Naming == info.Name));
 
                         if (item is null) return;
 
@@ -368,6 +276,57 @@ namespace CodeArts.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { valueExp, targetExp }, list), parameterExp);
 
             return lamdaExp.Compile();
+
+            void Createinstance(TypeStoreItem storeItem)
+            {
+                commonCtor.ParameterStores.ForEach(info =>
+                {
+                    switch (Kind)
+                    {
+                        case PatternKind.All:
+                        case PatternKind.Property:
+                            var item = storeItem.PropertyStores
+                                .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
+                                ?? storeItem.PropertyStores
+                                .FirstOrDefault(x => x.CanRead && x.Name == info.Naming);
+
+                            if (item is null)
+                            {
+                                if (Kind == PatternKind.All)
+                                {
+                                    goto case PatternKind.Field;
+                                }
+
+                                arguments.Add(Default(info.ParameterType));
+                            }
+                            else
+                            {
+                                ParameterConfig(info, Property(valueExp, item.Member));
+                            }
+                            break;
+                        case PatternKind.Field:
+                            var item2 = storeItem.FieldStores
+                                .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
+                                ?? storeItem.FieldStores
+                                .FirstOrDefault(x => x.CanRead && x.Name == info.Naming);
+
+                            if (item2 is null)
+                            {
+                                arguments.Add(Default(info.ParameterType));
+                            }
+                            else
+                            {
+                                ParameterConfig(info, Field(valueExp, item2.Member));
+                            }
+                            break;
+                        default:
+                            arguments.Add(Default(info.ParameterType));
+                            break;
+                    }
+                });
+
+                list.Add(Assign(targetExp, New(commonCtor.Member, arguments)));
+            }
 
             void PropertyConfig<T>(StoreItem<T> info, Expression left, Expression right) where T : MemberInfo
             {
@@ -386,26 +345,26 @@ namespace CodeArts.Implements
                 if (left.Type.IsValueType || AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value)
                 {
                     list.Add(Assign(left, right));
-                    return;
                 }
-
-                if (info.CanRead && !AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value && left.Type == typeof(string))
+                else if (info.CanRead && !AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value && left.Type == typeof(string))
                 {
                     list.Add(Assign(left, Coalesce(right, Coalesce(left, Constant(string.Empty)))));
-                    return;
                 }
-
-                if (!AllowNullPropagationMapping.Value)
+                else if (!AllowNullPropagationMapping.Value)
                 {
                     list.Add(IfThen(NotEqual(right, nullCst), Assign(left, right)));
+
+                    if (!AllowNullDestinationValues.Value)
+                    {
+                        list.Add(IfThen(Equal(left, nullCst), Assign(left, Constant(string.Empty))));
+                    }
+
                 }
                 else if (!info.CanRead || left.Type != typeof(string))
                 {
                     list.Add(Assign(left, right));
-                    return;
                 }
-
-                if (!AllowNullDestinationValues.Value)
+                else if (!AllowNullDestinationValues.Value)
                 {
                     list.Add(IfThen(Equal(left, nullCst), Assign(left, Constant(string.Empty))));
                 }
