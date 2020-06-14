@@ -102,6 +102,55 @@ namespace System
             #endregion
         }
 
+        private interface IDisposableFileRequestable : IDisposable
+        {
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+            /// <param name="timeout">超时时间，单位：毫秒</param>
+            byte[] UploadFile(string fileName, int timeout = 5000);
+
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="method">求取方式</param>
+            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+            /// <param name="timeout">超时时间，单位：毫秒</param>
+            byte[] UploadFile(string method, string fileName, int timeout = 5000);
+
+            /// <summary>
+            /// 下载文件
+            /// </summary>
+            /// <param name="fileName">本地文件地址：文件将下载到这个路径下。</param>
+            /// <param name="timeout">超时时间，单位：毫秒</param>
+            void DownloadFile(string fileName, int timeout = 5000);
+
+#if !NET40
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+            /// <param name="timeout">超时时间，单位：毫秒</param>
+            Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000);
+
+            /// <summary>
+            /// 上传文件
+            /// </summary>
+            /// <param name="method">求取方式</param>
+            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
+            /// <param name="timeout">超时时间，单位：毫秒</param>
+            Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000);
+
+            /// <summary>
+            /// 下载文件
+            /// </summary>
+            /// <param name="fileName">本地文件地址：文件将下载到这个路径下。</param>
+            /// <param name="timeout">超时时间，单位：毫秒</param>
+            Task DownloadFileAsync(string fileName, int timeout = 5000);
+#endif
+        }
+
         private class VerifyRequestableExtend<T> : Requestable<T>, IVerifyRequestableExtend<T>, IResendVerifyRequestableExtend<T>, IResendIntervalVerifyRequestableExtend<T>
         {
             private int maxRetires = 1;
@@ -271,9 +320,9 @@ namespace System
             private Action<WebException> log;
             private Func<WebException, string> returnValue;
             private Requestable<string> requestable;
-            private readonly IFileRequestable file;
+            private IDisposableFileRequestable file;
 
-            public CatchRequestable(Requestable<string> requestable, IFileRequestable file, Action<WebException> log)
+            public CatchRequestable(Requestable<string> requestable, IDisposableFileRequestable file, Action<WebException> log)
             {
                 this.requestable = requestable;
                 this.file = file;
@@ -355,6 +404,42 @@ namespace System
                     throw;
                 }
             }
+
+            byte[] IFileRequestable.UploadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            byte[] IFileRequestable.UploadFile(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            void IFileRequestable.DownloadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    DownloadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
 #if !NET40
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -381,7 +466,7 @@ namespace System
             {
                 try
                 {
-                    return await file.UploadFileAsync(fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout);
                 }
                 catch (WebException e)
                 {
@@ -404,6 +489,43 @@ namespace System
                     throw;
                 }
             }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    await DownloadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
 #endif
 
             public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
@@ -416,7 +538,9 @@ namespace System
                 if (disposing)
                 {
                     requestable?.Dispose();
+                    file?.Dispose();
                     log = null;
+                    file = null;
                     requestable = null;
                     returnValue = null;
                 }
@@ -429,9 +553,9 @@ namespace System
         {
             private Action log;
             private Requestable<string> requestable;
-            private readonly IFileRequestable file;
+            private IDisposableFileRequestable file;
 
-            public FinallyRequestable(Requestable<string> requestable, IFileRequestable file, Action log)
+            public FinallyRequestable(Requestable<string> requestable, IDisposableFileRequestable file, Action log)
             {
                 this.requestable = requestable;
                 this.file = file;
@@ -479,6 +603,43 @@ namespace System
                     log.Invoke();
                 }
             }
+
+            byte[] IFileRequestable.UploadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            byte[] IFileRequestable.UploadFile(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            void IFileRequestable.DownloadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    DownloadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
 #if !NET40
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -498,7 +659,7 @@ namespace System
             {
                 try
                 {
-                    return await file.UploadFileAsync(fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout);
                 }
                 finally
                 {
@@ -517,6 +678,42 @@ namespace System
                     log.Invoke();
                 }
             }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    await DownloadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
 #endif
 
             public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
@@ -528,7 +725,9 @@ namespace System
                 if (disposing)
                 {
                     requestable?.Dispose();
+                    file?.Dispose();
                     log = null;
+                    file = null;
                     requestable = null;
                 }
 
@@ -543,10 +742,10 @@ namespace System
             private Func<WebException, int, int> interval;
 
             private Requestable<string> requestable;
-            private IFileRequestable file;
+            private IDisposableFileRequestable file;
             private List<Predicate<WebException>> predicates;
 
-            public IIFThenRequestable(Requestable<string> requestable, IFileRequestable file, Predicate<WebException> predicate)
+            public IIFThenRequestable(Requestable<string> requestable, IDisposableFileRequestable file, Predicate<WebException> predicate)
             {
                 if (predicate is null)
                 {
@@ -709,6 +908,42 @@ namespace System
                 } while (true);
             }
 
+            byte[] IFileRequestable.UploadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            byte[] IFileRequestable.UploadFile(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            void IFileRequestable.DownloadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    DownloadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
 #if !NET40
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -812,6 +1047,42 @@ namespace System
 
                 } while (true);
             }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    await DownloadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
 #endif
 
             protected override void Dispose(bool disposing)
@@ -819,6 +1090,7 @@ namespace System
                 if (disposing)
                 {
                     requestable?.Dispose();
+                    file?.Dispose();
                     requestable = null;
                     predicates = null;
                     interval = null;
@@ -829,26 +1101,28 @@ namespace System
             }
         }
 
-        private class ThenRequestable : RequestableExtend<string>, IThenConditionRequestable, IThenAndConditionRequestable
+        private class ThenRequestable : RequestableExtend<string>, IThenConditionRequestable, IThenAndConditionRequestable, IDisposableFileRequestable
         {
             private volatile bool isAllocated = false;
 
             private IRequestableBase requestable;
             private Requestable<string> request;
-            private IFileRequestable file;
+            private IDisposableFileRequestable file;
+            private List<Predicate<WebException>> predicates;
             private Action<IRequestableBase, WebException> then;
-            private List<Predicate<WebException>> predicates = new List<Predicate<WebException>>();
 
-            private ThenRequestable(Requestable<string> request, IFileRequestable file, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
+            private ThenRequestable(Requestable<string> request, IDisposableFileRequestable file, IRequestableBase requestable, Action<IRequestableBase, WebException> then)
             {
                 this.request = request;
                 this.requestable = requestable;
                 this.file = file;
                 this.then = then ?? throw new ArgumentNullException(nameof(then));
+                predicates = new List<Predicate<WebException>>();
             }
 
             public ThenRequestable(Requestable requestable, Action<IRequestableBase, WebException> then) : this(requestable, requestable, requestable, then)
             {
+
             }
 
             public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
@@ -948,6 +1222,42 @@ namespace System
 
                         throw;
                     }
+                }
+            }
+
+            byte[] IFileRequestable.UploadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            byte[] IFileRequestable.UploadFile(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            void IFileRequestable.DownloadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    DownloadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
                 }
             }
 
@@ -1058,6 +1368,43 @@ namespace System
                     }
                 }
             }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    await DownloadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
 #endif
 
             protected override void Dispose(bool disposing)
@@ -1065,6 +1412,7 @@ namespace System
                 if (disposing)
                 {
                     request?.Dispose();
+                    file?.Dispose();
                     file = null;
                     then = null;
                     request = null;
@@ -1583,7 +1931,7 @@ namespace System
                 base.Dispose(disposing);
             }
         }
-        
+
         private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestable
         {
             private Requestable<string> requestable;
@@ -1634,7 +1982,7 @@ namespace System
         }
         #endregion
 
-        private class Requestable : RequestableExtend<string>, IRequestable
+        private class Requestable : RequestableExtend<string>, IRequestable, IDisposableFileRequestable
         {
             private Uri __uri;
             private string __data;
@@ -1934,6 +2282,42 @@ namespace System
                 }
             }
 
+            byte[] IFileRequestable.UploadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            byte[] IFileRequestable.UploadFile(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return UploadFile(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            void IFileRequestable.DownloadFile(string fileName, int timeout)
+            {
+                try
+                {
+                    DownloadFile(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
 #if !NET40
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -2002,6 +2386,43 @@ namespace System
                     return client.DownloadFileTaskAsync(__uri, fileName);
                 }
             }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(method, fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    await DownloadFileAsync(fileName, timeout);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
 #endif
 
             protected override void Dispose(bool disposing)

@@ -68,7 +68,7 @@ namespace CodeArts.Mvc.Filters
 
             int code = (int)HttpStatusCode.OK;
 
-            context.Result = new JsonResult(DResult.Error(sb.ToString(), StatusCodes.Forbidden))
+            context.Result = new JsonResult(DResult.Error(sb.ToString(), StatusCodes.RequestForbidden))
             {
                 StatusCode = code
             };
@@ -125,7 +125,7 @@ namespace CodeArts.Mvc.Filters
 
             int code = (int)HttpStatusCode.OK;
 
-            context.Result = new JsonResult(DResult.Error(sb.ToString(), StatusCodes.Forbidden))
+            context.Result = new JsonResult(DResult.Error(sb.ToString(), StatusCodes.RequestForbidden))
             {
                 StatusCode = code
             };
@@ -180,7 +180,7 @@ namespace CodeArts.Mvc.Filters
             context.Response = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(JsonHelper.ToJson(DResult.Error(sb.ToString(), StatusCodes.Forbidden)), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonHelper.ToJson(DResult.Error(sb.ToString(), StatusCodes.RequestForbidden)), Encoding.UTF8, "application/json")
             };
         }
 #endif

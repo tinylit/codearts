@@ -112,7 +112,7 @@ namespace CodeArts.Exceptions
                             case WebExceptionStatus.RequestCanceled:
                                 return null;
                             case WebExceptionStatus.NameResolutionFailure:
-                                return DResult.Error(msg, StatusCodes.BadRequest);
+                                return DResult.Error(msg, StatusCodes.RequestBadRequest);
                             case WebExceptionStatus.Timeout:
                             case WebExceptionStatus.ConnectFailure:
                                 return DResult.Error(msg, StatusCodes.RequestTimeout);
@@ -121,19 +121,19 @@ namespace CodeArts.Exceptions
                             case WebExceptionStatus.SendFailure:
                             case WebExceptionStatus.PipelineFailure:
                             case WebExceptionStatus.ConnectionClosed:
-                                return DResult.Error(msg, StatusCodes.InternalServerError);
+                                return DResult.Error(msg, StatusCodes.RequestInternalServerError);
                             case WebExceptionStatus.ProtocolError:
-                                return DResult.Error(msg, StatusCodes.Unauthorized);
+                                return DResult.Error(msg, StatusCodes.RequestUnauthorized);
                             case WebExceptionStatus.TrustFailure:
-                                return DResult.Error(msg, StatusCodes.Forbidden);
+                                return DResult.Error(msg, StatusCodes.RequestForbidden);
                             case WebExceptionStatus.SecureChannelFailure:
                             case WebExceptionStatus.ServerProtocolViolation:
-                                return DResult.Error(msg, StatusCodes.HttpVersionNotSupported);
+                                return DResult.Error(msg, StatusCodes.RequestHttpVersionNotSupported);
                             case WebExceptionStatus.ReceiveFailure:
                             case WebExceptionStatus.KeepAliveFailure:
-                                return DResult.Error(msg, StatusCodes.GatewayTimeout);
+                                return DResult.Error(msg, StatusCodes.RequestGatewayTimeout);
                             case WebExceptionStatus.ProxyNameResolutionFailure:
-                                return DResult.Error(msg, StatusCodes.UseProxy);
+                                return DResult.Error(msg, StatusCodes.RequestUseProxy);
                             default:
                                 return DResult.Error(msg, StatusCodes.Error);
                         }

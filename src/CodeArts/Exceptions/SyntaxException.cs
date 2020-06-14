@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Data;
 
 namespace CodeArts.Exceptions
 {
     /// <summary>
-    /// 异常
+    /// 语法异常
     /// </summary>
-    public class CodeException : Exception
+    public class SyntaxException : SyntaxErrorException
     {
         /// <summary>
         /// 错误码
@@ -17,7 +18,7 @@ namespace CodeArts.Exceptions
         /// </summary>
         /// <param name="message">异常消息</param>
         /// <param name="errorCode">错误编码</param>
-        public CodeException(string message, int errorCode = StatusCodes.Error)
+        public SyntaxException(string message, int errorCode = StatusCodes.SyntaxError)
             : base(message)
         {
             ErrorCode = errorCode;
@@ -29,7 +30,7 @@ namespace CodeArts.Exceptions
         /// <param name="message">异常消息</param>
         /// <param name="innerException">引发异常的异常</param>
         /// <param name="errorCode">错误编码</param>
-        public CodeException(string message, Exception innerException, int errorCode = StatusCodes.Error) : base(message, innerException)
+        public SyntaxException(string message, Exception innerException, int errorCode = StatusCodes.SyntaxError) : base(message, innerException)
         {
             ErrorCode = errorCode;
         }

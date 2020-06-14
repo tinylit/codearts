@@ -48,7 +48,9 @@ namespace CodeArts.Serialize.Xml
             if (obj is null) return null;
 
             if (encoding is null)
+            {
                 encoding = Encoding.UTF8;
+            }
 
             using (var stream = new MemoryStream())
             {
@@ -74,11 +76,14 @@ namespace CodeArts.Serialize.Xml
                 return default;
 
             if (encoding is null)
+            {
                 encoding = Encoding.UTF8;
+            }
 
             try
             {
                 var mySerializer = new XmlSerializer(typeof(T));
+
                 using (var ms = new MemoryStream(encoding.GetBytes(xml)))
                 {
                     using (var stream = new StreamReader(ms, encoding))

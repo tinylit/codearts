@@ -76,7 +76,7 @@ namespace CodeArts.Mvc.Builder
                               return ServResult.Error<string>(statusCode.Message(), statusCode);
                           }
 
-                          return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.NotFound);
+                          return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.RequestNotFound);
                       })
                       .GetAsync();
 
@@ -190,7 +190,7 @@ namespace CodeArts.Mvc.Builder
                                 return ServResult.Error<string>(statusCode.Message(), statusCode);
                             }
 
-                            return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.NotFound);
+                            return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.RequestNotFound);
                         })
 #if NET40
                         .Get();

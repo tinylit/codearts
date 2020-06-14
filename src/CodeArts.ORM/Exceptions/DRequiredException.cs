@@ -11,14 +11,14 @@ namespace CodeArts.ORM.Exceptions
         /// <summary>
         /// 构造函数
         /// </summary>
-        public DRequiredException() : base(DefaultError)
+        public DRequiredException() : base(DefaultError, StatusCodes.DbNotFoundError)
         {
         }
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="message">错误信息</param>
-        public DRequiredException(string message) : base(message ?? DefaultError)
+        public DRequiredException(string message) : base(message ?? DefaultError, StatusCodes.DbNotFoundError)
         {
         }
     }

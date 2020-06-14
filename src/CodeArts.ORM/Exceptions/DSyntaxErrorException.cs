@@ -1,17 +1,17 @@
-﻿using System;
-using System.Data;
+﻿using CodeArts.Exceptions;
+using System;
 
 namespace CodeArts.ORM.Exceptions
 {
     /// <summary>
     /// 执行语句语法错误
     /// </summary>
-    public class DSyntaxErrorException : SyntaxErrorException
+    public class DSyntaxErrorException : SyntaxException
     {
         /// <summary>
         /// 构造函数
         /// </summary>
-        public DSyntaxErrorException() : base()
+        public DSyntaxErrorException() : base("语法异常!")
         {
         }
 

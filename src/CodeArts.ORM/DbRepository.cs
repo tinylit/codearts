@@ -1016,7 +1016,7 @@ namespace CodeArts.ORM
         {
             if (!ExecuteAuthorize(sql))
             {
-                throw new NonAuthorizeException();
+                throw new NonAuthorizedException();
             }
 
             if (param is null)

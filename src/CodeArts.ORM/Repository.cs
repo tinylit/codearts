@@ -264,7 +264,7 @@ namespace CodeArts.ORM
         {
             if (!QueryAuthorize(sql))
             {
-                throw new NonAuthorizeException();
+                throw new NonAuthorizedException();
             }
 
             if (param is null)
@@ -313,7 +313,7 @@ namespace CodeArts.ORM
         {
             if (!QueryAuthorize(sql))
             {
-                throw new NonAuthorizeException();
+                throw new NonAuthorizedException();
             }
 
             if (param is null)
