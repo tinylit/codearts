@@ -61,7 +61,7 @@ namespace CodeArts.Net
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T Request(string method, int timeout = 5000);
+        T RequestImplement(string method, int timeout = 5000);
 
 #if !NET40
         /// <summary>
@@ -112,7 +112,7 @@ namespace CodeArts.Net
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> RequestAsync(string method, int timeout = 5000);
+        Task<T> RequestImplementAsync(string method, int timeout = 5000);
 #endif
     }
 

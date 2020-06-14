@@ -227,7 +227,7 @@ namespace CodeArts.Mvc
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                 try
                 {
-                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)));
+                    await context.Response.WriteAsync(await request.RequestImplementAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)));
                 }
                 catch (WebException e)
                 {
@@ -238,9 +238,9 @@ namespace CodeArts.Mvc
                 try
                 {
 #if NET40
-                    context.Response.Write(request.Request(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
+                    context.Response.Write(request.RequestImplement(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
 #else
-                    context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
+                    context.Response.Write(await request.RequestImplementAsync(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
 #endif
                 }
                 catch (WebException e)

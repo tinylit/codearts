@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -647,7 +648,7 @@ namespace CodeArts.ORM.Builders
         /// </summary>
         /// <param name="members">成员集合</param>
         /// <returns></returns>
-        protected override IEnumerable<MemberInfo> FilterMembers(IEnumerable<MemberInfo> members) => members.Where(x => InCastList(x.Name));
+        protected override ReadOnlyCollection<MemberInfo> FilterMembers(ReadOnlyCollection<MemberInfo> members) => members.Where(x => InCastList(x.Name)).ToList().AsReadOnly();
         /// <inheritdoc />
         protected override Expression VisitParameterMember(MemberExpression node)
         {
@@ -1225,7 +1226,7 @@ namespace CodeArts.ORM.Builders
         /// </summary>
         /// <param name="bindings">成员集合</param>
         /// <returns></returns>
-        protected override IEnumerable<MemberBinding> FilterMemberBindings(IEnumerable<MemberBinding> bindings) => bindings.Where(item => InCastList(item.Member.Name));
+        protected override ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings) => bindings.Where(item => InCastList(item.Member.Name)).ToList().AsReadOnly();
 
         /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)

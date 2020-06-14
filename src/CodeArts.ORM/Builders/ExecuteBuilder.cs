@@ -257,7 +257,7 @@ namespace CodeArts.ORM.Builders
 
                     SQLWriter.Delete();
 
-                    SQLWriter.Alias(GetOrAddTablePrefix(typeof(T)));
+                    SQLWriter.Alias(GetOrAddTablePrefix(typeRegions.TableType));
 
                     SQLWriter.From();
 
@@ -302,6 +302,55 @@ namespace CodeArts.ORM.Builders
 
             throw new DSyntaxErrorException($"{node.Member.Name}字段不可写!");
         }
+
+        /// <summary>
+        /// 成员分析。
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
+        protected override Expression VisitMemberInit(MemberInitExpression node)
+        {
+            if (Behavior != ExecuteBehavior.Update)
+            {
+                return base.VisitMemberInit(node);
+            }
+
+            var bindings = FilterMemberBindings(node.Bindings);
+
+            if (typeRegions.Tokens.All(x => bindings.All(y => x.Key == y.Member.Name)))
+            {
+                return base.VisitMemberInit(node);
+            }
+
+            if (bindings.Count == 0)
+            {
+                throw new DException("未指定查询字段!");
+            }
+
+            bindings.ForEach((item, index) =>
+            {
+                if (index > 0)
+                {
+                    SQLWriter.Delimiter();
+                }
+
+                base.VisitMemberBinding(item);
+            });
+
+            string prefix = GetOrAddTablePrefix(typeRegions.TableType);
+
+            foreach (var kv in typeRegions.Tokens.Where(x => !bindings.Any(y => x.Key == y.Member.Name)))
+            {
+                SQLWriter.Delimiter();
+
+                SQLWriter.Name(prefix, typeRegions.ReadOrWrites[kv.Key]);
+                SQLWriter.Write("=");
+                SQLWriter.Parameter(kv.Value.Create());
+            }
+
+            return node;
+        }
+
         /// <summary>
         /// 创建构造器
         /// </summary>

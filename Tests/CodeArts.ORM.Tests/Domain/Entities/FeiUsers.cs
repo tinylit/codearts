@@ -1,5 +1,6 @@
 ﻿using CodeArts;
 using CodeArts.ORM;
+using CodeArts.ORM.Tests.Serialize;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -71,6 +72,7 @@ namespace UnitTest.Domain.Entities
         /// <summary>
         /// 修改时间
         /// </summary>
+        [DateTimeToken]
         public DateTime ModifiedTime { get; set; }
 
         /// <summary>

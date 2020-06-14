@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -626,7 +627,7 @@ namespace CodeArts.ORM.Builders
         /// </summary>
         /// <param name="members">成员集合</param>
         /// <returns></returns>
-        protected virtual IEnumerable<MemberInfo> FilterMembers(IEnumerable<MemberInfo> members) => members;
+        protected virtual ReadOnlyCollection<MemberInfo> FilterMembers(ReadOnlyCollection<MemberInfo> members) => members;
 
         /// <inheritdoc />
         protected override Expression VisitNew(NewExpression node)
@@ -652,7 +653,7 @@ namespace CodeArts.ORM.Builders
 
             var members = FilterMembers(node.Members);
 
-            if (members.Count() == 0)
+            if (members.Count == 0)
             {
                 throw new DException("未指定查询字段!");
             }
@@ -1177,13 +1178,13 @@ namespace CodeArts.ORM.Builders
         /// </summary>
         /// <param name="bindings">成员集合</param>
         /// <returns></returns>
-        protected virtual IEnumerable<MemberBinding> FilterMemberBindings(IEnumerable<MemberBinding> bindings) => bindings;
+        protected virtual ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings) => bindings;
         /// <inheritdoc />
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             var bindings = FilterMemberBindings(node.Bindings);
 
-            if (bindings.Count() == 0)
+            if (bindings.Count == 0)
             {
                 throw new DException("未指定查询字段!");
             }
