@@ -64,6 +64,111 @@ namespace System
         }
 
         /// <summary>
+        /// 对称加密（<see cref="CipherMode.ECB"/>，<seealso cref="PaddingMode.PKCS7"/>）。
+        /// </summary>
+        /// <param name="data">内容</param>
+        /// <param name="key">键</param>
+        /// <param name="kind">加密方式</param>
+        /// <returns></returns>
+        public static string Encrypt(this string data, string key, CryptoKind kind = CryptoKind.DES)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+
+            ICryptoTransform crypto = null;
+
+            using (var algorithm = GetSymmetricAlgorithm(kind))
+            {
+                var rgbKey = Encoding.ASCII.GetBytes(key);
+
+                if (!algorithm.ValidKeySize(rgbKey.Length * 8))
+                    throw new ArgumentOutOfRangeException(nameof(key));
+
+                algorithm.Key = rgbKey;
+                algorithm.Mode = CipherMode.ECB;
+                algorithm.Padding = PaddingMode.PKCS7;
+
+                crypto = algorithm.CreateEncryptor();
+            }
+
+            using (var ms = new MemoryStream())
+            {
+                using (var cs = new CryptoStream(ms, crypto, CryptoStreamMode.Write))
+                {
+                    var buffer = Encoding.UTF8.GetBytes(data);
+
+                    cs.Write(buffer, 0, buffer.Length);
+
+                    cs.FlushFinalBlock();
+
+                    cs.Close();
+                }
+
+                return Convert.ToBase64String(ms.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// 对称减密（<see cref="CipherMode.ECB"/>，<seealso cref="PaddingMode.PKCS7"/>）。
+        /// </summary>
+        /// <param name="data">内容</param>
+        /// <param name="key">键</param>
+        /// <param name="kind">减密方式</param>
+        /// <returns></returns>
+        public static string Decrypt(this string data, string key, CryptoKind kind = CryptoKind.DES)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            ICryptoTransform crypto = null;
+
+            using (var algorithm = GetSymmetricAlgorithm(kind))
+            {
+                var rgbKey = Encoding.ASCII.GetBytes(key);
+
+                if (!algorithm.ValidKeySize(rgbKey.Length * 8))
+                    throw new ArgumentOutOfRangeException(nameof(key));
+
+                algorithm.Key = rgbKey;
+                algorithm.Mode = CipherMode.ECB;
+                algorithm.Padding = PaddingMode.PKCS7;
+
+                crypto = algorithm.CreateDecryptor();
+            }
+
+            using (var ms = new MemoryStream())
+            {
+                using (var cs = new CryptoStream(ms, crypto, CryptoStreamMode.Write))
+                {
+                    var buffer = Convert.FromBase64String(data);
+
+                    cs.Write(buffer, 0, buffer.Length);
+
+                    cs.FlushFinalBlock();
+
+                    cs.Close();
+                }
+
+                return Encoding.UTF8.GetString(ms.ToArray());
+            }
+        }
+
+        /// <summary>
         /// 对称加密
         /// </summary>
         /// <param name="data">内容</param>

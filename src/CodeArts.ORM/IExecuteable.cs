@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Transactions;
 
 namespace CodeArts.ORM
 {
@@ -77,6 +78,13 @@ namespace CodeArts.ORM
         /// <param name="columns">字段</param>
         /// <returns></returns>
         IDeleteable<T> Where<TColumn>(Expression<Func<T, TColumn>> columns);
+
+        /// <summary>
+        /// 设置事务，默认:<see cref="TransactionScopeOption.Required"/>。
+        /// </summary>
+        /// <param name="option">配置</param>
+        /// <returns></returns>
+        IDeleteable<T> Transaction(TransactionScopeOption option);
     }
 
     /// <summary>
@@ -119,6 +127,13 @@ namespace CodeArts.ORM
         /// <param name="columns">字段</param>
         /// <returns></returns>
         IInsertable<T> Except<TColumn>(Expression<Func<T, TColumn>> columns);
+
+        /// <summary>
+        /// 设置事务，默认:<see cref="TransactionScopeOption.Required"/>。
+        /// </summary>
+        /// <param name="option">配置</param>
+        /// <returns></returns>
+        IInsertable<T> Transaction(TransactionScopeOption option);
     }
 
     /// <summary>
@@ -182,5 +197,12 @@ namespace CodeArts.ORM
         /// <param name="columns">字段</param>
         /// <returns></returns>
         IUpdateable<T> Where<TColumn>(Expression<Func<T, TColumn>> columns);
+
+        /// <summary>
+        /// 设置事务，默认:<see cref="TransactionScopeOption.Required"/>。
+        /// </summary>
+        /// <param name="option">配置</param>
+        /// <returns></returns>
+        IUpdateable<T> Transaction(TransactionScopeOption option);
     }
 }

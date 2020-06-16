@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -138,6 +139,7 @@ namespace CodeArts.ORM
             private string[] wheres;
             private Func<T, string[]> where;
             private Func<ITableInfo, string> from;
+            private TransactionScopeOption option = TransactionScopeOption.Required;
 
             public override int Execute(int? commandTimeout)
             {
@@ -173,10 +175,10 @@ namespace CodeArts.ORM
 
                 }).ToList();
 
+                var parameters = new Dictionary<string, object>();
+
                 if (parameter_count <= MAX_PARAMETERS_COUNT)
                 {
-                    var parameters = new Dictionary<string, object>();
-
                     string sql = string.Join(";", listRoot.Select((item, index) =>
                     {
                         if (item.Key.IndexOf(',') > -1)
@@ -189,75 +191,120 @@ namespace CodeArts.ORM
                         return Simple(TableInfo.ReadWrites.First(x => x.Value == item.Key), item, index, parameters);
                     }));
 
-                    return Execute(sql, parameters, commandTimeout);
+                    return Transaction(() => Execute(sql, parameters, commandTimeout));
                 }
 
+                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
+
                 int group_index = 0;
-                int affected_rows = 0;
 
                 parameter_count = 0;
-                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+
+                StringBuilder sb = new StringBuilder();
+
+                foreach (var item in listRoot)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    var parameters = new Dictionary<string, object>();
-
-                    foreach (var item in listRoot)
+                    if (parameter_count >= MAX_PARAMETERS_COUNT)
                     {
-                        if (parameter_count >= MAX_PARAMETERS_COUNT)
-                        {
-                            affected_rows += Execute(sb.ToString(), parameters, commandTimeout);
+                        sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), parameters));
 
-                            sb.Clear();
+                        group_index = 0;
+
+                        parameter_count = 0;
+
+                        sb = new StringBuilder();
+
+                        parameters = new Dictionary<string, object>();
+                    }
+
+                    if (sb.Length > 0)
+                    {
+                        sb.Append(';');
+                    }
+
+                    if (item.Key.IndexOf(',') > -1)
+                    {
+                        string[] keys = item.Key.Split(',');
+
+                        parameter_count += keys.Length;
+
+                        if (parameter_count > MAX_PARAMETERS_COUNT)
+                        {
+                            sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), parameters));
 
                             group_index = 0;
 
-                            parameter_count = 0;
+                            parameter_count = keys.Length;
+
+                            sb = new StringBuilder();
 
                             parameters = new Dictionary<string, object>();
                         }
 
-                        if (sb.Length > 0)
-                        {
-                            sb.Append(';');
-                        }
+                        sb.Append(Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, group_index, parameters));
+                    }
+                    else
+                    {
+                        parameter_count++;
 
-                        if (item.Key.IndexOf(',') > -1)
-                        {
-                            string[] keys = item.Key.Split(',');
-
-                            parameter_count += keys.Length;
-
-                            if (parameter_count > MAX_PARAMETERS_COUNT)
-                            {
-                                affected_rows += Execute(sb.ToString(), parameters, commandTimeout);
-
-                                sb.Clear();
-
-                                group_index = 0;
-
-                                parameter_count = keys.Length;
-
-                                parameters = new Dictionary<string, object>();
-                            }
-
-                            sb.Append(Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, group_index, parameters));
-                        }
-                        else
-                        {
-                            parameter_count++;
-
-                            sb.Append(Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, group_index, parameters));
-                        }
-
-                        group_index++;
+                        sb.Append(Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, group_index, parameters));
                     }
 
-                    affected_rows += Execute(sb.ToString(), parameters, commandTimeout);
-
-                    transaction.Complete();
+                    group_index++;
                 }
 
-                return affected_rows;
+                if (sb.Length > 0)
+                {
+                    sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), parameters));
+                }
+
+                return Transaction(() =>
+                 {
+                     int affected_rows = 0;
+
+                     if (commandTimeout.HasValue)
+                     {
+                         var sw = new Stopwatch();
+
+                         var milliseconds = commandTimeout.Value * 1000L;
+
+                         foreach (var kv in sqls)
+                         {
+                             sw.Start();
+
+                             affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+
+                             sw.Stop();
+
+                             if (sw.ElapsedMilliseconds > milliseconds)
+                             {
+                                 throw new TimeoutException();
+                             }
+                         }
+
+                         return affected_rows;
+                     }
+
+                     foreach (var kv in sqls)
+                     {
+                         affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+                     }
+
+                     return affected_rows;
+                 });
+            }
+
+
+            private int Transaction(Func<int> factroy)
+            {
+                using (TransactionScope transaction = new TransactionScope(option))
+                {
+                    int affected_rows = factroy.Invoke();
+
+                    transaction.Complete();
+
+                    return affected_rows;
+                }
             }
 
             private int Simple(int? commandTimeout)
@@ -277,7 +324,9 @@ namespace CodeArts.ORM
                 }
 
                 if (flag)
+                {
                     throw new DException("未指定删除条件!");
+                }
 
                 var list = this.ToList();
 
@@ -287,26 +336,52 @@ namespace CodeArts.ORM
 
                     var sql = Simple(column, list, 0, parameters);
 
-                    return Execute(sql, parameters, commandTimeout);
+                    return Transaction(() => Execute(sql, parameters, commandTimeout));
                 }
 
-                int affected_rows = 0;
+                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
 
-                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                for (int i = 0; i < list.Count; i += MAX_PARAMETERS_COUNT)
                 {
-                    for (int i = 0; i < list.Count; i += MAX_PARAMETERS_COUNT)
+                    var parameters = new Dictionary<string, object>();
+
+                    var sql = Simple(column, list.Skip(i).Take(MAX_PARAMETERS_COUNT), 0, parameters);
+
+                    sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sql, parameters));
+                }
+
+                return Transaction(() =>
+                {
+                    int affected_rows = 0;
+
+                    if (commandTimeout.HasValue)
                     {
-                        var parameters = new Dictionary<string, object>();
+                        var sw = new Stopwatch();
 
-                        var sql = Simple(column, list.Skip(i).Take(MAX_PARAMETERS_COUNT), 0, parameters);
+                        var milliseconds = commandTimeout.Value * 1000L;
 
-                        affected_rows += Execute(sql, parameters, commandTimeout);
+                        foreach (var kv in sqls)
+                        {
+                            sw.Start();
+
+                            affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+
+                            sw.Stop();
+
+                            if (sw.ElapsedMilliseconds > milliseconds)
+                            {
+                                throw new TimeoutException();
+                            }
+                        }
                     }
 
-                    transaction.Complete();
-                }
+                    foreach (var kv in sqls)
+                    {
+                        affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+                    }
 
-                return affected_rows;
+                    return affected_rows;
+                });
             }
 
             private int Complex(int? commandTimeout)
@@ -323,27 +398,54 @@ namespace CodeArts.ORM
 
                     var sql = Complex(columns, list, 0, parameters);
 
-                    return Execute(sql, parameters, commandTimeout);
+                    return Transaction(() => Execute(sql, parameters, commandTimeout));
                 }
 
-                int affected_rows = 0;
                 int offset = MAX_PARAMETERS_COUNT / columns.Count;
 
-                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
+
+                for (int i = 0; i < list.Count; i += offset)
                 {
-                    for (int i = 0; i < list.Count; i += offset)
-                    {
-                        var parameters = new Dictionary<string, object>();
+                    var parameters = new Dictionary<string, object>();
 
-                        var sql = Complex(columns, list.Skip(i).Take(offset), 0, parameters);
+                    var sql = Complex(columns, list.Skip(i).Take(offset), 0, parameters);
 
-                        affected_rows += Execute(sql, parameters, commandTimeout);
-                    }
-
-                    transaction.Complete();
+                    sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sql, parameters));
                 }
 
-                return affected_rows;
+                return Transaction(() =>
+                {
+                    int affected_rows = 0;
+
+                    if (commandTimeout.HasValue)
+                    {
+                        var sw = new Stopwatch();
+
+                        var milliseconds = commandTimeout.Value * 1000L;
+
+                        foreach (var kv in sqls)
+                        {
+                            sw.Start();
+
+                            affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+
+                            sw.Stop();
+
+                            if (sw.ElapsedMilliseconds > milliseconds)
+                            {
+                                throw new TimeoutException();
+                            }
+                        }
+                    }
+
+                    foreach (var kv in sqls)
+                    {
+                        affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+                    }
+
+                    return affected_rows;
+                });
             }
 
             private string Simple(KeyValuePair<string, string> column, IEnumerable<T> collect, int group, Dictionary<string, object> parameters)
@@ -384,7 +486,7 @@ namespace CodeArts.ORM
                 if (list.Count == 1)
                 {
                     return sb.Append("=")
-                        .Append(list.First())
+                        .Append(list[0])
                         .ToString();
                 }
 
@@ -470,6 +572,13 @@ namespace CodeArts.ORM
 
                 return this;
             }
+
+            public IDeleteable<T> Transaction(TransactionScopeOption option)
+            {
+                this.option = option;
+
+                return this;
+            }
         }
 
         private class Insertable : RouteExecuteable, IInsertable<T>
@@ -481,6 +590,7 @@ namespace CodeArts.ORM
             private string[] limits;
             private string[] excepts;
             private Func<ITableInfo, string> from;
+            private TransactionScopeOption option = TransactionScopeOption.Required;
 
             public IInsertable<T> Except(string[] columns)
             {
@@ -506,7 +616,9 @@ namespace CodeArts.ORM
                 }
 
                 if (!columns.Any())
+                {
                     throw new DException("未指定插入字段!");
+                }
 
                 var list = this.ToList();
 
@@ -516,26 +628,54 @@ namespace CodeArts.ORM
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
-                    return Execute(list, insert_columns, commandTimeout);
+                    var kv = SqlGenerator(list, insert_columns);
+
+                    return Transaction(() => Execute(kv.Key, kv.Value, commandTimeout));
                 }
 
-                int affected_rows = 0;
                 int offset = MAX_PARAMETERS_COUNT / insert_columns.Count;
+                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
 
-                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                for (int i = 0; i < list.Count; i += offset)
                 {
-                    for (int i = 0; i < list.Count; i += offset)
+                    sqls.Add(SqlGenerator(list.Skip(i).Take(offset).ToList(), insert_columns));
+                }
+
+                return Transaction(() =>
+                {
+                    int affected_rows = 0;
+
+                    if (commandTimeout.HasValue)
                     {
-                        affected_rows += Execute(list.Skip(i).Take(offset).ToList(), insert_columns, commandTimeout);
+                        var sw = new Stopwatch();
+
+                        var milliseconds = commandTimeout.Value * 1000L;
+
+                        foreach (var kv in sqls)
+                        {
+                            sw.Start();
+
+                            affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+
+                            sw.Stop();
+
+                            if (sw.ElapsedMilliseconds > milliseconds)
+                            {
+                                throw new TimeoutException();
+                            }
+                        }
                     }
 
-                    transaction.Complete();
-                }
+                    foreach (var kv in sqls)
+                    {
+                        affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+                    }
 
-                return affected_rows;
+                    return affected_rows;
+                });
             }
 
-            private int Execute(List<T> list, List<KeyValuePair<string, string>> columns, int? commandTimeout)
+            private KeyValuePair<string, Dictionary<string, object>> SqlGenerator(List<T> list, List<KeyValuePair<string, string>> columns)
             {
                 var sb = new StringBuilder();
                 var paramters = new Dictionary<string, object>();
@@ -584,7 +724,7 @@ namespace CodeArts.ORM
                         })), ")");
                     })));
 
-                return Execute(sb.Append(";").ToString(), paramters, commandTimeout);
+                return new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), paramters);
             }
 
             public IInsertable<T> From(Func<ITableInfo, string> table)
@@ -602,6 +742,25 @@ namespace CodeArts.ORM
             }
 
             public IInsertable<T> Limit<TColumn>(Expression<Func<T, TColumn>> columns) => Limit(Provider.Limit(columns));
+
+            private int Transaction(Func<int> factroy)
+            {
+                using (TransactionScope transaction = new TransactionScope(option))
+                {
+                    int affected_rows = factroy.Invoke();
+
+                    transaction.Complete();
+
+                    return affected_rows;
+                }
+            }
+
+            public IInsertable<T> Transaction(TransactionScopeOption option)
+            {
+                this.option = option;
+
+                return this;
+            }
         }
 
         private class Updateable : RouteExecuteable, IUpdateable<T>
@@ -614,6 +773,7 @@ namespace CodeArts.ORM
             private string[] excepts;
             private Func<T, string[]> where;
             private Func<ITableInfo, T, string> from;
+            private TransactionScopeOption option = TransactionScopeOption.Required;
 
             public IUpdateable<T> Except(string[] columns)
             {
@@ -694,42 +854,75 @@ namespace CodeArts.ORM
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
-                    return Execute(dicRoot, update_columns, commandTimeout);
-                }
+                    var kv = SqlGenerator(dicRoot, update_columns);
 
-                int affected_rows = 0;
+                    return Transaction(() => Execute(kv.Key, kv.Value, commandTimeout));
+                }
 
                 parameter_count = 0;
 
-                using (TransactionScope transaction = new TransactionScope(TransactionScopeOption.RequiresNew))
+                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
+
+                var dic = new List<KeyValuePair<T, string[]>>();
+
+                foreach (var item in dicRoot)
                 {
-                    var dic = new List<KeyValuePair<T, string[]>>();
+                    parameter_count += update_columns.Count + item.Value.Length;
 
-                    foreach (var item in dicRoot)
+                    if (parameter_count > MAX_PARAMETERS_COUNT)
                     {
-                        parameter_count += update_columns.Count + item.Value.Length;
+                        sqls.Add(SqlGenerator(dic, update_columns));
 
-                        if (parameter_count > MAX_PARAMETERS_COUNT)
-                        {
-                            affected_rows += Execute(dic, update_columns, commandTimeout);
+                        dic = new List<KeyValuePair<T, string[]>>();
 
-                            dic = new List<KeyValuePair<T, string[]>>();
-
-                            parameter_count = update_columns.Count + item.Value.Length;
-                        }
-
-                        dic.Add(new KeyValuePair<T, string[]>(item.Key, item.Value));
+                        parameter_count = update_columns.Count + item.Value.Length;
                     }
 
-                    affected_rows += Execute(dic, update_columns, commandTimeout);
-
-                    transaction.Complete();
+                    dic.Add(new KeyValuePair<T, string[]>(item.Key, item.Value));
                 }
 
-                return affected_rows;
+                if (dic.Count > 0)
+                {
+                    sqls.Add(SqlGenerator(dic, update_columns));
+                }
+
+                return Transaction(() =>
+                 {
+                     int affected_rows = 0;
+
+                     if (commandTimeout.HasValue)
+                     {
+                         var sw = new Stopwatch();
+
+                         var milliseconds = commandTimeout.Value * 1000L;
+
+                         foreach (var kv in sqls)
+                         {
+                             sw.Start();
+
+                             affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+
+                             sw.Stop();
+
+                             if (sw.ElapsedMilliseconds > milliseconds)
+                             {
+                                 throw new TimeoutException();
+                             }
+                         }
+
+                         return affected_rows;
+                     }
+
+                     foreach (var kv in sqls)
+                     {
+                         affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
+                     }
+
+                     return affected_rows;
+                 });
             }
 
-            private int Execute(List<KeyValuePair<T, string[]>> list, List<KeyValuePair<string, string>> columns, int? commandTimeout)
+            private KeyValuePair<string, Dictionary<string, object>> SqlGenerator(List<KeyValuePair<T, string[]>> list, List<KeyValuePair<string, string>> columns)
             {
                 var sb = new StringBuilder();
                 var paramters = new Dictionary<string, object>();
@@ -802,7 +995,7 @@ namespace CodeArts.ORM
                         .Append(";");
                 });
 
-                return Execute(sb.ToString(), paramters, commandTimeout);
+                return new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), paramters);
             }
 
             public IUpdateable<T> From(Func<ITableInfo, string> table)
@@ -848,6 +1041,25 @@ namespace CodeArts.ORM
             public IUpdateable<T> Where<TColumn>(Expression<Func<T, TColumn>> columns)
             {
                 where = Provider.Where(columns);
+
+                return this;
+            }
+
+            private int Transaction(Func<int> factroy)
+            {
+                using (TransactionScope transaction = new TransactionScope(option))
+                {
+                    int affected_rows = factroy.Invoke();
+
+                    transaction.Complete();
+
+                    return affected_rows;
+                }
+            }
+
+            public IUpdateable<T> Transaction(TransactionScopeOption option)
+            {
+                this.option = option;
 
                 return this;
             }

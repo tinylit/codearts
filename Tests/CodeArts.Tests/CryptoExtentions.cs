@@ -18,6 +18,20 @@ namespace CodeArts.Tests
             var encrypt = value.Encrypt("@%d^#41&", "%@D^d$2~");
 
             var decrypt = encrypt.Decrypt("@%d^#41&", "%@D^d$2~");
+
+            Assert.IsTrue(value == decrypt);
+        }
+
+        [TestMethod]
+        public void MyTestMethod2()
+        {
+            var value = "d;ljvhhgortpghfgbfgbgbg";
+
+            var encrypt = value.Encrypt("92N0La5}AC$@efgt", CryptoKind.AES);
+
+            var decrypt = encrypt.Decrypt("92N0La5}AC$@efgt", CryptoKind.AES);
+
+            Assert.IsTrue(value == decrypt);
         }
     }
 }
