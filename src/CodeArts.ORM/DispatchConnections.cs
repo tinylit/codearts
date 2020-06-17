@@ -83,6 +83,11 @@ namespace CodeArts.ORM
             /// <returns></returns>
             public IDbConnection Create(string connectionString, IDbConnectionAdapter adapter, bool useCache = true)
             {
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    throw new System.ArgumentException("数据库链接无效!", nameof(connectionString));
+                }
+
                 List<DbConnection> connections = connectionCache.GetOrAdd(connectionString, _ => new List<DbConnection>());
 
                 foreach (var item in connections)

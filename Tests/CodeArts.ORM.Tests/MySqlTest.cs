@@ -40,7 +40,7 @@ namespace UnitTest
 
             if (isCompleted) return;
 
-            var connectionString = "server=mysql.server.com;port=3306;user=root;password=Password12!;database=mysql;";
+            var connectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;";
 
             using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
             {

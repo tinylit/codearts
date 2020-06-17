@@ -178,11 +178,15 @@ namespace CodeArts.ORM
             foreach (Adapter mvc in AdapterCache)
             {
                 if (mvc.CanConvert(match))
+                {
                     return mvc.Convert(this, match);
+                }
             }
 
             if (UnsolvedThrowError)
+            {
                 throw new NotSupportedException();
+            }
 
             return match.Value;
         }
