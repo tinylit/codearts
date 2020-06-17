@@ -23,15 +23,18 @@ namespace CodeArts.Mvc
     /// </summary>
     public class JwtStartup : DStartup
     {
+        private readonly bool useJwtAuth;
         private readonly PathString basePath = new PathString("/");
 
         /// <summary>
         /// 构造函数【默认验证码、注册、登录的根路径为“/”】。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
-        public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useJwtAuth">使用Jwt认证登录、注册、验证码功能：<see cref="AuthApplicationBuilderExtentions.UseJwtAuth(IApplicationBuilder, PathString)"/></param>
+        public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true, bool useJwtAuth = true) : base(useSwaggerUi, useDependencyInjection)
         {
+            this.useJwtAuth = useJwtAuth;
         }
 
         /// <summary>
@@ -39,10 +42,12 @@ namespace CodeArts.Mvc
         /// </summary>
         /// <param name="basePath">用于验证码、注册、登录的根路径。</param>
         /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
-        public JwtStartup(PathString basePath, bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useJwtAuth">使用Jwt认证登录、注册、验证码功能：<see cref="AuthApplicationBuilderExtentions.UseJwtAuth(IApplicationBuilder, PathString)"/></param>
+        public JwtStartup(PathString basePath, bool useSwaggerUi = true, bool useDependencyInjection = true, bool useJwtAuth = true) : base(useSwaggerUi, useDependencyInjection)
         {
             this.basePath = basePath;
+            this.useJwtAuth = useJwtAuth;
         }
 
         /// <summary>
@@ -138,7 +143,11 @@ namespace CodeArts.Mvc
         public override void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
 #endif
-            app.UseJwtAuth(basePath);
+
+            if (useJwtAuth)
+            {
+                app.UseJwtAuth(basePath);
+            }
 
             app.UseAuthentication();
 
@@ -161,25 +170,30 @@ namespace CodeArts.Mvc
     /// </summary>
     public class JwtStartup : DStartup
     {
+        private readonly bool useJwtAuth;
         private readonly PathString basePath = new PathString("/");
 
 #if NET40
         /// <summary>
         /// 构造函数【默认验证码、注册、登录的根路径为“/”】。
         /// </summary>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
-        public JwtStartup(bool useDependencyInjection = true) : base(useDependencyInjection)
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useJwtAuth">使用Jwt认证登录、注册、验证码功能：<see cref="AuthApplicationBuilderExtentions.UseJwtAuth(IApplicationBuilder, PathString)"/></param>
+        public JwtStartup(bool useDependencyInjection = true, bool useJwtAuth = true) : base(useDependencyInjection)
         {
+            this.useJwtAuth = useJwtAuth;
         }
 
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="basePath">用于验证码、注册、登录的根路径。</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
-        public JwtStartup(PathString basePath, bool useDependencyInjection = true) : base(useDependencyInjection)
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useJwtAuth">使用Jwt认证登录、注册、验证码功能：<see cref="AuthApplicationBuilderExtentions.UseJwtAuth(IApplicationBuilder, PathString)"/></param>
+        public JwtStartup(PathString basePath, bool useDependencyInjection = true, bool useJwtAuth = true) : base(useDependencyInjection)
         {
             this.basePath = basePath;
+            this.useJwtAuth = useJwtAuth;
         }
 #else
 
@@ -187,9 +201,11 @@ namespace CodeArts.Mvc
         /// 构造函数【默认验证码、注册、登录的根路径为“/”】。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
-        public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useJwtAuth">使用Jwt认证登录、注册、验证码功能：<see cref="AuthApplicationBuilderExtentions.UseJwtAuth(IApplicationBuilder, PathString)"/></param>
+        public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true, bool useJwtAuth = true) : base(useSwaggerUi, useDependencyInjection)
         {
+            this.useJwtAuth = useJwtAuth;
         }
 
         /// <summary>
@@ -197,10 +213,12 @@ namespace CodeArts.Mvc
         /// </summary>
         /// <param name="basePath">用于验证码、注册、登录的根路径。</param>
         /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
-        public JwtStartup(PathString basePath, bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useJwtAuth">使用Jwt认证登录、注册、验证码功能：<see cref="AuthApplicationBuilderExtentions.UseJwtAuth(IApplicationBuilder, PathString)"/></param>
+        public JwtStartup(PathString basePath, bool useSwaggerUi = true, bool useDependencyInjection = true, bool useJwtAuth = true) : base(useSwaggerUi, useDependencyInjection)
         {
             this.basePath = basePath;
+            this.useJwtAuth = useJwtAuth;
         }
 
         /// <summary>
@@ -233,7 +251,15 @@ namespace CodeArts.Mvc
         /// 配置中间件。
         /// </summary>
         /// <param name="builder">方案构造器</param>
-        public virtual void Configure(IApplicationBuilder builder) => builder.UseJwtAuth(basePath).UseJwtBearer(JwtBearerEvents.Authorization);
+        public virtual void Configure(IApplicationBuilder builder)
+        {
+            if (useJwtAuth)
+            {
+                builder.UseJwtAuth(basePath);
+            }
+
+            builder.UseJwtBearer(JwtBearerEvents.Authorization);
+        }
     }
 }
 #endif

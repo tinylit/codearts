@@ -27,9 +27,36 @@ namespace CodeArts.ORM
         protected IReadOnlyConnectionConfig ConnectionConfig { private set; get; }
 
         /// <summary>
+        /// 链接池。
+        /// </summary>
+        private readonly static Dictionary<Thread, IDbConnection> connections = new Dictionary<Thread, IDbConnection>();
+
+        /// <summary>
         /// 数据库链接
         /// </summary>
-        protected IDbConnection Connection => TransactionConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter);
+        protected IDbConnection Connection
+        {
+            get
+            {
+                List<Thread> threads = new List<Thread>();
+
+                foreach (var kv in connections)
+                {
+                    if (!kv.Key.IsAlive)
+                    {
+                        threads.Add(kv.Key);
+                    }
+                }
+
+                threads.ForEach(x =>
+                {
+                    connections.Remove(x);
+                });
+
+                return TransactionConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? connections.GetOrAdd(Thread.CurrentThread, _ => DispatchConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter));
+            }
+        }
+
         /// <summary>
         /// 数据库适配器
         /// </summary>

@@ -43,7 +43,9 @@ namespace System
             }
 
             if (Whitespace.IsMatch(name))
+            {
                 throw new ArgumentException($"“{name}”不是一个有效的名称。", nameof(name));
+            }
 
             switch (namingType)
             {
@@ -128,6 +130,30 @@ namespace System
         /// <param name="value">字符串</param>
         /// <returns></returns>
         public static bool IsNotEmpty(this string value) => value?.Length > 0;
+
+        /// <summary>
+        /// 格式化字符串。
+        /// </summary>
+        /// <returns></returns>
+        public static string Format(this string format, object arg0) => string.Format(format, arg0);
+
+        /// <summary>
+        /// 格式化字符串。
+        /// </summary>
+        /// <returns></returns>
+        public static string Format(this string format, object arg0, object arg1) => string.Format(format, arg0, arg1);
+
+        /// <summary>
+        /// 格式化字符串。
+        /// </summary>
+        /// <returns></returns>
+        public static string Format(this string format, object arg0, object arg1, object arg2) => string.Format(format, arg0, arg1, arg2);
+
+        /// <summary>
+        /// 格式化字符串。
+        /// </summary>
+        /// <returns></returns>
+        public static string Format(this string format, params object[] args) => string.Format(format, args);
 
         /// <summary>
         /// 内容是邮箱。

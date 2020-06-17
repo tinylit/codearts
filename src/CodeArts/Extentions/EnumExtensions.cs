@@ -67,7 +67,9 @@ namespace System
             var type = typeof(TEnum);
 
             if (!type.IsEnum)
+            {
                 throw new ArgumentException("参数类型不是枚举!");
+            }
 
             var conversionType = Enum.GetUnderlyingType(type);
 
@@ -97,7 +99,9 @@ namespace System
             var type = typeof(TEnum);
 
             if (!type.IsEnum)
+            {
                 throw new ArgumentException("参数类型不是枚举!");
+            }
 
             var conversionType = Enum.GetUnderlyingType(type);
 
@@ -128,7 +132,9 @@ namespace System
             var type = typeof(TEnum);
 
             if (!type.IsEnum)
+            {
                 throw new ArgumentException("参数类型不是枚举!");
+            }
 
             var conversionType = Enum.GetUnderlyingType(type);
 
