@@ -13,7 +13,7 @@ namespace CodeArts.ORM
     /// 参数令牌
     /// </summary>
     [DebuggerDisplay("{Name}")]
-    public struct TableToken
+    public struct TableToken : IEquatable<TableToken>
     {
         private static readonly Regex Pattern = new Regex("^[a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.Singleline);
 
@@ -54,6 +54,13 @@ namespace CodeArts.ORM
         /// </summary>
         /// <returns></returns>
         public override string ToString() => Name;
+
+        /// <summary>
+        /// 比较。
+        /// </summary>
+        /// <param name="other">其它</param>
+        /// <returns></returns>
+        public bool Equals(TableToken other) => Token == other.Token && Name == other.Name && CommandType == other.CommandType;
 
 #if NET40
         /// <summary>

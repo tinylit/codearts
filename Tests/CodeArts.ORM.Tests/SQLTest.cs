@@ -991,5 +991,26 @@ group by  a.str_out_bill_id";
 
             var query2 = sql.ToString(sqlSettings);
         }
+
+        [TestMethod]
+        public void TestOO()
+        {
+            var settings = new SqlServer.SqlServerCorrectSettings();
+
+            var sql = new SQL(@"SELECT DISTINCT
+ isnull( d.remark, a.str_out_bill_id ) AS ddbh 
+FROM
+ str_out_bill a
+ JOIN customer c ON a.come_to = c.customer_id
+ JOIN str_out_bill_detail d ON a.str_out_bill_id = d.str_out_bill_id
+ JOIN goods g ON d.goods_id = g.goods_id 
+WHERE
+ a.str_out_type_id IN ( '4', 'B' ) 
+ AND djlx_id IN ( '02', '03' ) 
+ AND a.sls_tax_date > '2020-06-01'");
+
+            var str = sql.ToString(settings);
+
+        }
     }
 }

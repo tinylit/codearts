@@ -32,6 +32,15 @@ namespace CodeArts.Mvc
         private readonly bool useDependencyInjection;
 
         /// <summary>
+        /// 静态构造函数。
+        /// </summary>
+        static DStartup()
+        {
+            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+        }
+
+        /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi</param>
@@ -63,9 +72,6 @@ namespace CodeArts.Mvc
                             .AllowCredentials();
                     });
             });
-
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
-            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
 
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
@@ -280,6 +286,15 @@ namespace CodeArts.Mvc
 #endif
 
         /// <summary>
+        /// 静态构造函数。
+        /// </summary>
+        static DStartup()
+        {
+            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+        }
+
+        /// <summary>
         /// 属性名称解析规则
         /// </summary>
         private class ContractResolver : DefaultContractResolver
@@ -342,10 +357,6 @@ namespace CodeArts.Mvc
 
             //?异常捕获
             config.Filters.Add(new DExceptionFilterAttribute());
-
-            //? JSON解析器
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
-            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
 
             //? 缓存服务
             CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
