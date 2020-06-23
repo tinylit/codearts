@@ -6,37 +6,36 @@ using System.Linq;
 namespace CodeArts
 {
     /// <summary>
-    /// 空列表。
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public sealed class EmptyList<T> : PagedList<T>
-    {
-        private static readonly IEnumerable<T> enumerable = Enumerable.Empty<T>();
-
-        /// <summary>
-        /// 固定值“0”。
-        /// </summary>
-        public override int Count => 0;
-
-        /// <summary>
-        /// 固定值，空数组。
-        /// </summary>
-        /// <returns></returns>
-        public override IEnumerator<T> GetEnumerator() => enumerable.GetEnumerator();
-    }
-
-    /// <summary>
     /// 分页的列表
     /// </summary>
     /// <typeparam name="T">元素类型</typeparam>
     public class PagedList<T> : IEnumerable<T>, IEnumerable
     {
         private readonly IQueryable<T> queryable;
+        private static readonly IEnumerable<T> enumerable = Enumerable.Empty<T>();
 
         /// <summary>
         /// 空集合。
         /// </summary>
-        public static readonly PagedList<T> Empty = new EmptyList<T>();
+        public static readonly PagedList<T> Empty = new EmptyList();
+
+        /// <summary>
+        /// 空列表。
+        /// </summary>
+        private class EmptyList : PagedList<T>
+        {
+            /// <summary>
+            /// 固定值“0”。
+            /// </summary>
+            public override int Count => 0;
+
+            /// <summary>
+            /// 固定值，空数组。
+            /// </summary>
+            /// <returns></returns>
+            public override IEnumerator<T> GetEnumerator() => enumerable.GetEnumerator();
+        }
+
 
         /// <summary>
         /// 私有构造函数
