@@ -73,6 +73,8 @@ namespace CodeArts.Emit.Expressions
                 variable.Declare(ilg);
             }
 
+            AstExpression astCode = null;
+
             foreach (var code in codes)
             {
                 if (code is ReturnAst returnAst)
@@ -83,22 +85,19 @@ namespace CodeArts.Emit.Expressions
                     }
                 }
 
+                astCode = code;
+
                 code.Load(ilg);
             }
 
-            var lastCode = codes.LastOrDefault();
-
-            if (lastCode is null)
+            if (astCode is ReturnAst)
             {
-                ilg.Emit(OpCodes.Nop);
-                ilg.Emit(OpCodes.Ret);
-
                 return;
             }
 
-            if(lastCode is ReturnAst)
+            if (returnType == typeof(void))
             {
-                return;
+                ilg.Emit(OpCodes.Nop);
             }
 
             ilg.Emit(OpCodes.Ret);

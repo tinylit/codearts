@@ -169,8 +169,6 @@ namespace CodeArts.Emit
                 InvokeBaseConstructor();
             }
 
-            Append(new ReturnAst());
-
             foreach (var item in parameters)
             {
                 item.Emit(builder.DefineParameter(item.Position, item.Attributes, item.ParameterName));

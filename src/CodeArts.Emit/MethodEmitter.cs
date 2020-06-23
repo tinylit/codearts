@@ -118,8 +118,7 @@ namespace CodeArts.Emit
 
             if (!ImplementedByRuntime && IsEmpty)
             {
-                Append(new VoidAst());
-                Append(new ReturnAst());
+                Append(new ReturnAst(new VoidAst()));
             }
 
             base.Load(builder.GetILGenerator());
