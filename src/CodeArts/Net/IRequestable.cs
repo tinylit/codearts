@@ -61,7 +61,7 @@ namespace CodeArts.Net
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        T RequestImplement(string method, int timeout = 5000);
+        T Request(string method, int timeout = 5000);
 
 #if !NET40
         /// <summary>
@@ -107,12 +107,12 @@ namespace CodeArts.Net
         Task<T> PatchAsync(int timeout = 5000);
 
         /// <summary>
-        /// 数据返回XML格式的结果，将转为指定类型
+        /// 数据返回XML格式的结果，将转为指定类型。
         /// </summary>
         /// <param name="method">求取方式</param>
         /// <param name="timeout">超时时间，单位：毫秒</param>
         /// <returns></returns>
-        Task<T> RequestImplementAsync(string method, int timeout = 5000);
+        Task<T> RequestAsync(string method, int timeout = 5000);
 #endif
     }
 

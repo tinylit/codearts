@@ -338,17 +338,17 @@ namespace CodeArts.Mvc.Builder
                 var result = await request
                         .JsonCast<ServResult<Dictionary<string, object>>>()
                         .JsonCatch((s, e) => ServResult.Error<Dictionary<string, object>>($"内容({s})不是有效的JSON数据。异常信息:{e.Message}"))
-                        .RequestImplementAsync(context.Request.Method ?? "GET", "map:timeout".Config(Consts.MapTimeout));
+                        .RequestAsync(context.Request.Method ?? "GET", "map:timeout".Config(Consts.MapTimeout));
 #elif NET40
                 var result = request
                         .JsonCast<ServResult<Dictionary<string, object>>>()
                         .JsonCatch((s, e) => ServResult.Error<Dictionary<string, object>>($"内容({s})不是有效的JSON数据。异常信息:{e.Message}"))
-                        .RequestImplement(context.Request.HttpMethod ?? "GET", "map-timeout".Config(Consts.MapTimeout));
+                        .Request(context.Request.HttpMethod ?? "GET", "map-timeout".Config(Consts.MapTimeout));
 #else
                 var result = await request
                         .JsonCast<ServResult<Dictionary<string, object>>>()
                         .JsonCatch((s, e) => ServResult.Error<Dictionary<string, object>>($"内容({s})不是有效的JSON数据。异常信息:{e.Message}"))
-                        .RequestImplementAsync(context.Request.HttpMethod ?? "GET", "map-timeout".Config(Consts.MapTimeout));
+                        .RequestAsync(context.Request.HttpMethod ?? "GET", "map-timeout".Config(Consts.MapTimeout));
 #endif
                 if (result.Success)
                 {

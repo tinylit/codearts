@@ -2441,10 +2441,10 @@ namespace System
 
         private class ResultStringCatchRequestable : RequestableExtend<string>, IResultStringCatchRequestable
         {
-            private readonly IRequestable<string> requestable;
+            private readonly Requestable<string> requestable;
             private readonly Func<WebException, string> returnValue;
 
-            public ResultStringCatchRequestable(IRequestable<string> requestable, Func<WebException, string> returnValue)
+            public ResultStringCatchRequestable(Requestable<string> requestable, Func<WebException, string> returnValue)
             {
                 this.requestable = requestable;
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
@@ -2456,7 +2456,7 @@ namespace System
             {
                 try
                 {
-                    return requestable.RequestImplement(method, timeout);
+                    return requestable.Request(method, timeout);
                 }
                 catch (WebException e)
                 {
