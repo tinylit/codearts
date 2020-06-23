@@ -15,7 +15,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public ReturnAst() : base(AssignableVoidType) { }
+        public ReturnAst() : base(typeof(void)) { }
 
         /// <summary>
         /// 构造函数。

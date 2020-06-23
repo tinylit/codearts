@@ -171,6 +171,71 @@ namespace CodeArts
         /// <param name="statusCode">状态码</param>
         /// <returns></returns>
         public static DResults<T> Errors<T>(string errorMsg, int statusCode = StatusCodes.Error) => new ErrorResults<T>(errorMsg, statusCode);
+
+        /// <summary>
+        /// 服务结果实体转数据结果实体。
+        /// </summary>
+        /// <param name="data">服务结果</param>
+        /// <returns></returns>
+        public static DResult ConvertFrom(ServResult data)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            var result = data.Success ? Ok() : Error(data.Msg, data.Code);
+
+            result.Timestamp = data.Timestamp;
+
+            return result;
+        }
+
+        /// <summary>
+        /// 服务结果实体转数据结果实体。
+        /// </summary>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="data">服务结果</param>
+        /// <returns></returns>
+        public static DResult<T> ConvertFrom<T>(ServResult<T> data)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            var result = data.Success ? Ok(data.Data) : Error<T>(data.Msg, data.Code);
+
+            result.Timestamp = data.Timestamp;
+
+            return result;
+        }
+
+        /// <summary>
+        /// 服务结果实体转数据结果实体。
+        /// </summary>
+        /// <typeparam name="T">类型</typeparam>
+        /// <param name="data">服务结果</param>
+        /// <returns></returns>
+        public static DResults<T> ConvertFrom<T>(ServResults<T> data)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            var result = data.Success ? Ok(data.Count, data.Data) : Errors<T>(data.Msg, data.Code);
+
+            result.Timestamp = data.Timestamp;
+
+            return result;
+        }
+
+        /// <summary>
+        /// 类型默认转换
+        /// </summary>
+        /// <param name="data">数据</param>
+        public static implicit operator DResult(ServResult data) => ConvertFrom(data);
     }
 
     /// <summary>
@@ -202,6 +267,12 @@ namespace CodeArts
         /// </summary>
         /// <param name="data">数据</param>
         public static implicit operator DResult<T>(T data) => Ok(data);
+
+        /// <summary>
+        /// 类型默认转换
+        /// </summary>
+        /// <param name="data">数据</param>
+        public static implicit operator DResult<T>(ServResult<T> data) => ConvertFrom(data);
     }
 
     /// <summary>
@@ -241,5 +312,11 @@ namespace CodeArts
         /// </summary>
         /// <param name="list">数据</param>
         public static implicit operator DResults<T>(PagedList<T> list) => Ok(list);
+
+        /// <summary>
+        /// 类型默认转换
+        /// </summary>
+        /// <param name="data">数据</param>
+        public static implicit operator DResults<T>(ServResults<T> data) => ConvertFrom(data);
     }
 }

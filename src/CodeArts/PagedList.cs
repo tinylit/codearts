@@ -6,23 +6,42 @@ using System.Linq;
 namespace CodeArts
 {
     /// <summary>
+    /// 空列表。
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public sealed class EmptyList<T> : PagedList<T>
+    {
+        private static readonly IEnumerable<T> enumerable = Enumerable.Empty<T>();
+
+        /// <summary>
+        /// 固定值“0”。
+        /// </summary>
+        public override int Count => 0;
+
+        /// <summary>
+        /// 固定值，空数组。
+        /// </summary>
+        /// <returns></returns>
+        public override IEnumerator<T> GetEnumerator() => enumerable.GetEnumerator();
+    }
+
+    /// <summary>
     /// 分页的列表
     /// </summary>
     /// <typeparam name="T">元素类型</typeparam>
     public class PagedList<T> : IEnumerable<T>, IEnumerable
     {
-        private readonly bool isEmpty;
-        private readonly IQueryable<T> list;
+        private readonly IQueryable<T> queryable;
 
         /// <summary>
         /// 空集合。
         /// </summary>
-        public static readonly PagedList<T> Empty = new PagedList<T>();
+        public static readonly PagedList<T> Empty = new EmptyList<T>();
 
         /// <summary>
         /// 私有构造函数
         /// </summary>
-        private PagedList() => isEmpty = true;
+        protected PagedList() { }
 
         /// <summary>
         /// 构造函数
@@ -32,7 +51,7 @@ namespace CodeArts
         /// <param name="size">分页条数</param>
         public PagedList(IQueryable<T> queryable, int page, int size)
         {
-            list = queryable ?? throw new ArgumentNullException(nameof(queryable));
+            this.queryable = queryable ?? throw new ArgumentNullException(nameof(queryable));
             if (page < 0)
                 throw new IndexOutOfRangeException("页码不能小于0。");
             Page = page;
@@ -45,6 +64,7 @@ namespace CodeArts
         /// 当前页码（索引从0开始）
         /// </summary>
         public int Page { get; }
+
         /// <summary>
         /// 分页条数
         /// </summary>
@@ -53,21 +73,13 @@ namespace CodeArts
         /// <summary>
         /// 总数
         /// </summary>
-        public int Count => isEmpty ? 0 : list.Count();
+        public virtual int Count => queryable.Count();
 
         /// <summary>
         /// 获取迭代器
         /// </summary>
         /// <returns></returns>
-        public IEnumerator<T> GetEnumerator()
-        {
-            IEnumerable<T> enumerable = isEmpty ? 
-                Enumerable.Empty<T>() 
-                : 
-                list.Skip(Size * Page).Take(Size);
-
-            return enumerable.GetEnumerator();
-        }
+        public virtual IEnumerator<T> GetEnumerator() => queryable.Skip(Size * Page).Take(Size).GetEnumerator();
 
         /// <summary>
         /// 获取迭代器

@@ -71,6 +71,16 @@ namespace CodeArts
         public int CompareTo(Key key) => Value.CompareTo(key?.Value ?? 0L);
 
         /// <summary>
+        /// 主键生成的时刻。
+        /// </summary>
+        public DateTime At => ToLocalTime();
+
+        /// <summary>
+        /// 主键生成的时刻(Utc)。
+        /// </summary>
+        public DateTime UtcAt => ToUniversalTime();
+
+        /// <summary>
         /// 对象的值转换为本地时间。
         /// </summary>
         /// <returns></returns>

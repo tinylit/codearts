@@ -43,11 +43,6 @@ namespace CodeArts
                 ImplementCache.TryAdd(type, typeof(TImplement));
             }
 
-            if (EmptyCache.ContainsKey(type))
-            {
-                return;
-            }
-
             EmptyCache.TryAdd(type, () => Empty<TImplement>());
         }
 
@@ -126,23 +121,24 @@ namespace CodeArts
             }
             catch { }
 
-            var typeCache = RuntimeTypeCache.Instance.GetCache(typeEmpty);
-
-            var itemCtor = typeCache.ConstructorStores
-                  .OrderBy(x => x.ParameterStores.Count)
-                  .First();
-
-            valueFactory = () => itemCtor.Member.Invoke(itemCtor.ParameterStores.Select(x =>
+            valueFactory = EmptyCache.GetOrAdd(typeEmpty, type =>
             {
-                if (x.IsOptional)
+                var typeCache = RuntimeTypeCache.Instance.GetCache(type);
+
+                var itemCtor = typeCache.ConstructorStores
+                      .OrderBy(x => x.ParameterStores.Count)
+                      .First();
+
+                return () => itemCtor.Member.Invoke(itemCtor.ParameterStores.Select(x =>
                 {
-                    return x.DefaultValue;
-                }
+                    if (x.IsOptional)
+                    {
+                        return x.DefaultValue;
+                    }
 
-                return Empty(x.ParameterType);
-            }).ToArray());
-
-            EmptyCache.TryAdd(typeEmpty, valueFactory);
+                    return Empty(x.ParameterType);
+                }).ToArray());
+            });
 
             return valueFactory.Invoke();
         }

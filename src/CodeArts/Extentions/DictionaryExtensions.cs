@@ -19,7 +19,7 @@
             if (valuePairs.ContainsKey(key))
                 return false;
 
-            valuePairs.Add(key, value);
+            valuePairs[key] = value;
 
             return true;
         }
@@ -38,7 +38,7 @@
             if (valuePairs.TryGetValue(key, out TValue oldValue))
                 return oldValue;
 
-            valuePairs.Add(key, value);
+            valuePairs[key] = value;
 
             return value;
         }
@@ -62,7 +62,7 @@
                 throw new ArgumentNullException(nameof(valueFactory));
             }
 
-            valuePairs.Add(key, value = valueFactory.Invoke(key));
+            valuePairs[key] = value = valueFactory.Invoke(key);
 
             return value;
         }

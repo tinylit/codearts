@@ -1,7 +1,6 @@
 ﻿using CodeArts.Mvc.Filters;
 using System.Collections.Generic;
 using System;
-using System.Linq;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -42,6 +41,15 @@ namespace CodeArts.Mvc
         [NonAction]
         public new DResult Ok() => DResult.Ok();
 #endif
+
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <param name="data">数据</param>
+        /// <returns></returns>
+        [NonAction]
+        public DResults<T> Ok<T>(PagedList<T> data) => DResult.Ok(data);
+
         /// <summary>
         /// 成功
         /// </summary>
@@ -64,22 +72,21 @@ namespace CodeArts.Mvc
     /// <summary>
     /// 在 JWT 认证的方法中，可以使用用户信息
     /// </summary>
-    /// <typeparam name="TUser">用户实体</typeparam>
-
-    public abstract class BaseController<TUser> : BaseController where TUser : class
+    /// <typeparam name="TJwtUser">Jwt的用户实体</typeparam>
+    public abstract class BaseController<TJwtUser> : BaseController where TJwtUser : class
     {
-        private TUser _user;
+        private TJwtUser _user;
         /// <summary>
         /// 用户信息
         /// </summary>
-        public TUser MyUser
+        public TJwtUser MyUser
         {
             get
             {
                 if (User is null || User.Identity is null || !User.Identity.IsAuthenticated)
                     return null;
 
-                if (_user == null)
+                if (_user is null)
                 {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
                     var authorize = HttpContext.Request.Headers[HeaderNames.Authorization];
@@ -91,7 +98,7 @@ namespace CodeArts.Mvc
 #else
                     var token = tokenHandler.ReadJwtToken(values[values.Length - 1]);
 #endif
-                    _user = token.Payload.MapTo<TUser>();
+                    _user = token.Payload.MapTo<TJwtUser>();
 #else
                     var serializer = new JsonNetSerializer();
                     var provider = new UtcDateTimeProvider();
@@ -103,12 +110,73 @@ namespace CodeArts.Mvc
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
 #endif
 
-                    _user = decoder.DecodeToObject<TUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
+                    _user = decoder.DecodeToObject<TJwtUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
 #endif
                 }
 
                 return _user;
             }
         }
+    }
+
+    /// <summary>
+    /// 在 JWT 认证的方法中，可以使用用户信息
+    /// </summary>
+    /// <typeparam name="TJwtUser">Jwt的用户信息</typeparam>
+    /// <typeparam name="TUser">用户信息</typeparam>
+    public abstract class BaseController<TJwtUser, TUser> : BaseController where TJwtUser : class where TUser : class
+    {
+        private TUser _user;
+
+        /// <summary>
+        /// 逻辑用户信息。
+        /// </summary>
+        public TUser MyUser
+        {
+            get
+            {
+                if (_user is null)
+                {
+                    TJwtUser user;
+
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+                    var authorize = HttpContext.Request.Headers[HeaderNames.Authorization];
+                    var tokenHandler = new JwtSecurityTokenHandler();
+                    var value = authorize.ToString();
+                    var values = value.Split(' ');
+#if NETCOREAPP3_1
+                    var token = tokenHandler.ReadJwtToken(values[^1]);
+#else
+                    var token = tokenHandler.ReadJwtToken(values[values.Length - 1]);
+#endif
+                    user = token.Payload.MapTo<TJwtUser>();
+#else
+                    var serializer = new JsonNetSerializer();
+                    var provider = new UtcDateTimeProvider();
+                    var validator = new JwtValidator(serializer, provider);
+                    var urlEncoder = new JwtBase64UrlEncoder();
+#if NET461
+                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, JwtAlgorithmGen.Create());
+#else
+                    var decoder = new JwtDecoder(serializer, validator, urlEncoder);
+#endif
+
+                    user = decoder.DecodeToObject<TJwtUser>(Request.Headers.Authorization.Scheme, "jwt-secret".Config(Consts.JwtSecret), false);
+#endif
+
+                    _user = GetUser(user) ?? throw new ArgumentException();
+                }
+
+                return _user;
+            }
+        }
+
+        /// <summary>
+        /// 获取用户信息。
+        /// </summary>
+        /// <param name="user">简易用户信息</param>
+        /// <returns></returns>
+        [NonAction]
+        protected abstract TUser GetUser(TJwtUser user);
     }
 }

@@ -75,8 +75,8 @@ namespace CodeArts
         public static ServResults<T> Ok<T>(PagedList<T> data) => new ServResults<T>
         {
             Code = StatusCodes.OK,
-            Data = data.ToList(),
-            Count = data.Count
+            Count = data.Count,
+            Data = data.ToList()
         };
 
         /// <summary>
@@ -125,24 +125,6 @@ namespace CodeArts
                 Msg = msg
             };
         }
-
-        /// <summary>
-        /// 类型默认转换
-        /// </summary>
-        /// <param name="data">数据</param>
-        public static implicit operator ServResult(DResult data)
-        {
-            if (data is null)
-            {
-                return Error("数据为空!");
-            }
-
-            return new ServResult
-            {
-                Code = data.Code,
-                Timestamp = data.Timestamp
-            };
-        }
     }
 
     /// <summary>
@@ -157,25 +139,6 @@ namespace CodeArts
         /// </summary>
         [XmlElement("data")]
         public T Data { get; set; }
-
-        /// <summary>
-        /// 类型默认转换
-        /// </summary>
-        /// <param name="data">数据</param>
-        public static implicit operator ServResult<T>(DResult<T> data)
-        {
-            if (data is null)
-            {
-                return Error<T>("数据为空!");
-            }
-
-            return new ServResult<T>
-            {
-                Code = data.Code,
-                Data = data.Data,
-                Timestamp = data.Timestamp
-            };
-        }
     }
 
     /// <summary>
@@ -190,25 +153,5 @@ namespace CodeArts
         /// </summary>
         [XmlElement("count")]
         public int Count { get; set; }
-
-        /// <summary>
-        /// 类型默认转换
-        /// </summary>
-        /// <param name="data">数据</param>
-        public static implicit operator ServResults<T>(DResults<T> data)
-        {
-            if (data is null)
-            {
-                return Errors<T>("数据为空!");
-            }
-
-            return new ServResults<T>
-            {
-                Code = data.Code,
-                Data = data.Data,
-                Count = data.Count,
-                Timestamp = data.Timestamp
-            };
-        }
     }
 }
