@@ -16,10 +16,20 @@ namespace CodeArts.Tests
         {
             RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
-            var value = "http://www.baidu.com".AsRequestable()
+            var value = "http://www.baidu.com/asasad/dsdfgf/ssasa?x=1".AsRequestable()
                  .AppendQueryString(new
                  {
                      wd = "sql",
+                     rsv_spt = 1,
+                     rsv_iqid = "0x822dd2a900206e39",
+                     issp = 1,
+                     rsv_bp = 1,
+                     rsv_idx = 2,
+                     ie = "utf8"
+                 })
+                 .AppendQueryString(new
+                 {
+                     wd = "sql2",
                      rsv_spt = 1,
                      rsv_iqid = "0x822dd2a900206e39",
                      issp = 1,

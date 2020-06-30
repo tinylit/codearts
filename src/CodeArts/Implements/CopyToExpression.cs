@@ -220,14 +220,16 @@ namespace CodeArts.Implements
 
                 if (Kind == PatternKind.Property || Kind == PatternKind.All)
                 {
-                    typeStore.PropertyStores.Where(x => x.CanWrite && x.CanRead)
-                       .ForEach(info => PropertyConfig(info, Property(targetExp, info.Member), Property(valueExp, info.Member)));
+                    typeStore.PropertyStores
+                        .Where(x => x.CanWrite && x.CanRead)
+                        .ForEach(info => PropertyConfig(info, Property(targetExp, info.Member), Property(valueExp, info.Member)));
                 }
 
                 if (Kind == PatternKind.Field || Kind == PatternKind.All)
                 {
-                    typeStore.FieldStores.Where(x => x.CanWrite && x.CanRead)
-                       .ForEach(info => PropertyConfig(info, Field(targetExp, info.Member), Field(valueExp, info.Member)));
+                    typeStore.FieldStores
+                        .Where(x => x.CanWrite && x.CanRead)
+                        .ForEach(info => PropertyConfig(info, Field(targetExp, info.Member), Field(valueExp, info.Member)));
                 }
             }
             else
@@ -238,36 +240,40 @@ namespace CodeArts.Implements
 
                 if (Kind == PatternKind.Property || Kind == PatternKind.All)
                 {
-                    typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>
-                    {
-                        var item = typeCache.PropertyStores
-                        .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
-                        ?? typeCache.PropertyStores
-                        .FirstOrDefault(x => x.CanRead && x.Naming == info.Naming)
-                        ?? typeCache.PropertyStores
-                        .FirstOrDefault(x => x.CanRead && (x.Name == info.Naming || x.Naming == info.Name));
+                    typeStore.PropertyStores
+                        .Where(x => x.CanWrite)
+                        .ForEach(info =>
+                        {
+                            var item = typeCache.PropertyStores
+                            .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
+                            ?? typeCache.PropertyStores
+                            .FirstOrDefault(x => x.CanRead && x.Naming == info.Naming)
+                            ?? typeCache.PropertyStores
+                            .FirstOrDefault(x => x.CanRead && (x.Name == info.Naming || x.Naming == info.Name));
 
-                        if (item is null) return;
+                            if (item is null) return;
 
-                        PropertyConfig(info, Property(targetExp, info.Member), Property(valueExp, item.Member));
-                    });
+                            PropertyConfig(info, Property(targetExp, info.Member), Property(valueExp, item.Member));
+                        });
                 }
 
                 if (Kind == PatternKind.Field || Kind == PatternKind.All)
                 {
-                    typeStore.FieldStores.Where(x => x.CanWrite).ForEach(info =>
-                    {
-                        var item = typeCache.FieldStores
-                        .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
-                        ?? typeCache.FieldStores
-                        .FirstOrDefault(x => x.CanRead && x.Naming == info.Naming)
-                        ?? typeCache.FieldStores
-                        .FirstOrDefault(x => x.CanRead && (x.Name == info.Naming || x.Naming == info.Name));
+                    typeStore.FieldStores
+                        .Where(x => x.CanWrite)
+                        .ForEach(info =>
+                        {
+                            var item = typeCache.FieldStores
+                            .FirstOrDefault(x => x.CanRead && x.Name == info.Name)
+                            ?? typeCache.FieldStores
+                            .FirstOrDefault(x => x.CanRead && x.Naming == info.Naming)
+                            ?? typeCache.FieldStores
+                            .FirstOrDefault(x => x.CanRead && (x.Name == info.Naming || x.Naming == info.Name));
 
-                        if (item is null) return;
+                            if (item is null) return;
 
-                        PropertyConfig(info, Field(targetExp, info.Member), Field(valueExp, item.Member));
-                    });
+                            PropertyConfig(info, Field(targetExp, info.Member), Field(valueExp, item.Member));
+                        });
                 }
             }
 

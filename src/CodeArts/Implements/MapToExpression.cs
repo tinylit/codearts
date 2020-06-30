@@ -776,38 +776,36 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanWrite).ForEach(info =>
-                {
-                    var testValues = new List<Expression>
+                typeStore.PropertyStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
                     {
-                        Constant(info.Name)
-                    };
+                        var testValues = new List<Expression> { Constant(info.Name) };
 
-                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
-                    {
-                        testValues.Add(Constant(info.Naming));
-                    }
+                        if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                        {
+                            testValues.Add(Constant(info.Naming));
+                        }
 
-                    list.Add(SwitchCase(Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
-                });
+                        list.Add(SwitchCase(Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
+                    });
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanWrite).ForEach(info =>
-                {
-                    var testValues = new List<Expression>
+                typeStore.FieldStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
                     {
-                        Constant(info.Name)
-                    };
+                        var testValues = new List<Expression> { Constant(info.Name) };
 
-                    if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
-                    {
-                        testValues.Add(Constant(info.Naming));
-                    }
+                        if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                        {
+                            testValues.Add(Constant(info.Naming));
+                        }
 
-                    list.Add(SwitchCase(Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
-                });
+                        list.Add(SwitchCase(Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
+                    });
             }
 
             var bodyExp = Switch(nameExp, null, GetMethodInfo<string, string, bool>(EqaulsString), list.ToArray());
@@ -1057,14 +1055,16 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
-                   .ForEach(info => Config(info, Property(targetExp, info.Member)));
+                typeStore.PropertyStores
+                    .Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
+                    .ForEach(info => Config(info, Property(targetExp, info.Member)));
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
-                   .ForEach(info => Config(info, Field(targetExp, info.Member)));
+                typeStore.FieldStores
+                    .Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
+                    .ForEach(info => Config(info, Field(targetExp, info.Member)));
             }
 
             list.Add(targetExp);
@@ -1235,14 +1235,16 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanWrite)
-                   .ForEach(info => Config(info, Property(targetExp, info.Member)));
+                typeStore.PropertyStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info => Config(info, Property(targetExp, info.Member)));
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanWrite)
-                   .ForEach(info => Config(info, Field(targetExp, info.Member)));
+                typeStore.FieldStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info => Config(info, Field(targetExp, info.Member)));
             }
 
             #region for
@@ -1464,18 +1466,22 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.ForEach(info =>
-                {
-                    Config(info, Property(resultExp, info.Member));
-                });
+                typeStore.PropertyStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
+                    {
+                        Config(info, Property(resultExp, info.Member));
+                    });
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.ForEach(info =>
-                {
-                    Config(info, Field(resultExp, info.Member));
-                });
+                typeStore.FieldStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
+                    {
+                        Config(info, Field(resultExp, info.Member));
+                    });
             }
 
             list.Add(resultExp);
@@ -1600,18 +1606,22 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
-                });
+                typeStore.PropertyStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
+                    });
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
-                });
+                typeStore.FieldStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
+                    });
             }
 
             list.Add(Convert(resultExp, conversionType));
@@ -1667,18 +1677,22 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
-                });
+                typeStore.PropertyStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
+                    });
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
-                });
+                typeStore.FieldStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
+                    });
             }
 
             list.Add(resultExp);
@@ -1731,18 +1745,22 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
-                });
+                typeStore.PropertyStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
+                    });
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
-                });
+                typeStore.FieldStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
+                    });
             }
 
             list.Add(Convert(resultExp, conversionType));
@@ -1793,18 +1811,22 @@ namespace CodeArts.Implements
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
-                typeStore.PropertyStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
-                });
+                typeStore.PropertyStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
+                    });
             }
 
             if (Kind == PatternKind.Field || Kind == PatternKind.All)
             {
-                typeStore.FieldStores.Where(x => x.CanRead).ForEach(info =>
-                {
-                    list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
-                });
+                typeStore.FieldStores
+                    .Where(x => x.CanRead)
+                    .ForEach(info =>
+                    {
+                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
+                    });
             }
 
             list.Add(resultExp);

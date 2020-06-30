@@ -2135,14 +2135,42 @@ namespace System
                 {
                     return this;
                 }
-
-                string uriString = __uri.ToString();
-
                 string query = param.TrimStart('?', '&');
 
-                __uri = new Uri(string.Concat(uriString, uriString.IndexOf('?') == -1 ? "?" : "&", query));
+                if (__uri.Query.IsEmpty())
+                {
+                    string uriString = __uri.ToString();
 
-                return this;
+                    __uri = new Uri(string.Concat(uriString, uriString.IndexOf('?') == -1 ? "?" : "&", query));
+
+                    return this;
+                }
+                else
+                {
+                    var dic = new Dictionary<string, string>();
+
+                    foreach (var arg in __uri.Query.Substring(1).Split('&'))
+                    {
+                        string[] keys = arg.Split('=');
+
+                        dic[keys.First()] = string.Join("=", keys.Skip(1));
+                    }
+
+                    foreach (var arg in query.Split('&'))
+                    {
+                        string[] keys = arg.Split('=');
+
+                        dic[keys.First()] = string.Join("=", keys.Skip(1));
+                    }
+
+                    string urlStr = __uri.ToString();
+
+                    int indexOf = urlStr.IndexOf('?');
+
+                    __uri = new Uri(string.Concat(urlStr.Substring(0, indexOf + 1), string.Join("&", dic.Select(x => string.Concat(x.Key, "=", x.Value)))));
+
+                    return this;
+                }
             }
             public IRequestable AppendQueryString(string name, string value)
             {
