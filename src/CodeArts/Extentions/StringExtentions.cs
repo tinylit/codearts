@@ -49,6 +49,7 @@ namespace System
 
             switch (namingType)
             {
+                case NamingType.None:
                 case NamingType.Normal:
                     return name;
                 case NamingType.CamelCase:

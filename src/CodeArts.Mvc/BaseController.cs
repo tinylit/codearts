@@ -25,21 +25,13 @@ namespace CodeArts.Mvc
     public abstract class BaseController : ApiController
 #endif
     {
-#if NET40
-        /// <summary>
-        /// 成功
-        /// </summary>
-        /// <returns></returns>
-        [NonAction]
-        public DResult Ok() => DResult.Ok();
-#else
+#if NETSTANDARD2_0 || NETCOREAPP3_1
         /// <summary>
         /// 成功
         /// </summary>
         /// <returns></returns>
         [NonAction]
         public new DResult Ok() => DResult.Ok();
-#endif
 
         /// <summary>
         /// 成功
@@ -48,6 +40,37 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         [NonAction]
         public DResult<T> Ok<T>(T data) => DResult.Ok(data);
+#elif NET40
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <returns></returns>
+        [NonAction]
+        public DResult Ok() => DResult.Ok();
+
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <param name="data">数据</param>
+        /// <returns></returns>
+        [NonAction]
+        public DResult<T> Ok<T>(T data) => DResult.Ok(data);
+#else
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <returns></returns>
+        [NonAction]
+        public new DResult Ok() => DResult.Ok();
+
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <param name="data">数据</param>
+        /// <returns></returns>
+        [NonAction]
+        public new DResult<T> Ok<T>(T data) => DResult.Ok(data);
+#endif
 
         /// <summary>
         /// 成功
