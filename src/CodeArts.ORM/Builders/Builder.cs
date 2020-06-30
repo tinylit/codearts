@@ -1248,6 +1248,8 @@ namespace CodeArts.ORM.Builders
 
             if (buildWhereBoth && node.IsBoolean())
             {
+                SQLWriter.Equal();
+
                 SQLWriter.BooleanTrue();
             }
 

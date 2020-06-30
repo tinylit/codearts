@@ -131,6 +131,11 @@ namespace CodeArts.Implements
             return invoke.Invoke(source);
         }
 
+        private static Expression ToTryCatch(Expression body)
+        {
+            return TryCatch(body, Catch(typeof(Exception), Default(body.Type)));
+        }
+
         #region 反射使用
         private static MethodInfo GetMethodInfo<T>(Func<T, CopyToExpression<TCopyto>, T> func) => func.Method;
 
@@ -344,7 +349,7 @@ namespace CodeArts.Implements
                     }
                     catch (InvalidOperationException)
                     {
-                        right = Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type);
+                        right = TryCatch(Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type), Catch(typeof(Exception), Default(left.Type)));
                     }
                 }
 
@@ -410,7 +415,7 @@ namespace CodeArts.Implements
                 }
                 catch (InvalidOperationException)
                 {
-                    expression = node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type));
+                    expression = ToTryCatch(node.Type.IsValueType ? Call(null, convertMethod, Convert(node, typeof(object)), Constant(type)) : Call(null, convertMethod, node, Constant(type)));
                 }
 
                 if (type != info.ParameterType)

@@ -816,7 +816,7 @@ namespace CodeArts.ORM
 
                 list.ForEach(item =>
                 {
-                    var wheres = where.Invoke(item) ?? defaultWhere;
+                    var wheres = where?.Invoke(item) ?? defaultWhere;
 
                     if (wheres.Length == 0)
                         throw new DException("未指定更新条件");
