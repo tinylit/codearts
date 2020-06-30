@@ -349,7 +349,7 @@ namespace CodeArts.Implements
                     }
                     catch (InvalidOperationException)
                     {
-                        right = TryCatch(Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type), Catch(typeof(Exception), Default(left.Type)));
+                        right = ToTryCatch(Convert(right.Type.IsValueType ? Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)) : Call(null, convertMethod, right, Constant(left.Type)), left.Type));
                     }
                 }
 
