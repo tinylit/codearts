@@ -32,6 +32,14 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         [NonAction]
         public DResult Ok() => DResult.Ok();
+#else
+        /// <summary>
+        /// 成功
+        /// </summary>
+        /// <returns></returns>
+        [NonAction]
+        public new DResult Ok() => DResult.Ok();
+#endif
 
         /// <summary>
         /// 成功
@@ -40,22 +48,6 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         [NonAction]
         public DResult<T> Ok<T>(T data) => DResult.Ok(data);
-#else
-        /// <summary>
-        /// 成功
-        /// </summary>
-        /// <returns></returns>
-        [NonAction]
-        public new DResult Ok() => DResult.Ok();
-
-        /// <summary>
-        /// 成功
-        /// </summary>
-        /// <param name="data">数据</param>
-        /// <returns></returns>
-        [NonAction]
-        public new DResult<T> Ok<T>(T data) => DResult.Ok(data);
-#endif
 
         /// <summary>
         /// 成功
@@ -82,6 +74,15 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         [NonAction]
         public DResult Error(string errorMsg, int statusCode = StatusCodes.Error) => DResult.Error(errorMsg, statusCode);
+
+        /// <summary>
+        /// 失败
+        /// </summary>
+        /// <param name="errorMsg">错误信息</param>
+        /// <param name="statusCode">状态码</param>
+        /// <returns></returns>
+        [NonAction]
+        public DResult<T> Error<T>(string errorMsg, int statusCode = StatusCodes.Error) => DResult.Error<T>(errorMsg, statusCode);
     }
 
     /// <summary>
