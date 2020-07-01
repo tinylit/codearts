@@ -7,6 +7,7 @@ using CodeArts.MySql;
 using CodeArts.ORM;
 using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
+using CodeArts.Serialize.Json;
 
 namespace Mvc.Core
 {
@@ -24,6 +25,8 @@ namespace Mvc.Core
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
             //services.AddGrpc();
+
+            var x = JsonHelper.ToJson(new { x = 1 });
 
             ModelValidator.CustomValidate<RequiredAttribute>((attr, context) =>
             {

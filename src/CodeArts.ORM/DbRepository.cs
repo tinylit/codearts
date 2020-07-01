@@ -948,6 +948,8 @@ namespace CodeArts.ORM
 
                         var value = storeItem.Member.GetValue(entry, null);
 
+                        context.MemberName = storeItem.Member.Name;
+
                         ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
                         paramters.Add(parameterKey, value);
@@ -982,6 +984,8 @@ namespace CodeArts.ORM
                             var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
                             var value = storeItem.Member.GetValue(entry, null);
+
+                            context.MemberName = storeItem.Member.Name;
 
                             ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 

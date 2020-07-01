@@ -41,7 +41,7 @@ namespace CodeArts.Serialize.Json
             }
         }
 
-        private const string DateFormatString = "yyyy-MM-dd HH:mm:ss";
+        private const string DateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK";
         private readonly JsonSerializerSettings settings;
 
         /// <summary>
@@ -69,8 +69,11 @@ namespace CodeArts.Serialize.Json
             {
                 ContractResolver = new JsonContractResolver(namingType)
             };
+
             if (indented)
+            {
                 settings.Formatting = Formatting.Indented;
+            }
 
             settings.DateFormatHandling = DateFormatHandling.MicrosoftDateFormat;
             settings.DateFormatString = DateFormatString;
@@ -87,13 +90,20 @@ namespace CodeArts.Serialize.Json
         /// <returns></returns>
         private static JsonSerializerSettings LoadSetting(JsonSerializerSettings settings, NamingType namingType, bool indented = false)
         {
-            if (settings is null) 
+            if (settings is null)
+            {
                 return LoadSetting(namingType, indented);
+            }
 
-            settings.ContractResolver = new JsonContractResolver(namingType);
+            if (settings.ContractResolver is null)
+            {
+                settings.ContractResolver = new JsonContractResolver(namingType);
+            }
 
             if (indented)
+            {
                 settings.Formatting = Formatting.Indented;
+            }
 
             return settings;
         }

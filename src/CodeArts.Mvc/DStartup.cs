@@ -148,12 +148,13 @@ namespace CodeArts.Mvc
                    })
                    .AddJsonOptions(options =>
                    {
+                       options.JsonSerializerOptions.IgnoreNullValues = true;
                        options.JsonSerializerOptions.Converters.Add(new MyJsonConverter());
                    })
                    .SetCompatibilityVersion(CompatibilityVersion.Latest);
         }
 #else
-        protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services) 
+        protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services)
             => services
                 .AddMvc(options =>
                 {
@@ -165,6 +166,7 @@ namespace CodeArts.Mvc
                 .AddJsonOptions(options =>
                 {
                     options.SerializerSettings.DateFormatString = Consts.DateFormatString;
+                    options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
                     options.SerializerSettings.Converters.Add(new MyJsonConverter());
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
@@ -327,6 +329,11 @@ namespace CodeArts.Mvc
                 .JsonFormatter
                 .SerializerSettings
                 .PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.None;
+
+            config.Formatters
+                .JsonFormatter
+                .SerializerSettings
+                .NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
 
             config.Formatters
                 .JsonFormatter
