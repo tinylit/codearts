@@ -26,6 +26,9 @@ namespace CodeArts.ORM.Tests
         [Select("SELECT * FROM fei_users WHERE uid={id}")]
         FeiUsers GetUser(int id);
 
+        [Select("SELECT * FROM fei_users WHERE uid={id}")]
+        T GetUser<T>(int id);
+
         [Select("SELECT * FROM fei_users WHERE uid={id}", true)]
         FeiUsers GetUserRequired(int id);
     }
@@ -49,6 +52,8 @@ namespace CodeArts.ORM.Tests
             Assert.IsFalse(users is null);
 
             var userDto = user.GetUser(91);
+
+            var useDto3 = user.GetUser<FeiUsers>(90);
 
             try
             {

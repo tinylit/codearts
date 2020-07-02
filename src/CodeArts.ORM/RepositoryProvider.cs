@@ -140,6 +140,8 @@ namespace CodeArts.ORM
 
                             throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
                         }
+
+                        return QueryFirst<TResult>(conn, sql, builder.Parameters, default, builder.TimeOut, builder.MissingDataError);
                     }
 
                     return QueryFirstOrDefault<TResult>(conn, sql, builder.Parameters, builder.TimeOut);
