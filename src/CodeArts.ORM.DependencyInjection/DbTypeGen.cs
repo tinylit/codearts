@@ -20,7 +20,11 @@ namespace CodeArts.ORM
         private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEnumerable) };
         private static readonly ConcurrentDictionary<Type, Type> TypeCache = new ConcurrentDictionary<Type, Type>();
         private static readonly MethodInfo DictionaryAdd = typeof(Dictionary<string, object>).GetMethod("Add", BindingFlags.Public | BindingFlags.Instance);
-        private static readonly MethodInfo MapTo = typeof(ObjectExtentions).GetMethod(nameof(ObjectExtentions.MapTo), new Type[] { typeof(object), typeof(Type) });
+        private static readonly MethodInfo MapToMethod = typeof(ObjectExtentions).GetMethod(nameof(ObjectExtentions.MapTo), new Type[] { typeof(object), typeof(Type) });
+        private static readonly MethodInfo QueryFirstOrDefaultMethod = typeof(ISelectable).GetMethod(nameof(ISelectable.QueryFirstOrDefault));
+        private static readonly MethodInfo QueryFirstMethod = typeof(ISelectable).GetMethod(nameof(ISelectable.QueryFirst));
+        private static readonly MethodInfo QueryMethod = typeof(ISelectable).GetMethod(nameof(ISelectable.Query));
+
         /// <summary>
         /// 创建类型。
         /// </summary>
@@ -174,7 +178,7 @@ namespace CodeArts.ORM
                 });
             });
 
-            var thisArg = This(repositoryType);
+            var thisArg = Convert(This(repositoryType), typeof(ISelectable));
 
             var typeArgumentItem = MapperRegions.Resolve(typeArgument);
 
@@ -232,8 +236,7 @@ namespace CodeArts.ORM
                                     var valueType = typeof(IEnumerable<>).MakeGenericType(typeArguments);
 
 
-                                    var queryMethod = repositoryType.GetMethod(nameof(ISelectable.Query), new Type[] { typeof(SQL), typeof(object), typeof(int?) })
-                                    .MakeGenericMethod(typeArguments);
+                                    var queryMethod = QueryMethod.MakeGenericMethod(typeArguments);
 
                                     var bodyQuery = Call(queryMethod, thisArg, sql, variable_params, timeOut);
 
@@ -248,7 +251,7 @@ namespace CodeArts.ORM
 
                                     method.Append(Assign(variable, bodyQuery));
 
-                                    var valueCast = Call(MapTo, Convert(variable, typeof(object)), Constant(x.MemberType));
+                                    var valueCast = Call(MapToMethod, Convert(variable, typeof(object)), Constant(x.MemberType));
 
                                     method.Append(Return(Convert(valueCast, x.MemberType)));
 
@@ -256,12 +259,22 @@ namespace CodeArts.ORM
                                 }
                             }
 
-                            var queryFirstMethod = repositoryType.GetMethod(nameof(ISelectable.QueryFirst), new Type[] { typeof(SQL), typeof(object), typeof(bool), typeof(int?), typeof(string) })
-                            .MakeGenericMethod(x.MemberType);
+                            if (required)
+                            {
+                                var queryFirstMethod = QueryFirstMethod.MakeGenericMethod(x.MemberType);
 
-                            var bodyQueryFirst = Call(queryFirstMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(required), Constant(timeOutAttr?.Value, typeof(int?)), Constant(missingMsg, typeof(string)));
+                                var bodyQueryFirst = Call(queryFirstMethod, thisArg, sql, Convert(variable_params, typeof(object)), Default(x.MemberType), Constant(timeOutAttr?.Value, typeof(int?)), Constant(missingMsg, typeof(string)));
 
-                            method.Append(Return(Convert(bodyQueryFirst, x.MemberType)));
+                                method.Append(Return(Convert(bodyQueryFirst, x.MemberType)));
+
+                                break;
+                            }
+
+                            var queryFirstOrDefaultMethod = QueryFirstOrDefaultMethod.MakeGenericMethod(x.MemberType);
+
+                            var bodyQueryFirstOrDefault = Call(queryFirstOrDefaultMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(timeOutAttr?.Value, typeof(int?)));
+
+                            method.Append(Return(Convert(bodyQueryFirstOrDefault, x.MemberType)));
 
                             break;
                         }

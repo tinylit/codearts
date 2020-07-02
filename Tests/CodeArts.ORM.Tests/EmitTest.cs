@@ -9,6 +9,7 @@ using System.Linq;
 using System.Collections.Concurrent;
 using System.Timers;
 using System.Data;
+using CodeArts.ORM.Exceptions;
 
 namespace CodeArts.ORM.Tests
 {
@@ -19,8 +20,14 @@ namespace CodeArts.ORM.Tests
         [Select("SELECT * FROM fei_users WHERE uid>={id} AND uid<{max_id}")]
         List<FeiUsers> GetUsers(int id, int max_id);
 
+        [Select("SELECT * FROM fei_users WHERE uid>={id} AND uid<{max_id}")]
+        List<T> GetUsers<T>(int id, int max_id);
+
         [Select("SELECT * FROM fei_users WHERE uid={id}")]
         FeiUsers GetUser(int id);
+
+        [Select("SELECT * FROM fei_users WHERE uid={id}", true)]
+        FeiUsers GetUserRequired(int id);
     }
 
     [TestClass]
@@ -37,9 +44,20 @@ namespace CodeArts.ORM.Tests
 
             var users = user.GetUsers(10, 100);
 
+            var user2s = user.GetUsers<FeiUsers>(10, 100);
+
             Assert.IsFalse(users is null);
 
             var userDto = user.GetUser(91);
+
+            try
+            {
+                var userDto2 = user.GetUserRequired(91);
+            }
+            catch (DRequiredException)
+            {
+            }
+
         }
     }
 }

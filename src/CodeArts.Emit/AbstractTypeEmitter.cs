@@ -220,13 +220,44 @@ namespace CodeArts.Emit
 
             foreach (MethodEmitter emitter in methods)
             {
-                var method = builder.DefineMethod(emitter.Name, emitter.Attributes, CallingConventions.Standard, emitter.ReturnType, emitter.Parameters.Select(x => x.ReturnType).ToArray());
-
-                emitter.Emit(method);
-
                 if (overrides.TryGetValue(emitter, out MethodInfo methodInfo))
                 {
+                    var parameters = methodInfo.GetParameters();
+                    var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
+
+                    var method = builder.DefineMethod(emitter.Name, emitter.Attributes | MethodAttributes.NewSlot | MethodAttributes.HideBySig, CallingConventions.Standard);
+
+                    if (methodInfo.IsGenericMethod)
+                    {
+                        var genericArguments = methodInfo.GetGenericArguments();
+
+                        var newGenericParameters = method.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
+
+                        foreach (var item in genericArguments.Zip(newGenericParameters, (g, t) =>
+                        {
+                            t.SetGenericParameterAttributes(g.GenericParameterAttributes);
+
+                            t.SetInterfaceConstraints(g.GetGenericParameterConstraints());
+
+                            t.SetBaseTypeConstraint(g.BaseType);
+
+                            return true;
+                        })) { }
+                    }
+
+                    method.SetReturnType(methodInfo.ReturnType);
+
+                    method.SetParameters(parameterTypes);
+
+                    emitter.Emit(method);
+
                     builder.DefineMethodOverride(method, methodInfo);
+                }
+                else
+                {
+                    var method = builder.DefineMethod(emitter.Name, emitter.Attributes, CallingConventions.Standard, emitter.ReturnType, emitter.Parameters.Select(x => x.ReturnType).ToArray());
+
+                    emitter.Emit(method);
                 }
             }
 

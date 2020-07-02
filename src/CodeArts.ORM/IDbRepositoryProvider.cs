@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
-using CodeArts.ORM.Exceptions;
 
 namespace CodeArts.ORM
 {
@@ -17,19 +16,28 @@ namespace CodeArts.ORM
         IQueryBuilder Create();
 
         /// <summary>
-        /// 查询独立实体
+        /// 查询第一个结果。
         /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
+        /// <typeparam name="T">结果类型</typeparam>
         /// <param name="conn">数据库链接</param>
-        /// <param name="sql">查询语句</param>
+        /// <param name="sql">SQL</param>
         /// <param name="parameters">参数</param>
-        /// <param name="required">是否必须</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
+
+        /// <summary>
+        /// 查询第一个结果。
+        /// </summary>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="conn">数据库链接</param>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
         /// <param name="defaultValue">默认值</param>
         /// <param name="commandTimeout">超时时间</param>
-        /// <param name="missingMsg">未查询到数据时的异常信息</param>
-        /// <exception cref="DRequiredException">当 【required】 为真且未查询到数据</exception>
+        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
         /// <returns></returns>
-        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
+        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
 
         /// <summary>
         /// 查询列表集合

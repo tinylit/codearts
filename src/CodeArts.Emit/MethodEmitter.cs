@@ -49,6 +49,7 @@ namespace CodeArts.Emit
         /// </summary>
         public ParamterEmitter[] Parameters => parameters.ToArray();
 
+
         /// <summary>
         /// 声明参数。
         /// </summary>
@@ -102,7 +103,7 @@ namespace CodeArts.Emit
         /// 发行。
         /// </summary>
         /// <param name="builder">构造器。</param>
-        public void Emit(MethodBuilder builder)
+        public virtual void Emit(MethodBuilder builder)
         {
             this.builder = builder;
 

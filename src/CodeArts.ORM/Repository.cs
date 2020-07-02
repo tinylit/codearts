@@ -35,7 +35,7 @@ namespace CodeArts.ORM
         /// 数据库适配器
         /// </summary>
         protected IDbConnectionAdapter DbAdapter => _DbProvider ?? (_DbProvider = DbConnectionManager.Get(ConnectionConfig.ProviderName));
-        
+
         /// <summary>
         /// SQL矫正设置
         /// </summary>
@@ -243,38 +243,21 @@ namespace CodeArts.ORM
         protected virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
-        /// 查询一条数据(未查询到数据)
+        /// 构建参数。
         /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
         /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <param name="param">参数对象</param>
         /// <returns></returns>
-        public virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null) => QueryFirst<TResult>(sql, param, false, commandTimeout);
-
-        /// <summary>
-        /// 查询一条数据
-        /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="required">是否必须返回数据(为真时数据库无数据会抛异常)</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <param name="missingMsg">未查询到数据时，异常信息。仅【<paramref name="required"/>】为“true”的时候有效。</param>
-        /// <returns></returns>
-        public virtual TResult QueryFirst<TResult>(SQL sql, object param = null, bool required = true, int? commandTimeout = null, string missingMsg = null)
+        protected virtual Dictionary<string, object> BuildParameters(ISQL sql, object param = null)
         {
-            if (!QueryAuthorize(sql))
-            {
-                throw new NonAuthorizedException();
-            }
-
             if (param is null)
             {
                 if (sql.Parameters.Count > 0)
-                    throw new DSyntaxErrorException("参数不匹配!");
+                {
+                    throw new DSyntaxErrorException("参数少于SQL所需的参数!");
+                }
 
-                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), null, required, default, commandTimeout, missingMsg);
+                return null;
             }
 
             var type = param.GetType();
@@ -282,14 +265,16 @@ namespace CodeArts.ORM
             if (type.IsValueType || type == typeof(string))
             {
                 if (sql.Parameters.Count > 1)
-                    throw new DSyntaxErrorException("参数不匹配!");
+                {
+                    throw new DSyntaxErrorException("参数少于SQL所需的参数!");
+                }
 
                 var token = sql.Parameters.First();
 
-                return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
+                return new Dictionary<string, object>
                 {
-                    [Settings.ParamterName(token.Name)] = param
-                }, required, default, commandTimeout, missingMsg);
+                    [token.Name] = param
+                };
             }
 
             if (!(param is Dictionary<string, object> parameters))
@@ -297,10 +282,55 @@ namespace CodeArts.ORM
                 parameters = param.MapTo<Dictionary<string, object>>();
             }
 
-            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-                throw new DSyntaxErrorException("参数不匹配!");
+            if (parameters.Count < sql.Parameters.Count)
+            {
+                throw new DSyntaxErrorException("参数少于SQL所需的参数!");
+            }
 
-            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), parameters, required, default, commandTimeout, missingMsg);
+            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
+            {
+                throw new DSyntaxErrorException("参数不匹配!");
+            }
+
+            return parameters;
+        }
+
+        /// <summary>
+        /// 查询一条数据(未查询到数据)
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        public virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            if (!QueryAuthorize(sql))
+            {
+                throw new NonAuthorizedException();
+            }
+
+            return DbProvider.QueryFirstOrDefault<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
+        }
+
+        /// <summary>
+        /// 查询一条数据
+        /// </summary>
+        /// <typeparam name="TResult">结果</typeparam>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
+        /// <returns></returns>
+        public virtual TResult QueryFirst<TResult>(SQL sql, object param = null, TResult defaultValue = default, int? commandTimeout = null, string missingMsg = null)
+        {
+            if (!QueryAuthorize(sql))
+            {
+                throw new NonAuthorizedException();
+            }
+
+            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), default, commandTimeout, missingMsg);
         }
 
         /// <summary>
@@ -318,40 +348,7 @@ namespace CodeArts.ORM
                 throw new NonAuthorizedException();
             }
 
-            if (param is null)
-            {
-                if (sql.Parameters.Count > 0)
-                    throw new DSyntaxErrorException("参数不匹配!");
-
-                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), null, commandTimeout);
-            }
-
-            var type = param.GetType();
-
-            if (type.IsValueType || type == typeof(string))
-            {
-                if (sql.Parameters.Count > 1)
-                    throw new DSyntaxErrorException("参数不匹配!");
-
-                var token = sql.Parameters.First();
-
-                return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), new Dictionary<string, object>
-                {
-                    [token.Name] = param
-                }, commandTimeout);
-            }
-
-            if (!(param is Dictionary<string, object> parameters))
-            {
-                parameters = param.MapTo<Dictionary<string, object>>();
-            }
-
-            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-            {
-                throw new DSyntaxErrorException("参数不匹配!");
-            }
-
-            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), parameters, commandTimeout);
+            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
 
         }
 
@@ -366,6 +363,7 @@ namespace CodeArts.ORM
             {
                 Enumerable = Provider.Execute<IEnumerable<T>>(Expression);
             }
+
             return Enumerable.GetEnumerator();
         }
 

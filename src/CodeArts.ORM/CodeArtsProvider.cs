@@ -204,19 +204,85 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 查询。
+        /// 查询第一个结果。
         /// </summary>
         /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库连接</param>
+        /// <param name="conn">数据库链接</param>
         /// <param name="sql">SQL</param>
         /// <param name="parameters">参数</param>
-        /// <param name="reqiured">是否必须。</param>
-        /// <param name="defaultValue">默认</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="missingMsg">未查询到数据时的异常信息</param>
-        /// <exception cref="DRequiredException">必须且数据库未查询到数据</exception>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool reqiured = false, T defaultValue = default, int? commandTimeout = null, string missingMsg = null)
+        public override T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
+        {
+            bool isClosedConnection = conn.State == ConnectionState.Closed;
+
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+
+            if (settings.Engine == DatabaseEngine.SQLite)
+            {
+                behavior &= ~CommandBehavior.SingleResult;
+            }
+
+            if (isClosedConnection)
+            {
+                conn.Open();
+
+                behavior |= CommandBehavior.CloseConnection;
+            }
+
+            T defaultValue = default;
+
+            try
+            {
+                using (var command = conn.CreateCommand())
+                {
+                    command.CommandText = sql;
+
+                    if (commandTimeout.HasValue)
+                    {
+                        command.CommandTimeout = commandTimeout.Value;
+                    }
+
+                    AddParameterAuto(command, parameters);
+
+                    using (var dr = command.ExecuteReader(behavior))
+                    {
+                        isClosedConnection = false;
+
+                        if (dr.Read())
+                        {
+                            defaultValue = dr.MapTo<T>();
+
+                            while (dr.Read()) { /* ignore subsequent rows */ }
+                        }
+
+                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                    }
+                }
+            }
+            finally
+            {
+                if (isClosedConnection)
+                {
+                    conn.Close();
+                }
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// 查询第一个结果。
+        /// </summary>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="conn">数据库链接</param>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
+        /// <returns></returns>
+        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, T defaultValue = default, int? commandTimeout = null, string missingMsg = null)
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
@@ -257,7 +323,7 @@ namespace CodeArts.ORM
 
                             while (dr.Read()) { /* ignore subsequent rows */ }
                         }
-                        else if (reqiured)
+                        else
                         {
                             throw new DRequiredException(missingMsg);
                         }

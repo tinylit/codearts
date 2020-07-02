@@ -44,18 +44,28 @@ namespace CodeArts.ORM
         public virtual IExecuteBuilder<T> Create<T>() => new ExecuteBuilder<T>(Settings);
 
         /// <summary>
-        /// 查询独立实体
+        /// 查询第一个结果。
         /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
+        /// <typeparam name="T">结果类型</typeparam>
         /// <param name="conn">数据库链接</param>
-        /// <param name="sql">查询语句</param>
+        /// <param name="sql">SQL</param>
         /// <param name="parameters">参数</param>
-        /// <param name="required">是否必须</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <param name="commandTimeout">执行超时时间</param>
-        /// <param name="missingMsg">未查询到数据时的异常信息</param>
+        /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, bool required = false, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
+        public abstract T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
+
+        /// <summary>
+        /// 查询第一个结果。
+        /// </summary>
+        /// <typeparam name="T">结果类型</typeparam>
+        /// <param name="conn">数据库链接</param>
+        /// <param name="sql">SQL</param>
+        /// <param name="parameters">参数</param>
+        /// <param name="defaultValue">默认值</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
+        /// <returns></returns>
+        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
 
         /// <summary>
         /// 查询列表集合
@@ -105,31 +115,34 @@ namespace CodeArts.ORM
                         return (TResult)Query<T>(conn, sql, builder.Parameters, builder.TimeOut);
                     }
 
-                    if (builder.HasDefaultValue)
+                    if (builder.Required)
                     {
-                        object value = builder.DefaultValue;
-
-                        if (value is TResult defaultValue)
+                        if (builder.HasDefaultValue)
                         {
-                            return QueryFirst(conn, sql, builder.Parameters, builder.Required, defaultValue, builder.TimeOut, builder.MissingDataError);
-                        }
+                            object value = builder.DefaultValue;
 
-                        Type conversionType = typeof(TResult);
-
-                        if (value is null)
-                        {
-                            if (conversionType.IsValueType)
+                            if (value is TResult defaultValue)
                             {
-                                throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
+                                return QueryFirst(conn, sql, builder.Parameters, defaultValue, builder.TimeOut, builder.MissingDataError);
                             }
 
-                            return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut, builder.MissingDataError);
-                        }
+                            Type conversionType = typeof(TResult);
 
-                        throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
+                            if (value is null)
+                            {
+                                if (conversionType.IsValueType)
+                                {
+                                    throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
+                                }
+
+                                return QueryFirst<TResult>(conn, sql, builder.Parameters, default, builder.TimeOut, builder.MissingDataError);
+                            }
+
+                            throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
+                        }
                     }
 
-                    return QueryFirst<TResult>(conn, sql, builder.Parameters, builder.Required, default, builder.TimeOut, builder.MissingDataError);
+                    return QueryFirstOrDefault<TResult>(conn, sql, builder.Parameters, builder.TimeOut);
                 }
                 catch (DbException db)
                 {

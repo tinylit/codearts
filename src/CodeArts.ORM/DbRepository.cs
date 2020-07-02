@@ -1146,7 +1146,7 @@ namespace CodeArts.ORM
                 return Execute(sql, param, commandTimeout);
             }
 
-            throw new NotSupportedException();
+            throw new NonAuthorizedException();
         }
 
         /// <summary>
@@ -1163,7 +1163,7 @@ namespace CodeArts.ORM
                 return Execute(sql, param, commandTimeout);
             }
 
-            throw new NotSupportedException();
+            throw new NonAuthorizedException();
         }
 
         /// <summary>
@@ -1180,7 +1180,7 @@ namespace CodeArts.ORM
                 return Execute(sql, param, commandTimeout);
             }
 
-            throw new NotSupportedException();
+            throw new NonAuthorizedException();
         }
 
         /// <summary>
@@ -1237,38 +1237,7 @@ namespace CodeArts.ORM
                 throw new NonAuthorizedException();
             }
 
-            if (param is null)
-            {
-                if (sql.Parameters.Count > 0)
-                    throw new DSyntaxErrorException("参数不匹配!");
-
-                return Execute(sql.ToString(Settings), null, commandTimeout);
-            }
-
-            var type = param.GetType();
-
-            if (type.IsValueType || type == typeof(string))
-            {
-                if (sql.Parameters.Count > 1)
-                    throw new DSyntaxErrorException("参数不匹配!");
-
-                var token = sql.Parameters.First();
-
-                return Execute(sql.ToString(Settings), new Dictionary<string, object>
-                {
-                    [token.Name] = param
-                }, commandTimeout);
-            }
-
-            if (!(param is Dictionary<string, object> parameters))
-            {
-                parameters = param.MapTo<Dictionary<string, object>>();
-            }
-
-            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-                throw new DSyntaxErrorException("参数不匹配!");
-
-            return Execute(sql.ToString(Settings), parameters, commandTimeout);
+            return Execute(sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
         }
     }
 }
