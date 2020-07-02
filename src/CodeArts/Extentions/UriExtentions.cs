@@ -352,9 +352,9 @@ namespace System
 
             IFinallyStringRequestable IResultStringCatchRequestable.Finally(Action log) => new FinallyRequestable(this, file, log);
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
 
-            public IJsonRequestable<T> JsonCast<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => JsonCast<T>(namingType);
+            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
 
             public override string RequestImplement(string method, int timeout = 5000)
             {
@@ -562,9 +562,9 @@ namespace System
                 this.log = log ?? throw new ArgumentNullException(nameof(log));
             }
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
 
-            public IJsonRequestable<T> JsonCast<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class => JsonCast<T>(namingType);
+            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
 
             public override string RequestImplement(string method, int timeout = 5000)
             {
@@ -847,11 +847,11 @@ namespace System
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
 
             public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
 
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => JsonCast<T>(namingType);
+            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
 
             public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
 
@@ -1161,11 +1161,11 @@ namespace System
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
 
             public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
 
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => JsonCast<T>(namingType);
+            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
 
             public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
 
@@ -2127,7 +2127,7 @@ namespace System
                 return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
             }
             public IRequestable Json(string param) => Body(param, "application/json");
-            public IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class
+            public IRequestable Json<T>(T param, NamingType namingType = NamingType.Normal) where T : class
                 => Json(JsonHelper.ToJson(param, namingType));
             public IRequestable AppendQueryString(string param)
             {
@@ -2259,9 +2259,9 @@ namespace System
                 }
             }
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
             public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.CamelCase) where T : class => new JsonRequestable<T>(this, namingType);
+            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
             public IXmlRequestable<T> XmlCast<T>(T _) where T : class => new XmlRequestable<T>(this);
 
             public IThenRequestable TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, match);

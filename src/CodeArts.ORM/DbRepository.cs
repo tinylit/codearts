@@ -708,7 +708,9 @@ namespace CodeArts.ORM
                                     value = token.Create();
 
                                     if (value is null)
+                                    {
                                         throw new NoNullAllowedException("令牌不允许为空!");
+                                    }
 
                                     storeItem.Member.SetValue(item, value, null);
                                 }
@@ -718,7 +720,7 @@ namespace CodeArts.ORM
 
                             ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
-                            paramters.Add(parameterKey, value);
+                            paramters.Add(parameterKey, storeItem.Member.GetValue(item, null));
 
                             return Settings.ParamterName(parameterKey);
                         })), ")");
@@ -952,7 +954,7 @@ namespace CodeArts.ORM
 
                         ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
-                        paramters.Add(parameterKey, value);
+                        paramters.Add(parameterKey, storeItem.Member.GetValue(entry, null));
 
                         if (typeRegions.Tokens.TryGetValue(kv.Key, out TokenAttribute token))
                         {
@@ -989,7 +991,7 @@ namespace CodeArts.ORM
 
                             ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
 
-                            paramters.Add(parameterKey, value);
+                            paramters.Add(parameterKey, storeItem.Member.GetValue(entry, null));
 
                             return string.Concat(Settings.Name(kv.Value), "=", Settings.ParamterName(parameterKey));
 

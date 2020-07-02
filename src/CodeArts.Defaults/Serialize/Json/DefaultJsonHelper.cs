@@ -30,7 +30,6 @@ namespace CodeArts.Serialize.Json
             {
                 switch (_camelCase)
                 {
-                    case NamingType.Normal:
                     case NamingType.CamelCase:
                     case NamingType.UrlCase:
                     case NamingType.PascalCase:
@@ -115,7 +114,7 @@ namespace CodeArts.Serialize.Json
         /// <param name="json">JSON字符串</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        public T Json<T>(string json, NamingType namingType = NamingType.CamelCase)
+        public T Json<T>(string json, NamingType namingType = NamingType.Normal)
         {
             return JsonConvert.DeserializeObject<T>(json, LoadSetting(settings, namingType));
         }
@@ -126,7 +125,7 @@ namespace CodeArts.Serialize.Json
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        public T Json<T>(string json, T anonymousTypeObject, NamingType namingType = NamingType.CamelCase)
+        public T Json<T>(string json, T anonymousTypeObject, NamingType namingType = NamingType.Normal)
         {
             return JsonConvert.DeserializeAnonymousType(json, anonymousTypeObject, LoadSetting(settings, namingType));
         }
@@ -139,7 +138,7 @@ namespace CodeArts.Serialize.Json
         /// <param name="namingType">命名规则</param>
         /// <param name="indented">是否缩进</param>
         /// <returns></returns>
-        public string ToJson<T>(T jsonObj, NamingType namingType = NamingType.CamelCase, bool indented = false)
+        public string ToJson<T>(T jsonObj, NamingType namingType = NamingType.Normal, bool indented = false)
         {
             return JsonConvert.SerializeObject(jsonObj, LoadSetting(settings, namingType, indented));
         }

@@ -205,7 +205,7 @@ namespace CodeArts.Net
         /// <typeparam name="T">返回类型</typeparam>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.CamelCase) where T : class;
+        IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class;
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型
         /// </summary>
@@ -220,7 +220,7 @@ namespace CodeArts.Net
         /// <param name="anonymousTypeObject">匿名对象</param>
         /// <param name="namingType">命名规范</param>
         /// <returns></returns>
-        IJsonRequestable<T> JsonCast<T>(T anonymousTypeObject, NamingType namingType = NamingType.CamelCase) where T : class;
+        IJsonRequestable<T> JsonCast<T>(T anonymousTypeObject, NamingType namingType = NamingType.Normal) where T : class;
         /// <summary>
         /// 数据返回XML格式的结果，将转为指定类型(匿名对象)
         /// </summary>
@@ -400,7 +400,7 @@ namespace CodeArts.Net
         /// <param name="param">参数</param>
         /// <param name="namingType">命名规则</param>
         /// <returns></returns>
-        IRequestable Json<T>(T param, NamingType namingType = NamingType.CamelCase) where T : class;
+        IRequestable Json<T>(T param, NamingType namingType = NamingType.Normal) where T : class;
         /// <summary>
         /// content-type = "application/xml";
         /// </summary>
