@@ -57,10 +57,10 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 获取客户端Mac地址
         /// </summary>
-        /// <param name="context">请求上下文</param>
+        /// <param name="_">请求上下文</param>
         /// <returns></returns>
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-        public static string GetRemoteMacAddress(this HttpContext context)
+        public static string GetRemoteMacAddress(this HttpContext _)
         {
             var networks = NetworkInterface.GetAllNetworkInterfaces();
             foreach (var network in networks.Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
@@ -73,7 +73,7 @@ namespace CodeArts.Mvc
             return null;
         }
 #else
-        public static string GetRemoteMacAddress(this HttpContext context)
+        public static string GetRemoteMacAddress(this HttpContext _)
         {
             using (ManagementClass mc = new ManagementClass("Win32_NetworkAdapterConfiguration"))
             {

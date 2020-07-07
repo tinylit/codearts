@@ -34,14 +34,15 @@ namespace CodeArts.Mvc.Builder
     /// </summary>
     public static class AuthApplicationBuilderExtentions
     {
-        private static readonly char[] CharArray = "0123456789ABCDEabcdefghigklmnopqrFGHIGKLMNOPQRSTUVWXYZstuvwxyz".ToCharArray();
+        private static readonly char[] CharArray = "0123456789abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZ".ToCharArray();
 
         /// <summary>
         /// 验证码
         /// </summary>
         public static ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.First);
 
-
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NETCOREAPP3_1
         /// <summary>
         /// 登录配置。
         /// 通过“/login”登录。
@@ -53,10 +54,19 @@ namespace CodeArts.Mvc.Builder
         /// <param name="endpoints">配置</param>
         /// <param name="basePath">登录、注册、验证码的基础路径。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-#if NETCOREAPP3_1
         public static void UseJwtAuth(this IEndpointRouteBuilder endpoints, PathString basePath)
 #else
+        /// <summary>
+        /// 登录配置。
+        /// 通过“/login”登录。
+        /// 通过“/authcode”获取验证码；通过“/authcode{pathString}”会自动调用当前项目的“{pathString}”(<see cref="PathString"/>)接口，并将随机验证码作为【authCode】参数传递给接口，接口可选择是否返回新的验证码。
+        /// 请在配置文件中配置“login”项(可以是相对地址或绝对地址)。
+        /// 添加请求参数“debug”为真时，不进行验证码验证。
+        /// 自定义请参考<see cref="Consts"/>。
+        /// </summary>
+        /// <param name="app">配置</param>
+        /// <param name="basePath">登录、注册、验证码的基础路径。</param>
+        /// <returns></returns>
         public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app, PathString basePath)
 #endif
         {
@@ -73,44 +83,11 @@ namespace CodeArts.Mvc.Builder
 
                 string md5 = $"{id}-{url}".Md5();
 
-                if (context.Request.Path.HasValue)
-                {
-                    var result = await $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path.Value}".AsRequestable()
-                      .AppendQueryString(context.Request.QueryString.ToString())
-                      .AppendQueryString($"authCode={code}")
-                      .JsonCast<ServResult<string>>()
-                      .WebCatch(e =>
-                      {
-                          if (e.Response is HttpWebResponse response)
-                          {
-                              var statusCode = (int)response.StatusCode;
+                byte[] bytes = CreateValidateGraphic(code);
 
-                              return ServResult.Error<string>(statusCode.Message(), statusCode);
-                          }
+                AuthCode.Set(md5, code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
 
-                          return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.RequestNotFound);
-                      })
-                      .GetAsync();
-
-                    if (result.Success)
-                    {
-                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
-
-                        await context.Response.WriteJsonAsync(DResult.Ok());
-                    }
-                    else
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Error(result.Msg, result.Code));
-                    }
-                }
-                else
-                {
-                    byte[] bytes = CreateValidateGraphic(code);
-
-                    AuthCode.Set(md5, code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
-
-                    await context.Response.WriteImageAsync(bytes);
-                }
+                await context.Response.WriteImageAsync(bytes);
 
 #if NETCOREAPP3_1
             });
