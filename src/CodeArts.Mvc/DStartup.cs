@@ -67,8 +67,8 @@ namespace CodeArts.Mvc
                     builder =>
                     {
                         builder.SetIsOriginAllowed(origin => true)
-                            .AllowAnyMethod()
                             .AllowAnyHeader()
+                            .AllowAnyMethod()
                             .AllowCredentials();
                     });
             });
@@ -169,7 +169,7 @@ namespace CodeArts.Mvc
                     options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
                     options.SerializerSettings.Converters.Add(new MyJsonConverter());
                 })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 #endif
 
 #if NETCOREAPP3_1
@@ -196,28 +196,25 @@ namespace CodeArts.Mvc
 
 #if NETCOREAPP3_1
             //? 跨域
-            app.UseStaticFiles()
-                .UseCors("Allow")
+            app.UseCors("Allow")
                 .UseRouting()
                 .UseMvc()
-                .UseLoggerManager();
+                .UseLoggerManager()
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints
+                    .MapControllers()
+                    .RequireCors("Allow");
+                });
 
             if (useSwaggerUi)
             {
                 app.UseSwagger()
-                    .UseSwaggerUI(c =>
-                    {
-                        c.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
-                    })
-                    .UseEndpoints(endpoints =>
-                    {
-                        endpoints.MapControllers();
-                    });
+                    .UseSwaggerUI(ConfigureSwaggerUI);
             }
 #else
             //? 跨域
-            app.UseStaticFiles()
-                .UseCors("Allow")
+            app.UseCors("Allow")
                 .UseMvc()
                 .UseLoggerManager();
 

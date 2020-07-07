@@ -102,19 +102,24 @@ namespace CodeArts.Mvc.Hosting
                 {
                     if (serviceType.IsGenericType)
                     {
-                        if (descriptors.TryGetValue(serviceType, out ServiceDescriptor descriptor))
+                        var descriptor = descriptors.GetOrAdd(serviceType, type =>
+                          {
+                              var genericType = type.GetGenericTypeDefinition();
+
+                              service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == type);
+
+                              if (service is null || service.ImplementationType is null)
+                              {
+                                  return null;
+                              }
+
+                              return new ServiceDescriptor(serviceType, service.ImplementationType.MakeGenericType(serviceType.GetGenericArguments()), service.Lifetime);
+                          });
+
+                        if (descriptor is null)
                         {
-                            return GetService(descriptor);
-                        }
-
-                        var genericType = serviceType.GetGenericTypeDefinition();
-
-                        service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
-
-                        if (service is null || service.ImplementationType is null)
                             return null;
-
-                        descriptors.TryAdd(serviceType, descriptor = new ServiceDescriptor(serviceType, service.ImplementationType.MakeGenericType(serviceType.GetGenericArguments()), service.Lifetime));
+                        }
 
                         return GetService(descriptor);
                     }
@@ -173,7 +178,9 @@ namespace CodeArts.Mvc.Hosting
                     .FirstOrDefault(x => x.IsPublic);
 
                 if (constructor is null)
+                {
                     return null;
+                }
 
                 var parameters = constructor.GetParameters();
 
