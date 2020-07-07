@@ -15,6 +15,7 @@ using System.Linq;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 #if NETCOREAPP3_1
+using Microsoft.AspNetCore.Routing;
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Hosting;
 #else
@@ -153,6 +154,14 @@ namespace CodeArts.Mvc
                    })
                    .SetCompatibilityVersion(CompatibilityVersion.Latest);
         }
+        
+        /// <summary>
+        /// 使用端点。
+        /// </summary>
+        /// <param name="endpoints">端点路由构造器</param>
+        protected virtual void UseEndpoints(IEndpointRouteBuilder endpoints) => endpoints
+                    .MapControllers()
+                    .RequireCors("Allow");
 #else
         protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services)
             => services
@@ -200,12 +209,7 @@ namespace CodeArts.Mvc
                 .UseRouting()
                 .UseMvc()
                 .UseLoggerManager()
-                .UseEndpoints(endpoints =>
-                {
-                    endpoints
-                    .MapControllers()
-                    .RequireCors("Allow");
-                });
+                .UseEndpoints(UseEndpoints);
 
             if (useSwaggerUi)
             {

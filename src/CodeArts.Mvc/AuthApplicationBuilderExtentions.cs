@@ -7,6 +7,9 @@ using CodeArts.Mvc;
 #if !NET40
 using System.Threading.Tasks;
 #endif
+#if NETCOREAPP3_1
+using Microsoft.AspNetCore.Routing;
+#endif
 using CodeArts.Cache;
 using System;
 using System.Collections.Generic;
@@ -38,6 +41,7 @@ namespace CodeArts.Mvc.Builder
         /// </summary>
         public static ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.First);
 
+
         /// <summary>
         /// 登录配置。
         /// 通过“/login”登录。
@@ -46,13 +50,21 @@ namespace CodeArts.Mvc.Builder
         /// 添加请求参数“debug”为真时，不进行验证码验证。
         /// 自定义请参考<see cref="Consts"/>。
         /// </summary>
-        /// <param name="app">配置</param>
+        /// <param name="endpoints">配置</param>
         /// <param name="basePath">登录、注册、验证码的基础路径。</param>
         /// <returns></returns>
 #if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NETCOREAPP3_1
+        public static void UseJwtAuth(this IEndpointRouteBuilder endpoints, PathString basePath)
+#else
         public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app, PathString basePath)
+#endif
         {
+#if NETCOREAPP3_1
+            endpoints.Map(basePath.Add("/authCode"), async context =>
+#else
             return app.Map(basePath.Add("/authCode"), builder => builder.Run(async context =>
+#endif
             {
                 string code = CreateRandomCode("captcha:length".Config(Consts.CaptchaLength)); //验证码的字符为4个
 
@@ -100,58 +112,73 @@ namespace CodeArts.Mvc.Builder
                     await context.Response.WriteImageAsync(bytes);
                 }
 
+#if NETCOREAPP3_1
+            });
+
+            endpoints.Map(basePath.Add("/login"), async context =>
+#else
             })).Map(basePath.Add("/login"), builder => builder.Run(async context =>
-            {
-                var result = VerifyAuthCode(context);
+#endif
+             {
+                 var result = VerifyAuthCode(context);
 
-                if (result.Success)
-                {
-                    var loginUrl = "login".Config<string>();
+                 if (result.Success)
+                 {
+                     var loginUrl = "login".Config<string>();
 
-                    if (string.IsNullOrEmpty(loginUrl))
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Error("未配置登录接口!", CodeArts.StatusCodes.ServError));
-                    }
-                    else if (loginUrl.IsUrl() ? !Uri.TryCreate(loginUrl, UriKind.Absolute, out Uri loginUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{loginUrl.TrimStart('/')}", UriKind.Absolute, out loginUri))
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Error("不规范的登录接口!", CodeArts.StatusCodes.NonstandardServerError));
-                    }
-                    else
-                    {
-                        await context.Response.WriteJsonAsync(await RequestAsync(loginUri, context));
-                    }
-                }
-                else
-                {
-                    await context.Response.WriteJsonAsync(result);
-                }
+                     if (string.IsNullOrEmpty(loginUrl))
+                     {
+                         await context.Response.WriteJsonAsync(DResult.Error("未配置登录接口!", CodeArts.StatusCodes.ServError));
+                     }
+                     else if (loginUrl.IsUrl() ? !Uri.TryCreate(loginUrl, UriKind.Absolute, out Uri loginUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{loginUrl.TrimStart('/')}", UriKind.Absolute, out loginUri))
+                     {
+                         await context.Response.WriteJsonAsync(DResult.Error("不规范的登录接口!", CodeArts.StatusCodes.NonstandardServerError));
+                     }
+                     else
+                     {
+                         await context.Response.WriteJsonAsync(await RequestAsync(loginUri, context));
+                     }
+                 }
+                 else
+                 {
+                     await context.Response.WriteJsonAsync(result);
+                 }
+#if NETCOREAPP3_1
+             });
 
-            })).Map(basePath.Add("/register"), builder => builder.Run(async context =>
-            {
-                var result = VerifyAuthCode(context);
+            endpoints.Map(basePath.Add("/register"), async context =>
+#else
+             })).Map(basePath.Add("/register"), builder => builder.Run(async context =>
+#endif
+             {
+                 var result = VerifyAuthCode(context);
 
-                if (result.Success)
-                {
-                    var registerUrl = "register".Config<string>();
+                 if (result.Success)
+                 {
+                     var registerUrl = "register".Config<string>();
 
-                    if (string.IsNullOrEmpty(registerUrl))
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Error("未配置注册接口!", CodeArts.StatusCodes.ServError));
-                    }
-                    else if (registerUrl.IsUrl() ? !Uri.TryCreate(registerUrl, UriKind.Absolute, out Uri registerUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{registerUrl.TrimStart('/')}", UriKind.Absolute, out registerUri))
-                    {
-                        await context.Response.WriteJsonAsync(DResult.Error("不规范的注册接口!", CodeArts.StatusCodes.NonstandardServerError));
-                    }
-                    else
-                    {
-                        await context.Response.WriteJsonAsync(await RequestAsync(registerUri, context));
-                    }
-                }
-                else
-                {
-                    await context.Response.WriteJsonAsync(result);
-                }
-            }));
+                     if (string.IsNullOrEmpty(registerUrl))
+                     {
+                         await context.Response.WriteJsonAsync(DResult.Error("未配置注册接口!", CodeArts.StatusCodes.ServError));
+                     }
+                     else if (registerUrl.IsUrl() ? !Uri.TryCreate(registerUrl, UriKind.Absolute, out Uri registerUri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{registerUrl.TrimStart('/')}", UriKind.Absolute, out registerUri))
+                     {
+                         await context.Response.WriteJsonAsync(DResult.Error("不规范的注册接口!", CodeArts.StatusCodes.NonstandardServerError));
+                     }
+                     else
+                     {
+                         await context.Response.WriteJsonAsync(await RequestAsync(registerUri, context));
+                     }
+                 }
+                 else
+                 {
+                     await context.Response.WriteJsonAsync(result);
+                 }
+#if NETCOREAPP3_1
+             });
+#else
+             }));
+#endif
         }
 #else
         public static IApplicationBuilder UseJwtAuth(this IApplicationBuilder app, PathString basePath)
