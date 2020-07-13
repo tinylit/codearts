@@ -46,7 +46,7 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         public static GenericPrincipal AsPrincipal(this IDictionary<string, object> userData)
         {
-            return new GenericPrincipal(userData.AsIdentity(), userData.Where(x => x.Key.ToLower() == "role").Select(x => x.Value.ToString()).ToArray());
+            return new GenericPrincipal(userData.AsIdentity(), userData.Where(x => x.Key.ToLower() == "role").SelectMany(x => x.Value.ToString().Split(',')).ToArray());
         }
 #else
         private static readonly Dictionary<string, string> ClaimTypes = new Dictionary<string, string>
@@ -157,12 +157,17 @@ namespace CodeArts.Mvc
 
                 if (ClaimTypes.TryGetValue(key, out string type))
                 {
-                    identity.AddClaim(new Claim(type, value.ToString(), "http://www.w3.org/2001/XMLSchema#string"));
-                }
+                    if (string.Equals(key, "role", StringComparison.OrdinalIgnoreCase))
+                    {
+                        value.ToString().Split(',').ForEach(role =>
+                        {
+                            identity.AddClaim(new Claim(type, role, "http://www.w3.org/2001/XMLSchema#string"));
+                        });
 
-                if (string.Equals(key, "role", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
+                        continue;
+                    }
+
+                    identity.AddClaim(new Claim(type, value.ToString(), "http://www.w3.org/2001/XMLSchema#string"));
                 }
 
                 var dataType = value.GetType();
