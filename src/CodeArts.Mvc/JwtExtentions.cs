@@ -19,7 +19,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using CodeArts.Exceptions;
-using System.Net;
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 
 namespace Microsoft.AspNetCore.Builder
@@ -32,14 +31,14 @@ namespace CodeArts.Mvc.Builder
     /// <summary>
     /// 登录
     /// </summary>
-    public static class AuthApplicationBuilderExtentions
+    public static class JwtExtentions
     {
-        private static readonly char[] CharArray = "0123456789abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZ".ToCharArray();
+        private static readonly char[] CharArray = "0123456789abcdefghigkmnprstuvwxyABCDEFGHIGKLMNPQRSTUVWXYZ".ToCharArray();
 
         /// <summary>
         /// 验证码
         /// </summary>
-        public static ICache AuthCode => CacheManager.GetCache("auth-code", CacheLevel.First);
+        public static ICache Code => CacheManager.GetCache("auth-code", CacheLevel.First);
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
 #if NETCOREAPP3_1
@@ -85,7 +84,7 @@ namespace CodeArts.Mvc.Builder
 
                 byte[] bytes = CreateValidateGraphic(code);
 
-                AuthCode.Set(md5, code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
+                Code.Set(md5, code, TimeSpan.FromSeconds("captcha:timout".Config(Consts.CaptchaTimeout)));
 
                 await context.Response.WriteImageAsync(bytes);
 
@@ -175,7 +174,7 @@ namespace CodeArts.Mvc.Builder
 #if NET40
             return app.Map(authCode, context =>
 #else
-            return app.Map(authCode, async context =>
+            return app.Map(authCode, context => Task.Factory.StartNew(() =>
 #endif
             {
                 string code = CreateRandomCode("captcha-length".Config(Consts.CaptchaLength)); //验证码的字符为4个
@@ -184,58 +183,16 @@ namespace CodeArts.Mvc.Builder
 
                 string md5 = $"{id}-{url}".Md5();
 
-                PathString absolutePath = new PathString(context.Request.Url.AbsolutePath);
-                if (absolutePath.StartsWithSegments(authCode, StringComparison.OrdinalIgnoreCase, out PathString path) && path.HasValue)
-                {
-                    string api = $"{context.Request.Url.Scheme}://{context.Request.Url.Authority}{path.Value}";
-#if NET40
-                    var result = api.AsRequestable()
-#else
-                    var result = await api.AsRequestable()
-#endif
-                        .AppendQueryString(context.Request.QueryString.ToString())
-                        .AppendQueryString($"authCode={code}")
-                        .JsonCast<ServResult<string>>()
-                        .WebCatch(e =>
-                        {
-                            if (e.Response is HttpWebResponse response)
-                            {
-                                var statusCode = (int)response.StatusCode;
+                byte[] bytes = CreateValidateGraphic(code);
 
-                                return ServResult.Error<string>(statusCode.Message(), statusCode);
-                            }
+                Code.Set(md5, code, TimeSpan.FromSeconds("captcha-timeout".Config(Consts.CaptchaTimeout)));
 
-                            return ServResult.Error<string>(e.Message, CodeArts.StatusCodes.RequestNotFound);
-                        })
-#if NET40
-                        .Get();
-#else
-                        .GetAsync();
-#endif
+                context.Response.WriteImage(bytes);
 
-                    if (result.Success)
-                    {
-                        AuthCode.Set(md5, result.Data ?? code, TimeSpan.FromSeconds("captcha-timeout".Config(Consts.CaptchaTimeout)));
-
-                        context.Response.WriteJson(DResult.Ok());
-                    }
-                    else
-                    {
-                        context.Response.WriteJson(DResult.Error(result.Msg, result.Code));
-                    }
-                }
-                else
-                {
-                    byte[] bytes = CreateValidateGraphic(code);
-
-                    AuthCode.Set(md5, code, TimeSpan.FromSeconds("captcha-timeout".Config(Consts.CaptchaTimeout)));
-
-                    context.Response.WriteImage(bytes);
-                }
 #if NET40
             }).Map(basePath.Add("/login"), context =>
 #else
-            }).Map(basePath.Add("/login"), async context =>
+            })).Map(basePath.Add("/login"), async context =>
 #endif
             {
                 var result = VerifyAuthCode(context);
@@ -413,7 +370,7 @@ namespace CodeArts.Mvc.Builder
 
                 string md5 = $"{id}-{url}".Md5();
 
-                string authCache = AuthCode.Get<string>(md5);
+                string authCache = Code.Get<string>(md5);
 
                 if (string.IsNullOrEmpty(authCache))
                 {
@@ -427,7 +384,7 @@ namespace CodeArts.Mvc.Builder
                     return DResult.Error("验证码错误!");
                 }
 
-                AuthCode.Remove(md5);
+                Code.Remove(md5);
             }
 
             return DResult.Ok();

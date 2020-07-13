@@ -117,8 +117,6 @@ namespace CodeArts.ORM
             /// <returns></returns>
             public IDataReader ExecuteReader()
             {
-                dataReaders.RemoveAll(x => x.IsClosed);
-
                 var reader = command.ExecuteReader();
 
                 dataReaders.Add(reader);
@@ -132,8 +130,6 @@ namespace CodeArts.ORM
             /// <returns></returns>
             public IDataReader ExecuteReader(CommandBehavior behavior)
             {
-                dataReaders.RemoveAll(x => x.IsClosed);
-
                 var reader = command.ExecuteReader(behavior);
 
                 dataReaders.Add(reader);

@@ -471,7 +471,14 @@ namespace CodeArts.ORM
 
                      var value = storeItem.Member.GetValue(item, null);
 
-                     ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
+                     var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
+
+                     if (attrs.Any())
+                     {
+                         ValidateValue(value, context, attrs);
+
+                         value = storeItem.Member.GetValue(item, null);
+                     }
 
                      var parameterKey = group == 0 && index == 0 ?
                          name
@@ -536,7 +543,14 @@ namespace CodeArts.ORM
 
                            context.MemberName = storeItem.Member.Name;
 
-                           ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
+                           var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
+
+                           if (attrs.Any())
+                           {
+                               ValidateValue(value, context, attrs);
+
+                               value = storeItem.Member.GetValue(item, null);
+                           }
 
                            var parameterKey = group == 0 && index == 0 ?
                            Settings.ParamterName(kv.Key.ToUrlCase())
@@ -718,9 +732,16 @@ namespace CodeArts.ORM
 
                             context.MemberName = storeItem.Member.Name;
 
-                            ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
+                            var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
 
-                            paramters.Add(parameterKey, storeItem.Member.GetValue(item, null));
+                            if (attrs.Any())
+                            {
+                                ValidateValue(value, context, attrs);
+
+                                value = storeItem.Member.GetValue(item, null);
+                            }
+
+                            paramters.Add(parameterKey, value);
 
                             return Settings.ParamterName(parameterKey);
                         })), ")");
@@ -952,9 +973,16 @@ namespace CodeArts.ORM
 
                         context.MemberName = storeItem.Member.Name;
 
-                        ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
+                        var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
 
-                        paramters.Add(parameterKey, storeItem.Member.GetValue(entry, null));
+                        if (attrs.Any())
+                        {
+                            ValidateValue(value, context, attrs);
+
+                            value = storeItem.Member.GetValue(entry, null);
+                        }
+
+                        paramters.Add(parameterKey, value);
 
                         if (typeRegions.Tokens.TryGetValue(kv.Key, out TokenAttribute token))
                         {
@@ -989,9 +1017,16 @@ namespace CodeArts.ORM
 
                             context.MemberName = storeItem.Member.Name;
 
-                            ValidateValue(value, context, storeItem.Attributes.OfType<ValidationAttribute>());
+                            var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
 
-                            paramters.Add(parameterKey, storeItem.Member.GetValue(entry, null));
+                            if (attrs.Any())
+                            {
+                                ValidateValue(value, context, attrs);
+
+                                value = storeItem.Member.GetValue(entry, null);
+                            }
+
+                            paramters.Add(parameterKey, value);
 
                             return string.Concat(Settings.Name(kv.Value), "=", Settings.ParamterName(parameterKey));
 
