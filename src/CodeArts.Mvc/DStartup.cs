@@ -114,8 +114,6 @@ namespace CodeArts.Mvc
             options.IgnoreObsoleteProperties();
 
             options.CustomSchemaIds(x => x.FullName);
-
-            options.ResolveConflictingActions(actions => actions.First());
         }
 
         /// <summary>
@@ -405,8 +403,6 @@ namespace CodeArts.Mvc
             config.DescribeAllEnumsAsStrings();
 
             config.UseFullTypeNameInSchemaIds();
-
-            config.ResolveConflictingActions(actions => actions.First());
         }
 
         /// <summary>
