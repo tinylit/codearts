@@ -12,13 +12,100 @@ namespace CodeArts.ORM
     public class DbConnection : IDbConnection
     {
         /// <summary>
+        /// 数据读取器。
+        /// </summary>
+        private class DbReader : IDataReader
+        {
+            private readonly DbCommand command;
+            private readonly IDataReader reader;
+
+            public DbReader(DbCommand command, IDataReader reader)
+            {
+                this.command = command;
+                this.reader = reader;
+            }
+            public object this[int i] => reader[i];
+
+            public object this[string name] => reader[name];
+
+            public int Depth => reader.Depth;
+
+            public bool IsClosed => reader.IsClosed;
+
+            public int RecordsAffected => reader.RecordsAffected;
+
+            public int FieldCount => reader.FieldCount;
+
+            public void Close()
+            {
+                reader.Close();
+                command.Remove(this);
+            }
+
+            public void Dispose()
+            {
+                reader.Dispose();
+                command.Remove(this);
+            }
+
+            public bool GetBoolean(int i) => reader.GetBoolean(i);
+
+            public byte GetByte(int i) => reader.GetByte(i);
+
+            public long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length) => reader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
+            public char GetChar(int i) => reader.GetChar(i);
+
+            public long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length) => reader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
+
+            public IDataReader GetData(int i) => reader.GetData(i);
+
+            public string GetDataTypeName(int i) => reader.GetDataTypeName(i);
+
+            public DateTime GetDateTime(int i) => reader.GetDateTime(i);
+
+            public decimal GetDecimal(int i) => reader.GetDecimal(i);
+
+            public double GetDouble(int i) => reader.GetDouble(i);
+
+            public Type GetFieldType(int i) => reader.GetFieldType(i);
+
+            public float GetFloat(int i) => reader.GetFloat(i);
+
+            public Guid GetGuid(int i) => reader.GetGuid(i);
+
+            public short GetInt16(int i) => reader.GetInt16(i);
+
+            public int GetInt32(int i) => reader.GetInt32(i);
+
+            public long GetInt64(int i) => reader.GetInt64(i);
+
+            public string GetName(int i) => reader.GetName(i);
+
+            public int GetOrdinal(string name) => reader.GetOrdinal(name);
+
+            public DataTable GetSchemaTable() => reader.GetSchemaTable();
+
+            public string GetString(int i) => reader.GetString(i);
+
+            public object GetValue(int i) => reader.GetValue(i);
+
+            public int GetValues(object[] values) => reader.GetValues(values);
+
+            public bool IsDBNull(int i) => reader.IsDBNull(i);
+
+            public bool NextResult() => reader.NextResult();
+
+            public bool Read() => reader.Read();
+        }
+
+        /// <summary>
         /// 命令。
         /// </summary>
         private class DbCommand : IDbCommand
         {
             private bool isAlive = false;
             private readonly IDbCommand command;
-            private readonly List<IDataReader> dataReaders = new List<IDataReader>();
+            private readonly List<DbReader> dataReaders = new List<DbReader>();
 
             public DbCommand(IDbCommand command)
             {
@@ -100,6 +187,18 @@ namespace CodeArts.ORM
                 command.Dispose();
             }
 
+            public IDataReader Add(IDataReader reader)
+            {
+                dataReaders.Add(new DbReader(this, reader));
+
+                return reader;
+            }
+
+            public void Remove(DbReader reader)
+            {
+                dataReaders.Remove(reader);
+            }
+
             /// <summary>
             /// 执行，返回影响行。
             /// </summary>
@@ -109,33 +208,19 @@ namespace CodeArts.ORM
             /// <summary>
             /// 存活的。
             /// </summary>
-            public bool IsAlive => isAlive || !dataReaders.TrueForAll(x => x.IsClosed);
+            public bool IsAlive => isAlive || dataReaders.Count > 0;
 
             /// <summary>
             /// 执行并生成读取器。
             /// </summary>
             /// <returns></returns>
-            public IDataReader ExecuteReader()
-            {
-                var reader = command.ExecuteReader();
-
-                dataReaders.Add(reader);
-
-                return reader;
-            }
+            public IDataReader ExecuteReader() => Add(command.ExecuteReader());
 
             /// <summary>
             /// 执行并生成读取器。
             /// </summary>
             /// <returns></returns>
-            public IDataReader ExecuteReader(CommandBehavior behavior)
-            {
-                var reader = command.ExecuteReader(behavior);
-
-                dataReaders.Add(reader);
-
-                return reader;
-            }
+            public IDataReader ExecuteReader(CommandBehavior behavior) => Add(command.ExecuteReader(behavior));
 
             /// <summary>
             /// 执行返回首行首列。
