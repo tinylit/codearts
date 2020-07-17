@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using Timer = System.Timers.Timer;
@@ -37,7 +38,6 @@ namespace CodeArts.ORM
 
             private void ClearTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
             {
-
                 var list = new List<string>();
 
                 foreach (var kv in connectionCache)
@@ -94,7 +94,7 @@ namespace CodeArts.ORM
                 {
                     if (item.IsAlive && item.IsIdle)
                     {
-                        return item;
+                        return item.ReuseConnection();
                     }
                 }
 

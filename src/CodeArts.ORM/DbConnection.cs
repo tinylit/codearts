@@ -298,6 +298,7 @@ namespace CodeArts.ORM
             }
         }
 
+        private DateTime lastUseTime;
         private DateTime lastActiveTime;
         private readonly IDbConnection _connection; //数据库连接
         private readonly double? connectionHeartbeat; //心跳
@@ -317,7 +318,7 @@ namespace CodeArts.ORM
         /// <param name="connectionHeartbeat">链接心跳</param>
         public DbConnection(IDbConnection connection, double connectionHeartbeat) : this(connection)
         {
-            lastActiveTime = DateTime.Now;
+            lastUseTime = lastActiveTime = DateTime.Now;
             this.connectionHeartbeat = new double?(connectionHeartbeat);
         }
 
@@ -471,12 +472,23 @@ namespace CodeArts.ORM
         /// <summary>
         /// 是否闲置。
         /// </summary>
-        public bool IsIdle => transactions.Count == 0 && commands.TrueForAll(x => !x.IsAlive);
+        public bool IsIdle => transactions.Count == 0 && lastUseTime.AddMilliseconds(520D) < DateTime.Now && commands.TrueForAll(x => !x.IsAlive);
 
         /// <summary>
         /// 释放器不释放
         /// </summary>
         void IDisposable.Dispose() { }
+
+        /// <summary>
+        /// 复用。
+        /// </summary>
+        /// <returns></returns>
+        public IDbConnection ReuseConnection()
+        {
+            lastUseTime = DateTime.Now;
+
+            return this;
+        }
 
         /// <summary>
         /// 释放内存
