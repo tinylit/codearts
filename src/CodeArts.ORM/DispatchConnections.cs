@@ -85,22 +85,31 @@ namespace CodeArts.ORM
             {
                 if (string.IsNullOrEmpty(connectionString))
                 {
-                    throw new System.ArgumentException("数据库链接无效!", nameof(connectionString));
+                    throw new ArgumentException("数据库链接无效!", nameof(connectionString));
                 }
 
                 List<DbConnection> connections = connectionCache.GetOrAdd(connectionString, _ => new List<DbConnection>());
 
-                foreach (var item in connections)
+                if (connections.Count > 0)
                 {
-                    if (item.IsAlive && item.IsIdle)
+                    lock (connections)
                     {
-                        return item.ReuseConnection();
+                        foreach (var item in connections)
+                        {
+                            if (item.IsAlive && item.IsIdle)
+                            {
+                                return item.ReuseConnection();
+                            }
+                        }
                     }
                 }
 
                 var connection = new DbConnection(adapter.Create(connectionString), adapter.ConnectionHeartbeat);
 
-                connections.Add(connection);
+                lock (connections)
+                {
+                    connections.Add(connection);
+                }
 
                 if (!_clearTimerRun)
                 {

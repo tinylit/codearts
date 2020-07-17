@@ -16,14 +16,14 @@ namespace CodeArts.ORM
 
         private static readonly ConcurrentDictionary<string, IDbConnectionAdapter> Adapters;
 
-        private static readonly Dictionary<IDbConnectionAdapter, RepositoryProvider> Providers;
+        private static readonly ConcurrentDictionary<IDbConnectionAdapter, RepositoryProvider> Providers;
 
         /// <summary>
         /// 静态构造函数
         /// </summary>
         static DbConnectionManager()
         {
-            Providers = new Dictionary<IDbConnectionAdapter, RepositoryProvider>();
+            Providers = new ConcurrentDictionary<IDbConnectionAdapter, RepositoryProvider>();
             Adapters = new ConcurrentDictionary<string, IDbConnectionAdapter>();
             FactoryProviders = new Dictionary<string, Func<IDbConnectionAdapter, RepositoryProvider>>();
         }

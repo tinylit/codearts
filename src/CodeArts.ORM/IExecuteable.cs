@@ -84,7 +84,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="option">配置</param>
         /// <returns></returns>
-        IDeleteable<T> Transaction(TransactionScopeOption option);
+        IDeleteable<T> UseTransaction(TransactionScopeOption option);
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ namespace CodeArts.ORM
         /// </summary>
         /// <param name="option">配置</param>
         /// <returns></returns>
-        IInsertable<T> Transaction(TransactionScopeOption option);
+        IInsertable<T> UseTransaction(TransactionScopeOption option);
     }
 
     /// <summary>
@@ -199,10 +199,10 @@ namespace CodeArts.ORM
         IUpdateable<T> Where<TColumn>(Expression<Func<T, TColumn>> columns);
 
         /// <summary>
-        /// 设置事务，默认:<see cref="TransactionScopeOption.Required"/>。
+        /// 使用事务。
         /// </summary>
         /// <param name="option">配置</param>
         /// <returns></returns>
-        IUpdateable<T> Transaction(TransactionScopeOption option);
+        IUpdateable<T> UseTransaction(TransactionScopeOption option);
     }
 }

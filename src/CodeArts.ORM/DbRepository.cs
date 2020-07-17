@@ -139,7 +139,7 @@ namespace CodeArts.ORM
             private string[] wheres;
             private Func<T, string[]> where;
             private Func<ITableInfo, string> from;
-            private TransactionScopeOption option = TransactionScopeOption.Required;
+            private TransactionScopeOption? option = TransactionScopeOption.Required;
 
             public override int Execute(int? commandTimeout)
             {
@@ -297,7 +297,12 @@ namespace CodeArts.ORM
 
             private int Transaction(Func<int> factroy)
             {
-                using (TransactionScope transaction = new TransactionScope(option))
+                if (!option.HasValue)
+                {
+                    return factroy.Invoke();
+                }
+
+                using (TransactionScope transaction = new TransactionScope(option.Value))
                 {
                     int affected_rows = factroy.Invoke();
 
@@ -587,7 +592,7 @@ namespace CodeArts.ORM
                 return this;
             }
 
-            public IDeleteable<T> Transaction(TransactionScopeOption option)
+            public IDeleteable<T> UseTransaction(TransactionScopeOption option)
             {
                 this.option = option;
 
@@ -604,7 +609,7 @@ namespace CodeArts.ORM
             private string[] limits;
             private string[] excepts;
             private Func<ITableInfo, string> from;
-            private TransactionScopeOption option = TransactionScopeOption.Required;
+            private TransactionScopeOption? option = TransactionScopeOption.Required;
 
             public IInsertable<T> Except(string[] columns)
             {
@@ -768,7 +773,12 @@ namespace CodeArts.ORM
 
             private int Transaction(Func<int> factroy)
             {
-                using (TransactionScope transaction = new TransactionScope(option))
+                if (!option.HasValue)
+                {
+                    return factroy.Invoke();
+                }
+
+                using (TransactionScope transaction = new TransactionScope(option.Value))
                 {
                     int affected_rows = factroy.Invoke();
 
@@ -778,7 +788,7 @@ namespace CodeArts.ORM
                 }
             }
 
-            public IInsertable<T> Transaction(TransactionScopeOption option)
+            public IInsertable<T> UseTransaction(TransactionScopeOption option)
             {
                 this.option = option;
 
@@ -796,7 +806,7 @@ namespace CodeArts.ORM
             private string[] excepts;
             private Func<T, string[]> where;
             private Func<ITableInfo, T, string> from;
-            private TransactionScopeOption option = TransactionScopeOption.Required;
+            private TransactionScopeOption? option = TransactionScopeOption.Required;
 
             public IUpdateable<T> Except(string[] columns)
             {
@@ -1088,7 +1098,12 @@ namespace CodeArts.ORM
 
             private int Transaction(Func<int> factroy)
             {
-                using (TransactionScope transaction = new TransactionScope(option))
+                if (!option.HasValue)
+                {
+                    return factroy.Invoke();
+                }
+
+                using (TransactionScope transaction = new TransactionScope(option.Value))
                 {
                     int affected_rows = factroy.Invoke();
 
@@ -1098,7 +1113,7 @@ namespace CodeArts.ORM
                 }
             }
 
-            public IUpdateable<T> Transaction(TransactionScopeOption option)
+            public IUpdateable<T> UseTransaction(TransactionScopeOption option)
             {
                 this.option = option;
 

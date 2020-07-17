@@ -104,11 +104,14 @@ namespace CodeArts.ORM
         private class DbCommand : IDbCommand
         {
             private bool isAlive = false;
+            private volatile int commandType = 0;
             private readonly IDbCommand command;
+            private readonly DbConnection connection;
             private readonly List<DbReader> dataReaders = new List<DbReader>();
 
-            public DbCommand(IDbCommand command)
+            public DbCommand(DbConnection connection, IDbCommand command)
             {
+                this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 this.command = command ?? throw new ArgumentNullException(nameof(command));
             }
 
@@ -120,15 +123,14 @@ namespace CodeArts.ORM
                 get => command.Connection;
                 set
                 {
-                    if (command.Connection is DbConnection connection)
-                    {
-                        connection.Remove(this);
-                    }
+                    connection.Remove(this);
 
                     if (value is DbConnection db)
                     {
                         db.Add(this);
                     }
+
+                    command.Connection = value;
                 }
             }
 
@@ -179,16 +181,15 @@ namespace CodeArts.ORM
             {
                 dataReaders.Clear();
 
-                if (Connection is DbConnection connection)
-                {
-                    connection.Remove(this);
-                }
+                connection.Remove(this);
 
                 command.Dispose();
             }
 
             public IDataReader Add(IDataReader reader)
             {
+                commandType = 2;
+
                 dataReaders.Add(new DbReader(this, reader));
 
                 return reader;
@@ -203,12 +204,30 @@ namespace CodeArts.ORM
             /// 执行，返回影响行。
             /// </summary>
             /// <returns></returns>
-            public int ExecuteNonQuery() => command.ExecuteNonQuery();
+            public int ExecuteNonQuery()
+            {
+                if (commandType == 0)
+                {
+                    commandType = 1;
+                }
+
+                try
+                {
+                    return command.ExecuteNonQuery();
+                }
+                finally
+                {
+                    if (commandType == 1)
+                    {
+                        commandType = 0;
+                    }
+                }
+            }
 
             /// <summary>
             /// 存活的。
             /// </summary>
-            public bool IsAlive => isAlive || dataReaders.Count > 0;
+            public bool IsAlive => isAlive || commandType == 0 || dataReaders.Count > 0;
 
             /// <summary>
             /// 执行并生成读取器。
@@ -444,7 +463,7 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public IDbCommand CreateCommand()
         {
-            var command = new DbCommand(_connection.CreateCommand());
+            var command = new DbCommand(this, _connection.CreateCommand());
 
             commands.Add(command);
 
@@ -486,6 +505,11 @@ namespace CodeArts.ORM
         public IDbConnection ReuseConnection()
         {
             lastUseTime = DateTime.Now;
+
+            if (commands.Count > 0)
+            {
+
+            }
 
             return this;
         }
