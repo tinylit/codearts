@@ -34,7 +34,7 @@ namespace CodeArts.ORM
             {
                 Interlocked.Increment(ref refCount);
 
-                return this;
+                return ReuseConnection();
             }
 
             public override void Close() { }

@@ -16,13 +16,18 @@ namespace CodeArts.ORM
         /// </summary>
         private class DbReader : IDataReader
         {
+            private bool disposed = false;
+            private readonly DbConnection connection;
             private readonly DbCommand command;
             private readonly IDataReader reader;
+            private readonly bool isClosedConnection;
 
-            public DbReader(DbCommand command, IDataReader reader)
+            public DbReader(DbConnection connection, DbCommand command, IDataReader reader, bool isClosedConnection)
             {
+                this.connection = connection;
                 this.command = command;
                 this.reader = reader;
+                this.isClosedConnection = isClosedConnection;
             }
             public object this[int i] => reader[i];
 
@@ -39,13 +44,29 @@ namespace CodeArts.ORM
             public void Close()
             {
                 reader.Close();
-                command.Remove(this);
+
+                if (isClosedConnection)
+                {
+                    connection.Close();
+                }
             }
 
             public void Dispose()
             {
                 reader.Dispose();
-                command.Remove(this);
+
+                if (isClosedConnection)
+                {
+                    connection.Close();
+                }
+
+                if (disposed)
+                {
+                    return;
+                }
+
+                disposed = true;
+                command.Decrement();
             }
 
             public bool GetBoolean(int i) => reader.GetBoolean(i);
@@ -104,10 +125,10 @@ namespace CodeArts.ORM
         private class DbCommand : IDbCommand
         {
             private bool isAlive = false;
+            private int refCount = 0;
             private volatile int commandType = 0;
             private readonly IDbCommand command;
             private readonly DbConnection connection;
-            private readonly List<DbReader> dataReaders = new List<DbReader>();
 
             public DbCommand(DbConnection connection, IDbCommand command)
             {
@@ -128,9 +149,13 @@ namespace CodeArts.ORM
                     if (value is DbConnection db)
                     {
                         db.Add(this);
-                    }
 
-                    command.Connection = value;
+                        command.Connection = db._connection;
+                    }
+                    else
+                    {
+                        command.Connection = value;
+                    }
                 }
             }
 
@@ -179,25 +204,21 @@ namespace CodeArts.ORM
             /// </summary>
             public void Dispose()
             {
-                dataReaders.Clear();
-
                 connection.Remove(this);
 
                 command.Dispose();
             }
 
-            public IDataReader Add(IDataReader reader)
+            public IDataReader Add(IDataReader reader, bool isClosedConnection = false)
             {
-                commandType = 2;
+                Interlocked.Increment(ref refCount);
 
-                dataReaders.Add(new DbReader(this, reader));
-
-                return reader;
+                return new DbReader(connection, this, reader, isClosedConnection);
             }
 
-            public void Remove(DbReader reader)
+            public void Decrement()
             {
-                dataReaders.Remove(reader);
+                Interlocked.Decrement(ref refCount);
             }
 
             /// <summary>
@@ -206,28 +227,28 @@ namespace CodeArts.ORM
             /// <returns></returns>
             public int ExecuteNonQuery()
             {
-                if (commandType == 0)
-                {
-                    commandType = 1;
-                }
+                commandType = 1;
 
-                try
-                {
-                    return command.ExecuteNonQuery();
-                }
-                finally
-                {
-                    if (commandType == 1)
-                    {
-                        commandType = 0;
-                    }
-                }
+                return command.ExecuteNonQuery();
             }
 
             /// <summary>
             /// 存活的。
             /// </summary>
-            public bool IsAlive => isAlive || commandType == 0 || dataReaders.Count > 0;
+            public bool IsAlive
+            {
+                get
+                {
+                    if (isAlive || commandType == 0 || refCount > 0)
+                    {
+                        return true;
+                    }
+
+                    Interlocked.CompareExchange(ref refCount, 0, 0);
+
+                    return refCount > 0;
+                }
+            }
 
             /// <summary>
             /// 执行并生成读取器。
@@ -239,7 +260,18 @@ namespace CodeArts.ORM
             /// 执行并生成读取器。
             /// </summary>
             /// <returns></returns>
-            public IDataReader ExecuteReader(CommandBehavior behavior) => Add(command.ExecuteReader(behavior));
+            public IDataReader ExecuteReader(CommandBehavior behavior)
+            {
+                bool isClosedConnection = false;
+
+                if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.CloseConnection)
+                {
+                    isClosedConnection = true;
+                    behavior &= ~CommandBehavior.CloseConnection;
+                }
+
+                return Add(command.ExecuteReader(behavior), isClosedConnection);
+            }
 
             /// <summary>
             /// 执行返回首行首列。
@@ -264,19 +296,22 @@ namespace CodeArts.ORM
             /// </summary>
             public void Prepare() => command.Prepare();
         }
+
         /// <summary>
         /// 事务。
         /// </summary>
         private class DbTransaction : IDbTransaction
         {
+            private bool completed = false;
+            private readonly DbConnection connection;
             private readonly IDbTransaction transaction;
 
             /// <summary>
             /// 构造函数。
             /// </summary>
-            /// <param name="transaction"></param>
-            public DbTransaction(IDbTransaction transaction)
+            public DbTransaction(DbConnection connection, IDbTransaction transaction)
             {
+                this.connection = connection;
                 this.transaction = transaction;
             }
 
@@ -288,41 +323,53 @@ namespace CodeArts.ORM
             {
                 transaction.Commit();
 
-                if (Connection is DbConnection connection)
+                if (completed)
                 {
-                    connection.Remove(this);
+                    return;
                 }
+
+                completed = true;
+
+                connection.DecrementTransaction();
             }
 
             public void Dispose()
             {
                 transaction.Dispose();
 
-                if (Connection is DbConnection connection)
+                GC.SuppressFinalize(this);
+
+                if (completed)
                 {
-                    connection.Remove(this);
+                    return;
                 }
 
-                GC.SuppressFinalize(this);
+                completed = true;
+
+                connection.DecrementTransaction();
             }
 
             public void Rollback()
             {
                 transaction.Rollback();
 
-                if (Connection is DbConnection connection)
+                if (completed)
                 {
-                    connection.Remove(this);
+                    return;
                 }
+
+                completed = true;
+
+                connection.DecrementTransaction();
             }
         }
 
         private DateTime lastUseTime;
         private DateTime lastActiveTime;
+        private int refCount = 0;
         private readonly IDbConnection _connection; //数据库连接
         private readonly double? connectionHeartbeat; //心跳
         private readonly List<DbCommand> commands = new List<DbCommand>();
-        private readonly List<DbTransaction> transactions = new List<DbTransaction>();
 
         /// <summary>
         /// 构造函数。
@@ -367,11 +414,9 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public IDbTransaction BeginTransaction()
         {
-            var transaction = new DbTransaction(_connection.BeginTransaction());
+            Interlocked.Increment(ref refCount);
 
-            transactions.Add(transaction);
-
-            return transaction;
+            return new DbTransaction(this, _connection.BeginTransaction());
         }
 
         /// <summary>
@@ -381,11 +426,9 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public IDbTransaction BeginTransaction(IsolationLevel il)
         {
-            var transaction = new DbTransaction(_connection.BeginTransaction(il));
+            Interlocked.Increment(ref refCount);
 
-            transactions.Add(transaction);
-
-            return transaction;
+            return new DbTransaction(this, _connection.BeginTransaction(il));
         }
 
         /// <summary>
@@ -411,6 +454,7 @@ namespace CodeArts.ORM
                         Thread.Sleep(5);
 
                     } while (State == ConnectionState.Connecting);
+
                     break;
                 case ConnectionState.Broken:
                     _connection.Close();
@@ -420,6 +464,11 @@ namespace CodeArts.ORM
         }
 
         void IDbConnection.Close() => Close();
+
+        private void DecrementTransaction()
+        {
+            Interlocked.Decrement(ref refCount);
+        }
 
         private void Add(DbCommand command)
         {
@@ -432,11 +481,6 @@ namespace CodeArts.ORM
         private void Remove(DbCommand command)
         {
             commands.Remove(command);
-        }
-
-        private void Remove(DbTransaction transaction)
-        {
-            transactions.Remove(transaction);
         }
 
         /// <summary>
@@ -491,7 +535,25 @@ namespace CodeArts.ORM
         /// <summary>
         /// 是否闲置。
         /// </summary>
-        public bool IsIdle => transactions.Count == 0 && lastUseTime.AddMilliseconds(520D) < DateTime.Now && commands.TrueForAll(x => !x.IsAlive);
+        public bool IsIdle
+        {
+            get
+            {
+                if (refCount > 0 || lastUseTime.AddMilliseconds(520D) > DateTime.Now)
+                {
+                    return false;
+                }
+
+                if (commands.Any(x => x.IsAlive))
+                {
+                    return false;
+                }
+
+                Interlocked.CompareExchange(ref refCount, 0, 0);
+
+                return refCount == 0;
+            }
+        }
 
         /// <summary>
         /// 释放器不释放
@@ -505,11 +567,6 @@ namespace CodeArts.ORM
         public IDbConnection ReuseConnection()
         {
             lastUseTime = DateTime.Now;
-
-            if (commands.Count > 0)
-            {
-
-            }
 
             return this;
         }
