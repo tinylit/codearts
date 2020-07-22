@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using Timer = System.Timers.Timer;
 
 namespace CodeArts.ORM
@@ -99,8 +98,6 @@ namespace CodeArts.ORM
                         {
                             if (item.IsAlive && item.IsIdle)
                             {
-                                Debug.WriteLine("出现链接复用");
-
                                 return item.ReuseConnection();
                             }
                         }
@@ -113,8 +110,6 @@ namespace CodeArts.ORM
                 {
                     connections.Add(connection);
                 }
-
-                Debug.WriteLine("当前链接数：" + connections.Count);
 
                 if (!_clearTimerRun)
                 {
