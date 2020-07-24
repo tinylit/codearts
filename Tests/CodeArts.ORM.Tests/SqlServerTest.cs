@@ -1470,5 +1470,16 @@ namespace UnitTest
                 Assert.IsTrue(errMsg == e.Message);
             }
         }
+
+        [TestMethod]
+        public void AnyWhere()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var results = userdetails.Where(x => x.Id > 100)
+                 .Where(x => user.Any(y => x.Id == y.Id))
+                 .ToList();
+        }
     }
 }

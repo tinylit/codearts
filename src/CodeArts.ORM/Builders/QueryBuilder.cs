@@ -729,6 +729,12 @@ namespace CodeArts.ORM.Builders
                     SQLWriter.Parameter("__variable_false", false);
                     SQLWriter.Write(" END");
 
+                    if (settings.Engine == DatabaseEngine.Oracle && Parent is null)
+                    {
+                        SQLWriter.From();
+                        SQLWriter.TableName("dual");
+                    }
+
                     return node;
                 case MethodCall.All:
                     if (Parent is null)
@@ -755,6 +761,12 @@ namespace CodeArts.ORM.Builders
                     SQLWriter.Write(" ELSE ");
                     SQLWriter.Parameter("__variable_false", false);
                     SQLWriter.Write(" END");
+
+                    if (settings.Engine == DatabaseEngine.Oracle && Parent is null)
+                    {
+                        SQLWriter.From();
+                        SQLWriter.TableName("dual");
+                    }
 
                     return node;
                 case MethodCall.ElementAt:
@@ -1190,7 +1202,7 @@ namespace CodeArts.ORM.Builders
 
             if (buildJoin || buildUnion)
             {
-                base.Visit(node.Body);
+                Visit(node.Body);
 
                 return node;
             }
@@ -1217,7 +1229,7 @@ namespace CodeArts.ORM.Builders
                 return VisitLambdaFrom(node);
             }
 
-            base.Visit(node.Body);
+            Visit(node.Body);
 
             return node;
         }

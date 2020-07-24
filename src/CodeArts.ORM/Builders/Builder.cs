@@ -665,7 +665,7 @@ namespace CodeArts.ORM.Builders
                     SQLWriter.Delimiter();
                 }
 
-                VisitEvaluate(node.Arguments[index]);
+                Visit(node.Arguments[index]);
 
                 SQLWriter.As(member.Name);
             });
@@ -1086,7 +1086,7 @@ namespace CodeArts.ORM.Builders
 
             addPrefixCache.Invoke(parameter.Type, parameter.Name);
 
-            base.Visit(node.Body);
+            Visit(node.Body);
 
             return node;
         }
@@ -1101,60 +1101,51 @@ namespace CodeArts.ORM.Builders
             }
         }
 
-        private void VisitEvaluate(Expression node)
+        /// <inheritdoc />
+        public override Expression Visit(Expression node)
         {
-            switch (node)
+            if (node.NodeType == ExpressionType.Call && node is MethodCallExpression methodCall && (methodCall.Method.DeclaringType == typeof(Queryable) || methodCall.Method.DeclaringType == typeof(SelectExtentions)))
             {
-                case MethodCallExpression methodCall when methodCall.Method.DeclaringType == typeof(Queryable) || methodCall.Method.DeclaringType == typeof(SelectExtentions):
-                    {
-                        switch (methodCall.Method.Name)
+                switch (methodCall.Method.Name)
+                {
+                    case MethodCall.Any:
+                    case MethodCall.All:
+
+                        VisitBuilder(node);
+
+                        return node;
+                    case MethodCall.Contains when methodCall.Arguments[1] is MemberExpression member && member.Expression?.NodeType == ExpressionType.Parameter:
+
+                        base.Visit(member.Expression);
+
+                        VisitParameterMember(member);
+
+                        SQLWriter.Contains();
+
+                        SQLWriter.OpenBrace();
+
+                        VisitBuilder(methodCall.Arguments[0]);
+
+                        SQLWriter.CloseBrace();
+
+                        return node;
+                    default:
+                        if (methodCall.Method.ReturnType.IsValueType || methodCall.Method.ReturnType == typeof(string))
                         {
-                            case MethodCall.Any:
-                            case MethodCall.All:
+                            SQLWriter.OpenBrace();
 
-                                VisitBuilder(node);
+                            VisitBuilder(node);
 
-                                break;
-                            case MethodCall.Contains when methodCall.Arguments[1] is MemberExpression member && member.Expression?.NodeType == ExpressionType.Parameter:
+                            SQLWriter.CloseBrace();
 
-                                base.Visit(member.Expression);
-
-                                VisitParameterMember(member);
-
-                                SQLWriter.Contains();
-
-                                SQLWriter.OpenBrace();
-
-                                VisitBuilder(methodCall.Arguments[0]);
-
-                                SQLWriter.CloseBrace();
-
-                                break;
-                            default:
-
-                                SQLWriter.OpenBrace();
-
-                                VisitBuilder(node);
-
-                                SQLWriter.CloseBrace();
-
-                                break;
+                            return node;
                         }
+
                         break;
-                    }
-                case UnaryExpression unary when unary.NodeType == ExpressionType.Not:
-                    WrapNot(() =>
-                    {
-                        VisitEvaluate(unary.Operand);
-                    });
-                    break;
-                case UnaryExpression unary:
-                    VisitEvaluate(unary.Operand);
-                    break;
-                default:
-                    base.Visit(node);
-                    break;
+                }
             }
+
+            return base.Visit(node);
         }
 
         /// <summary>
@@ -1169,7 +1160,7 @@ namespace CodeArts.ORM.Builders
         /// <inheritdoc />
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
-            VisitEvaluate(node.Expression);
+            Visit(node.Expression);
 
             return node;
         }
@@ -1344,11 +1335,11 @@ namespace CodeArts.ORM.Builders
         {
             int indexBefore = SQLWriter.Length;
 
-            VisitEvaluate(node.Left);
+            Visit(node.Left);
 
             int indexStep = SQLWriter.Length;
 
-            VisitEvaluate(node.Right);
+            Visit(node.Right);
 
             if (indexStep > indexBefore && SQLWriter.Length > indexStep)
             {
@@ -1397,7 +1388,7 @@ namespace CodeArts.ORM.Builders
         {
             int indexBefore = SQLWriter.Length;
 
-            VisitEvaluate(node.Right);
+            Visit(node.Right);
 
             int indexStep = SQLWriter.Length;
 
@@ -1426,7 +1417,7 @@ namespace CodeArts.ORM.Builders
 
             int indexNext = SQLWriter.Length;
 
-            VisitEvaluate(node.Left);
+            Visit(node.Left);
 
             if (SQLWriter.Length == indexNext)
             {
@@ -1496,16 +1487,16 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.Write("CASE WHEN ");
 
-                VisitEvaluate(left);
+                Visit(left);
 
                 SQLWriter.IsNull();
                 SQLWriter.Write(" THEN ");
 
-                VisitEvaluate(right);
+                Visit(right);
 
                 SQLWriter.Write(" ELSE ");
 
-                VisitEvaluate(left);
+                Visit(left);
 
                 SQLWriter.Write(" END");
 
@@ -1534,14 +1525,14 @@ namespace CodeArts.ORM.Builders
                 {
                     if (isOrLike)
                     {
-                        VisitEvaluate(right);
+                        Visit(right);
                     }
                     return node;
                 }
 
                 if (isAndLike)
                 {
-                    VisitEvaluate(right);
+                    Visit(right);
                 }
 
                 return node;
@@ -1560,7 +1551,7 @@ namespace CodeArts.ORM.Builders
                     {
                         SQLWriter.OpenBrace();
 
-                        VisitEvaluate(left);
+                        Visit(left);
 
                         if (nodeType == ExpressionType.Equal)
                         {
@@ -1584,7 +1575,7 @@ namespace CodeArts.ORM.Builders
                     {
                         SQLWriter.OpenBrace();
 
-                        VisitEvaluate(right);
+                        Visit(right);
 
                         if (nodeType == ExpressionType.Equal)
                         {
@@ -1624,7 +1615,7 @@ namespace CodeArts.ORM.Builders
 
                 SQLWriter.OpenBrace();
 
-                VisitEvaluate(left);
+                Visit(left);
 
                 if (isMySqlConcat)
                 {
@@ -1635,7 +1626,7 @@ namespace CodeArts.ORM.Builders
                     SQLWriter.Write(nodeType, left.Type, right.Type);
                 }
 
-                VisitEvaluate(right);
+                Visit(right);
 
                 SQLWriter.CloseBrace();
 
@@ -1655,11 +1646,11 @@ namespace CodeArts.ORM.Builders
                 var value = node.Test.GetValueFromExpression();
                 if (Equals(value, true))
                 {
-                    VisitEvaluate(node.IfTrue);
+                    Visit(node.IfTrue);
                 }
                 else
                 {
-                    VisitEvaluate(node.IfFalse);
+                    Visit(node.IfFalse);
                 }
 
                 return node;
@@ -1667,11 +1658,11 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.OpenBrace();
             SQLWriter.Write("CASE WHEN ");
-            VisitEvaluate(node.Test);
+            Visit(node.Test);
             SQLWriter.Write(" THEN ");
-            VisitEvaluate(node.IfTrue);
+            Visit(node.IfTrue);
             SQLWriter.Write(" ELSE ");
-            VisitEvaluate(node.IfFalse);
+            Visit(node.IfFalse);
             SQLWriter.Write(" END");
             SQLWriter.CloseBrace();
 
