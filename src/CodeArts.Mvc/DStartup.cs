@@ -148,6 +148,9 @@ namespace CodeArts.Mvc
                    .AddJsonOptions(options =>
                    {
                        options.JsonSerializerOptions.IgnoreNullValues = true;
+#if NETCOREAPP3_1
+                       options.JsonSerializerOptions.Converters.Add(new MyJsonConverterFactory());
+#endif
                        options.JsonSerializerOptions.Converters.Add(new MyJsonConverter());
                    })
                    .SetCompatibilityVersion(CompatibilityVersion.Latest);

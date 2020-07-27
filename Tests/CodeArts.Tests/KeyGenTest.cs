@@ -11,7 +11,7 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Test()
         {
-            var key = KeyGen.Create(6639549677571083173);
+            var key = KeyGen.Create(06689072983526346752);
 
             var key2 = KeyGen.Create(6680757690605506560);
 

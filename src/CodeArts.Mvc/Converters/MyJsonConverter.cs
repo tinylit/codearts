@@ -1,5 +1,8 @@
 ﻿#if NETCOREAPP3_1
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,14 +12,346 @@ namespace CodeArts.Mvc.Converters
     /// <summary>
     /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
     /// </summary>
+    public class MyJsonConverterFactory : JsonConverterFactory
+    {
+        /// <summary>
+        /// 是否可以调整
+        /// </summary>
+        /// <param name="typeToConvert">数据类型</param>
+        /// <returns></returns>
+        public override bool CanConvert(Type typeToConvert)
+        {
+            if (typeToConvert.IsArray || typeToConvert.IsNullable())
+            {
+                return true;
+            }
+
+            if (!typeToConvert.IsGenericType || !typeToConvert.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+            {
+                return false;
+            }
+
+            var typeArguments = typeToConvert.GetGenericArguments();
+
+            if (typeArguments.Length > 1)
+            {
+                return false;
+            }
+
+            return typeArguments.All(x => !x.IsGenericParameter);
+        }
+
+        /// <summary>
+        /// 创建转换器
+        /// </summary>
+        /// <param name="typeToConvert">转换的目标类型</param>
+        /// <param name="options">配置</param>
+        /// <returns></returns>
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            => typeToConvert.IsArray
+            ? (JsonConverter)Activator.CreateInstance(typeof(JsonConverterForArrayOfT<>).MakeGenericType(new Type[] { typeToConvert.GetElementType() }))
+            : typeToConvert.IsNullable()
+            ? (JsonConverter)Activator.CreateInstance(typeof(MyNullableJsonConverter<>).MakeGenericType(new Type[] { Nullable.GetUnderlyingType(typeToConvert) }))
+            : (JsonConverter)Activator.CreateInstance(typeof(JsonConverterIEnumerableOfT<>).MakeGenericType(typeToConvert.GetGenericArguments()));
+
+        private class MyNullableJsonConverter<T> : JsonConverter<T?> where T : struct
+        {
+            public override bool CanConvert(Type typeToConvert) => true;
+
+            private static bool TryRead(Utf8JsonReader reader, out object value)
+            {
+                bool flag = true;
+
+                try
+                {
+                    switch (Type.GetTypeCode(typeof(T)))
+                    {
+                        case TypeCode.DBNull:
+                            value = null;
+                            break;
+                        case TypeCode.Boolean:
+                            value = reader.GetBoolean();
+                            break;
+                        case TypeCode.SByte:
+                            value = reader.GetSByte();
+                            break;
+                        case TypeCode.Byte:
+                            value = reader.GetByte();
+                            break;
+                        case TypeCode.Int16:
+                            value = reader.GetInt16();
+                            break;
+                        case TypeCode.UInt16:
+                            value = reader.GetUInt16();
+                            break;
+                        case TypeCode.Int32:
+                            value = reader.GetInt32();
+                            break;
+                        case TypeCode.UInt32:
+                            value = reader.GetUInt32();
+                            break;
+                        case TypeCode.Int64:
+                            value = reader.GetInt64();
+                            break;
+                        case TypeCode.UInt64:
+                            value = reader.GetUInt64();
+                            break;
+                        case TypeCode.Single:
+                            value = reader.GetSingle();
+                            break;
+                        case TypeCode.Double:
+                            value = reader.GetDouble();
+                            break;
+                        case TypeCode.Decimal:
+                            value = reader.GetDecimal();
+                            break;
+                        case TypeCode.DateTime:
+                            value = reader.GetDateTime();
+                            break;
+                        case TypeCode.String:
+                            value = reader.GetString();
+                            break;
+                        case TypeCode.Char:
+                        default:
+                            value = null;
+                            flag = false;
+                            break;
+                    }
+                }
+                catch
+                {
+                    value = null;
+                    flag = false;
+                }
+
+                return flag;
+            }
+
+            public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    return null;
+                }
+
+                if (TryRead(reader, out object value))
+                {
+                    if (value is null)
+                    {
+                        return null;
+                    }
+
+                    return (T)value;
+                }
+
+                string text = Encoding.UTF8.GetString(reader.ValueSpan.ToArray());
+
+                try
+                {
+                    return (T)Convert.ChangeType(text, typeof(T));
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
+            {
+                if (!value.HasValue)
+                {
+                    writer.WriteNullValue();
+                    return;
+                }
+
+                T result = value.Value;
+
+                switch (result)
+                {
+                    case bool b:
+                        writer.WriteBooleanValue(b);
+                        break;
+                    case int i32:
+                        writer.WriteNumberValue(i32);
+                        break;
+                    case long i64 when i64 >= -9007199254740991L && i64 <= 9007199254740991L:
+                        writer.WriteNumberValue(i64);
+                        break;
+                    case float f when f >= -9007199254740991F && f <= 9007199254740991F:
+                        writer.WriteNumberValue(f);
+                        break;
+                    case double d when d >= -9007199254740991D && d <= 9007199254740991D:
+                        writer.WriteNumberValue(d);
+                        break;
+                    case decimal m when m >= -9007199254740991M && m <= 9007199254740991M:
+                        writer.WriteNumberValue(m);
+                        break;
+                    case ulong u64 when u64 <= 9007199254740991uL:
+                        writer.WriteNumberValue(u64);
+                        break;
+                    case uint u32:
+                        writer.WriteNumberValue(u32);
+                        break;
+                    case DateTime date:
+                        writer.WriteStringValue(date.ToString(Consts.DateFormatString));
+                        break;
+                    default:
+                        writer.WriteStringValue(value.ToString());
+                        break;
+                }
+            }
+        }
+        private class JsonConverterForArrayOfT<T> : JsonConverter<T[]>
+        {
+            public override bool CanConvert(Type typeToConvert) => true;
+
+            public override T[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var elements = new List<T>();
+
+                if (reader.TokenType != JsonTokenType.StartArray)
+                {
+                    return elements.ToArray();
+                }
+
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                {
+                    elements.Add(JsonSerializer.Deserialize<T>(ref reader, options));
+                }
+
+                return elements.ToArray();
+            }
+
+            public override void Write(Utf8JsonWriter writer, T[] value, JsonSerializerOptions options)
+            {
+                writer.WriteStartArray();
+
+                foreach (T item in value)
+                {
+                    JsonSerializer.Serialize(writer, item, options);
+                }
+
+                writer.WriteEndArray();
+            }
+        }
+        private class JsonConverterIEnumerableOfT<T> : JsonConverter<object>
+        {
+            public override bool CanConvert(Type typeToConvert) => true;
+
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var elements = new List<T>();
+
+                if (reader.TokenType != JsonTokenType.StartArray)
+                {
+                    return elements.MapTo(typeToConvert);
+                }
+
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                {
+                    elements.Add(JsonSerializer.Deserialize<T>(ref reader, options));
+                }
+
+                return elements.MapTo(typeToConvert);
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                if (value is IEnumerable<T> enumerable)
+                {
+                    writer.WriteStartArray();
+
+                    foreach (T item in enumerable)
+                    {
+                        JsonSerializer.Serialize(writer, item, options);
+                    }
+
+                    writer.WriteEndArray();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
+    /// </summary>
     public class MyJsonConverter : JsonConverter<object>
     {
         /// <summary>
         /// 是否可以调整
         /// </summary>
-        /// <param name="objectType">数据类型</param>
+        /// <param name="typeToConvert">数据类型</param>
         /// <returns></returns>
-        public override bool CanConvert(Type objectType) => objectType.IsValueType || typeof(string) == objectType;
+        public override bool CanConvert(Type typeToConvert) => typeToConvert.IsValueType || typeof(string) == typeToConvert;
+
+        private static bool TryRead(Utf8JsonReader reader, Type typeToConvert, out object value)
+        {
+            bool flag = true;
+
+            try
+            {
+                switch (Type.GetTypeCode(typeToConvert))
+                {
+                    case TypeCode.DBNull:
+                        value = null;
+                        break;
+                    case TypeCode.Boolean:
+                        value = reader.GetBoolean();
+                        break;
+                    case TypeCode.SByte:
+                        value = reader.GetSByte();
+                        break;
+                    case TypeCode.Byte:
+                        value = reader.GetByte();
+                        break;
+                    case TypeCode.Int16:
+                        value = reader.GetInt16();
+                        break;
+                    case TypeCode.UInt16:
+                        value = reader.GetUInt16();
+                        break;
+                    case TypeCode.Int32:
+                        value = reader.GetInt32();
+                        break;
+                    case TypeCode.UInt32:
+                        value = reader.GetUInt32();
+                        break;
+                    case TypeCode.Int64:
+                        value = reader.GetInt64();
+                        break;
+                    case TypeCode.UInt64:
+                        value = reader.GetUInt64();
+                        break;
+                    case TypeCode.Single:
+                        value = reader.GetSingle();
+                        break;
+                    case TypeCode.Double:
+                        value = reader.GetDouble();
+                        break;
+                    case TypeCode.Decimal:
+                        value = reader.GetDecimal();
+                        break;
+                    case TypeCode.DateTime:
+                        value = reader.GetDateTime();
+                        break;
+                    case TypeCode.String:
+                        value = reader.GetString();
+                        break;
+                    case TypeCode.Char:
+                    default:
+                        value = null;
+                        flag = false;
+                        break;
+                }
+            }
+            catch
+            {
+                value = null;
+                flag = false;
+            }
+
+            return flag;
+        }
 
         /// <summary>
         /// 读取数据
@@ -32,11 +367,9 @@ namespace CodeArts.Mvc.Converters
                 return null;
             }
 
-            string value = Encoding.UTF8.GetString(reader.ValueSpan.ToArray());
-
             if (typeToConvert.IsEnum)
             {
-                return Enum.Parse(typeToConvert, value, true);
+                return Enum.Parse(typeToConvert, Encoding.UTF8.GetString(reader.ValueSpan.ToArray()), true);
             }
 
             if (typeToConvert.IsNullable())
@@ -44,9 +377,15 @@ namespace CodeArts.Mvc.Converters
                 typeToConvert = Nullable.GetUnderlyingType(typeToConvert);
             }
 
+            if (TryRead(reader, typeToConvert, out object value))
+            {
+                return value;
+            }
+
+            string text = Encoding.UTF8.GetString(reader.ValueSpan.ToArray());
             try
             {
-                return Convert.ChangeType(value, typeToConvert);
+                return Convert.ChangeType(text, typeToConvert);
             }
             catch { }
 
@@ -75,7 +414,7 @@ namespace CodeArts.Mvc.Converters
             else if (type.IsNullable())
             {
                 value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
-            }            
+            }
 
             switch (value)
             {
