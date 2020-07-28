@@ -71,7 +71,11 @@ namespace CodeArts.Mvc
                 throw new ArgumentNullException(nameof(validationAttribute));
             }
 
-            if (ValidationCache.TryGetValue(validationAttribute.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
+            if (validationContext.Model is string text && (text is null || text.Length == 0) && typeof(DataTypeAttribute).IsAssignableFrom(validationAttribute.GetType()) || typeof(RegularExpressionAttribute).IsAssignableFrom(validationAttribute.GetType()))
+            {
+                yield break;
+            }
+            else if (ValidationCache.TryGetValue(validationAttribute.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
             {
                 var metadata = validationContext.ModelMetadata;
                 var memberName = metadata.Name;
@@ -128,7 +132,11 @@ namespace CodeArts.Mvc
                 throw new ArgumentNullException(nameof(validationAttribute));
             }
 
-            if (ValidationCache.TryGetValue(validationAttribute.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
+            if (validationContext.Model is string text && (text is null || text.Length == 0) && typeof(DataTypeAttribute).IsAssignableFrom(validationAttribute.GetType()) || typeof(RegularExpressionAttribute).IsAssignableFrom(validationAttribute.GetType()))
+            {
+                yield break;
+            }
+            else if (ValidationCache.TryGetValue(validationAttribute.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
             {
                 var memberName = metadata.GetDisplayName();
                 var context = new ValidationContext(
