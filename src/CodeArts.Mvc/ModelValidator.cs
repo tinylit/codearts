@@ -71,7 +71,7 @@ namespace CodeArts.Mvc
                 throw new ArgumentNullException(nameof(validationAttribute));
             }
 
-            if (validationContext.Model is string text && (text is null || text.Length == 0) && typeof(DataTypeAttribute).IsAssignableFrom(validationAttribute.GetType()) || typeof(RegularExpressionAttribute).IsAssignableFrom(validationAttribute.GetType()))
+            if (validationContext.Model is string text && (text is null || text.Length == 0) && (validationAttribute is DataTypeAttribute || validationAttribute is RegularExpressionAttribute))
             {
                 yield break;
             }
@@ -132,7 +132,7 @@ namespace CodeArts.Mvc
                 throw new ArgumentNullException(nameof(validationAttribute));
             }
 
-            if (metadata.Model is string text && (text is null || text.Length == 0) && typeof(DataTypeAttribute).IsAssignableFrom(validationAttribute.GetType()) || typeof(RegularExpressionAttribute).IsAssignableFrom(validationAttribute.GetType()))
+            if (metadata.Model is string text && (text is null || text.Length == 0) && (validationAttribute is DataTypeAttribute || validationAttribute is RegularExpressionAttribute))
             {
                 yield break;
             }
