@@ -407,11 +407,24 @@ namespace CodeArts.ORM.Builders
 
                     if (methodCall.Method.Name == MethodCall.Where)
                     {
-                        SQLWriter.WriteAnd();
+                        bool whereIsNotEmpty = false;
 
-                        BuildWhere = true;
-                        base.Visit(methodCall.Arguments[1]);
-                        BuildWhere = false;
+                        WriteAppendAtFix(() =>
+                        {
+                            if (whereIsNotEmpty)
+                            {
+                                SQLWriter.WriteAnd();
+                            }
+                        }, () =>
+                        {
+                            int length = SQLWriter.Length;
+
+                            BuildWhere = true;
+                            base.Visit(methodCall.Arguments[1]);
+                            BuildWhere = false;
+
+                            whereIsNotEmpty = SQLWriter.Length > length;
+                        });
 
                         node = methodCall.Arguments[0];
 

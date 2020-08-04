@@ -850,17 +850,19 @@ namespace UnitTest
         {
             var y = 100;
             var str = "1";
+            FeiUserWeChatStatusEnum? status = null;
             var user = new UserRepository();
             var details = new UserDetailsRepository();
             var userWx = new UserWeChatRepository();
             var result = from x in user
-                         join d in details on x.Id equals d.Id
-                         join w in userWx on x.Id equals w.Uid
+                         join d in details
+                         on x.Id equals d.Id
+                         join w in userWx.Where(w => w.Status == status) on x.Id equals w.Uid
                          where x.Id > 0 && d.Id < y && x.Username.Contains(str)
                          orderby x.Id, d.Registertime descending
                          select new { x.Id, OldId = x.Id + 1, w.Openid, OOID = d.Id, DDD = y };
 
-            var list = result.Count();
+            var list = result.ToList();
 
             /**
              * SELECT [x].[uid] AS [Id], ([x].[uid] + @__variable_1) AS [OldId], [d].[uid] AS [OOID], @y AS [DDD] 

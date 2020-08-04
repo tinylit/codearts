@@ -5,6 +5,35 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UnitTest.Domain.Entities
 {
+    public enum FeiUserWeChatStatusEnum
+    {
+        /// <summary>
+        /// 删除
+        /// </summary>
+        [Description("已删除")]
+        Deleted = -1,
+        /// <summary>
+        /// 未激活
+        /// </summary>
+        [Description("未激活")]
+        NonActivated = 0,
+        /// <summary>
+        /// 启用
+        /// </summary>
+        [Description("启用")]
+        Enabled = 1,
+        /// <summary>
+        /// 禁用
+        /// </summary>
+        [Description("禁用")]
+        Disabled = 2,
+        /// <summary>
+        /// 异常
+        /// </summary>
+        [Description("异常")]
+        Exception = 3
+    }
+
     /// <summary>
     /// 用户微信消息
     /// </summary>
@@ -33,6 +62,6 @@ namespace UnitTest.Domain.Entities
         /// <summary>
         /// 状态
         /// </summary>
-        public int Status { get; set; }
+        public FeiUserWeChatStatusEnum Status { get; set; }
     }
 }
