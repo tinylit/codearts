@@ -1189,7 +1189,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public int Insert(SQL sql, object param = null, int? commandTimeout = null)
+        protected int Insert(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (ExecuteAuthorize(sql, CommandTypes.Insert))
             {
@@ -1206,7 +1206,16 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public int Update(SQL sql, object param = null, int? commandTimeout = null)
+        int IEditable.Insert(SQL sql, object param, int? commandTimeout) => Insert(sql, param, commandTimeout);
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        protected int Update(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (ExecuteAuthorize(sql, CommandTypes.Update))
             {
@@ -1223,7 +1232,16 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public int Delete(SQL sql, object param = null, int? commandTimeout = null)
+        int IEditable.Update(SQL sql, object param, int? commandTimeout) => Update(sql, param, commandTimeout);
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        protected int Delete(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (ExecuteAuthorize(sql, CommandTypes.Delete))
             {
@@ -1232,6 +1250,15 @@ namespace CodeArts.ORM
 
             throw new NonAuthorizedException();
         }
+
+        /// <summary>
+        /// 执行语句
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="param">参数</param>
+        /// <param name="commandTimeout">超时时间</param>
+        /// <returns></returns>
+        int IEditable.Delete(SQL sql, object param, int? commandTimeout) => Delete(sql, param, commandTimeout);
 
         /// <summary>
         /// 执行SQL验证。

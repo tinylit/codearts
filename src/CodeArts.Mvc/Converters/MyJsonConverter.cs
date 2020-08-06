@@ -383,11 +383,18 @@ namespace CodeArts.Mvc.Converters
             }
 
             string text = Encoding.UTF8.GetString(reader.ValueSpan.ToArray());
+
             try
             {
                 return Convert.ChangeType(text, typeToConvert);
             }
-            catch { }
+            catch (FormatException)
+            {
+                if (typeToConvert == typeof(bool) && int.TryParse(text, out int i))
+                {
+                    return i > 1;
+                }
+            }
 
             return value.CastTo(typeToConvert);
         }

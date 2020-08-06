@@ -50,7 +50,14 @@ namespace CodeArts.Mvc.DependencyInjection
                     service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
 
                     if (service is null || service.ImplementationType is null)
-                        return null;
+                    {
+                        if (serviceType.IsInterface || serviceType.IsAbstract)
+                        {
+                            return null;
+                        }
+
+                        return GetServiceByImplementationType(serviceType);
+                    }
 
                     descriptors.TryAdd(serviceType, descriptor = new ServiceDescriptor(serviceType, service.ImplementationType.MakeGenericType(serviceType.GetGenericArguments()), service.Lifetime));
 
@@ -75,15 +82,21 @@ namespace CodeArts.Mvc.DependencyInjection
                 .FirstOrDefault();
 
             if (constructor is null)
+            {
                 return null;
+            }
 
             var parameters = constructor.GetParameters();
 
             if (parameters.Length == 0)
-                return null;
+            {
+                return constructor.Invoke(new object[0]);
+            }
 
             if (parameters.All(x => serviceDescriptors.Any(y => x.ParameterType == y.ServiceType)))
+            {
                 return constructor.Invoke(parameters.Select(x => GetService(x.ParameterType)).ToArray());
+            }
 
             return null;
         }

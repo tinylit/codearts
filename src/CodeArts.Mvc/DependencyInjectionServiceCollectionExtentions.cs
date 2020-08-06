@@ -45,14 +45,14 @@ namespace CodeArts.Mvc.DependencyInjection
                 .ToList();
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-            var controllerTypes = assemblyTypes
-                .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
-                .ToList();
+            var controllerType = typeof(ControllerBase);
 #else
-            var controllerTypes = assemblyTypes
-                .Where(type => !type.IsAbstract && typeof(ApiController).IsAssignableFrom(type))
-                .ToList();
+            var controllerType = typeof(ApiController);
 #endif
+
+            var controllerTypes = assemblyTypes
+                .Where(type => !type.IsAbstract && controllerType.IsAssignableFrom(type))
+                .ToList();
 
             var parameterTypes = controllerTypes
                 .SelectMany(type =>
@@ -68,7 +68,7 @@ namespace CodeArts.Mvc.DependencyInjection
                 .Distinct()
                 .ToList();
 
-            var types = parameterTypes
+            var implementationTypes = parameterTypes
                 .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
                 .ToList();
 
@@ -97,86 +97,67 @@ namespace CodeArts.Mvc.DependencyInjection
                 }
             });
 
-            parameterTypes.ForEach(type =>
-            {
-                if (type.IsInterface || type.IsAbstract)
+            parameterTypes
+                .ForEach(parameterType =>
                 {
-                    foreach (var implementationType in types.Where(x => type.IsAssignableFrom(x)))
+                    if (services.Any(y => y.ServiceType == parameterType))
                     {
-                        var constructor = implementationType.GetConstructors()
-                        .Where(x => x.IsPublic)
-                        .OrderBy(x => x.GetParameters().Length)
-                        .FirstOrDefault() ?? throw new NotSupportedException($"类型“{implementationType.FullName}”不包含公共构造函数!");
-
-                        var parameters = constructor.GetParameters();
-
-                        if (parameters.Length == 0)
-                        {
-                            services.AddTransient(type, _ => constructor.Invoke(new object[0]));
-
-                            continue;
-                        }
-
-                        var coreTypes = parameters.Where(x => x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
-                            .Select(x => assemblyTypes
-                                .FirstOrDefault(y => y.IsClass && !y.IsAbstract && x.ParameterType.IsAssignableFrom(y))
-                            ).ToList();
-
-
-                        services.AddTransient(type, provider =>
-                        {
-                            return constructor.Invoke(parameters.Select(x =>
-                            {
-                                var value = provider.GetService(x.ParameterType);
-
-                                if (!(value is null)) return value;
-#if NET40
-                                if (x.IsOptional && x.DefaultValue != DBNull.Value)
-#else
-                                if (x.HasDefaultValue)
-#endif
-                                {
-                                    return x.DefaultValue;
-                                }
-
-                                if (isSingleton)
-                                {
-                                    if (dic.TryGetValue(x.ParameterType, out object instance))
-                                    {
-                                        return instance;
-                                    }
-
-                                    if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
-                                    {
-                                        var coreType = coreTypes.FirstOrDefault(y => x.ParameterType.IsAssignableFrom(y)) ?? throw new NotImplementedException($"未找到“{x.ParameterType}”的实现类!");
-
-                                        if (!dic.TryGetValue(coreType, out instance))
-                                        {
-                                            dic.Add(coreType, instance = Activator.CreateInstance(coreType));
-                                        }
-                                    }
-
-                                    dic.Add(x.ParameterType, instance ?? (instance = Activator.CreateInstance(x.ParameterType)));
-
-                                    return instance;
-                                }
-
-                                if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
-                                {
-                                    return Activator.CreateInstance(coreTypes.FirstOrDefault(y => x.ParameterType.IsAssignableFrom(y)) ?? throw new NotImplementedException($"未找到“{x.ParameterType}”的实现类!"));
-                                }
-
-                                return Activator.CreateInstance(x.ParameterType);
-
-                            }).ToArray());
-                        });
+                        return;
                     }
-                }
-                else
-                {
-                    services.AddTransient(type);
-                }
-            });
+
+                    if (!(parameterType.IsInterface || parameterType.IsAbstract))
+                    {
+                        services.AddTransient(parameterType);
+
+                        return;
+                    }
+
+                    foreach (var implementationType in implementationTypes.Where(x => parameterType.IsAssignableFrom(x)))
+                    {
+                        implementationType
+                       .GetConstructors()
+                       .Where(x => x.IsPublic)
+                       .SelectMany(x => x.GetParameters())
+                       .ForEach(x =>
+                       {
+                           var serviceType = x.ParameterType;
+
+                           if (services.Any(y => y.ServiceType == serviceType))
+                           {
+                               return;
+                           }
+
+                           if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
+                           {
+                               foreach (var item in assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y)))
+                               {
+                                   if (isSingleton)
+                                   {
+                                       services.AddSingleton(serviceType, item);
+                                   }
+                                   else
+                                   {
+                                       services.AddTransient(serviceType, item);
+                                   }
+
+                                   break;
+                               }
+                           }
+                           else if (isSingleton)
+                           {
+                               services.AddSingleton(serviceType);
+                           }
+                           else
+                           {
+                               services.AddTransient(serviceType);
+                           }
+                       });
+
+                        services.AddTransient(parameterType, implementationType);
+
+                        break;
+                    }
+                });
 
             return services;
         }

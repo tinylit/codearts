@@ -303,7 +303,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null)
+        protected virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (!QueryAuthorize(sql))
             {
@@ -312,6 +312,8 @@ namespace CodeArts.ORM
 
             return DbProvider.QueryFirstOrDefault<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
         }
+
+        TResult ISelectable.QueryFirstOrDefault<TResult>(SQL sql, object param, int? commandTimeout) => QueryFirstOrDefault<TResult>(sql, param, commandTimeout);
 
         /// <summary>
         /// 查询一条数据
@@ -323,7 +325,7 @@ namespace CodeArts.ORM
         /// <param name="commandTimeout">超时时间</param>
         /// <param name="missingMsg">未查询到数据时，异常信息。</param>
         /// <returns></returns>
-        public virtual TResult QueryFirst<TResult>(SQL sql, object param = null, TResult defaultValue = default, int? commandTimeout = null, string missingMsg = null)
+        protected virtual TResult QueryFirst<TResult>(SQL sql, object param = null, TResult defaultValue = default, int? commandTimeout = null, string missingMsg = null)
         {
             if (!QueryAuthorize(sql))
             {
@@ -333,6 +335,8 @@ namespace CodeArts.ORM
             return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), default, commandTimeout, missingMsg);
         }
 
+        TResult ISelectable.QueryFirst<TResult>(SQL sql, object param, TResult defaultValue, int? commandTimeout, string missingMsg) => QueryFirst<TResult>(sql, param, defaultValue, commandTimeout, missingMsg);
+
         /// <summary>
         /// 查询所有数据
         /// </summary>
@@ -341,7 +345,7 @@ namespace CodeArts.ORM
         /// <param name="param">参数</param>
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
-        public virtual IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null)
+        protected virtual IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null)
         {
             if (!QueryAuthorize(sql))
             {
@@ -351,6 +355,8 @@ namespace CodeArts.ORM
             return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
 
         }
+
+        IEnumerable<TResult> ISelectable.Query<TResult>(SQL sql, object param, int? commandTimeout) => Query<TResult>(sql, param, commandTimeout);
 
         private IEnumerator<T> GetEnumerator()
         {

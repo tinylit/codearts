@@ -1,5 +1,6 @@
 ﻿using CodeArts.DbAnnotations;
 using CodeArts.Emit;
+using CodeArts.Emit.Expressions;
 using CodeArts.Runtime;
 using System;
 using System.Collections;
@@ -16,8 +17,8 @@ namespace CodeArts.ORM
     /// </summary>
     public class DbTypeGen : ITypeGen
     {
-        private static readonly Type[] supportGenericTypes = new Type[] { typeof(IDbMapper<>), typeof(IDbRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEnumerable<>) };
-        private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEnumerable) };
+        private static readonly Type[] supportGenericTypes = new Type[] { typeof(IDbMapper<>), typeof(IDbRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEditable<>), typeof(IEnumerable<>) };
+        private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEditable), typeof(ISelectable), typeof(IEnumerable) };
         private static readonly ConcurrentDictionary<Type, Type> TypeCache = new ConcurrentDictionary<Type, Type>();
         private static readonly MethodInfo DictionaryAdd = typeof(Dictionary<string, object>).GetMethod("Add", BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo MapToMethod = typeof(ObjectExtentions).GetMethod(nameof(ObjectExtentions.MapTo), new Type[] { typeof(object), typeof(Type) });
@@ -45,7 +46,7 @@ namespace CodeArts.ORM
 
                 if (!interfaces.All(x => x.IsGenericType ? supportGenericTypes.Contains(x.GetGenericTypeDefinition()) : supportTypes.Contains(x)))
                 {
-                    throw new NotSupportedException($"支持继承的接口：typeof(IDbMapper<>), typeof(IDbRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEnumerable<>), typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEnumerable)。");
+                    throw new NotSupportedException("支持继承的接口：typeof(IDbMapper<>), typeof(IDbRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEditable<>), typeof(IEnumerable<>), typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEditable), typeof(ISelectable), typeof(IEnumerable)。");
                 }
 
                 var typeArguments = mapperType.GetGenericArguments();
@@ -110,13 +111,23 @@ namespace CodeArts.ORM
 
             var repositoryAttr = storeItem.GetCustomAttribute<RepositoryAttribute>();
 
-            if (!interfaces.Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDbRepository<>)) && storeItem.MethodStores.All(x => x.IsDefined<SelectAttribute>()))
+            if (!storeItem.MethodStores.All(x => x.IsDefined<SelectAttribute>()) || interfaces.Any(x =>
+              {
+                  if (x.IsGenericType)
+                  {
+                      var typeDefinition = x.GetGenericTypeDefinition();
+
+                      return typeDefinition == typeof(IDbRepository<>) || typeDefinition == typeof(IEditable<>);
+                  }
+
+                  return x == typeof(IEditable);
+              }))
             {
-                repositoryType = typeof(Repository<>).MakeGenericType(typeArgument);
+                repositoryType = typeof(DbRepository<>).MakeGenericType(typeArgument);
             }
             else
             {
-                repositoryType = typeof(DbRepository<>).MakeGenericType(typeArgument);
+                repositoryType = typeof(Repository<>).MakeGenericType(typeArgument);
             }
 
             if (repositoryAttr is null)
@@ -178,7 +189,6 @@ namespace CodeArts.ORM
                 });
             });
 
-            var thisArg = Convert(This(repositoryType), typeof(ISelectable));
 
             var typeArgumentItem = MapperRegions.Resolve(typeArgument);
 
@@ -223,6 +233,22 @@ namespace CodeArts.ORM
                         missingMsg = selectAttribute.MissingMsg;
                         goto default;
                     default:
+
+                        ConvertAst thisArg;
+
+                        if (sqlAttribute.CommandType == CommandTypes.Select)
+                        {
+                            thisArg = Convert(This(repositoryType), typeof(ISelectable));
+                        }
+                        else if (sqlAttribute.CommandType == CommandTypes.Insert || sqlAttribute.CommandType == CommandTypes.Update || sqlAttribute.CommandType == CommandTypes.Delete)
+                        {
+                            thisArg = Convert(This(repositoryType), typeof(IEditable));
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"“{sqlAttribute.CommandType}”指令不被支持!");
+                        }
+
                         if (sqlAttribute.CommandType == CommandTypes.Select)
                         {
                             if (x.MemberType.IsGenericType)
@@ -295,10 +321,10 @@ namespace CodeArts.ORM
                         }
                         else
                         {
-                            throw new NotSupportedException($"“{sqlAttribute.CommandType}”只能不被支持!");
+                            throw new NotSupportedException($"“{sqlAttribute.CommandType}”指令不被支持!");
                         }
 
-                        var commandMethod = repositoryType.GetMethod(commandName, new Type[] { typeof(SQL), typeof(object), typeof(int?) });
+                        var commandMethod = typeof(IEditable).GetMethod(commandName, new Type[] { typeof(SQL), typeof(object), typeof(int?) });
 
                         var bodyExcute = Call(commandMethod, thisArg, sql, Convert(variable_params, typeof(object)), timeOut);
 

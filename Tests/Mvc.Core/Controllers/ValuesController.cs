@@ -13,6 +13,7 @@ using System.ComponentModel.DataAnnotations;
 using CodeArts.ORM;
 using Mvc.Core.Domain.Entities;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Mvc.Core.Controllers
 {
@@ -29,7 +30,7 @@ namespace Mvc.Core.Controllers
         private readonly UserRepository user;
 
         /// <inheritdoc />
-        public Dependency(UserRepository user)
+        public Dependency(UserRepository user, ILogger<Dependency> logger)
         {
             this.user = user;
         }
@@ -61,7 +62,7 @@ namespace Mvc.Core.Controllers
         /// </summary>
         /// <param name="userDependency">用户注入</param>
         /// <param name="dependency">依赖注入</param>
-        public ValuesController(IUserDependency userDependency, IDependency dependency)
+        public ValuesController(IUserDependency userDependency, IDependency dependency, UserRepository users)
         {
             this.userDependency = userDependency;
             this.dependency = dependency;
