@@ -235,6 +235,8 @@ namespace CodeArts.Mvc.DependencyInjection
                             {
                                 services.AddTransient(serviceType, implementationType);
                             }
+
+                            continue;
                         }
 
                         flag = false;
