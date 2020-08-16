@@ -96,7 +96,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                     foreach (var parameterInfo in constructorInfo.GetParameters())
                     {
-                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, maxDepth, isSingleton))
+                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 1, maxDepth, isSingleton))
                         {
                             continue;
                         }
@@ -123,65 +123,6 @@ namespace CodeArts.Mvc.DependencyInjection
             return services;
         }
 
-        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int maxDepth, bool isSingleton)
-        {
-            if (services.Any(x => x.ServiceType == serviceType))
-            {
-                return true;
-            }
-
-            if (serviceType.IsGenericType)
-            {
-                var typeDefinition = serviceType.GetGenericTypeDefinition();
-
-                if (services.Any(x => x.ServiceType == typeDefinition))
-                {
-                    return true;
-                }
-            }
-
-            var implementationTypes = (serviceType.IsInterface || serviceType.IsAbstract)
-                ? assemblyTypes
-                    .Where(y => y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y))
-                    .ToList()
-                : new List<Type> { serviceType };
-
-            bool flag = false;
-
-            foreach (var implementationType in implementationTypes)
-            {
-                foreach (var constructorInfo in implementationType.GetConstructors().Where(x => x.IsPublic))
-                {
-                    flag = true;
-
-                    foreach (var parameterInfo in constructorInfo.GetParameters())
-                    {
-                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 1, maxDepth, isSingleton))
-                        {
-                            continue;
-                        }
-
-                        flag = false;
-
-                        break;
-                    }
-
-                    if (flag)
-                    {
-                        break;
-                    }
-                }
-
-                if (flag)
-                {
-                    services.AddTransient(serviceType, implementationType);
-                }
-
-                break;
-            }
-
-            return flag;
-        }
         private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, bool isSingleton)
         {
             if (services.Any(x => x.ServiceType == serviceType))
