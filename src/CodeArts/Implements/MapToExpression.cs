@@ -49,7 +49,7 @@ namespace CodeArts.Implements
 
                 return value;
             }
-            catch (NotSupportedException)
+            catch (InvalidCastException)
             {
                 return def;
             }
@@ -159,31 +159,81 @@ namespace CodeArts.Implements
 
         private static bool EqaulsString(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
-        private static Dictionary<TKey, TValue> ByDataRowToDictionary<TKey, TValue>(DataRow dr, MapToExpression mapTo)
-        => ByDataRowToDictionaryLike<TKey, TValue, Dictionary<TKey, TValue>>(dr, mapTo);
+        private static Dictionary<string, TValue> ByDataRowToDictionaryKeyIsString<TValue>(DataRow dr, MapToExpression mapTo)
+        => ByDataRowToDictionaryKeyIsStringLike<TValue, Dictionary<string, TValue>>(dr, mapTo);
 
-        private static TResult ByDataRowToDictionaryLike<TKey, TValue, TResult>(DataRow dr, MapToExpression mapTo) where TResult : IDictionary<TKey, TValue>
+        private static TResult ByDataRowToDictionaryKeyIsStringLike<TValue, TResult>(DataRow dr, MapToExpression mapTo) where TResult : IDictionary<string, TValue>
         {
             var dic = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
 
             foreach (DataColumn item in dr.Table.Columns)
             {
-                dic.Add((TKey)(object)item.ColumnName, (TValue)dr[item.ColumnName]);
+                dic.Add(item.ColumnName, (TValue)dr[item.Ordinal]);
             }
 
             return dic;
         }
 
-        private static TResult ByDataRowToCollectionLike<TKey, TValue, TResult>(DataRow dr, MapToExpression mapTo) where TResult : ICollection<KeyValuePair<TKey, TValue>>
+        private static TResult ByDataRowToCollectionKeyValuePairKeyIsStringLike<TValue, TResult>(DataRow dr, MapToExpression mapTo) where TResult : ICollection<KeyValuePair<string, TValue>>
         {
-            var dic = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
+            var results = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
 
             foreach (DataColumn item in dr.Table.Columns)
             {
-                dic.Add(new KeyValuePair<TKey, TValue>((TKey)(object)item.ColumnName, (TValue)(object)dr[item.ColumnName]));
+                results.Add(new KeyValuePair<string, TValue>(item.ColumnName, (TValue)dr[item.Ordinal]));
+            }
+
+            return results;
+        }
+
+
+        private static Dictionary<string, TValue> ByIDataRecordToDictionaryKeyIsString<TValue>(IDataRecord dr, MapToExpression mapTo)
+        => ByIDataRecordToDictionaryKeyIsStringLike<TValue, Dictionary<string, TValue>>(dr, mapTo);
+
+        private static TResult ByIDataRecordToDictionaryKeyIsStringLike<TValue, TResult>(IDataRecord dr, MapToExpression mapTo) where TResult : IDictionary<string, TValue>
+        {
+            var dic = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
+
+            for (int i = 0; i < dr.FieldCount; i++)
+            {
+                string name = dr.GetName(i);
+
+                if (dr.IsDBNull(i))
+                {
+                    if (mapTo.AllowNullPropagationMapping.Value)
+                    {
+                        dic.Add(name, default);
+                    }
+                    continue;
+                }
+
+                dic.Add(name, (TValue)dr.GetValue(i));
             }
 
             return dic;
+        }
+
+        private static TResult ByIDataRecordToCollectionKeyValuePairKeyIsStringLike<TValue, TResult>(IDataRecord dr, MapToExpression mapTo) where TResult : ICollection<KeyValuePair<string, TValue>>
+        {
+            var results = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
+
+            for (int i = 0; i < dr.FieldCount; i++)
+            {
+                string name = dr.GetName(i);
+
+                if (dr.IsDBNull(i))
+                {
+                    if (mapTo.AllowNullPropagationMapping.Value)
+                    {
+                        results.Add(new KeyValuePair<string, TValue>(name, default));
+                    }
+                    continue;
+                }
+
+                results.Add(new KeyValuePair<string, TValue>(name, (TValue)dr.GetValue(i)));
+            }
+
+            return results;
         }
 
         private static List<T> ByDataTableToList<T>(DataTable table, MapToExpression mapTo) => ByDataTableToCollectionLike<T, List<T>>(table, mapTo);
@@ -240,32 +290,6 @@ namespace CodeArts.Implements
             }
 
             return default;
-        }
-
-        private static Dictionary<string, object> ByIDataRecordToValueTypeOrStringDictionary(IDataRecord dataRecord, MapToExpression mapTo)
-            => ByIDataRecordToValueTypeOrStringCollectionLike<Dictionary<string, object>>(dataRecord, mapTo);
-
-        private static TResult ByIDataRecordToValueTypeOrStringCollectionLike<TResult>(IDataRecord dataRecord, MapToExpression mapTo) where TResult : ICollection<KeyValuePair<string, object>>
-        {
-            var results = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
-
-            for (int i = 0; i < dataRecord.FieldCount; i++)
-            {
-                string name = dataRecord.GetName(i);
-
-                if (dataRecord.IsDBNull(i))
-                {
-                    if (mapTo.AllowNullPropagationMapping.Value)
-                    {
-                        results.Add(new KeyValuePair<string, object>(name, null));
-                    }
-                    continue;
-                }
-
-                results.Add(new KeyValuePair<string, object>(name, dataRecord.GetValue(i)));
-            }
-
-            return results;
         }
 
         #endregion
@@ -370,7 +394,11 @@ namespace CodeArts.Implements
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(conversionType))
-                return conversionType.IsInterface ? ByDataTableToIEnumarableLike<TResult>(sourceType, conversionType) : ByDataTableToEnumarableLike<TResult>(sourceType, conversionType);
+            {
+                return conversionType.IsInterface
+                    ? ByDataTableToIEnumarableLike<TResult>(sourceType, conversionType)
+                    : ByDataTableToEnumarableLike<TResult>(sourceType, conversionType);
+            }
 
             return source =>
             {
@@ -483,15 +511,17 @@ namespace CodeArts.Implements
 
             foreach (var item in interfaces.Where(x => x.IsGenericType))
             {
+                var typeArguments = item.GetGenericArguments();
                 var typeDefinition = item.GetGenericTypeDefinition();
-                var typeArguments = typeDefinition.GetGenericArguments();
 
                 if (typeDefinition == typeof(ICollection<>))
                 {
                     var typeArgument = typeArguments.First();
 
                     if (typeArgument.IsClass || typeArgument.IsValueType || typeof(IEnumerable).IsAssignableFrom(typeArgument))
+                    {
                         return ByDataTableToCollectionLike<TResult>(sourceType, conversionType, typeArgument);
+                    }
                 }
             }
 
@@ -592,13 +622,17 @@ namespace CodeArts.Implements
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(conversionType))
-                return conversionType.IsInterface ? ByDataRowToIEnumarable<TResult>(sourceType, conversionType) : ByDataRowToEnumarable<TResult>(sourceType, conversionType);
+            {
+                return conversionType.IsInterface
+                    ? ByDataRowToIEnumarable<TResult>(sourceType, conversionType)
+                    : ByDataRowToEnumarable<TResult>(sourceType, conversionType);
+            }
 
             return ByDataRowToObject<TResult>(sourceType, conversionType);
         }
 
         /// <summary>
-        /// 解决 DataRow 到类似 IEnumarable的转换。
+        /// 解决 DataRow 到类似 IEnumarable 的接口转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
@@ -651,13 +685,13 @@ namespace CodeArts.Implements
         }
 
         /// <summary>
-        /// 解决 DataRow 到类似 IEnumarable的转换。
+        /// 解决 DataRow 到类似 IEnumarable 的类转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型</typeparam>
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        private Func<object, TResult> ByDataRowToEnumarable<TResult>(Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByDataRowToEnumarable<TResult>(Type sourceType, Type conversionType)
         {
             var interfaces = conversionType.GetInterfaces();
 
@@ -667,18 +701,18 @@ namespace CodeArts.Implements
 
                 if (type == typeof(IDictionary<,>))
                 {
-                    return ByDataRowToDictionaryLike<TResult>(sourceType, conversionType, type.GetGenericArguments());
+                    return ByDataRowToDictionaryLike<TResult>(sourceType, conversionType, item.GetGenericArguments());
                 }
 
                 if (type == typeof(ICollection<>))
                 {
-                    var typeArguments = type.GetGenericArguments();
+                    var typeArguments = item.GetGenericArguments();
 
                     var typeArgument = typeArguments.First();
 
                     if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                     {
-                        return ByDataRowToCollectionLike<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
+                        return ByDataRowToCollectionKeyValuePairLike<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
                     }
                 }
             }
@@ -694,13 +728,31 @@ namespace CodeArts.Implements
         /// <param name="conversionType">目标类型</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByDataRowToCollectionLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
+        protected virtual Func<object, TResult> ByDataRowToCollectionKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
+        {
+            if (typeArguments[0] == typeof(string))
+            {
+                return ByDataRowToCollectionKeyValuePairKeyIsStringLike<TResult>(sourceType, conversionType, typeArguments[1]);
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 DataRow 到类似 ICollection&lt;KeyValuePair&lt;<see cref="string"/>,TValue&gt;&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByDataRowToCollectionKeyValuePairKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeSelf.GetMethod(nameof(ByDataRowToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataRowToCollectionKeyValuePairKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(typeArguments.Concat(new Type[] { conversionType }).ToArray());
+            var methodG = method.MakeGenericMethod(new Type[] { typeArgument, conversionType });
 
             var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
 
@@ -719,11 +771,29 @@ namespace CodeArts.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataRowToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
         {
+            if (typeArguments[0] == typeof(string))
+            {
+                return ByDataRowToDictionaryKeyIsStringLike<TResult>(sourceType, conversionType, typeArguments[1]);
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 DataRow 到类似 IDictionary&lt;<see cref="string"/>,TValue&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByDataRowToDictionaryKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
+        {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeSelf.GetMethod(nameof(ByDataRowToDictionaryLike), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataRowToDictionaryKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(typeArguments.Concat(new Type[] { conversionType }).ToArray());
+            var methodG = method.MakeGenericMethod(new Type[] { typeArgument, conversionType });
 
             var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
 
@@ -742,11 +812,29 @@ namespace CodeArts.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataRowToDictionary<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
         {
+            if (typeArguments[0] == typeof(string))
+            {
+                return ByDataRowToDictionaryKeyIsString<TResult>(sourceType, conversionType, typeArguments[1]);
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 DataRow 到 Dictionary&lt;<see cref="string"/>,TValue&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByDataRowToDictionaryKeyIsString<TResult>(Type sourceType, Type conversionType, Type typeArgument)
+        {
             var parameterExp = Parameter(typeof(object), "source");
 
-            var method = typeSelf.GetMethod(nameof(ByDataRowToDictionary), BindingFlags.NonPublic | BindingFlags.Static);
+            var method = typeSelf.GetMethod(nameof(ByDataRowToDictionaryKeyIsString), BindingFlags.NonPublic | BindingFlags.Static);
 
-            var methodG = method.MakeGenericMethod(typeArguments);
+            var methodG = method.MakeGenericMethod(typeArgument);
 
             var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
 
@@ -849,10 +937,226 @@ namespace CodeArts.Implements
                 return ByIDataRecordToValueTypeOrString<TResult>(sourceType, conversionType);
             }
 
-            if (typeof(IEnumerable<KeyValuePair<string, object>>).IsAssignableFrom(conversionType))
-                return ByIDataRecordToEnumerableKeyStringValueObjectPair<TResult>(sourceType, conversionType);
+            if (typeof(IEnumerable).IsAssignableFrom(conversionType))
+            {
+                return conversionType.IsInterface
+                    ? ByIDataRecordToIEnumarable<TResult>(sourceType, conversionType)
+                    : ByIDataRecordToEnumarable<TResult>(sourceType, conversionType);
+            }
 
             return ByIDataRecordToObject<TResult>(sourceType, conversionType);
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到类似 IEnumarable 的接口转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToIEnumarable<TResult>(Type sourceType, Type conversionType)
+        {
+            if (conversionType.IsGenericType)
+            {
+                var typeDefinition = conversionType.GetGenericTypeDefinition();
+
+                var typeArguments = conversionType.GetGenericArguments();
+
+                if (typeDefinition == typeof(IDictionary<,>))
+                {
+                    return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
+
+#if !NET40
+                if (typeDefinition == typeof(IReadOnlyDictionary<,>))
+                {
+                    return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
+#endif
+
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
+                {
+                    var typeArgument = typeArguments.First();
+
+                    if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    {
+                        return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
+                    }
+                }
+
+#if !NET40
+                else if (typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+                {
+                    var typeArgument = typeArguments.First();
+
+                    if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    {
+                        return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
+                    }
+                }
+#endif
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到类似 IEnumarable 的类转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToEnumarable<TResult>(Type sourceType, Type conversionType)
+        {
+            var interfaces = conversionType.GetInterfaces();
+
+            foreach (var item in interfaces.Where(x => x.IsGenericType))
+            {
+                var type = item.GetGenericTypeDefinition();
+
+                if (type == typeof(IDictionary<,>))
+                {
+                    return ByIDataRecordToDictionaryLike<TResult>(sourceType, conversionType, item.GetGenericArguments());
+                }
+
+                if (type == typeof(ICollection<>))
+                {
+                    var typeArguments = item.GetGenericArguments();
+
+                    var typeArgument = typeArguments.First();
+
+                    if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                    {
+                        return ByIDataRecordToCollectionKeyValuePairLike<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
+                    }
+                }
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到 Dictionary&lt;TKey,TValue&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToDictionary<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
+        {
+            if (typeArguments[0] == typeof(string))
+            {
+                return ByIDataRecordToDictionaryKeyIsString<TResult>(sourceType, conversionType, typeArguments[1]);
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到 Dictionary&lt;<see cref="string"/>,TValue&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToDictionaryKeyIsString<TResult>(Type sourceType, Type conversionType, Type typeArgument)
+        {
+            var parameterExp = Parameter(typeof(object), "source");
+
+            var method = typeSelf.GetMethod(nameof(ByIDataRecordToDictionaryKeyIsString), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var methodG = method.MakeGenericMethod(typeArgument);
+
+            var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
+
+            var lamdaExp = Lambda<Func<object, TResult>>(Convert(bodyExp, conversionType), parameterExp);
+
+            return lamdaExp.Compile();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
+        {
+            if (typeArguments[0] == typeof(string))
+            {
+                return ByIDataRecordToDictionaryKeyIsStringLike<TResult>(sourceType, conversionType, typeArguments[1]);
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到类似 IDictionary&lt;<see cref="string"/>,TValue&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToDictionaryKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
+        {
+            var parameterExp = Parameter(typeof(object), "source");
+
+            var method = typeSelf.GetMethod(nameof(ByIDataRecordToDictionaryKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var methodG = method.MakeGenericMethod(new Type[] { typeArgument, conversionType });
+
+            var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
+
+            var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
+
+            return lamdaExp.Compile();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到类似 ICollection&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToCollectionKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
+        {
+            if (typeArguments[0] == typeof(string))
+            {
+                return ByIDataRecordToCollectionKeyValuePairKeyIsStringLike<TResult>(sourceType, conversionType, typeArguments[1]);
+            }
+
+            throw new InvalidCastException();
+        }
+
+        /// <summary>
+        /// 解决 IDataRecord 到类似 ICollection&lt;KeyValuePair&lt;<see cref="string"/>,TValue&gt;&gt; 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型</typeparam>
+        /// <param name="sourceType">源类型</param>
+        /// <param name="conversionType">目标类型</param>
+        /// <param name="typeArgument">泛型【TValue】约束</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByIDataRecordToCollectionKeyValuePairKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
+        {
+            var parameterExp = Parameter(typeof(object), "source");
+
+            var method = typeSelf.GetMethod(nameof(ByIDataRecordToCollectionKeyValuePairKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var methodG = method.MakeGenericMethod(new Type[] { typeArgument, conversionType });
+
+            var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
+
+            var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
+
+            return lamdaExp.Compile();
         }
 
         /// <summary>
@@ -944,53 +1248,6 @@ namespace CodeArts.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
 
             return lamdaExp.Compile();
-        }
-
-        /// <summary>
-        /// 解决 IDataRecord 到 IEnumerable&lt;KeyValuePair&lt;string, object&gt;&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型</typeparam>
-        /// <param name="sourceType">源类型</param>
-        /// <param name="conversionType">目标类型</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIDataRecordToEnumerableKeyStringValueObjectPair<TResult>(Type sourceType, Type conversionType)
-        {
-            if (conversionType.IsInterface || conversionType.IsClass && conversionType == typeof(Dictionary<string, object>))
-            {
-                if (conversionType.IsClass || conversionType.IsAssignableFrom(typeof(Dictionary<string, object>)))
-                {
-                    var parameterExp = Parameter(typeof(object), "source");
-
-                    var method = typeSelf.GetMethod(nameof(ByIDataRecordToValueTypeOrStringDictionary), BindingFlags.NonPublic | BindingFlags.Static);
-
-                    var bodyExp = Call(null, method, Convert(parameterExp, sourceType), Constant(this));
-
-                    var lamdaExp =
-                        conversionType.IsClass ?
-                        Lambda<Func<object, TResult>>(bodyExp, parameterExp)
-                        :
-                        Lambda<Func<object, TResult>>(Convert(bodyExp, conversionType), parameterExp);
-
-                    return lamdaExp.Compile();
-                }
-            }
-
-            if (conversionType.IsClass && typeof(ICollection<KeyValuePair<string, object>>).IsAssignableFrom(conversionType))
-            {
-                var parameterExp = Parameter(typeof(object), "source");
-
-                var method = typeSelf.GetMethod(nameof(ByIDataRecordToValueTypeOrStringCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
-
-                var methodG = method.MakeGenericMethod(conversionType);
-
-                var bodyExp = Call(null, methodG, Convert(parameterExp, sourceType), Constant(this));
-
-                var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
-
-                return lamdaExp.Compile();
-            }
-
-            throw new NotSupportedException();
         }
 
         /// <summary>

@@ -128,7 +128,7 @@ namespace CodeArts
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByString<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByString<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 任意类型 到 String 的转换。
@@ -142,7 +142,7 @@ namespace CodeArts
             var toString = sourceType.GetMethod("ToString", new Type[0] { });
 
             if (toString.DeclaringType == typeof(object))
-                throw new NotSupportedException();
+                throw new InvalidCastException();
 
             var parameterExp = Parameter(sourceType, "source");
 
@@ -170,7 +170,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 任意类型 到 值类型的转换。
@@ -179,7 +179,7 @@ namespace CodeArts
         /// <param name="sourceType">源数据类型</param>
         /// <param name="conversionType">目标数据类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ToValueType<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ToValueType<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 值类型 到 任意类型的转换。
@@ -188,7 +188,7 @@ namespace CodeArts
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByValueType<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByValueType<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         #region 可迭代类型
 
@@ -273,7 +273,7 @@ namespace CodeArts
         /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToCollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToCollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
@@ -283,7 +283,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
@@ -293,7 +293,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 ICollection&lt;T2&gt; 的转换。
@@ -303,7 +303,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T2】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IEnumarable&lt;T2&gt; 的转换。
@@ -313,7 +313,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T2】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 ICollection&lt;T2&gt; 的转换。
@@ -323,7 +323,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T2】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 IEnumarable&lt;T&gt; 到 未知泛型接口的转换。
@@ -333,7 +333,7 @@ namespace CodeArts
         /// <param name="conversionType">目标类型</param>
         /// <param name="typeArguments">泛型约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         #endregion
 
@@ -345,7 +345,7 @@ namespace CodeArts
         /// <param name="conversionType">目标类型</param>
         /// <param name="typeArguments">泛型约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToAbstract<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToAbstract<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 IEnumarable&lt;T&gt; 到 抽象类的转换。
@@ -354,7 +354,7 @@ namespace CodeArts
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToAbstract<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToAbstract<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         #endregion
 
@@ -473,7 +473,7 @@ namespace CodeArts
         /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToICollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToICollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类 到类似 ICollection&lt;T&gt; 类型的转换。
@@ -483,7 +483,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到 类似 IEnumarable&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 类型的转换。
@@ -494,7 +494,7 @@ namespace CodeArts
         /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToIEnumarableKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToIEnumarableKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类 到类似 IEnumarable&lt;T&gt; 类型的转换。
@@ -504,7 +504,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类 到 未知泛型接口的转换。
@@ -514,7 +514,7 @@ namespace CodeArts
         /// <param name="conversionType">目标类型</param>
         /// <param name="typeArguments">泛型约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
         #endregion
 
         /// <summary>
@@ -525,7 +525,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
@@ -535,7 +535,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到 泛型抽象类的转换。
@@ -545,7 +545,7 @@ namespace CodeArts
         /// <param name="conversionType">目标类型</param>
         /// <param name="typeArguments">泛型约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToAbstract<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToAbstract<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到 抽象类的转换。
@@ -554,7 +554,7 @@ namespace CodeArts
         /// <param name="sourceType">源类型</param>
         /// <param name="conversionType">目标类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToAbstract<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToAbstract<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到类似 ICollection&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 的转换。
@@ -565,7 +565,7 @@ namespace CodeArts
         /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCollectionKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToCollectionKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到类似 ICollection&lt;T&gt; 的转换。
@@ -575,7 +575,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到类似 IEnumerable&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 的转换。
@@ -586,7 +586,7 @@ namespace CodeArts
         /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束</param>
         /// <param name="typeArguments">泛型【TKey,TValue】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToEnumerableKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToEnumerableKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到类似 IEnumerable&lt;T&gt; 的转换。
@@ -596,7 +596,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArgument">泛型【T】约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToEnumerableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToEnumerableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到 泛型对象的转换。
@@ -606,7 +606,7 @@ namespace CodeArts
         /// <param name="conversionType">目标数据类型</param>
         /// <param name="typeArguments">泛型约束</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 对象 到 任意对象 的操作，
@@ -615,7 +615,7 @@ namespace CodeArts
         /// <param name="sourceType">源数据类型</param>
         /// <param name="conversionType">目标数据类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         /// <summary>
         /// 解决 类似 IEnumarable&lt;T&gt; 到 类 的转换。
@@ -624,7 +624,7 @@ namespace CodeArts
         /// <param name="sourceType">源数据类型</param>
         /// <param name="conversionType">目标数据类型</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToCommon<TResult>(Type sourceType, Type conversionType) => throw new NotSupportedException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToCommon<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         /// <summary>
         /// 添加指定目标类型工厂(同种目标类型第一次配置生效).

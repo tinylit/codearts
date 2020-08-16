@@ -39,10 +39,6 @@ namespace CodeArts.Implements
             {
                 return def;
             }
-            catch (NotSupportedException)
-            {
-                return def;
-            }
             catch (ApplicationException)
             {
                 return def;

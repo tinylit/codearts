@@ -106,6 +106,15 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         [NonAction]
         public DResult<T> Error<T>(string errorMsg, int statusCode = StatusCodes.Error) => DResult.Error<T>(errorMsg, statusCode);
+
+        /// <summary>
+        /// 失败
+        /// </summary>
+        /// <param name="errorMsg">错误信息</param>
+        /// <param name="statusCode">状态码</param>
+        /// <returns></returns>
+        [NonAction]
+        public DResults<T> Errors<T>(string errorMsg, int statusCode = StatusCodes.Error) => DResult.Errors<T>(errorMsg, statusCode);
     }
 
     /// <summary>

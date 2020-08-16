@@ -6,13 +6,14 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Tiny Lit</Authors>
-    <Version>3.6.1.12</Version>
+    <Version>3.6.2</Version>
 	  <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+    <Description>Provide SqlServer support for ORM.</Description>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net451'">

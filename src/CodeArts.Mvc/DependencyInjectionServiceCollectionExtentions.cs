@@ -35,44 +35,33 @@ namespace CodeArts.Mvc.DependencyInjection
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
         {
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-            var assemblys = AssemblyFinder.Find("di:pattern".Config("*"));
+            string pattern = "di:pattern".Config("*");
 #else
-            var assemblys = AssemblyFinder.Find("di-pattern".Config("*"));
+            string pattern = "di-pattern".Config("*");
 #endif
 
+            var assemblys = AssemblyFinder.Find(pattern);
+
             var assemblyTypes = assemblys
-                .SelectMany(x => x.GetTypes().Where(y => y.IsClass || y.IsInterface))
+                .SelectMany(x => x.GetTypes())
+                .Where(x => x.IsClass || x.IsInterface)
                 .ToList();
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
-            var controllerType = typeof(ControllerBase);
+            var controllerBaseType = typeof(ControllerBase);
 #else
-            var controllerType = typeof(ApiController);
+            var controllerBaseType = typeof(ApiController);
 #endif
 
             var controllerTypes = assemblyTypes
-                .Where(type => !type.IsAbstract && controllerType.IsAssignableFrom(type))
+                .Where(x => x.IsClass && !x.IsAbstract && controllerBaseType.IsAssignableFrom(x))
                 .ToList();
 
-            var parameterTypes = controllerTypes
-                .SelectMany(type =>
-                {
-                    return type.GetConstructors()
-                    .Where(x => x.IsPublic)
-                    .SelectMany(x => x.GetParameters()
-                        .Select(y => y.ParameterType)
-                    );
-
-                })
-                .Where(x => x.IsClass || x.IsInterface)
-                .Distinct()
-                .ToList();
-
-            var implementationTypes = parameterTypes
-                .SelectMany(x => assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && x.IsAssignableFrom(y)))
-                .ToList();
-
-            var dic = new Dictionary<Type, object>();
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+            int maxDepth = "di:depth".Config(5);
+#else
+            int maxDepth = "di-depth".Config(5);
+#endif
 
 #if NETSTANDARD2_0 || NETCOREAPP3_1
             bool isSingleton = "di:singleton".Config(true);
@@ -97,69 +86,184 @@ namespace CodeArts.Mvc.DependencyInjection
                 }
             });
 
-            parameterTypes
-                .ForEach(parameterType =>
+            foreach (var controllerType in controllerTypes)
+            {
+                bool flag = false;
+
+                foreach (var constructorInfo in controllerType.GetConstructors().Where(x => x.IsPublic))
                 {
-                    if (services.Any(y => y.ServiceType == parameterType))
+                    flag = true;
+
+                    foreach (var parameterInfo in constructorInfo.GetParameters())
                     {
-                        return;
-                    }
+                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, maxDepth, isSingleton))
+                        {
+                            continue;
+                        }
 
-                    if (!(parameterType.IsInterface || parameterType.IsAbstract))
-                    {
-                        services.AddTransient(parameterType);
-
-                        return;
-                    }
-
-                    foreach (var implementationType in implementationTypes.Where(x => parameterType.IsAssignableFrom(x)))
-                    {
-                        implementationType
-                       .GetConstructors()
-                       .Where(x => x.IsPublic)
-                       .SelectMany(x => x.GetParameters())
-                       .ForEach(x =>
-                       {
-                           var serviceType = x.ParameterType;
-
-                           if (services.Any(y => y.ServiceType == serviceType))
-                           {
-                               return;
-                           }
-
-                           if (x.ParameterType.IsInterface || x.ParameterType.IsAbstract)
-                           {
-                               foreach (var item in assemblyTypes.Where(y => y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y)))
-                               {
-                                   if (isSingleton)
-                                   {
-                                       services.AddSingleton(serviceType, item);
-                                   }
-                                   else
-                                   {
-                                       services.AddTransient(serviceType, item);
-                                   }
-
-                                   break;
-                               }
-                           }
-                           else if (isSingleton)
-                           {
-                               services.AddSingleton(serviceType);
-                           }
-                           else
-                           {
-                               services.AddTransient(serviceType);
-                           }
-                       });
-
-                        services.AddTransient(parameterType, implementationType);
+                        flag = false;
 
                         break;
                     }
-                });
+
+                    if (flag)
+                    {
+                        break;
+                    }
+                }
+
+                if (flag)
+                {
+                    continue;
+                }
+
+                throw new TypeLoadException($"Controller '{controllerType.FullName}' cannot be created and the current maximum dependency injection depth is {maxDepth}.");
+            }
 
             return services;
+        }
+
+        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int maxDepth, bool isSingleton)
+        {
+            if (services.Any(x => x.ServiceType == serviceType))
+            {
+                return true;
+            }
+
+            if (serviceType.IsGenericType)
+            {
+                var typeDefinition = serviceType.GetGenericTypeDefinition();
+
+                if (services.Any(x => x.ServiceType == typeDefinition))
+                {
+                    return true;
+                }
+            }
+
+            var implementationTypes = (serviceType.IsInterface || serviceType.IsAbstract)
+                ? assemblyTypes
+                    .Where(y => y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y))
+                    .ToList()
+                : new List<Type> { serviceType };
+
+            bool flag = false;
+
+            foreach (var implementationType in implementationTypes)
+            {
+                foreach (var constructorInfo in implementationType.GetConstructors().Where(x => x.IsPublic))
+                {
+                    flag = true;
+
+                    foreach (var parameterInfo in constructorInfo.GetParameters())
+                    {
+                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 1, maxDepth, isSingleton))
+                        {
+                            continue;
+                        }
+
+                        flag = false;
+
+                        break;
+                    }
+
+                    if (flag)
+                    {
+                        break;
+                    }
+                }
+
+                if (flag)
+                {
+                    services.AddTransient(serviceType, implementationType);
+                }
+
+                break;
+            }
+
+            return flag;
+        }
+        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, bool isSingleton)
+        {
+            if (services.Any(x => x.ServiceType == serviceType))
+            {
+                return true;
+            }
+
+            if (serviceType.IsGenericType)
+            {
+                var typeDefinition = serviceType.GetGenericTypeDefinition();
+
+                if (services.Any(x => x.ServiceType == typeDefinition))
+                {
+                    return true;
+                }
+            }
+
+            if (depth >= maxDepth)
+            {
+                return false;
+            }
+
+            var implementationTypes = (serviceType.IsInterface || serviceType.IsAbstract)
+                ? assemblyTypes
+                    .Where(y => y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y))
+                    .ToList()
+                : new List<Type> { serviceType };
+
+            bool flag = false;
+
+            foreach (var implementationType in implementationTypes)
+            {
+                foreach (var constructorInfo in implementationType.GetConstructors().Where(x => x.IsPublic))
+                {
+                    flag = true;
+
+                    foreach (var parameterInfo in constructorInfo.GetParameters())
+                    {
+                        if (parameterInfo.IsOptional)
+                        {
+                            continue;
+                        }
+
+                        if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, isSingleton))
+                        {
+                            if (isSingleton)
+                            {
+                                services.AddSingleton(serviceType, implementationType);
+                            }
+                            else
+                            {
+                                services.AddTransient(serviceType, implementationType);
+                            }
+                        }
+
+                        flag = false;
+
+                        break;
+                    }
+
+                    if (flag)
+                    {
+                        break;
+                    }
+                }
+
+                if (flag)
+                {
+                    if (isSingleton)
+                    {
+                        services.AddSingleton(serviceType, implementationType);
+                    }
+                    else
+                    {
+                        services.AddTransient(serviceType, implementationType);
+                    }
+
+                    break;
+                }
+            }
+
+            return flag;
         }
     }
 }
