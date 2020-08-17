@@ -96,7 +96,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                     foreach (var parameterInfo in constructorInfo.GetParameters())
                     {
-                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 1, maxDepth, isSingleton))
+                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 0, maxDepth, isSingleton))
                         {
                             continue;
                         }
