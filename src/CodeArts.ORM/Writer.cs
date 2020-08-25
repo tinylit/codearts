@@ -18,19 +18,17 @@ namespace CodeArts.ORM
 
         private readonly ISQLCorrectSettings settings;
 
-        private int ParameterIndex = 0;
+        private int _parameterIndex = 0;
+
         /// <summary>
         /// 参数名称
         /// </summary>
-        protected virtual string ParameterName
-        {
-            get
-            {
-                ParameterIndex++;
+        protected virtual string ParameterName => string.Concat("__variable_", ParameterIndex.ToString());
 
-                return string.Concat("__variable_", ParameterIndex.ToString());
-            }
-        }
+        /// <summary>
+        /// 参数索引。
+        /// </summary>
+        protected virtual int ParameterIndex => ++_parameterIndex;
 
         /// <summary>
         /// 写入位置
@@ -186,29 +184,23 @@ namespace CodeArts.ORM
                 return;
             }
 
-            string paramterName = settings.ParamterName(name);
+            string argName = name;
 
-            if (!Parameters.TryGetValue(name, out object data))
+            while (Parameters.TryGetValue(argName, out object data))
             {
-                Write(paramterName);
+                if (Equals(value, data))
+                {
+                    Write(settings.ParamterName(argName));
 
-                Parameters.Add(name, value);
+                    return;
+                }
 
-                return;
+                argName = string.Concat(name, "_", ParameterIndex.ToString());
             }
 
-            if (Equals(value, data))
-            {
-                Write(paramterName);
+            Write(settings.ParamterName(argName));
 
-                return;
-            }
-
-            ParameterIndex++;
-
-            Write(settings.ParamterName(string.Concat(name, "_", ParameterIndex.ToString())));
-
-            Parameters.Add(name, value);
+            Parameters.Add(argName, value);
         }
 
         /// <summary>

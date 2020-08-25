@@ -17,7 +17,7 @@ namespace CodeArts.ORM.MySql
 
         private static readonly Regex PatternColumn = new Regex("select\\s+(?<column>((?!select|where).)+(select((?!from|select).)+from((?!from|select).)+)*((?!from|select).)*)\\s+from\\s+", RegexOptions.IgnoreCase);
 
-        private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\[\w+\]\.)*(?<name>(\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
+        private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(`\w+`\.)*(?<name>(`\w+`))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
 
         /// <summary>
         /// 字符串截取。 SUBSTRING

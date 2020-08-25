@@ -1,9 +1,7 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 
 namespace CodeArts.Mvc.Validators.DataAnnotations
 {
@@ -12,8 +10,12 @@ namespace CodeArts.Mvc.Validators.DataAnnotations
     /// for attributes which derive from <see cref="ValidationAttribute"/>. It also provides
     /// a validator for types which implement <see cref="IValidatableObject"/>.
     /// </summary>
-    internal sealed class DataAnnotationsModelValidatorProvider : IModelValidatorProvider
+    public sealed class DataAnnotationsModelValidatorProvider : IModelValidatorProvider
     {
+        /// <summary>
+        /// 创建验证器。
+        /// </summary>
+        /// <param name="context"></param>
         public void CreateValidators(ModelValidatorProviderContext context)
         {
             context.Results?.ForEach(validatorItem =>

@@ -27,10 +27,13 @@ namespace CodeArts.ORM
             /// <summary>
             /// 解决方案。
             /// </summary>
-            public Func<AdapterFormatter<T>, Match, string> Convert { get; set; }
+            public Func<T, Match, string> Convert { get; set; }
         }
 
         private static readonly List<Adapter> AdapterCache = new List<Adapter>();
+
+        private static MethodInfo GetMethodInfo(Func<Match, string, Group> func) => func.Method;
+        private static MethodInfo GetMethodInfo(Func<Group, bool> func) => func.Method;
 
         /// <summary>
         /// 获取分组信息
@@ -38,7 +41,7 @@ namespace CodeArts.ORM
         /// <param name="match">匹配项</param>
         /// <param name="name">名称</param>
         /// <returns></returns>
-        private static Group GetGroup(Match match, string name) => match.Groups[name[0] == '@' ? name.Substring(1) : name];
+        private static Group GetGroup(Match match, string name) => match.Groups[name];
 
         /// <summary>
         /// 判断匹配的长度是否唯一。
@@ -52,23 +55,22 @@ namespace CodeArts.ORM
         /// </summary>
         static AdapterFormatter()
         {
-            var type = typeof(T);
+            var contextType = typeof(T);
 
-            var typeStore = RuntimeTypeCache.Instance.GetCache(type);
+            var typeStore = RuntimeTypeCache.Instance.GetCache(contextType);
 
             var matchType = typeof(Match);
             var groupType = typeof(Group);
-            var contextType = typeof(AdapterFormatter<T>);
 
             var contextExp = Parameter(contextType, "context");
             var parameterExp = Parameter(matchType, "item");
 
-            var getGroupMethod = contextType.GetMethod(nameof(GetGroup), BindingFlags.NonPublic | BindingFlags.Static);
+            var getGroupMethod = GetMethodInfo(GetGroup);
 
-            var checkGroupMethod = contextType.GetMethod(nameof(CheckGroup), BindingFlags.NonPublic | BindingFlags.Static);
+            var checkGroupMethod = GetMethodInfo(CheckGroup);
 
             typeStore.MethodStores
-                .Where(x => x.IsPublic && !x.IsStatic && x.Member.DeclaringType == type && x.Member.ReturnType == typeof(string) && x.ParameterStores.Count > 0)
+                .Where(x => x.IsPublic && !x.IsStatic && x.Member.DeclaringType == contextType && x.Member.ReturnType == typeof(string) && x.ParameterStores.Count > 0)
                 .OrderByDescending(x => x.ParameterStores.Count)
                 .ForEach(x =>
                 {
@@ -134,9 +136,9 @@ namespace CodeArts.ORM
                         adapter.CanConvert = invoke.Compile();
                     }
 
-                    expressions.Add(Call(Convert(contextExp, type), x.Member, arguments));
+                    expressions.Add(Call(contextExp, x.Member, arguments));
 
-                    var lamdaExp = Lambda<Func<AdapterFormatter<T>, Match, string>>(Block(variables, expressions), contextExp, parameterExp);
+                    var lamdaExp = Lambda<Func<T, Match, string>>(Block(variables, expressions), contextExp, parameterExp);
 
                     adapter.Convert = lamdaExp.Compile();
 
@@ -179,7 +181,7 @@ namespace CodeArts.ORM
             {
                 if (mvc.CanConvert(match))
                 {
-                    return mvc.Convert(this, match);
+                    return mvc.Convert(this as T, match);
                 }
             }
 
