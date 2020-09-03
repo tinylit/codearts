@@ -1012,5 +1012,15 @@ WHERE
             var str = sql.ToString(settings);
 
         }
+
+        [TestMethod]
+        public void InsertSQL()
+        {
+            var settings = new SqlServer.SqlServerCorrectSettings();
+
+            SQL sql = new SQL("INSERT INTO fphzhd_a VALUES (@ddbh,'1', @invoiceNo, Convert(decimal(14,4),@jshj), convert(varchar(10),convert(datetime,@kprq),120),@invoiceCode, @pdf,0);");
+
+            var str = sql.ToString(settings);
+        }
     }
 }

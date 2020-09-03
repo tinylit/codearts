@@ -265,7 +265,7 @@ namespace CodeArts.ORM
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)(?!\bfrom\b)\w+)")
                     .Append(check) //? *[value]
-                .Append(@"|\(")
+                .Append(@"|(?<!convert[\x20\t\r\n\f]*)\(")
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
