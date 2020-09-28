@@ -92,9 +92,10 @@ namespace CodeArts.Tests
                 .AppendQueryString("?account=ljl&password=liujialin&debug=true")
                 .TryThen((requestable, e) =>
                 {
+                    requestable.AppendQueryString("debug=false");
                     //对请求的参数或Headers进行调整。如：令牌认证。 requestable.AppendHeader("Authorization", "{token}");
                 })
-                .If(e => e.Response is HttpWebResponse response && response.StatusCode == HttpStatusCode.Unauthorized) // 当认真过期时，才会执行上一个TryThen。
+                .If(e => true) // 当认真过期时，才会执行上一个TryThen。
                 .And(e => true)
                 .TryIf(e => e.Status == WebExceptionStatus.Timeout)
                 .Or(e => true)

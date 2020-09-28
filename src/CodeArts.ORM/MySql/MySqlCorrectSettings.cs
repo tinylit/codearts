@@ -39,12 +39,12 @@ namespace CodeArts.ORM.MySql
         /// </summary>
         public bool IndexOfSwapPlaces => true;
 
-        private List<IVisitter> visitters;
+        private List<IVisitor> visitters;
 
         /// <summary>
         /// 访问器
         /// </summary>
-        public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
+        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
 
         /// <summary>
         /// MySQL
@@ -69,6 +69,40 @@ namespace CodeArts.ORM.MySql
         /// <param name="name">名称</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("?", name);
+
+        /// <summary>
+        /// SQL。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        /// <param name="orderBy">排序。</param>
+        /// <returns></returns>
+        public virtual string ToSQL(string sql, string orderBy) => string.Concat(sql, orderBy);
+
+        /// <summary>
+        /// SQL。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        /// <param name="take">获取“<paramref name="take"/>”条数据。</param>
+        /// <param name="skip">跳过“<paramref name="skip"/>”条数据。</param>
+        /// <param name="orderBy">排序。</param>
+        /// <returns></returns>
+        public virtual string ToSQL(string sql, int take, int skip, string orderBy)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(sql)
+                .Append(" LIMIT ");
+
+            if (skip > 0)
+            {
+                sb.Append(skip)
+                    .Append(",");
+            }
+
+            return sb.Append(take)
+                .ToString();
+        }
+
         /// <summary>
         /// 分页
         /// </summary>
@@ -127,7 +161,7 @@ namespace CodeArts.ORM.MySql
         /// <param name="columns">以“,”分割的列集合</param>
         /// <returns></returns>
         protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
-        
+
         /// <summary>
         /// 分页（交集、并集等）
         /// </summary>

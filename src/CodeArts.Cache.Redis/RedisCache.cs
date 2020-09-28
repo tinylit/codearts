@@ -134,7 +134,9 @@ namespace CodeArts.Cache
                 throw new ArgumentNullException(nameof(keys));
             }
 
-            var list = keys.Distinct().ToList();
+            var list = keys
+                .Distinct()
+                .ToList();
 
             if (list.Count == 0)
             {

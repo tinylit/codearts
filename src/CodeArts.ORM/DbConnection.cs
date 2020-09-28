@@ -367,6 +367,7 @@ namespace CodeArts.ORM
         private DateTime lastUseTime;
         private DateTime lastActiveTime;
         private int refCount = 0;
+        private int refUseCount = 1;
         private readonly IDbConnection _connection; //数据库连接
         private readonly double? connectionHeartbeat; //心跳
         private readonly List<DbCommand> commands = new List<DbCommand>();
@@ -445,7 +446,15 @@ namespace CodeArts.ORM
             switch (State)
             {
                 case ConnectionState.Closed:
-                    _connection.Open();
+                    try
+                    {
+                        _connection.Open();
+                    }
+                    catch (Exception e)
+                    {
+
+                        throw e;
+                    }
                     break;
                 case ConnectionState.Connecting:
 
@@ -549,16 +558,17 @@ namespace CodeArts.ORM
                     return false;
                 }
 
-                Interlocked.CompareExchange(ref refCount, 0, 0);
-
-                return refCount == 0;
+                return Interlocked.CompareExchange(ref refCount, 0, 0) == 0;
             }
         }
 
         /// <summary>
         /// 释放器不释放
         /// </summary>
-        void IDisposable.Dispose() { }
+        void IDisposable.Dispose()
+        {
+            Interlocked.Increment(ref refUseCount);
+        }
 
         /// <summary>
         /// 复用。
@@ -566,6 +576,8 @@ namespace CodeArts.ORM
         /// <returns></returns>
         public IDbConnection ReuseConnection()
         {
+            Interlocked.Increment(ref refUseCount);
+
             lastUseTime = DateTime.Now;
 
             return this;
@@ -582,7 +594,7 @@ namespace CodeArts.ORM
         /// <param name="disposing">确认释放</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && Interlocked.CompareExchange(ref refUseCount, 0, 0) == 0)
             {
                 _connection?.Close();
                 _connection?.Dispose();

@@ -60,7 +60,6 @@ namespace System.Linq
             Expression.Constant(errMsg)
         }));
 
-
         /// <summary>
         /// SQL
         /// </summary>
@@ -74,22 +73,26 @@ namespace System.Linq
                 throw new ArgumentNullException(nameof(source));
             }
 
-            IDbRepositoryProvider provider = ProviderCache.GetOrAdd(source.GetType(), type =>
+            IDbRepositoryProvider provider = ProviderCache.GetOrAdd(source.GetType(), repositoryType =>
             {
-                if (!typeof(Repository<TSource>).IsAssignableFrom(type))
+                if (!typeof(Repository<TSource>).IsAssignableFrom(repositoryType))
                 {
                     throw new NotImplementedException("未实现数据仓储!");
                 }
 
-                var info = type.GetProperty("DbProvider", BindingFlags.Instance | BindingFlags.NonPublic);
+                var info = repositoryType.GetProperty("DbProvider", BindingFlags.Instance | BindingFlags.NonPublic);
 
                 if (info is null)
+                {
                     throw new NullReferenceException("DbProvider");
+                }
 
                 var value = info.GetValue(source, null);
 
                 if (value is null)
+                {
                     throw new NullReferenceException("DbProvider");
+                }
 
                 if (value is IDbRepositoryProvider dbRepositoryProvider)
                 {
@@ -99,11 +102,11 @@ namespace System.Linq
                 throw new NullReferenceException("DbProvider");
             });
 
-            using (var builder = provider.Create())
+            using (var visitor = provider.Create())
             {
-                builder.Evaluate(source.Expression);
+                visitor.Startup(source.Expression);
 
-                return builder.ToSQL();
+                return visitor.ToSQL();
             }
         }
     }

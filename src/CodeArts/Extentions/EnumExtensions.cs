@@ -21,7 +21,9 @@ namespace System
             var type = typeof(TEnum);
 
             if (!type.IsEnum)
+            {
                 throw new ArgumentException("参数类型不是枚举!");
+            }
 
             var typeStore = RuntimeTypeCache.Instance.GetCache<TEnum>();
 
@@ -32,7 +34,9 @@ namespace System
                 var values = enumStr.Split(',').Select(x => x.Trim());
 
                 if (!values.All(x => typeStore.FieldStores.Any(y => string.Equals(y.Name, x, StringComparison.InvariantCultureIgnoreCase))))
+                {
                     return "枚举错误";
+                }
 
                 return string.Join("|", typeStore.FieldStores
                     .Where(x => values.Any(y => string.Equals(y, x.Name, StringComparison.InvariantCultureIgnoreCase)))
@@ -47,7 +51,9 @@ namespace System
             var field = typeStore.FieldStores.FirstOrDefault(x => x.Name == enumStr);
 
             if (field is null)
+            {
                 return "枚举错误";
+            }
 
             var desc = field.GetCustomAttribute<DescriptionAttribute>();
 

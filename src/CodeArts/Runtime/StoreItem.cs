@@ -242,8 +242,6 @@ namespace CodeArts.Runtime
                 {
                     var namingAttr = NamingAttribute;
 
-                    string name = namingAttr?.Name ?? Name;
-
                     if (namingAttr is null)
                     {
                         var declaringType = Member.DeclaringType;
@@ -257,15 +255,19 @@ namespace CodeArts.Runtime
                         {
                             namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute), false) ?? (NamingAttribute)Attribute.GetCustomAttribute(reflectedType, typeof(NamingAttribute));
                         }
-                    }
 
-                    if (namingAttr is null)
-                    {
-                        _Naming = name;
+                        if (namingAttr is null)
+                        {
+                            _Naming = Name;
+                        }
+                        else
+                        {
+                            _Naming = Name.ToNamingCase(namingAttr.NamingType);
+                        }
                     }
                     else
                     {
-                        _Naming = name.ToNamingCase(namingAttr.NamingType);
+                        _Naming = namingAttr.Name.ToNamingCase(namingAttr.NamingType);
                     }
                 }
 

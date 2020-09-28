@@ -10,15 +10,19 @@ namespace CodeArts.ORM
     /// </summary>
     public class Writer
     {
-        private readonly IWriterMap _writer;
+        private readonly IWriterMap writer;
 
-        private readonly StringBuilder _builder;
+        private readonly StringBuilder sb;
+
+        private readonly StringBuilder sbOrder;
 
         private readonly List<StringBuilder> builders = new List<StringBuilder>();
 
         private readonly ISQLCorrectSettings settings;
 
-        private int _parameterIndex = 0;
+        private bool writeOrderBy = false;
+
+        private int parameterIndex = 0;
 
         /// <summary>
         /// 参数名称
@@ -28,44 +32,69 @@ namespace CodeArts.ORM
         /// <summary>
         /// 参数索引。
         /// </summary>
-        protected virtual int ParameterIndex => ++_parameterIndex;
+        protected virtual int ParameterIndex => ++parameterIndex;
+
+        private int appendAt = -1;
+
+        private int appendOrderByAt = -1;
 
         /// <summary>
         /// 写入位置
         /// </summary>
-        internal int AppendAt = -1;
+        public int AppendAt
+        {
+            get => writeOrderBy ? appendOrderByAt : appendAt;
+            set
+            {
+                if (writeOrderBy)
+                {
+                    appendOrderByAt = value;
+                }
+                else
+                {
+                    appendAt = value;
+                }
+            }
+        }
 
         /// <summary>
         /// 内容长度
         /// </summary>
-        public int Length => _builder.Length;
+        public int Length => sb.Length;
         /// <summary>
         /// 条件取反。
         /// </summary>
-        public bool Not { get; internal set; }
+        public bool ReverseCondition { get; internal set; }
         /// <summary>
         /// 移除数据。
         /// </summary>
         /// <param name="index">索引开始位置</param>
         /// <param name="lenght">移除字符长度</param>
-        public void Remove(int index, int lenght) => _builder.Remove(index, lenght);
+        public void Remove(int index, int lenght) => sb.Remove(index, lenght);
 
-        private Dictionary<string, object> paramsters;
+        private Dictionary<string, object> parameters;
         /// <summary>
         /// 参数集合。
         /// </summary>
-        public Dictionary<string, object> Parameters { internal set => paramsters = value; get => paramsters ?? (paramsters = new Dictionary<string, object>()); }
+        public Dictionary<string, object> Parameters { internal set => parameters = value; get => parameters ?? (parameters = new Dictionary<string, object>()); }
 
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="settings">SQL矫正配置</param>
-        /// <param name="writer">写入配置</param>
-        public Writer(ISQLCorrectSettings settings, IWriterMap writer)
+        /// <param name="settings">SQL矫正配置。</param>
+        /// <param name="writer">写入配置。</param>
+        /// <param name="parameters">参数。</param>
+        public Writer(ISQLCorrectSettings settings, IWriterMap writer, Dictionary<string, object> parameters)
         {
-            _builder = new StringBuilder();
+            sb = new StringBuilder();
 
-            _writer = writer ?? throw new ArgumentNullException(nameof(writer));
+            sbOrder = new StringBuilder();
+
+            this.parameterIndex = parameters?.Count ?? 0;
+
+            this.parameters = parameters ?? new Dictionary<string, object>();
+
+            this.writer = writer ?? throw new ArgumentNullException(nameof(writer));
 
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
@@ -73,29 +102,32 @@ namespace CodeArts.ORM
         /// <summary>
         /// )
         /// </summary>
-        public void CloseBrace() => Write(_writer.CloseBrace);
+        public void CloseBrace() => Write(writer.CloseBrace);
 
         /// <summary>
         /// ,
         /// </summary>
-        public void Delimiter() => Write(_writer.Delimiter);
+        public void Delimiter() => Write(writer.Delimiter);
 
         /// <summary>
         /// DISTINCT
         /// </summary>
-        public void Distinct() => Write("DISTINCT" + _writer.WhiteSpace);
+        public void Distinct() => Write("DISTINCT" + writer.WhiteSpace);
 
         /// <summary>
         /// ''
         /// </summary>
-        public void EmptyString() => Write(_writer.EmptyString);
+        public void EmptyString() => Write(writer.EmptyString);
 
         /// <summary>
         /// Exists
         /// </summary>
         public void Exists()
         {
-            if (Not) WriteNot();
+            if (ReverseCondition)
+            {
+                Not();
+            }
 
             Write("EXISTS");
         }
@@ -107,7 +139,10 @@ namespace CodeArts.ORM
         {
             WhiteSpace();
 
-            if (Not) WriteNot();
+            if (ReverseCondition)
+            {
+                Not();
+            }
 
             Write("LIKE");
 
@@ -121,7 +156,10 @@ namespace CodeArts.ORM
         {
             WhiteSpace();
 
-            if (Not) WriteNot();
+            if (ReverseCondition)
+            {
+                Not();
+            }
 
             Write("IN");
         }
@@ -129,89 +167,107 @@ namespace CodeArts.ORM
         /// <summary>
         /// From
         /// </summary>
-        public void From() => Write(_writer.WhiteSpace + "FROM" + _writer.WhiteSpace);
+        public void From() => Write(writer.WhiteSpace + "FROM" + writer.WhiteSpace);
 
         /// <summary>
         /// Left Join
         /// </summary>
-        public void Join() => Write(_writer.WhiteSpace + "LEFT" + _writer.WhiteSpace + "JOIN" + _writer.WhiteSpace);
+        public void Join() => Write(writer.WhiteSpace + "LEFT" + writer.WhiteSpace + "JOIN" + writer.WhiteSpace);
 
         /// <summary>
         /// (
         /// </summary>
-        public void OpenBrace() => Write(_writer.OpenBrace);
+        public void OpenBrace() => Write(writer.OpenBrace);
 
         /// <summary>
         /// Order By
         /// </summary>
-        public void OrderBy() => Write(_writer.WhiteSpace + "ORDER" + _writer.WhiteSpace + "BY" + _writer.WhiteSpace);
+        public void OrderBy() => Write(writer.WhiteSpace + "ORDER" + writer.WhiteSpace + "BY" + writer.WhiteSpace);
 
         /// <summary>
         /// 参数
         /// </summary>
-        /// <param name="value">参数值</param>
-        public virtual void Parameter(object value)
+        /// <param name="parameterValue">参数值</param>
+        public virtual void Parameter(object parameterValue)
         {
-            if (value == null)
+            if (parameterValue == null)
             {
-                WriteNull();
+                Null();
+
                 return;
             }
 
-            string paramterName = ParameterName;
+            foreach (var kv in Parameters)
+            {
+                if (kv.Value == parameterValue)
+                {
+                    Write(settings.ParamterName(kv.Key));
 
-            Write(settings.ParamterName(paramterName));
+                    return;
+                }
+            }
 
-            Parameters.Add(paramterName, value);
+            string parameterName = ParameterName;
+
+            while (Parameters.ContainsKey(parameterName))
+            {
+                parameterName = ParameterName;
+            }
+
+            Write(settings.ParamterName(parameterName));
+
+            Parameters.Add(parameterName, parameterValue);
         }
 
         /// <summary>
         /// 参数
         /// </summary>
-        /// <param name="name">参数名称</param>
-        /// <param name="value">参数值</param>
-        public void Parameter(string name, object value)
+        /// <param name="parameterName">参数名称</param>
+        /// <param name="parameterValue">参数值</param>
+        public void Parameter(string parameterName, object parameterValue)
         {
-            if (value == null)
+            if (parameterValue == null)
             {
-                WriteNull();
+                Null();
+
                 return;
             }
 
-            if (name == null || name.Length == 0)
+            if (parameterName == null || parameterName.Length == 0)
             {
-                Parameter(value);
+                Parameter(parameterValue);
+
                 return;
             }
 
-            string argName = name;
+            string argName = parameterName;
 
             while (Parameters.TryGetValue(argName, out object data))
             {
-                if (Equals(value, data))
+                if (Equals(parameterValue, data))
                 {
                     Write(settings.ParamterName(argName));
 
                     return;
                 }
 
-                argName = string.Concat(name, "_", ParameterIndex.ToString());
+                argName = string.Concat(parameterName, "_", ParameterIndex.ToString());
             }
 
             Write(settings.ParamterName(argName));
 
-            Parameters.Add(argName, value);
+            Parameters.Add(argName, parameterValue);
         }
 
         /// <summary>
         /// Select
         /// </summary>
-        public void Select() => Write("SELECT" + _writer.WhiteSpace);
+        public void Select() => Write("SELECT" + writer.WhiteSpace);
 
         /// <summary>
         /// Insert Into
         /// </summary>
-        public void Insert() => Write("INSERT" + _writer.WhiteSpace + "INTO" + _writer.WhiteSpace);
+        public void Insert() => Write("INSERT" + writer.WhiteSpace + "INTO" + writer.WhiteSpace);
 
         /// <summary>
         /// Values
@@ -221,76 +277,77 @@ namespace CodeArts.ORM
         /// <summary>
         /// Update
         /// </summary>
-        public void Update() => Write("UPDATE" + _writer.WhiteSpace);
+        public void Update() => Write("UPDATE" + writer.WhiteSpace);
 
         /// <summary>
         /// Set
         /// </summary>
-        public void Set() => Write(_writer.WhiteSpace + "SET" + _writer.WhiteSpace);
+        public void Set() => Write(writer.WhiteSpace + "SET" + writer.WhiteSpace);
 
         /// <summary>
         /// Delete
         /// </summary>
-        public void Delete() => Write("DELETE" + _writer.WhiteSpace);
+        public void Delete() => Write("DELETE" + writer.WhiteSpace);
 
         /// <summary>
         /// Where
         /// </summary>
-        public void Where() => Write(_writer.WhiteSpace + "WHERE" + _writer.WhiteSpace);
+        public void Where() => Write(writer.WhiteSpace + "WHERE" + writer.WhiteSpace);
 
         /// <summary>
         /// And
         /// </summary>
-        public void WriteAnd() => Write(_writer.WhiteSpace + (Not ? "OR" : "AND") + _writer.WhiteSpace);
-
-        /// <summary>
-        /// Desc
-        /// </summary>
-        public void WriteDesc() => Write(_writer.WhiteSpace + "DESC");
-
-        /// <summary>
-        /// Is
-        /// </summary>
-        public void WriteIS() => Write(_writer.WhiteSpace + "IS" + _writer.WhiteSpace);
-
-        /// <summary>
-        /// Not
-        /// </summary>
-        public void WriteNot() => Write("NOT" + _writer.WhiteSpace);
-
-        /// <summary>
-        /// Null
-        /// </summary>
-        public virtual void WriteNull() => Write("NULL");
+        public void And() => Write(writer.WhiteSpace + (ReverseCondition ? "OR" : "AND") + writer.WhiteSpace);
 
         /// <summary>
         /// Or
         /// </summary>
-        public void WriteOr() => Write(_writer.WhiteSpace + (Not ? "AND" : "OR") + _writer.WhiteSpace);
+        public void Or() => Write(writer.WhiteSpace + (ReverseCondition ? "AND" : "OR") + writer.WhiteSpace);
+
+        /// <summary>
+        /// Desc
+        /// </summary>
+        public void Descending() => Write(writer.WhiteSpace + "DESC");
+
+        /// <summary>
+        /// Is
+        /// </summary>
+        public void Is() => Write(writer.WhiteSpace + "IS" + writer.WhiteSpace);
+
+        /// <summary>
+        /// Not
+        /// </summary>
+        public void Not() => Write("NOT" + writer.WhiteSpace);
+
+        /// <summary>
+        /// Null
+        /// </summary>
+        public virtual void Null() => Write("NULL");
 
         /// <summary>
         /// {prefix}.
         /// </summary>
         /// <param name="prefix">字段前缀</param>
-        public void WritePrefix(string prefix)
+        public void Limit(string prefix)
         {
-            if (string.IsNullOrEmpty(prefix)) return;
+            if (prefix.IsNotEmpty())
+            {
+                Name(prefix);
 
-            Name(prefix);
-
-            Write(".");
+                Write(".");
+            }
         }
 
         /// <summary>
         /// 别名
         /// </summary>
         /// <param name="name">名称</param>
-        public void Alias(string name) => Write(_writer.Name(name));
+        public void Alias(string name) => Write(writer.Name(name));
 
         /// <summary>
         /// AS
         /// </summary>
-        public void As() => Write(_writer.WhiteSpace + "AS" + _writer.WhiteSpace);
+        public void As() => Write(writer.WhiteSpace + "AS" + writer.WhiteSpace);
 
         /// <summary>
         /// AS {name}
@@ -299,7 +356,9 @@ namespace CodeArts.ORM
         public void As(string name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return;
+            }
 
             As();
 
@@ -310,18 +369,12 @@ namespace CodeArts.ORM
         /// 字段
         /// </summary>
         /// <param name="name">名称</param>
-        public void Name(string name) => Write(_writer.Name(name));
-
-        /// <summary>
-        /// 表名称
-        /// </summary>
-        /// <param name="name">名称</param>
-        public void TableName(string name) => Write(_writer.Name(name));
+        public void Name(string name) => Write(writer.Name(name));
 
         /// <summary>
         /// 空格
         /// </summary>
-        public void WhiteSpace() => Write(_writer.WhiteSpace);
+        public void WhiteSpace() => Write(writer.WhiteSpace);
 
         /// <summary>
         /// {prefix}.{name}
@@ -330,7 +383,7 @@ namespace CodeArts.ORM
         /// <param name="name">字段</param>
         public void Name(string prefix, string name)
         {
-            WritePrefix(prefix);
+            Limit(prefix);
 
             Name(name);
         }
@@ -340,14 +393,14 @@ namespace CodeArts.ORM
         /// </summary>
         public void IsNull()
         {
-            WriteIS();
+            Is();
 
-            if (Not)
+            if (ReverseCondition)
             {
-                WriteNot();
+                Not();
             }
 
-            WriteNull();
+            Null();
         }
 
         /// <summary>
@@ -355,14 +408,14 @@ namespace CodeArts.ORM
         /// </summary>
         public void IsNotNull()
         {
-            WriteIS();
+            Is();
 
-            if (!Not)
+            if (!ReverseCondition)
             {
-                WriteNot();
+                Not();
             }
 
-            WriteNull();
+            Null();
         }
 
         /// <summary>
@@ -387,9 +440,12 @@ namespace CodeArts.ORM
         /// <param name="alias">别名</param>
         public void TableName(string name, string alias)
         {
-            TableName(name);
+            Name(name);
 
-            if (string.IsNullOrEmpty(alias)) return;
+            if (string.IsNullOrEmpty(alias))
+            {
+                return;
+            }
 
             WhiteSpace();
 
@@ -414,29 +470,51 @@ namespace CodeArts.ORM
         public void ClearWriter() => builders.Clear();
 
         /// <summary>
+        /// 写入排序内容。
+        /// </summary>
+        /// <param name="action"></param>
+        public void UsingSort(Action action)
+        {
+            writeOrderBy = true;
+
+            action.Invoke();
+
+            writeOrderBy = false;
+        }
+
+        /// <summary>
         /// 写入内容。
         /// </summary>
         /// <param name="value">内容</param>
         public void Write(string value)
         {
             if (value == null || value.Length == 0)
-                return;
-
-            if (builders.Count > 0)
             {
-                builders.ForEach(writer => writer.Append(value));
-
                 return;
             }
 
-            if (AppendAt > -1)
+            if (writeOrderBy)
             {
-                _builder.Insert(AppendAt, value);
-                AppendAt += value.Length;
+                if (appendOrderByAt > -1)
+                {
+                    sbOrder.Insert(appendOrderByAt, value);
+
+                    appendOrderByAt += value.Length;
+                }
+                else
+                {
+                    sbOrder.Append(value);
+                }
+            }
+            else if (appendAt > -1)
+            {
+                sb.Insert(appendAt, value);
+
+                appendAt += value.Length;
             }
             else
             {
-                _builder.Append(value);
+                sb.Append(value);
             }
         }
 
@@ -446,7 +524,7 @@ namespace CodeArts.ORM
         /// <param name="nodeType">节点类型</param>
         public void Write(ExpressionType nodeType)
         {
-            Write(ExpressionExtensions.GetOperator(Not ? nodeType.ReverseWhere() : nodeType));
+            Write(ExpressionExtensions.GetOperator(ReverseCondition ? nodeType.ReverseWhere() : nodeType));
         }
 
         /// <summary>
@@ -455,15 +533,15 @@ namespace CodeArts.ORM
         /// <param name="nodeType">节点类型</param>
         /// <param name="left">左节点类型</param>
         /// <param name="right">右节点类型</param>
-        public virtual void Write(ExpressionType nodeType, Type left, Type right)
+        public virtual void WriteAdd(ExpressionType nodeType, Type left, Type right)
         {
-            if (settings.Engine == DatabaseEngine.Oracle && (nodeType == ExpressionType.Add || nodeType == ExpressionType.AddChecked || nodeType == ExpressionType.AddAssign) && (left == typeof(string) || right == typeof(string)))
+            if (settings.Engine == DatabaseEngine.Oracle)
             {
                 Write(" || ");
             }
             else
             {
-                Write(ExpressionExtensions.GetOperator(Not ? nodeType.ReverseWhere() : nodeType));
+                Write(ExpressionExtensions.GetOperator(ReverseCondition ? nodeType.ReverseWhere() : nodeType));
             }
         }
 
@@ -482,14 +560,7 @@ namespace CodeArts.ORM
         /// </summary>
         public virtual void BooleanFalse()
         {
-            if (Not)
-            {
-                Parameter("__variable_true", true);
-            }
-            else
-            {
-                Parameter("__variable_false", false);
-            }
+            Parameter("__variable_false", false);
         }
 
         /// <summary>
@@ -497,15 +568,7 @@ namespace CodeArts.ORM
         /// </summary>
         public virtual void BooleanTrue()
         {
-            if (Not)
-            {
-                Parameter("__variable_false", false);
-            }
-            else
-            {
-                Parameter("__variable_true", true);
-            }
-
+            Parameter("__variable_true", true);
         }
 
         /// <summary>
@@ -514,11 +577,31 @@ namespace CodeArts.ORM
         /// <param name="startIndex">开始位置</param>
         /// <param name="length">长度</param>
         /// <returns></returns>
-        public string ToString(int startIndex, int length) => _builder.ToString(startIndex, length);
+        public string ToString(int startIndex, int length) => sb.ToString(startIndex, length);
 
         /// <summary>
         /// 返回写入器数据。
         /// </summary>
-        public override string ToString() => _builder.ToString();
+        public override string ToString() => sb.ToString();
+
+        /// <summary>
+        /// 返回SQL。
+        /// </summary>
+        /// <returns></returns>
+        public virtual string ToSQL() => string.Concat(sb.ToString(), sbOrder.ToString());
+
+        /// <summary>
+        /// 返回SQL。
+        /// </summary>
+        /// <returns></returns>
+        public virtual string ToSQL(int take, int skip)
+        {
+            if (take > 0 || skip > 0)
+            {
+                return settings.ToSQL(sb.ToString(), take, skip, sbOrder.ToString());
+            }
+
+            return ToSQL();
+        }
     }
 }

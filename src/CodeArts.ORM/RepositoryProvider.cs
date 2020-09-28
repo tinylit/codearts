@@ -1,5 +1,6 @@
 ﻿using CodeArts.ORM.Builders;
 using CodeArts.ORM.Exceptions;
+using CodeArts.ORM.Visitors;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -34,7 +35,7 @@ namespace CodeArts.ORM
         /// 创建SQL查询器
         /// </summary>
         /// <returns></returns>
-        public virtual IQueryBuilder Create() => new QueryBuilder(Settings);
+        public virtual IQueryVisitor Create() => new QueryVisitor(Settings);
 
         /// <summary>
         /// 创建执行器
@@ -93,37 +94,37 @@ namespace CodeArts.ORM
                 throw new NotSupportedException("禁止在查询器分析中执行查询操作，如果必须，请将表达式查询结果用变量存储，再作为条件语句的一部分！");
             }
 
-            using (var builder = Create())
+            using (var visitor = Create())
             {
                 localCache.Value = true;
 
                 try
                 {
-                    builder.Evaluate(expression);
+                    visitor.Startup(expression);
                 }
                 finally
                 {
                     localCache.Value = false;
                 }
 
-                string sql = builder.ToSQL();
+                string sql = visitor.ToSQL();
 
                 try
                 {
                     if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
                     {
-                        return (TResult)Query<T>(conn, sql, builder.Parameters, builder.TimeOut);
+                        return (TResult)Query<T>(conn, sql, visitor.Parameters, visitor.TimeOut);
                     }
 
-                    if (builder.Required)
+                    if (visitor.Required)
                     {
-                        if (builder.HasDefaultValue)
+                        if (visitor.HasDefaultValue)
                         {
-                            object value = builder.DefaultValue;
+                            object value = visitor.DefaultValue;
 
                             if (value is TResult defaultValue)
                             {
-                                return QueryFirst(conn, sql, builder.Parameters, defaultValue, builder.TimeOut, builder.MissingDataError);
+                                return QueryFirst(conn, sql, visitor.Parameters, defaultValue, visitor.TimeOut, visitor.MissingDataError);
                             }
 
                             Type conversionType = typeof(TResult);
@@ -135,16 +136,16 @@ namespace CodeArts.ORM
                                     throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
                                 }
 
-                                return QueryFirst<TResult>(conn, sql, builder.Parameters, default, builder.TimeOut, builder.MissingDataError);
+                                return QueryFirst<TResult>(conn, sql, visitor.Parameters, default, visitor.TimeOut, visitor.MissingDataError);
                             }
 
                             throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
                         }
 
-                        return QueryFirst<TResult>(conn, sql, builder.Parameters, default, builder.TimeOut, builder.MissingDataError);
+                        return QueryFirst<TResult>(conn, sql, visitor.Parameters, default, visitor.TimeOut, visitor.MissingDataError);
                     }
 
-                    return QueryFirstOrDefault<TResult>(conn, sql, builder.Parameters, builder.TimeOut);
+                    return QueryFirstOrDefault<TResult>(conn, sql, visitor.Parameters, visitor.TimeOut);
                 }
                 catch (DbException db)
                 {

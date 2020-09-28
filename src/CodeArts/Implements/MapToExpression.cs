@@ -284,12 +284,14 @@ namespace CodeArts.Implements
             foreach (var kv in valuePairs.Where(kv => string.Equals(kv.Key.ToString(), key, StringComparison.OrdinalIgnoreCase)))
             {
                 if (kv.Value == null)
+                {
                     return null;
+                }
 
                 return mapTo.UnsafeMapTo(kv.Value, conversionType);
             }
 
-            return default;
+            return null;
         }
 
         #endregion
@@ -303,7 +305,9 @@ namespace CodeArts.Implements
         protected override Func<object, TResult> CreateExpression<TResult>(Type sourceType)
         {
             if (typeof(IDataRecord).IsAssignableFrom(sourceType))
+            {
                 return ByIDataRecord<TResult>(sourceType, typeof(TResult));
+            }
 
             return base.CreateExpression<TResult>(sourceType);
         }

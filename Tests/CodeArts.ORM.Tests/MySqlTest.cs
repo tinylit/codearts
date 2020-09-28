@@ -31,7 +31,7 @@ namespace UnitTest
         {
             var adapter = new MySqlAdapter();
 
-            adapter.Settings.Visitters.Add(new ConvertVisitter());
+            adapter.Settings.Visitors.Add(new ConvertVisitter());
 
             DbConnectionManager.RegisterAdapter(adapter);
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();

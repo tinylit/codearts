@@ -23,12 +23,12 @@ namespace CodeArts.ORM.Oracle
 
         private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\w+\.)*(?<name>(\w+))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
 
-        private List<IVisitter> visitters;
+        private List<IVisitor> visitters;
 
         /// <summary>
         /// 访问器
         /// </summary>
-        public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
+        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
 
         /// <summary>
         /// 字符串截取。 SUBSTR
@@ -257,5 +257,14 @@ namespace CodeArts.ORM.Oracle
                  .ToString();
         }
 
+        public string ToSQL(string sql, string orderBy)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string ToSQL(string sql, int take, int skip, string orderBy)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

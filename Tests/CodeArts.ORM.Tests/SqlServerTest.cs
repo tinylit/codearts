@@ -174,12 +174,14 @@ namespace UnitTest
 
             /**
              * SELECT CASE WHEN 
-             *  EXISTS(SELECT [uid] AS [Id] FROM [fei_users] WHERE ([uid] < @__variable_1)) 
-             * THEN 
-             *  @__variable_true
-             * ELSE 
-             *  @__variable_false
-             * END
+             *  EXISTS(
+             *      SELECT [x].[uid],[x].[bcid],[x].[username],[x].[email],[x].[mobile],[x].[password],[x].[mallagid],[x].[salt],[x].[userstatus],[x].[created_time],[x].[modified_time] 
+             *      FROM [fei_users] [x] 
+             *      WHERE ([x].[uid] < @__variable_1)
+             *  ) THEN 
+             *      @__variable_true 
+             *    ELSE 
+             *      @__variable_false END
              */
         }
         [TestMethod]
@@ -187,20 +189,6 @@ namespace UnitTest
         {
             var user = new UserRepository();
             var has = user.Where(x => x.Id < 100).All(x => x.Id < 100);
-
-            /**
-             * SELECT CASE WHEN 
-             *  EXISTS(SELECT [x].[uid] AS [Id] FROM [fei_users] [x] WHERE ([x].[uid] < @__variable_1) AND ([x].[uid] < @__variable_2)) 
-             *  
-             *  AND 
-             *  
-             *  NOT EXISTS(SELECT [x].[uid] AS [Id] FROM [fei_users] [x] WHERE ([x].[uid] < @__variable_3) AND ([x].[uid] >= @__variable_4)) 
-             * THEN 
-             *  @__variable_true 
-             * ELSE 
-             *  @__variable_false 
-             * END
-             */
         }
 
         [TestMethod]
@@ -208,12 +196,6 @@ namespace UnitTest
         {
             var user = new UserRepository();
             var has = user.Where(x => x.Id < 100).Average(x => x.Id);
-
-            /**
-             * SELECT Avg([x].[uid]) 
-             * FROM [fei_users] [x] 
-             * WHERE ([x].[uid] < @__variable_1)
-             */
         }
 
         [TestMethod]
@@ -400,7 +382,7 @@ namespace UnitTest
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
 
-            var list = result.Union(result2).Skip(124680).OrderBy(x => x.Id).ToList();
+            var list = result.Union(result2).Skip(10).OrderBy(x => x.Id).ToList();
             /**
              * SELECT [Id],[Name] 
              * FROM (
@@ -439,7 +421,7 @@ namespace UnitTest
         {
             var y = 100;
             var user = new UserRepository();
-            var arr = new List<string> { /*"1", "2" */};
+            var arr = new List<string> { "1", "2" };
             var result = user.Where(x => x.Id > 0 && x.Id < y && arr.Contains(x.Username))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
 
@@ -476,28 +458,17 @@ namespace UnitTest
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
 
             var list = result.ToList();
-            /**
-             * SELECT [x].[uid] AS [Id], ([x].[uid] + 1) AS [OldId], @y AS [OOID] 
-             * FROM [fei_users] [x] 
-             * WHERE ((([x].[uid] > 0) AND ([x].[uid] < @y)) AND [x].[username] IN ('1', '2'))
-             */
         }
         [TestMethod]
         public void AnyINTest()
         {
             var y = 100;
             var user = new UserRepository();
-            var arr = new List<int> { /*1, 10*/ };
+            var arr = new List<int> { 1, 10 };
             var result = user.Where(x => x.Id > 0 && x.Id < y && arr.Any(item => item == x.Id))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
 
             var list = result.ToList();
-
-            /**
-             * SELECT [x].[uid] AS [Id], ([x].[uid] + 1) AS [OldId], @y AS [OOID] 
-             * FROM [fei_users] [x] 
-             * WHERE ((([x].[uid] > 0) AND ([x].[uid] < @y)) AND [x].[uid] IN (1, 10))
-             */
         }
 
         [TestMethod]
@@ -622,7 +593,7 @@ namespace UnitTest
             var result = user.Where(x => x.Id < 200 && details.Distinct().Any(y => y.Id == x.Id && y.Id < 100))
                 .OrderBy(x => x.CreatedTime)
                 .Distinct()
-                .Reverse() //! 所有排序都逆转（不论前后）
+                .Reverse()
                 .OrderByDescending(x => x.Bcid);
             var list = result.ToList();
             /**
@@ -881,12 +852,12 @@ namespace UnitTest
             var user = new UserRepository();
             var details = new UserDetailsRepository();
             var userWx = new UserWeChatRepository();
-            var result = from x in user.Where(x => x.Id > 0)
+            var result = from x in user
                          join d in details.Where(d => d.Id < y)
                          on x.Id equals d.Id
                          join w in userWx
                          on x.Id equals w.Uid
-                         where x.Username.Contains(str)
+                         where x.Id > 0 && x.Username.Contains(str)
                          orderby x.Id, d.Registertime descending
                          select new { x.Id, OldId = x.Id + 1, w.Openid, OOID = d.Id, DDD = y };
 
@@ -1221,18 +1192,11 @@ namespace UnitTest
                 .Select(x => new { x.Id, Name = x.Username }).Cast<UserSimDto>();
 
             var list = result.ToList();
-
-            /**
-             * SELECT [x].[uid] AS [Id] 
-             * FROM [fei_users] [x] 
-             * WHERE (([x].[uid] > @__variable_1) AND ([x].[uid] < @y)) -- CreatedTime 已被被忽略。
-             */
         }
 
         [TestMethod]
         public void BitOperationTest()
         {
-
             var user = new UserRepository();
 
             var result = user.Where(x => (x.Userstatus & 1) == 1 && x.Id < 100).Take(10);
@@ -1482,6 +1446,212 @@ namespace UnitTest
             var results = userdetails.Where(x => x.Id > 100)
                  .Where(x => user.Any(y => x.Id == y.Id))
                  .ToList();
+        }
+
+        [TestMethod]
+        public void JoinInJoinTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var joinRight = from x in user
+                            join y in userdetails
+                            on x.Id equals y.Id
+                            where x.Id < 10000
+                            select x;
+
+            var linq = from x in userdetails
+                       join y in joinRight
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+
+            var results = linq.ToList();
+        }
+
+        [TestMethod]
+        public void UnoinInJoinTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var unionRight = (from x in user
+                              join y in userdetails
+                              on x.Id equals y.Id
+                              where x.Id < 10000
+                              select x)
+                              .Union(from x in user
+                                     join y in userdetails
+                                     on x.Id equals y.Id
+                                     where x.Id >= 10000
+                                     select x);
+
+            var linq = from x in user
+                       join y in unionRight
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       orderby y.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+            var results = linq.ToList();
+
+            /**
+             * SELECT [x].[uid] AS [Id],[y].[mallagid] AS [Mallagid] 
+             * FROM [fei_users] [x] 
+             * LEFT JOIN (
+             *  SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[username] AS [Username],[x].[email] AS [Email],[x].[mobile] AS [Mobile],[x].[password] AS [Password],[x].[mallagid] AS [Mallagid],[x].[salt] AS [Salt],[x].[userstatus] AS [Userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] FROM [fei_users] [x] LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] < @__variable_1) 
+             *  WHERE ([x].[uid] < @__variable_2) 
+             *  UNION 
+             *  SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[username] AS [Username],[x].[email] AS [Email],[x].[mobile] AS [Mobile],[x].[password] AS [Password],[x].[mallagid] AS [Mallagid],[x].[salt] AS [Salt],[x].[userstatus] AS [Userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] FROM [fei_users] [x] LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] >= @__variable_3) 
+             *  WHERE ([x].[uid] < @__variable_4) )[y] ON [x].[uid] = [y].[uid] 
+             *  WHERE ([y].[mallagid] > @__variable_5) 
+             *  ORDER BY [y].[mallagid],[x].[uid],[y].[uid]SELECT [x].[uid] AS [Id],[y].[mallagid] AS [Mallagid] FROM [fei_users] [x] LEFT JOIN (SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[username] AS [Username],[x].[email] AS [Email],[x].[mobile] AS [Mobile],[x].[password] AS [Password],[x].[mallagid] AS [Mallagid],[x].[salt] AS [Salt],[x].[userstatus] AS [Userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] FROM [fei_users] [x] LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] < @__variable_1) WHERE ([x].[uid] < @__variable_2) UNION SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[username] AS [Username],[x].[email] AS [Email],[x].[mobile] AS [Mobile],[x].[password] AS [Password],[x].[mallagid] AS [Mallagid],[x].[salt] AS [Salt],[x].[userstatus] AS [Userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] FROM [fei_users] [x] LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] >= @__variable_3) WHERE ([x].[uid] < @__variable_4) )[y] ON [x].[uid] = [y].[uid] WHERE ([y].[mallagid] > @__variable_5) ORDER BY [y].[mallagid],[x].[uid],[y].[uid]SELECT [x].[uid] AS [Id],[y].[mallagid] AS [Mallagid] FROM [fei_users] [x] LEFT JOIN (SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[username] AS [Username],[x].[email] AS [Email],[x].[mobile] AS [Mobile],[x].[password] AS [Password],[x].[mallagid] AS [Mallagid],[x].[salt] AS [Salt],[x].[userstatus] AS [Userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] FROM [fei_users] [x] LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] < @__variable_1) WHERE ([x].[uid] < @__variable_2) UNION SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[username] AS [Username],[x].[email] AS [Email],[x].[mobile] AS [Mobile],[x].[password] AS [Password],[x].[mallagid] AS [Mallagid],[x].[salt] AS [Salt],[x].[userstatus] AS [Userstatus],[x].[created_time] AS [CreatedTime],[x].[modified_time] AS [ModifiedTime] FROM [fei_users] [x] LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] >= @__variable_3) WHERE ([x].[uid] < @__variable_4) )[y] ON [x].[uid] = [y].[uid] WHERE ([y].[mallagid] > @__variable_5) ORDER BY [y].[mallagid],[x].[uid],[y].[uid]
+             */
+        }
+
+        [TestMethod]
+        public void JoinInUnoinTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var linq = (from x in user
+                        join y in userdetails
+                        on x.Id equals y.Id
+                        where x.Id < 10000
+                        select new
+                        {
+                            x.Id,
+                            x.Bcid
+                        })
+                        .Union(from x in user
+                               join y in userdetails
+                               on x.Id equals y.Id
+                               where x.Id < 10000
+                               select new
+                               {
+                                   x.Id,
+                                   x.Bcid
+                               });
+
+            var results = linq.ToList();
+
+            /**
+             * SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid] 
+             * FROM [fei_users] [x] 
+             * LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] < @__variable_1) 
+             * WHERE ([x].[uid] < @__variable_2) 
+             * UNION 
+             * SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid] 
+             * FROM [fei_users] [x] 
+             * LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] >= @__variable_3) 
+             * WHERE ([x].[uid] < @__variable_4)
+             */
+        }
+
+        [TestMethod]
+        public void UnoinSelectInJoinTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var unionRight = (from x in user
+                              join y in userdetails
+                              on x.Id equals y.Id
+                              where x.Id < 10000
+                              select new
+                              {
+                                  x.Id,
+                                  x.Bcid,
+                                  x.Mallagid
+                              })
+                              .Union(from x in user
+                                     join y in userdetails
+                                     on x.Id equals y.Id
+                                     where x.Id >= 10000
+                                     select new
+                                     {
+                                         x.Id,
+                                         x.Bcid,
+                                         x.Mallagid
+                                     });
+
+            var linq = from x in user
+                       join y in unionRight
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+            var results = linq.ToList();
+
+            /**
+             * SELECT [x].[uid] AS [Id],[y].[Mallagid] AS [Mallagid] 
+             * FROM [fei_users] [x] 
+             * LEFT JOIN (
+             *  SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[mallagid] AS [Mallagid] 
+             *  FROM [fei_users] [x] 
+             *  LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] < @__variable_1) 
+             *  WHERE ([x].[uid] < @__variable_2) 
+             *  UNION 
+             *  SELECT [x].[uid] AS [Id],[x].[bcid] AS [Bcid],[x].[mallagid] AS [Mallagid] 
+             *  FROM [fei_users] [x] 
+             *  LEFT JOIN [fei_userdetails] [y] ON [x].[uid] = [y].[uid] AND ([x].[uid] >= @__variable_3) 
+             *  WHERE ([x].[uid] < @__variable_4) 
+             * )[y] ON [x].[uid] = [y].[Id] 
+             * WHERE ([y].[Mallagid] > @__variable_5) 
+             * ORDER BY [y].[Mallagid],[x].[uid]
+             */
+        }
+
+        [TestMethod]
+        public void JoinSelectInJoinTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var joinRight = from x in user
+                            join y in userdetails
+                            on x.Id equals y.Id
+                            where x.Id > 0 && x.Id < 10000
+                            select new
+                            {
+                                x.Id,
+                                x.Mallagid
+                            };
+
+            var linq = from x in userdetails
+                       join y in joinRight
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+
+            var results = linq.ToList();
         }
     }
 }

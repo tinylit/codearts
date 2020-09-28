@@ -1148,12 +1148,12 @@ namespace System
                     {
                         isAllocated = true;
 
-                        then.Invoke(requestable, e);
+                        Then(then, requestable, e);
 
                         return request.RequestImplement(method, timeout);
                     }
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -1188,12 +1188,12 @@ namespace System
                     {
                         isAllocated = true;
 
-                        then.Invoke(requestable, e);
+                        Then(then, requestable, e);
 
                         return file.UploadFile(method, fileName, timeout);
                     }
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -1215,12 +1215,12 @@ namespace System
                         {
                             isAllocated = true;
 
-                            then.Invoke(requestable, e);
+                            Then(then, requestable, e);
 
                             file.DownloadFile(fileName, timeout);
                         }
 
-                        throw;
+                        throw e;
                     }
                 }
             }
@@ -1285,6 +1285,26 @@ namespace System
                 return this;
             }
 
+            private static void Then(Action<IRequestableBase, WebException> action, IRequestableBase requestableBase, WebException webException)
+            {
+                if (requestableBase is Requestable requestable)
+                {
+                    try
+                    {
+                        requestable.IsNotQueryFix = false;
+
+                        action.Invoke(requestableBase, webException);
+                    }
+                    finally
+                    {
+                        requestable.IsNotQueryFix = true;
+                    }
+                }
+                else
+                {
+                    action.Invoke(requestableBase, webException);
+                }
+            }
 
 #if !NET40
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
@@ -1304,12 +1324,12 @@ namespace System
                     {
                         isAllocated = true;
 
-                        then.Invoke(requestable, e);
+                        Then(then, requestable, e);
 
                         return await request.RequestImplementAsync(method, timeout);
                     }
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -1332,12 +1352,12 @@ namespace System
                     {
                         isAllocated = true;
 
-                        then.Invoke(requestable, e);
+                        Then(then, requestable, e);
 
                         return await file.UploadFileAsync(method, fileName, timeout);
                     }
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -1359,12 +1379,12 @@ namespace System
                         {
                             isAllocated = true;
 
-                            then.Invoke(requestable, e);
+                            Then(then, requestable, e);
 
                             await file.DownloadFileAsync(fileName, timeout);
                         }
 
-                        throw;
+                        throw e;
                     }
                 }
             }
@@ -1990,6 +2010,8 @@ namespace System
             private NameValueCollection __form;
             private Dictionary<string, string> __headers;
 
+            public bool IsNotQueryFix = true;
+
             public Requestable(string uriString) : this(new Uri(uriString)) { }
             public Requestable(Uri uri)
             {
@@ -2135,9 +2157,12 @@ namespace System
                 {
                     return this;
                 }
-                string query = param.TrimStart('?', '&');
 
-                if (__uri.Query.IsEmpty())
+                string query = param
+                    .TrimStart('?', '&')
+                    .TrimEnd('&');
+
+                if (IsNotQueryFix || __uri.Query.IsEmpty())
                 {
                     string uriString = __uri.ToString();
 
@@ -2151,23 +2176,38 @@ namespace System
 
                     foreach (var arg in __uri.Query.Substring(1).Split('&'))
                     {
-                        string[] keys = arg.Split('=');
+                        if (arg.Length == 0)
+                        {
+                            continue;
+                        }
 
-                        dic[keys.First()] = string.Join("=", keys.Skip(1));
+                        string key = arg.Split('=').First();
+
+                        if (dic.TryGetValue(key, out string oldValue))
+                        {
+                            dic[key] = string.Concat(oldValue, "&", arg);
+                        }
+                        else
+                        {
+                            dic[key] = arg;
+                        }
                     }
 
                     foreach (var arg in query.Split('&'))
                     {
-                        string[] keys = arg.Split('=');
+                        if (arg.Length == 0)
+                        {
+                            continue;
+                        }
 
-                        dic[keys.First()] = string.Join("=", keys.Skip(1));
+                        dic[arg.Split('=').First()] = arg;
                     }
 
                     string urlStr = __uri.ToString();
 
                     int indexOf = urlStr.IndexOf('?');
 
-                    __uri = new Uri(string.Concat(urlStr.Substring(0, indexOf + 1), string.Join("&", dic.Select(x => string.Concat(x.Key, "=", x.Value)))));
+                    __uri = new Uri(string.Concat(urlStr.Substring(0, indexOf + 1), string.Join("&", dic.Select(x => x.Value))));
 
                     return this;
                 }

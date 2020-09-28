@@ -1,5 +1,9 @@
 ﻿using System;
+#if NET40
 using System.Collections.ObjectModel;
+#else
+using System.Collections.Generic;
+#endif
 using System.Linq;
 using System.Reflection;
 
@@ -44,8 +48,11 @@ namespace CodeArts.Runtime
         public override bool CanWrite => false;
 
 
-        private ReadOnlyCollection<ParameterStoreItem> parameterStores;
         private static readonly object Lock_ParameterObj = new object();
+
+#if NET40
+
+        private ReadOnlyCollection<ParameterStoreItem> parameterStores;
         /// <summary>
         /// 参数信息
         /// </summary>
@@ -53,20 +60,46 @@ namespace CodeArts.Runtime
         {
             get
             {
-                if (parameterStores == null)
+                if (parameterStores is null)
                 {
                     lock (Lock_ParameterObj)
                     {
-                        if (parameterStores == null)
+                        if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
                                 .Select(info => new ParameterStoreItem(info))
-                                .ToList().AsReadOnly();
+                                .ToList()
+                                .AsReadOnly();
                         }
                     }
                 }
                 return parameterStores;
             }
         }
+#else
+        private IReadOnlyCollection<ParameterStoreItem> parameterStores;
+        /// <summary>
+        /// 参数信息
+        /// </summary>
+        public IReadOnlyCollection<ParameterStoreItem> ParameterStores
+        {
+            get
+            {
+                if (parameterStores is null)
+                {
+                    lock (Lock_ParameterObj)
+                    {
+                        if (parameterStores is null)
+                        {
+                            parameterStores = Member.GetParameters()
+                                .Select(info => new ParameterStoreItem(info))
+                                .ToList();
+                        }
+                    }
+                }
+                return parameterStores;
+            }
+        }
+#endif
     }
 }

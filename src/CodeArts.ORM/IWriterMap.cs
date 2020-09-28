@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CodeArts.ORM
+﻿namespace CodeArts.ORM
 {
     /// <summary>
     /// SQL写入器

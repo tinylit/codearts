@@ -31,7 +31,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Builders - 复制\BaseBuilder.cs" />
+	  <Compile Remove="Builders - 复制\ExecuteBuilder.cs" />
+	  <Compile Remove="Builders - 复制\QueryBuilder.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\CodeArts\CodeArts.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Builders - 复制\" />
 	</ItemGroup>
 
 </Project>

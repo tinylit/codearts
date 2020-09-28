@@ -29,7 +29,7 @@ namespace CodeArts.ORM
 
             public DefaultConnections()
             {
-                _clearTimer = new Timer(1000 * 60);
+                _clearTimer = new Timer(1000D * 60D);
                 _clearTimer.Elapsed += ClearTimerElapsed;
                 _clearTimer.Enabled = true;
                 _clearTimer.Stop();

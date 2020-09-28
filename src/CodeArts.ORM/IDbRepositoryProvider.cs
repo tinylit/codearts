@@ -13,7 +13,7 @@ namespace CodeArts.ORM
         /// 创建查询器
         /// </summary>
         /// <returns></returns>
-        IQueryBuilder Create();
+        IQueryVisitor Create();
 
         /// <summary>
         /// 查询第一个结果。

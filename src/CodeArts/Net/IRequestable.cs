@@ -733,13 +733,6 @@ namespace CodeArts.Net
         /// <param name="match">判断是否重试请求</param>
         /// <returns></returns>
         IThenRequestable TryIf(Predicate<WebException> match);
-
-        /// <summary>
-        /// 新开一个重试机制，如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
-        /// </summary>
-        /// <param name="then">异常处理事件</param>
-        /// <returns></returns>
-        IThenConditionRequestable Then(Action<IRequestableBase, WebException> then);
     }
 
     /// <summary>

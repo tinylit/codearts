@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Text;
+﻿using System.Linq.Expressions;
 
 namespace CodeArts.ORM
 {
     /// <summary>
     /// 访问器
     /// </summary>
-    public interface IVisitter
+    public interface IVisitor
     {
         /// <summary>
         /// 能否解决表达式

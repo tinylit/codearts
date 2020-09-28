@@ -15,6 +15,8 @@ namespace CodeArts.ORM.SqlServer
     {
         private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
 
+        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<column>((?!\b(select|where))[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex PatternOrderBy = new Regex(@"\border[\x20\t\r\n\f]+by[\x20\t\r\n\f]+[\s\S]+?$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
@@ -40,12 +42,12 @@ namespace CodeArts.ORM.SqlServer
         /// </summary>
         public bool IndexOfSwapPlaces => true;
 
-        private List<IVisitter> visitters;
+        private List<IVisitor> visitters;
 
         /// <summary>
         /// 格式化
         /// </summary>
-        public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
+        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
 
         /// <summary>
         /// SqlServer
@@ -117,24 +119,17 @@ namespace CodeArts.ORM.SqlServer
         /// <returns></returns>
         public virtual string PageSql(string sql, int take, int skip)
         {
-            var sb = new StringBuilder();
-            Match match;
             if (skip < 1)
             {
-                match = PatternColumn.Match(sql);
-
-                sql = sql.Substring(match.Length);
-
-                return sb.Append(" SELECT TOP ")
-                     .Append(take)
-                     .Append(" ")
-                     .Append(match.Groups["column"].Value)
-                     .Append(" FROM ")
-                     .Append(sql)
-                     .ToString();
+                return PatternSelect.Replace(sql, x =>
+                 {
+                     return string.Concat(x.Value, "TOP ", take.ToString(), " ");
+                 });
             }
 
-            match = PatternOrderBy.Match(sql);
+            var sb = new StringBuilder();
+
+            Match match = PatternOrderBy.Match(sql);
 
             if (!match.Success)
                 throw new DException("使用Skip函数需要设置排序字段!");
@@ -224,30 +219,102 @@ namespace CodeArts.ORM.SqlServer
 
             string row_name = Name("__Row_number_");
 
-           return sb.Append("SELECT ")
+            return sb.Append("SELECT ")
+                 .Append(tuple.Item1)
+                 .Append(" FROM (")
+                 .Append("SELECT ")
+                 .Append(tuple.Item1)
+                 .Append(", ROW_NUMBER() OVER(")
+                 .Append(orderBy)
+                 .Append(") AS ")
+                 .Append(row_name)
+                 .Append(" FROM (")
+                 .Append(sql)
+                 .Append(") ")
+                 .Append(Name("CTE_ROW_NUMBER"))
+                 .Append(") ")
+                 .Append(Name("CTE"))
+                 .Append(" WHERE ")
+                 .Append(row_name)
+                 .Append(" > ")
+                 .Append(skip)
+                 .Append(" AND ")
+                 .Append(row_name)
+                 .Append(" <= ")
+                 .Append(skip + take)
+                 .ToString();
+        }
+
+        public string ToSQL(string sql, string orderBy)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string ToSQL(string sql, int take, int skip, string orderBy)
+        {
+            if (skip < 1)
+            {
+                return string.Concat(PatternSelect.Replace(sql, x =>
+                {
+                    return string.Concat(x.Value, "TOP ", take.ToString(), " ");
+                }), orderBy);
+            }
+
+            Match match = PatternColumn.Match(sql);
+
+            if (!match.Success)
+            {
+                throw new DSyntaxErrorException($"无法分析查询语句“{sql}”的查询部分！");
+            }
+
+            var sb = new StringBuilder();
+
+            Group group = match.Groups["column"];
+
+            Tuple<string, bool> tuple = GetColumns(group.Value);
+
+            string row_name = Name("__Row_Number_");
+
+            sb.Append("SELECT ")
                 .Append(tuple.Item1)
-                .Append(" FROM (")
-                .Append("SELECT ")
-                .Append(tuple.Item1)
-                .Append(", ROW_NUMBER() OVER(")
-                .Append(orderBy)
-                .Append(") AS ")
-                .Append(row_name)
-                .Append(" FROM (")
-                .Append(sql)
-                .Append(") ")
-                .Append(Name("CTE_ROW_NUMBER"))
-                .Append(") ")
-                .Append(Name("CTE"))
-                .Append(" WHERE ")
-                .Append(row_name)
-                .Append(" > ")
-                .Append(skip)
-                .Append(" AND ")
+                .Append(" FROM (");
+
+            if (tuple.Item2)
+            {
+                sb.Append(sql.Substring(0, group.Index + group.Length))
+                 .Append(" AS ")
+                 .Append(tuple.Item1)
+                 .Append(", ")
+                 .Append("ROW_NUMBER() OVER(")
+                 .Append(orderBy)
+                 .Append(") AS ")
+                 .Append(row_name)
+                 .Append(sql.Substring(group.Index + group.Length));
+            }
+            else
+            {
+                sb.Append(PatternSelect.Replace(sql, x =>
+                {
+                    return string.Concat(x.Value, "ROW_NUMBER() OVER(", orderBy, ") AS", row_name, " ,");
+                }));
+            }
+
+            sb.Append(") ")
+                 .Append(Name("CTE"))
+                 .Append(" WHERE ")
+                 .Append(row_name)
+                 .Append(" > ")
+                 .Append(skip);
+
+            if (take > 0)
+            {
+                sb.Append(" AND ")
                 .Append(row_name)
                 .Append(" <= ")
-                .Append(skip + take)
-                .ToString();
+                .Append(skip + take);
+            }
+
+            return sb.ToString();
         }
     }
 }

@@ -115,7 +115,7 @@ namespace System
         /// </summary>
         /// <param name="value">字符串</param>
         /// <returns></returns>
-        public static bool IsNotNull(this string value) => !(value is null);
+        public static bool IsNotNull(this string value) => !IsNull(value);
 
         /// <summary>
         /// 指示指定的字符串是 null 或是 空字符串 ("")。
@@ -129,7 +129,7 @@ namespace System
         /// </summary>
         /// <param name="value">字符串</param>
         /// <returns></returns>
-        public static bool IsNotEmpty(this string value) => value?.Length > 0;
+        public static bool IsNotEmpty(this string value) => !IsEmpty(value);
 
         /// <summary>
         /// 格式化字符串。
@@ -212,35 +212,37 @@ namespace System
 
                 var propertyStores = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).ToList();
 
-                var enumerCase = propertyStores.Select(info =>
-                  {
-                      Type memberType = info.MemberType;
+                var enumerCase = propertyStores
+                    .Where(x => x.CanRead)
+                    .Select(info =>
+                    {
+                        Type memberType = info.MemberType;
 
-                      ConstantExpression nameCst = Constant(info.Name);
+                        ConstantExpression nameCst = Constant(info.Name);
 
-                      MemberExpression propertyExp = Property(parameterExp, info.Name);
+                        MemberExpression propertyExp = Property(parameterExp, info.Name);
 
-                      var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
+                        var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
 
-                      if (memberType.IsValueType)
-                      {
-                          Expression valueExp = Expression.Convert(propertyExp, typeof(object));
+                        if (memberType.IsValueType)
+                        {
+                            Expression valueExp = Expression.Convert(propertyExp, typeof(object));
 
-                          if (memberType.IsNullable())
-                          {
-                              return SwitchCase(Condition(Equal(valueExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), valueExp)), namingCst);
-                          }
+                            if (memberType.IsNullable())
+                            {
+                                return SwitchCase(Condition(Equal(valueExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), valueExp)), namingCst);
+                            }
 
-                          if (memberType.IsEnum)
-                          {
-                              return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType)))), namingCst);
-                          }
+                            if (memberType.IsEnum)
+                            {
+                                return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType)))), namingCst);
+                            }
 
-                          return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), valueExp), namingCst);
-                      }
+                            return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), valueExp), namingCst);
+                        }
 
-                      return SwitchCase(Condition(Equal(propertyExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), propertyExp)), namingCst);
-                  });
+                        return SwitchCase(Condition(Equal(propertyExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), propertyExp)), namingCst);
+                    });
 
                 var bodyExp = Call(null, ConcatMethod, Constant("{"), nameExp, Constant("}"));
 
@@ -250,25 +252,27 @@ namespace System
 
                 Convert = lamda.Compile();
 
-                var enumerCase2 = propertyStores.Select(info =>
-                {
-                    Type memberType = info.MemberType;
-
-                    var nameCst = Constant(info.Name);
-
-                    var propertyExp = Property(parameterExp, info.Name);
-
-                    var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
-
-                    var valueExp = Expression.Convert(propertyExp, typeof(object));
-
-                    if (memberType.IsEnum)
+                var enumerCase2 = propertyStores
+                    .Where(x => x.CanRead)
+                    .Select(info =>
                     {
-                        return SwitchCase(Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType))), namingCst);
-                    }
+                        Type memberType = info.MemberType;
 
-                    return SwitchCase(valueExp, namingCst);
-                });
+                        var nameCst = Constant(info.Name);
+
+                        var propertyExp = Property(parameterExp, info.Name);
+
+                        var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
+
+                        var valueExp = Expression.Convert(propertyExp, typeof(object));
+
+                        if (memberType.IsEnum)
+                        {
+                            return SwitchCase(Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType))), namingCst);
+                        }
+
+                        return SwitchCase(valueExp, namingCst);
+                    });
 
                 var switchExp2 = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), null, enumerCase2);
 
@@ -323,35 +327,37 @@ namespace System
 
                 var propertyStores = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).ToList();
 
-                var enumerCase = propertyStores.Select(info =>
-                  {
-                      Type memberType = info.MemberType;
+                var enumerCase = propertyStores
+                    .Where(x => x.CanRead)
+                    .Select(info =>
+                    {
+                        Type memberType = info.MemberType;
 
-                      ConstantExpression nameCst = Constant(info.Name);
+                        ConstantExpression nameCst = Constant(info.Name);
 
-                      MemberExpression propertyExp = Property(parameterExp, info.Name);
+                        MemberExpression propertyExp = Property(parameterExp, info.Name);
 
-                      var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
+                        var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
 
-                      if (memberType.IsValueType)
-                      {
-                          Expression valueExp = Expression.Convert(propertyExp, typeof(object));
+                        if (memberType.IsValueType)
+                        {
+                            Expression valueExp = Expression.Convert(propertyExp, typeof(object));
 
-                          if (memberType.IsNullable())
-                          {
-                              return SwitchCase(Condition(Equal(valueExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), valueExp)), namingCst);
-                          }
+                            if (memberType.IsNullable())
+                            {
+                                return SwitchCase(Condition(Equal(valueExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), valueExp)), namingCst);
+                            }
 
-                          if (memberType.IsEnum)
-                          {
-                              return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType)))), namingCst);
-                          }
+                            if (memberType.IsEnum)
+                            {
+                                return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType)))), namingCst);
+                            }
 
-                          return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), valueExp), namingCst);
-                      }
+                            return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), valueExp), namingCst);
+                        }
 
-                      return SwitchCase(Condition(Equal(propertyExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), propertyExp)), namingCst);
-                  });
+                        return SwitchCase(Condition(Equal(propertyExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), propertyExp)), namingCst);
+                    });
 
                 var bodyExp = Call(null, ConcatMethod, Constant("{"), nameExp, Constant("}"));
 
@@ -361,25 +367,27 @@ namespace System
 
                 Convert = lamda.Compile();
 
-                var enumerCase2 = propertyStores.Select(info =>
-                {
-                    Type memberType = info.MemberType;
-
-                    var nameCst = Constant(info.Name);
-
-                    var propertyExp = Property(parameterExp, info.Name);
-
-                    var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
-
-                    var valueExp = Expression.Convert(propertyExp, typeof(object));
-
-                    if (memberType.IsEnum)
+                var enumerCase2 = propertyStores
+                    .Where(x => x.CanRead)
+                    .Select(info =>
                     {
-                        return SwitchCase(Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType))), namingCst);
-                    }
+                        Type memberType = info.MemberType;
 
-                    return SwitchCase(valueExp, namingCst);
-                });
+                        var nameCst = Constant(info.Name);
+
+                        var propertyExp = Property(parameterExp, info.Name);
+
+                        var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
+
+                        var valueExp = Expression.Convert(propertyExp, typeof(object));
+
+                        if (memberType.IsEnum)
+                        {
+                            return SwitchCase(Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType))), namingCst);
+                        }
+
+                        return SwitchCase(valueExp, namingCst);
+                    });
 
                 var switchExp2 = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), null, enumerCase2);
 

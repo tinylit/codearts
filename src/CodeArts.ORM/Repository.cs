@@ -29,7 +29,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 数据库链接
         /// </summary>
-        protected IDbConnection Connection => TransactionConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter);
+        protected IDbConnection Connection => TransactionConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? ThreadConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter);
 
         /// <summary>
         /// 数据库适配器
@@ -76,12 +76,28 @@ namespace CodeArts.ORM
         /// <summary>
         /// 链接
         /// </summary>
-        protected Repository() => ConnectionConfig = GetDbConfig() ?? throw new NoNullAllowedException("未找到数据链接配置信息!");
+        protected Repository()
+        {
+            ConnectionConfig = GetDbConfig() ?? throw new NoNullAllowedException("未找到数据链接配置信息!");
+
+            if (ConnectionConfig.ConnectionString.IsEmpty())
+            {
+
+            }
+        }
         /// <summary>
         /// 链接
         /// </summary>
         /// <param name="connectionConfig">链接配置</param>
-        public Repository(IReadOnlyConnectionConfig connectionConfig) => ConnectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
+        public Repository(IReadOnlyConnectionConfig connectionConfig)
+        {
+            ConnectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
+
+            if (ConnectionConfig.ConnectionString.IsEmpty())
+            {
+
+            }
+        }
 
         /// <summary> 执行数据库事务 </summary>
         /// <typeparam name="TResult">结果类型</typeparam>

@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 #if NET40
 using System.Collections.ObjectModel;
+#else
+using System.Collections.Generic;
 #endif
 using System.Linq;
 
@@ -71,7 +72,8 @@ namespace CodeArts.Runtime
                         {
                             propertyStores = Type.GetProperties()
                                 .Select(info => new PropertyStoreItem(info))
-                                .ToList().AsReadOnly();
+                                .ToList()
+                                .AsReadOnly();
                         }
                     }
                 }
@@ -96,7 +98,8 @@ namespace CodeArts.Runtime
                         {
                             fieldStores = Type.GetFields()
                                 .Select(info => new FieldStoreItem(info))
-                                .ToList().AsReadOnly();
+                                .ToList()
+                                .AsReadOnly();
                         }
                     }
                 }
@@ -120,7 +123,8 @@ namespace CodeArts.Runtime
                         {
                             methodStores = Type.GetMethods()
                                 .Select(info => new MethodStoreItem(info))
-                                .ToList().AsReadOnly();
+                                .ToList()
+                                .AsReadOnly();
                         }
                     }
                 }
@@ -144,7 +148,8 @@ namespace CodeArts.Runtime
                         {
                             constructorStores = Type.GetConstructors()
                                 .Select(info => new ConstructorStoreItem(info))
-                                .ToList().AsReadOnly();
+                                .ToList()
+                                .AsReadOnly();
                         }
                     }
                 }

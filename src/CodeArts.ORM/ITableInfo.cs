@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+#if NET40
+using System.Collections.ObjectModel;
+#endif
+
 
 namespace CodeArts.ORM
 {
@@ -16,15 +20,15 @@ namespace CodeArts.ORM
         /// 数据库表名称
         /// </summary>
         string TableName { get; }
+#if NET40
         /// <summary>
         /// 主键
         /// </summary>
-        IEnumerable<string> Keys { get; }
+        ReadOnlyCollection<string> Keys { get; }
         /// <summary>
         /// 只读键
         /// </summary>
-        IEnumerable<string> ReadOnlys { get; }
-#if NET40
+        ReadOnlyCollection<string> ReadOnlys { get; }
         /// <summary>
         /// 令牌
         /// </summary>
@@ -39,6 +43,14 @@ namespace CodeArts.ORM
         /// </summary>
         IDictionary<string, string> ReadOrWrites { get; }
 #else
+        /// <summary>
+        /// 主键
+        /// </summary>
+        IReadOnlyCollection<string> Keys { get; }
+        /// <summary>
+        /// 只读键
+        /// </summary>
+        IReadOnlyCollection<string> ReadOnlys { get; }
         /// <summary>
         /// 令牌
         /// </summary>

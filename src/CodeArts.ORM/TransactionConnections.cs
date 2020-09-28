@@ -64,7 +64,10 @@ namespace CodeArts.ORM
 
             Transaction current = Transaction.Current;
 
-            if (current is null) return null;
+            if (current is null)
+            {
+                return null;
+            }
 
             Dictionary<string, TransactionConnection> dictionary = transactionConnections.GetOrAdd(current, transaction =>
             {

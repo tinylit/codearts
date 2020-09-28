@@ -77,7 +77,7 @@ namespace CodeArts.ORM.Builders
         /// <param name="node">表达式</param>
         public override void Evaluate(Expression node)
         {
-            _whereSwitch = new SmartSwitch(SQLWriter.Where, SQLWriter.WriteAnd);
+            _whereSwitch = new SmartSwitch(SQLWriter.Where, SQLWriter.And);
 
             _orderBySwitch = new SmartSwitch(SQLWriter.OrderBy, SQLWriter.Delimiter);
 
@@ -176,7 +176,7 @@ namespace CodeArts.ORM.Builders
             {
                 VisitExists(node);
 
-                SQLWriter.WriteAnd();
+                SQLWriter.And();
 
                 //? 初始参数。
                 buildUnion = false;
@@ -319,7 +319,7 @@ namespace CodeArts.ORM.Builders
                 SQLWriter.CloseBrace();
                 SQLWriter.WhiteSpace();
 
-                SQLWriter.TableName("CTE_UNION");
+                SQLWriter.Name("CTE_UNION");
             }
 
             return node;
@@ -413,7 +413,7 @@ namespace CodeArts.ORM.Builders
                         {
                             if (whereIsNotEmpty)
                             {
-                                SQLWriter.WriteAnd();
+                                SQLWriter.And();
                             }
                         }, () =>
                         {
@@ -583,7 +583,7 @@ namespace CodeArts.ORM.Builders
                     SQLWriter.AppendAt = -1;
                     SQLWriter.CloseBrace();
                     SQLWriter.WhiteSpace();
-                    SQLWriter.TableName("CTE_UNION");
+                    SQLWriter.Name("CTE_UNION");
                 }
             }, () => base.Visit(node));
 
@@ -745,7 +745,7 @@ namespace CodeArts.ORM.Builders
                     if (settings.Engine == DatabaseEngine.Oracle && Parent is null)
                     {
                         SQLWriter.From();
-                        SQLWriter.TableName("dual");
+                        SQLWriter.Name("dual");
                     }
 
                     return node;
@@ -778,7 +778,7 @@ namespace CodeArts.ORM.Builders
                     if (settings.Engine == DatabaseEngine.Oracle && Parent is null)
                     {
                         SQLWriter.From();
-                        SQLWriter.TableName("dual");
+                        SQLWriter.Name("dual");
                     }
 
                     return node;
@@ -940,7 +940,7 @@ namespace CodeArts.ORM.Builders
 
                     if (isOrderByReverse ^ name.EndsWith("Descending"))
                     {
-                        SQLWriter.WriteDesc();
+                        SQLWriter.Descending();
                     }
 
                     if (buildUnion)

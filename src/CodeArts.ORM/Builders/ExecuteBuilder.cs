@@ -106,7 +106,7 @@ namespace CodeArts.ORM.Builders
         /// <param name="node">表达式</param>
         public override void Evaluate(Expression node)
         {
-            _whereSwitch = new SmartSwitch(SQLWriter.Where, SQLWriter.WriteAnd);
+            _whereSwitch = new SmartSwitch(SQLWriter.Where, SQLWriter.And);
 
             base.Evaluate(node);
         }

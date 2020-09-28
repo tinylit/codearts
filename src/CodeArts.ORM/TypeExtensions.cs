@@ -36,6 +36,7 @@ namespace CodeArts.ORM
                 {
                     if (item == declaringType) return true;
                 }
+
                 return false;
             }
             return type == declaringType;
@@ -50,7 +51,9 @@ namespace CodeArts.ORM
             while (type != null && type != typeof(object))
             {
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == definition)
+                {
                     return type;
+                }
 
                 if (definition.IsInterface)
                 {

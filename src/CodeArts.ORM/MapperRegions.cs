@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if NET40
+using System.Collections.ObjectModel;
+#endif
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -23,23 +26,31 @@ namespace CodeArts.ORM
             {
                 TableType = tableType ?? throw new ArgumentNullException(nameof(tableType));
                 TableName = tableName;
+#if NET40
+                Keys = keys.AsReadOnly();
+                ReadOnlys = readOnlys.AsReadOnly();
+#else
                 Keys = keys;
                 ReadOnlys = readOnlys;
+#endif
                 Tokens = tokens;
                 ReadWrites = readWrites;
                 ReadOrWrites = readOrWrites;
             }
             public Type TableType { get; }
             public string TableName { get; }
-            public IEnumerable<string> Keys { get; }
-            public IEnumerable<string> ReadOnlys { get; }
 #if NET40
-        public IDictionary<string, TokenAttribute> Tokens { get; }
+            public ReadOnlyCollection<string> Keys { get; }
+            public ReadOnlyCollection<string> ReadOnlys { get; }
+            public IDictionary<string, TokenAttribute> Tokens { get; }
 
-        public IDictionary<string, string> ReadWrites { get; }
+            public IDictionary<string, string> ReadWrites { get; }
 
-        public IDictionary<string, string> ReadOrWrites { get; }
+            public IDictionary<string, string> ReadOrWrites { get; }
 #else
+            public IReadOnlyCollection<string> Keys { get; }
+
+            public IReadOnlyCollection<string> ReadOnlys { get; }
 
             public IReadOnlyDictionary<string, TokenAttribute> Tokens { get; }
 
@@ -52,10 +63,10 @@ namespace CodeArts.ORM
         private static TableInfo Aw_Resolve(Type type) => MapperCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), tableType =>
          {
              var keys = new List<string>();
-             var tokens = new Dictionary<string, TokenAttribute>();
+             var tokens = new Dictionary<string, TokenAttribute>(StringComparer.OrdinalIgnoreCase);
              var readOnlys = new List<string>();
-             var readWrites = new Dictionary<string, string>();
-             var readOrWrites = new Dictionary<string, string>();
+             var readWrites = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+             var readOrWrites = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
              var typeStore = RuntimeTypeCache.Instance.GetCache(tableType);
 

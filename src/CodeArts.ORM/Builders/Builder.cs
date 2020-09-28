@@ -31,7 +31,10 @@ namespace CodeArts.ORM.Builders
             public override Expression Visit(Expression node)
             {
                 if (_oldExpression == node)
+                {
                     return base.Visit(_newExpression);
+                }
+
                 return base.Visit(node);
             }
         }
@@ -39,7 +42,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// 空实例
         /// </summary>
-        public static readonly List<IVisitter> Empty = new List<IVisitter>();
+        public static readonly List<IVisitor> Empty = new List<IVisitor>();
 
         private static readonly ConcurrentDictionary<Type, Type> EntryCache = new ConcurrentDictionary<Type, Type>();
 
@@ -48,7 +51,7 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// SQL 写入器
         /// </summary>
-        protected Writer SQLWriter => _write ?? (_write = CreateWriter(_settings, CreateWriterMap(_settings)));
+        protected Writer SQLWriter => _write ?? (_write = CreateWriter(_settings, CreateWriterMap(_settings), new Dictionary<string, object>()));
 
         private ISQLCorrectSettings _settings;
 
@@ -78,10 +81,11 @@ namespace CodeArts.ORM.Builders
         /// <summary>
         /// 创建写入流
         /// </summary>
-        /// <param name="settings">修正配置</param>
-        /// <param name="writeMap">写入映射关系</param>
+        /// <param name="settings">修正配置。</param>
+        /// <param name="writeMap">写入映射关系。</param>
+        /// <param name="parameters">参数。</param>
         /// <returns></returns>
-        protected virtual Writer CreateWriter(ISQLCorrectSettings settings, IWriterMap writeMap) => new Writer(settings, writeMap);
+        protected virtual Writer CreateWriter(ISQLCorrectSettings settings, IWriterMap writeMap, Dictionary<string, object> parameters) => new Writer(settings, writeMap, parameters);
 
         /// <summary>
         /// 创建构造器
@@ -216,11 +220,11 @@ namespace CodeArts.ORM.Builders
         /// <returns></returns>
         protected T WrapNot<T>(Func<T> factory)
         {
-            SQLWriter.Not ^= true;
+            SQLWriter.ReverseCondition ^= true;
 
             var value = factory.Invoke();
 
-            SQLWriter.Not ^= true;
+            SQLWriter.ReverseCondition ^= true;
 
             return value;
         }
@@ -230,11 +234,11 @@ namespace CodeArts.ORM.Builders
         /// <param name="factory">工厂</param>
         protected void WrapNot(Action factory)
         {
-            SQLWriter.Not ^= true;
+            SQLWriter.ReverseCondition ^= true;
 
             factory.Invoke();
 
-            SQLWriter.Not ^= true;
+            SQLWriter.ReverseCondition ^= true;
         }
 
         /// <summary>
@@ -320,7 +324,7 @@ namespace CodeArts.ORM.Builders
 
         private void BooleanFalse(bool allwaysFalse = false)
         {
-            if (allwaysFalse || !SQLWriter.Not)
+            if (allwaysFalse || !SQLWriter.ReverseCondition)
             {
                 SQLWriter.BooleanTrue();
 
@@ -411,7 +415,7 @@ namespace CodeArts.ORM.Builders
 
             if (node.Arguments.Count == lamdaIndex)
             {
-                if (enumerator.MoveNext() ^ SQLWriter.Not)
+                if (enumerator.MoveNext() ^ SQLWriter.ReverseCondition)
                     return node;
 
                 BooleanFalse(true);
@@ -425,7 +429,8 @@ namespace CodeArts.ORM.Builders
 
             void VisitDynamic(object value)
             {
-                var expression = new ReplaceExpressionVisitor(paramter, Expression.Constant(value, paramter.Type)).Visit(lamda.Body);
+                var expression = new ReplaceExpressionVisitor(paramter, Expression.Constant(value, paramter.Type))
+                    .Visit(lamda.Body);
 
                 base.Visit(expression);
             }
@@ -444,7 +449,7 @@ namespace CodeArts.ORM.Builders
                     if (enumerator.Current == null)
                         throw new ArgumentNullException(paramter.Name);
 
-                    SQLWriter.WriteOr();
+                    SQLWriter.Or();
 
                     VisitDynamic(enumerator.Current);
                 }
@@ -528,7 +533,7 @@ namespace CodeArts.ORM.Builders
 
             SQLWriter.IsNull();
 
-            SQLWriter.WriteOr();
+            SQLWriter.Or();
 
             base.Visit(node.Arguments.Count > 0 ? node.Arguments[0] : node.Object);
 
@@ -685,7 +690,7 @@ namespace CodeArts.ORM.Builders
             return node;
         }
         /// <inheritdoc />
-        protected virtual IEnumerable<IVisitter> GetCustomVisitters() => Empty;
+        protected virtual IEnumerable<IVisitor> GetCustomVisitters() => Empty;
 
         /// <summary>
         /// 格式化函数
@@ -699,7 +704,7 @@ namespace CodeArts.ORM.Builders
                 if (item.CanResolve(node)) return item.Visit(this, SQLWriter, node);
             }
 
-            foreach (var item in _settings.Visitters ?? Empty)
+            foreach (var item in _settings.Visitors ?? Empty)
             {
                 if (item.CanResolve(node)) return item.Visit(this, SQLWriter, node);
             }
@@ -1214,7 +1219,7 @@ namespace CodeArts.ORM.Builders
                 return node;
             }
 
-            if (buildWhereBoth && value.Equals(!SQLWriter.Not))
+            if (buildWhereBoth && value.Equals(!SQLWriter.ReverseCondition))
                 return node;
 
             SQLWriter.Parameter(node.Member.Name, value);
@@ -1281,7 +1286,7 @@ namespace CodeArts.ORM.Builders
 
                 if (memberExpression?.Expression?.NodeType == ExpressionType.Parameter)
                 {
-                    SQLWriter.WritePrefix(GetOrAddTablePrefix(member.Type, member.Member.Name));
+                    SQLWriter.Limit(GetOrAddTablePrefix(member.Type, member.Member.Name));
                     return VisitParameterMember(node);
                 }
             }
@@ -1327,7 +1332,7 @@ namespace CodeArts.ORM.Builders
         /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            SQLWriter.WritePrefix(GetOrAddTablePrefix(node.Type, node.Name));
+            SQLWriter.Limit(GetOrAddTablePrefix(node.Type, node.Name));
             return node;
         }
 
@@ -1364,11 +1369,11 @@ namespace CodeArts.ORM.Builders
 
                 if (isAndLike)
                 {
-                    SQLWriter.WriteAnd();
+                    SQLWriter.And();
                 }
                 else
                 {
-                    SQLWriter.WriteOr();
+                    SQLWriter.Or();
                 }
 
                 if (appendAt > -1)
@@ -1434,7 +1439,7 @@ namespace CodeArts.ORM.Builders
             }
             else
             {
-                SQLWriter.Write(expressionType, node.Left.Type, node.Right.Type);
+                SQLWriter.WriteAdd(expressionType, node.Left.Type, node.Right.Type);
             }
 
             if (appendAt > -1)
@@ -1513,7 +1518,7 @@ namespace CodeArts.ORM.Builders
 
             if (isAndOrLike && IsStaticVariable(left))
             {
-                if (SQLWriter.Not)
+                if (SQLWriter.ReverseCondition)
                 {
                     isAndLike ^= isOrLike;
                     isOrLike ^= isAndLike;
@@ -1623,7 +1628,7 @@ namespace CodeArts.ORM.Builders
                 }
                 else
                 {
-                    SQLWriter.Write(nodeType, left.Type, right.Type);
+                    SQLWriter.WriteAdd(nodeType, left.Type, right.Type);
                 }
 
                 Visit(right);
@@ -1708,7 +1713,7 @@ namespace CodeArts.ORM.Builders
 
             node.TestValues.ForEach((item, index) =>
             {
-                if (index > 0) SQLWriter.WriteOr();
+                if (index > 0) SQLWriter.Or();
 
                 base.Visit(item);
             });

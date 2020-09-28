@@ -16,7 +16,9 @@ namespace CodeArts.ORM
         internal static bool IsBoolean(this UnaryExpression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Operand.IsBoolean();
         }
@@ -28,7 +30,9 @@ namespace CodeArts.ORM
         internal static bool IsBoolean(this Expression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Type.IsBoolean();
         }
@@ -41,7 +45,9 @@ namespace CodeArts.ORM
         internal static bool IsHasValue(this MemberExpression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Member.Name == "HasValue";
         }
@@ -54,7 +60,9 @@ namespace CodeArts.ORM
         internal static bool IsValue(this MemberExpression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Member.Name == "Value";
         }
@@ -66,7 +74,9 @@ namespace CodeArts.ORM
         internal static bool IsLength(this MemberExpression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Member.Name == "Length";
         }
@@ -78,7 +88,9 @@ namespace CodeArts.ORM
         internal static bool IsNullable(this MemberExpression member)
         {
             if (member is null)
+            {
                 return false;
+            }
 
             return member.Type.IsNullable();
         }
@@ -91,7 +103,9 @@ namespace CodeArts.ORM
         internal static bool IsPredicate(this UnaryExpression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Operand.IsPredicate();
         }
@@ -133,7 +147,9 @@ namespace CodeArts.ORM
         internal static bool IsVariable(this MemberExpression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             return node.Expression.IsVariable();
         }
@@ -145,7 +161,9 @@ namespace CodeArts.ORM
         internal static bool IsVariable(this Expression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             if (node.NodeType == ExpressionType.MemberAccess)
             {
@@ -162,7 +180,9 @@ namespace CodeArts.ORM
         internal static string GetOperator(this UnaryExpression node)
         {
             if (node is null)
+            {
                 return string.Empty;
+            }
 
             switch (node.NodeType)
             {
@@ -213,7 +233,9 @@ namespace CodeArts.ORM
         internal static string GetOperator(this BinaryExpression node, ExpressionType? nodeType = null)
         {
             if (node is null)
+            {
                 return string.Empty;
+            }
 
             switch (nodeType ?? node.NodeType)
             {
@@ -283,7 +305,9 @@ namespace CodeArts.ORM
         internal static object GetValueFromExpression(this Expression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             return Expression.Lambda(node).Compile().DynamicInvoke();
         }
@@ -296,7 +320,9 @@ namespace CodeArts.ORM
         internal static string GetPropertyMemberNameFromExpression(this MemberExpression node)
         {
             if (node is null)
+            {
                 return string.Empty;
+            }
 
             return node.Member.Name;
         }
@@ -314,7 +340,9 @@ namespace CodeArts.ORM
         internal static string GetPropertyNameFromExpression(this Expression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             switch (node.NodeType)
             {
@@ -338,7 +366,9 @@ namespace CodeArts.ORM
         internal static MemberExpression GetMemberExpression(this ConditionalExpression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             return node.Test.GetMemberExpression() ??
                 node.IfTrue.GetMemberExpression() ??
@@ -352,7 +382,9 @@ namespace CodeArts.ORM
         internal static MemberExpression GetMemberExpression(this LambdaExpression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             return node.Body.GetMemberExpression();
         }
@@ -364,7 +396,9 @@ namespace CodeArts.ORM
         internal static MemberExpression GetMemberExpression(this UnaryExpression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             return node.Operand.GetMemberExpression();
         }
@@ -376,7 +410,9 @@ namespace CodeArts.ORM
         internal static MemberExpression GetMemberExpression(this BinaryExpression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             return node.Left.GetMemberExpression() ?? node.Right.GetMemberExpression();
         }
@@ -388,7 +424,9 @@ namespace CodeArts.ORM
         internal static MemberExpression GetMemberExpression(this Expression node)
         {
             if (node is null)
+            {
                 return null;
+            }
 
             switch (node.NodeType)
             {
@@ -417,7 +455,9 @@ namespace CodeArts.ORM
         internal static bool GetDeclaringTypeExpression(this Expression node, Type declaringType)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             switch (node.NodeType)
             {
@@ -427,7 +467,9 @@ namespace CodeArts.ORM
                     foreach (var item in ((MethodCallExpression)node).Arguments)
                     {
                         if (item.Type.IsDeclaringType(declaringType))
+                        {
                             return true;
+                        }
                     }
                     return false;
                 default:

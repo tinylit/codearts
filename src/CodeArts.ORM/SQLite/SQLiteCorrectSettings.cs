@@ -19,11 +19,11 @@ namespace CodeArts.ORM.SQLite
 
         private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\[\w+\]\.)*(?<name>(\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
 
-        private IList<IVisitter> visitters;
+        private IList<IVisitor> visitters;
         /// <summary>
         /// 表达式分析
         /// </summary>
-        public IList<IVisitter> Visitters => visitters ?? (visitters = new List<IVisitter>());
+        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
 
         /// <summary>
         /// SQLite
@@ -162,5 +162,10 @@ namespace CodeArts.ORM.SQLite
         /// <param name="name">名称</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("@", name);
+
+        public string ToSQL(string sql, int take, int skip, string orderBy)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
