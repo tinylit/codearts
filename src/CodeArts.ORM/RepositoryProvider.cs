@@ -47,26 +47,28 @@ namespace CodeArts.ORM
         /// <summary>
         /// 查询第一个结果。
         /// </summary>
-        /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="T">结果类型。</typeparam>
+        /// <param name="conn">数据库链接。</param>
+        /// <param name="sql">SQL。</param>
+        /// <param name="parameters">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="defaultValue">默认值。</param>
         /// <returns></returns>
-        public abstract T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
+        public abstract T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, T defaultValue = default);
 
         /// <summary>
         /// 查询第一个结果。
         /// </summary>
-        /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="T">结果类型。</typeparam>
+        /// <param name="conn">数据库链接。</param>
+        /// <param name="sql">SQL。</param>
+        /// <param name="parameters">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="hasDefaultValue">是否包含默认值。</param>
+        /// <param name="defaultValue">默认值。</param>
         /// <param name="missingMsg">未查询到数据时，异常信息。</param>
         /// <returns></returns>
-        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
+        public abstract T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, bool hasDefaultValue = false, T defaultValue = default, string missingMsg = null);
 
         /// <summary>
         /// 查询列表集合
@@ -116,17 +118,18 @@ namespace CodeArts.ORM
                         return (TResult)Query<T>(conn, sql, visitor.Parameters, visitor.TimeOut);
                     }
 
-                    if (visitor.Required)
+                    TResult defaultValue = default;
+
+                    if (visitor.HasDefaultValue)
                     {
-                        if (visitor.HasDefaultValue)
+                        object value = visitor.DefaultValue;
+
+                        if (value is TResult result)
                         {
-                            object value = visitor.DefaultValue;
-
-                            if (value is TResult defaultValue)
-                            {
-                                return QueryFirst(conn, sql, visitor.Parameters, defaultValue, visitor.TimeOut, visitor.MissingDataError);
-                            }
-
+                            defaultValue = result;
+                        }
+                        else
+                        {
                             Type conversionType = typeof(TResult);
 
                             if (value is null)
@@ -135,17 +138,20 @@ namespace CodeArts.ORM
                                 {
                                     throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
                                 }
-
-                                return QueryFirst<TResult>(conn, sql, visitor.Parameters, default, visitor.TimeOut, visitor.MissingDataError);
                             }
-
-                            throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
+                            else
+                            {
+                                throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
+                            }
                         }
-
-                        return QueryFirst<TResult>(conn, sql, visitor.Parameters, default, visitor.TimeOut, visitor.MissingDataError);
                     }
 
-                    return QueryFirstOrDefault<TResult>(conn, sql, visitor.Parameters, visitor.TimeOut);
+                    if (visitor.Required)
+                    {
+                        return QueryFirst<TResult>(conn, sql, visitor.Parameters, visitor.TimeOut, visitor.HasDefaultValue, defaultValue, visitor.MissingDataError);
+                    }
+
+                    return QueryFirstOrDefault<TResult>(conn, sql, visitor.Parameters, visitor.TimeOut, defaultValue);
                 }
                 catch (DbException db)
                 {

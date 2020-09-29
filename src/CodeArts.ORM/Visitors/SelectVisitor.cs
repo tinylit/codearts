@@ -211,7 +211,7 @@ namespace CodeArts.ORM.Visitors
 
                     var prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
 
-                    writer.TableName(TableName(tableInfo), prefix);
+                    writer.TableName(GetTableName(tableInfo), prefix);
                 }
 
                 return node;
@@ -297,7 +297,7 @@ namespace CodeArts.ORM.Visitors
 
             writer.From();
 
-            writer.TableName(TableName(tableInfo), prefix);
+            writer.TableName(GetTableName(tableInfo), prefix);
 
             return node;
         }
@@ -416,7 +416,7 @@ namespace CodeArts.ORM.Visitors
 
             if (!hasJoin)
             {
-                writer.TableName(TableName(tableInfo), prefix);
+                writer.TableName(GetTableName(tableInfo), prefix);
             }
 
             return default;

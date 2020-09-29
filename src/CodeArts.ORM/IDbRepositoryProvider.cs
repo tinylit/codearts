@@ -18,26 +18,28 @@ namespace CodeArts.ORM
         /// <summary>
         /// 查询第一个结果。
         /// </summary>
-        /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="T">结果类型。</typeparam>
+        /// <param name="conn">数据库链接。</param>
+        /// <param name="sql">SQL。</param>
+        /// <param name="parameters">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="defaultValue">默认值。</param>
         /// <returns></returns>
-        T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
+        T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, T defaultValue = default);
 
         /// <summary>
         /// 查询第一个结果。
         /// </summary>
-        /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="T">结果类型。</typeparam>
+        /// <param name="conn">数据库链接。</param>
+        /// <param name="sql">SQL。</param>
+        /// <param name="parameters">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="hasDefaultValue">是否包含默认值。</param>
+        /// <param name="defaultValue">默认值（仅“<paramref name="hasDefaultValue"/>”为真时，有效）。</param>
         /// <param name="missingMsg">未查询到数据时，异常信息。</param>
         /// <returns></returns>
-        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, T defaultValue = default, int? commandTimeout = null, string missingMsg = null);
+        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, bool hasDefaultValue = false, T defaultValue = default, string missingMsg = null);
 
         /// <summary>
         /// 查询列表集合

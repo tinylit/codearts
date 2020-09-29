@@ -23,14 +23,7 @@ namespace CodeArts.ORM.Visitors
             {
                 base.VisitNewMember(memberInfo, memberExp, memberOfHostType);
 
-                var tableInfo = base.MakeTableInfo(memberOfHostType);
-
-                if (!tableInfo.ReadOrWrites.TryGetValue(memberInfo.Name, out string value))
-                {
-                    throw new DSyntaxErrorException($"“{memberInfo.Name}”不可读写!");
-                }
-
-                writer.As(value);
+                writer.As(base.GetMemberNaming(memberOfHostType, memberInfo));
             }
         }
 
@@ -170,7 +163,7 @@ namespace CodeArts.ORM.Visitors
 
                 var prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
 
-                writer.TableName(TableName(tableInfo), prefix);
+                writer.TableName(GetTableName(tableInfo), prefix);
 
             }, () =>
             {

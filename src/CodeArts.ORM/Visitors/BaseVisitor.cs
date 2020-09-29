@@ -144,6 +144,8 @@ namespace CodeArts.ORM.Visitors
 
         private static readonly Type BaseVisitorType = typeof(BaseVisitor);
 
+        private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<MemberInfo, string>> MemberNamingCache = new ConcurrentDictionary<Type, ConcurrentDictionary<MemberInfo, string>>();
+
         private static readonly ConcurrentDictionary<Type, bool> CanResolveCache = new ConcurrentDictionary<Type, bool>();
         private static MethodInfo GetMethodInfo(Func<MethodCallExpression, bool> func) => func.Method;
 
@@ -231,12 +233,6 @@ namespace CodeArts.ORM.Visitors
             return _CurrentRegions.TableType == entryType ? _CurrentRegions : _CurrentRegions = MapperRegions.Resolve(entryType);
         }
 
-        /// <summary>
-        /// 表名称。
-        /// </summary>
-        /// <param name="tableInfo">表信息。</param>
-        /// <returns></returns>
-        protected string TableName(ITableInfo tableInfo) => tableGetter?.Invoke(tableInfo) ?? tableInfo.TableName;
 
         /// <summary>
         /// 获取最根本的类型。
@@ -2299,6 +2295,35 @@ namespace CodeArts.ORM.Visitors
 
             return VisitBinaryIsBit(node);
         }
+
+
+        /// <summary>
+        /// 表名称。
+        /// </summary>
+        /// <param name="tableInfo">表信息。</param>
+        /// <returns></returns>
+        protected string GetTableName(ITableInfo tableInfo) => tableGetter?.Invoke(tableInfo) ?? tableInfo.TableName;
+
+        /// <summary>
+        /// 获取成员命名。
+        /// </summary>
+        /// <param name="memberOfHostType">成员所在类型。</param>
+        /// <param name="memberInfo">成员。</param>
+        /// <returns></returns>
+        protected virtual string GetMemberNaming(Type memberOfHostType, MemberInfo memberInfo)
+        => MemberNamingCache
+            .GetOrAdd(memberOfHostType, _ => new ConcurrentDictionary<MemberInfo, string>())
+            .GetOrAdd(memberInfo, _ =>
+            {
+                var tableInfo = MapperRegions.Resolve(memberOfHostType);
+
+                if (!tableInfo.ReadOrWrites.TryGetValue(memberInfo.Name, out string value))
+                {
+                    throw new DSyntaxErrorException($"“{memberInfo.Name}”不可读写!");
+                }
+
+                return value;
+            });
 
         #region SQL
         /// <summary>

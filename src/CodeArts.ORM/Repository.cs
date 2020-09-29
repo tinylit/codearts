@@ -312,24 +312,25 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 查询一条数据(未查询到数据)
+        /// 查询一条数据(未查询到数据)。
         /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="TResult">结果。</typeparam>
+        /// <param name="sql">SQL。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="defaultValue">默认值。</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null)
+        protected virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null, TResult defaultValue = default)
         {
             if (!QueryAuthorize(sql))
             {
                 throw new NonAuthorizedException();
             }
 
-            return DbProvider.QueryFirstOrDefault<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
+            return DbProvider.QueryFirstOrDefault<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout, defaultValue);
         }
 
-        TResult ISelectable.QueryFirstOrDefault<TResult>(SQL sql, object param, int? commandTimeout) => QueryFirstOrDefault<TResult>(sql, param, commandTimeout);
+        TResult ISelectable.QueryFirstOrDefault<TResult>(SQL sql, object param, int? commandTimeout, TResult defaultValue) => QueryFirstOrDefault<TResult>(sql, param, commandTimeout, defaultValue);
 
         /// <summary>
         /// 查询一条数据
@@ -337,21 +338,22 @@ namespace CodeArts.ORM
         /// <typeparam name="TResult">结果</typeparam>
         /// <param name="sql">SQL</param>
         /// <param name="param">参数</param>
-        /// <param name="defaultValue">默认值</param>
         /// <param name="commandTimeout">超时时间</param>
+        /// <param name="hasDefaultValue">含默认值。</param>
+        /// <param name="defaultValue">默认值（仅“<paramref name="hasDefaultValue"/>”为真时，有效）。</param>
         /// <param name="missingMsg">未查询到数据时，异常信息。</param>
         /// <returns></returns>
-        protected virtual TResult QueryFirst<TResult>(SQL sql, object param = null, TResult defaultValue = default, int? commandTimeout = null, string missingMsg = null)
+        protected virtual TResult QueryFirst<TResult>(SQL sql, object param = null, int? commandTimeout = null, bool hasDefaultValue = false, TResult defaultValue = default, string missingMsg = null)
         {
             if (!QueryAuthorize(sql))
             {
                 throw new NonAuthorizedException();
             }
 
-            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), default, commandTimeout, missingMsg);
+            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout, hasDefaultValue, defaultValue, missingMsg);
         }
 
-        TResult ISelectable.QueryFirst<TResult>(SQL sql, object param, TResult defaultValue, int? commandTimeout, string missingMsg) => QueryFirst<TResult>(sql, param, defaultValue, commandTimeout, missingMsg);
+        TResult ISelectable.QueryFirst<TResult>(SQL sql, object param, int? commandTimeout, bool hasDefaultValue, TResult defaultValue, string missingMsg) => QueryFirst<TResult>(sql, param, commandTimeout, hasDefaultValue, defaultValue, missingMsg);
 
         /// <summary>
         /// 查询所有数据
