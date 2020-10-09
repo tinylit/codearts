@@ -13,7 +13,7 @@ namespace CodeArts.ORM.Tests
         {
             var users = new List<FeiUsers>();
 
-            var user = users.DefaultIfEmpty(null).ElementAt(10);
+            var user = users.DefaultIfEmpty(null).First();
         }
     }
 }
