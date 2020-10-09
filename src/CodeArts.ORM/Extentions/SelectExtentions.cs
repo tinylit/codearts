@@ -11,7 +11,6 @@ namespace System.Linq
     /// </summary>
     public static class SelectExtentions
     {
-        private static readonly ConcurrentDictionary<Type, IDbRepositoryProvider> ProviderCache = new ConcurrentDictionary<Type, IDbRepositoryProvider>();
         private static MethodInfo GetMethodInfo<T1, T2, T3>(Func<T1, T2, T3> f, T1 _, T2 _2) => f.Method;
 
         /// <summary>
@@ -59,55 +58,5 @@ namespace System.Linq
             source.Expression,
             Expression.Constant(errMsg)
         }));
-
-        /// <summary>
-        /// SQL
-        /// </summary>
-        /// <typeparam name="TSource">资源类型</typeparam>
-        /// <param name="source">查询器</param>
-        /// <returns></returns>
-        public static string Sql<TSource>(this IQueryable<TSource> source)
-        {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            IDbRepositoryProvider provider = ProviderCache.GetOrAdd(source.GetType(), repositoryType =>
-            {
-                if (!typeof(Repository<TSource>).IsAssignableFrom(repositoryType))
-                {
-                    throw new NotImplementedException("未实现数据仓储!");
-                }
-
-                var info = repositoryType.GetProperty("DbProvider", BindingFlags.Instance | BindingFlags.NonPublic);
-
-                if (info is null)
-                {
-                    throw new NullReferenceException("DbProvider");
-                }
-
-                var value = info.GetValue(source, null);
-
-                if (value is null)
-                {
-                    throw new NullReferenceException("DbProvider");
-                }
-
-                if (value is IDbRepositoryProvider dbRepositoryProvider)
-                {
-                    return dbRepositoryProvider;
-                }
-
-                throw new NullReferenceException("DbProvider");
-            });
-
-            using (var visitor = provider.Create())
-            {
-                visitor.Startup(source.Expression);
-
-                return visitor.ToSQL();
-            }
-        }
     }
 }

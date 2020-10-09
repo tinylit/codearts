@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
+using System.Data.SqlTypes;
 
 namespace CodeArts.ORM
 {
@@ -61,7 +63,9 @@ namespace CodeArts.ORM
             }
 
             if (typeMap.TryGetValue(dataType, out DbType dbType))
+            {
                 return dbType;
+            }
 
             if (dataType.FullName == "System.Data.Linq.Binary")
             {
@@ -74,7 +78,9 @@ namespace CodeArts.ORM
         private void AddParameterAuto(IDbCommand command, Dictionary<string, object> parameters)
         {
             if (parameters is null || parameters.Count == 0)
+            {
                 return;
+            }
 
             foreach (var kv in parameters)
             {
@@ -84,9 +90,13 @@ namespace CodeArts.ORM
 
         private void AddParameterAuto(IDbCommand command, string key, object value)
         {
-            if (key[0] == '@' || key[0] == '?' || key[0] == ':')
+            switch (key[0])
             {
-                key = key.Substring(1);
+                case '@':
+                case '?':
+                case ':':
+                    key = key.Substring(1);
+                    break;
             }
 
             var dbParameter = command.CreateParameter();
