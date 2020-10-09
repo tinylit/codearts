@@ -15,7 +15,7 @@ namespace Mvc.Core
     public class Startup : JwtStartup
     {
         /// <inheritdoc />
-        public Startup() : base(new PathString("/api"))
+        public Startup()
         {
         }
         /// <inheritdoc />

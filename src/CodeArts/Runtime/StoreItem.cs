@@ -334,7 +334,7 @@ namespace CodeArts.Runtime
         /// <param name="attributeType">属性类型</param>
         /// <param name="inherit">如果为 true，则指定还在 element 的祖先中搜索自定义属性。</param>
         /// <returns></returns>
-        public bool IsDefined(Type attributeType, bool inherit) => IsDefined(attributeType) || inherit && BoolCache.GetOrAdd(attributeType, type => Attribute.IsDefined(Member, attributeType, inherit));
+        public bool IsDefined(Type attributeType, bool inherit) => IsDefined(attributeType) || inherit && BoolCache.GetOrAdd(attributeType, type => Attribute.IsDefined(Member, type, inherit));
 
         /// <summary>
         /// 是否声明了指定属性类型标记。

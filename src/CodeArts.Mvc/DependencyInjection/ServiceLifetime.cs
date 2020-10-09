@@ -11,7 +11,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// Specifies that a single instance of the service will be created.
         /// </summary>
         Singleton,
-#if NET45 || NET451 || NET452 || NET461
+#if !NET40
         /// <summary>
         /// Specifies that a new instance of the service will be created for each scope.
         /// </summary>

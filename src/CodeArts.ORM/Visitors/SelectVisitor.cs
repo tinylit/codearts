@@ -13,7 +13,7 @@ namespace CodeArts.ORM.Visitors
     /// <summary>
     /// Select。
     /// </summary>
-    public class SelectVisitor : BaseVisitor
+    public class SelectVisitor : ConditionVisitor
     {
         #region 匿名内部类。
         /// <summary>
@@ -60,9 +60,9 @@ namespace CodeArts.ORM.Visitors
         }
         #endregion
 
-        private int take = -1;
+        private int take = 0;
 
-        private int skip = -1;
+        private int skip = 0;
 
         private int selectDepth = 0;
 
@@ -211,7 +211,7 @@ namespace CodeArts.ORM.Visitors
 
                     var prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
 
-                    writer.TableName(GetTableName(tableInfo), prefix);
+                    writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
                 }
 
                 return node;
@@ -224,7 +224,7 @@ namespace CodeArts.ORM.Visitors
         /// inherit。
         /// </summary>
         /// <returns></returns>
-        protected internal override bool TryGetEntryAlias(Type entryType, string parameterName, bool check, out string aliasName)
+        protected override bool TryGetEntryAlias(Type entryType, string parameterName, bool check, out string aliasName)
         {
             if (hasJoin && parameterName.IsNotEmpty() && JoinCache.TryGetValue(entryType, out List<string> list) && list.Contains(parameterName))
             {
@@ -247,7 +247,7 @@ namespace CodeArts.ORM.Visitors
         {
             writer.Write(aggregationName);
             writer.OpenBrace();
-            writer.Name(prefix, field);
+            writer.NameDot(prefix, field);
             writer.CloseBrace();
         }
 
@@ -297,7 +297,7 @@ namespace CodeArts.ORM.Visitors
 
             writer.From();
 
-            writer.TableName(GetTableName(tableInfo), prefix);
+            writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
 
             return node;
         }
@@ -344,7 +344,7 @@ namespace CodeArts.ORM.Visitors
                         {
                             if (tableInfo.Keys.Contains(kv.Key))
                             {
-                                writer.Name(prefix, kv.Value);
+                                writer.NameDot(prefix, kv.Value);
 
                                 break;
                             }
@@ -416,7 +416,7 @@ namespace CodeArts.ORM.Visitors
 
             if (!hasJoin)
             {
-                writer.TableName(GetTableName(tableInfo), prefix);
+                writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
             }
 
             return default;
@@ -719,6 +719,20 @@ namespace CodeArts.ORM.Visitors
         /// inherit。
         /// </summary>
         /// <returns></returns>
+        protected override Expression VisitCondition(MethodCallExpression node)
+        {
+            if (buildSelect)
+            {
+                return base.UsingCondition(() => base.Visit(node.Arguments[1]), whereIsNotEmpty => base.Visit(node.Arguments[0]), true);
+            }
+
+            return base.VisitCondition(node);
+        }
+
+        /// <summary>
+        /// inherit。
+        /// </summary>
+        /// <returns></returns>
         protected override Expression VisitCombination(MethodCallExpression node)
         {
             try
@@ -794,8 +808,11 @@ namespace CodeArts.ORM.Visitors
         /// </summary>
         /// <param name="members">成员集合</param>
         /// <returns></returns>
+#if NET40
         protected virtual ReadOnlyCollection<MemberInfo> FilterMembers(ReadOnlyCollection<MemberInfo> members) => members;
-
+#else
+        protected virtual IReadOnlyCollection<MemberInfo> FilterMembers(IReadOnlyCollection<MemberInfo> members) => members;
+#endif
         /// <summary>
         /// 访问 new 成员。
         /// </summary>
@@ -842,7 +859,6 @@ namespace CodeArts.ORM.Visitors
             {
                 throw new DException("未指定查询字段!");
             }
-
         }
 
         #region SQL

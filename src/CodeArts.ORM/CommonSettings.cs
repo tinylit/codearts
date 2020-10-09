@@ -1,5 +1,7 @@
-﻿using System;
+﻿using CodeArts.ORM.Exceptions;
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace CodeArts.ORM
 {
@@ -8,6 +10,8 @@ namespace CodeArts.ORM
     /// </summary>
     public static class CommonSettings
     {
+        private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         /// <summary>
         /// 参数分析
         /// </summary>
@@ -114,6 +118,25 @@ namespace CodeArts.ORM
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// 查询字段。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        /// <returns></returns>
+        public static Tuple<string, int> QueryFields(string sql)
+        {
+            var match = PatternColumn.Match(sql);
+
+            if (!match.Success)
+            {
+                throw new DException("无法分析的SQL语句!");
+            }
+
+            Group group = match.Groups["cols"];
+
+            return new Tuple<string, int>(group.Value, group.Index);
         }
     }
 }

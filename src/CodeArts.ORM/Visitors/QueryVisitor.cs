@@ -89,7 +89,7 @@ namespace CodeArts.ORM.Visitors
                 case MethodCall.DefaultIfEmpty:
                     if (HasDefaultValue)
                     {
-                        return base.Visit(node.Arguments[0]);
+                         throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链最多只能出现一次！");
                     }
 
                     if (node.Arguments.Count > 1)
@@ -122,10 +122,13 @@ namespace CodeArts.ORM.Visitors
 
                     TimeOut += (int)node.Arguments[1].GetValueFromExpression();
 
-                    base.Visit(node.Arguments[0]);
-
-                    return node;
+                    return base.Visit(node.Arguments[0]);
                 case MethodCall.NoResultError:
+
+                    if (!Required)
+                    {
+                        throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链以“Last”、“First”、“Single”或“ElementAt”结尾时，可用！");
+                    }
 
                     var valueObj = node.Arguments[1].GetValueFromExpression();
 
@@ -134,9 +137,7 @@ namespace CodeArts.ORM.Visitors
                         MissingDataError = text;
                     }
 
-                    base.Visit(node.Arguments[0]);
-
-                    return node;
+                    return base.Visit(node.Arguments[0]);
                 default:
                     return base.VisitOfSelect(node);
             }
@@ -221,9 +222,9 @@ namespace CodeArts.ORM.Visitors
         /// </summary>
         /// <returns></returns>
 #if NET40
-        protected override ICollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
+        protected override ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
 #else
-        protected override IReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
+        protected override IReadOnlyCollection<MemberBinding> FilterMemberBindings(IReadOnlyCollection<MemberBinding> bindings)
 #endif
         {
             var vbindings = base.FilterMemberBindings(bindings);
@@ -235,7 +236,11 @@ namespace CodeArts.ORM.Visitors
 
             return vbindings
                 .Where(x => MemberFilters.Contains(x.Member.Name.ToLower()))
-                .ToList();
+                .ToList()
+#if NET40
+                .AsReadOnly()
+#endif
+                ;
         }
 
         /// <summary>
@@ -286,7 +291,6 @@ namespace CodeArts.ORM.Visitors
         /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。
         /// </summary>
         public int? TimeOut { private set; get; }
-
         /// <summary>
         /// 是否必须。
         /// </summary>
@@ -303,10 +307,5 @@ namespace CodeArts.ORM.Visitors
         /// 未找到数据异常。
         /// </summary>
         public string MissingDataError { private set; get; }
-        /// <summary>
-        /// 查询所需参数。
-        /// </summary>
-        public Dictionary<string, object> Parameters => writer.Parameters;
-
     }
 }

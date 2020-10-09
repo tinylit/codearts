@@ -13,17 +13,11 @@ namespace CodeArts.ORM.SQLite
     /// </summary>
     public class SQLiteCorrectSettings : ISQLCorrectSettings
     {
-        private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
-
-        private static readonly Regex PatternColumn = new Regex("select\\s+(?<column>((?!select|where).)+(select((?!from|select).)+from((?!from|select).)+)*((?!from|select).)*)\\s+from\\s+", RegexOptions.IgnoreCase);
-
-        private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\[\w+\]\.)*(?<name>(\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
-
-        private IList<IVisitor> visitters;
+        private IList<ICustomVisitor> visitters;
         /// <summary>
         /// 表达式分析
         /// </summary>
-        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
+        public IList<ICustomVisitor> Visitors => visitters ?? (visitters = new List<ICustomVisitor>());
 
         /// <summary>
         /// SQLite
@@ -64,108 +58,31 @@ namespace CodeArts.ORM.SQLite
         public string Name(string name) => string.Concat("[", name, "]");
 
         /// <summary>
-        /// 分页
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="take">获取N条</param>
-        /// <param name="skip">跳过M条</param>
-        /// <returns></returns>
-        public virtual string PageSql(string sql, int take, int skip)
-        {
-            var sb = new StringBuilder();
-
-            return sb.Append(sql)
-                 .Append(" LIMIT ")
-                 .Append(take)
-                 .Append(" OFFSET ")
-                 .Append(skip)
-                 .ToString();
-        }
-
-        /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
-        /// </summary>
-        /// <param name="columns">以“,”分割的列集合</param>
-        /// <returns></returns>
-        protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
-
-        private Tuple<string, bool> GetColumns(string columns) => mapperCache.GetOrAdd(columns, _ =>
-        {
-            var list = ToSingleColumnCodeBlock(columns);
-
-            if (list.Count == 1)
-            {
-                var match = PatternSingleAsColumn.Match(list.First());
-
-                if (match.Success)
-                {
-                    return Tuple.Create(match.Groups["name"].Value, false);
-                }
-
-                return Tuple.Create(Name("__sqlite_col"), true);
-            }
-
-            return Tuple.Create(string.Join(",", list.ConvertAll(item =>
-            {
-                var match = PatternSingleAsColumn.Match(item);
-
-                if (match.Success)
-                {
-                    return match.Groups["name"].Value;
-                }
-
-                throw new DException("分页且多字段时,必须指定字段名!");
-            })), false);
-        });
-
-        /// <summary>
-        /// 分页（并集、交集等）
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="take">获取N条</param>
-        /// <param name="skip">跳过M条</param>
-        /// <param name="orderBy">排序</param>
-        /// <returns></returns>
-        public string PageUnionSql(string sql, int take, int skip, string orderBy)
-        {
-            var sb = new StringBuilder();
-
-            var match = PatternColumn.Match(sql);
-
-            string value = match.Groups["column"].Value;
-
-            Tuple<string, bool> tuple = GetColumns(value);
-
-            if (tuple.Item2)
-            {
-                throw new DException("组合查询必须指定字段名!");
-            }
-
-            return sb.Append("SELECT ")
-                 .Append(tuple.Item1)
-                 .Append(" FROM (")
-                 .Append(sql)
-                 .Append(") ")
-                 .Append(Name("CTE"))
-                 .Append(" ")
-                 .Append(orderBy)
-                 .Append(" LIMIT ")
-                 .Append(take)
-                 .Append(" OFFSET ")
-                 .Append(skip)
-                 .ToString();
-        }
-
-        /// <summary>
         /// 参数名称
         /// </summary>
         /// <param name="name">名称</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("@", name);
 
+        /// <summary>
+        /// SQL。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        /// <param name="take">获取“<paramref name="take"/>”条数据。</param>
+        /// <param name="skip">跳过“<paramref name="skip"/>”条数据。</param>
+        /// <param name="orderBy">排序。</param>
+        /// <returns></returns>
         public string ToSQL(string sql, int take, int skip, string orderBy)
         {
-            throw new NotImplementedException();
+            var sb = new StringBuilder();
+
+            return sb.Append(sql)
+                  .Append(orderBy)
+                  .Append(" LIMIT ")
+                  .Append(take)
+                  .Append(" OFFSET ")
+                  .Append(skip)
+                  .ToString();
         }
     }
 }

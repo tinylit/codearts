@@ -48,7 +48,9 @@ namespace CodeArts.Mvc
             }
 
             if (ipAddress == "::1")
+            {
                 return "127.0.0.1";
+            }
 
             return ipAddress;
         }

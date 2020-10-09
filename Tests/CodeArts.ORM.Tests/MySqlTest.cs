@@ -80,18 +80,6 @@ namespace UnitTest
 
             var auths = authTreesingleton.Where(x => x.Status != CommonStatusEnum.Deleted && rights.Contains(x.Id) && !userRights.Any(y => y.AuthId == x.Id))
                 .ToList();
-            /**
-             * SELECT `x`.`id`, `x`.`parent_id` AS `ParentId`, `x`.`disp_order` AS `DispOrder`, `x`.`has_child` AS `HasChild`, `x`.`code`, `x`.`name`, `x`.`url`, `x`.`type`, `x`.`status`, `x`.`created`, `x`.`modified` 
-             * FROM `yep_auth_tree` `x` 
-             * WHERE (((`x`.`status` <> ?__variable_1) 
-             *      AND `x`.`id` IN (?__variable_2, ?__variable_3, ?__variable_4, ?__variable_5, ?__variable_6)) 
-             *      AND NOT EXISTS(
-             *          SELECT `x1`.`id` 
-             *          FROM `yep_auth_ship` `x1` 
-             *          WHERE (`x1`.`auth_id` = `x`.`id`)
-             *      )
-             * )
-             */
         }
 
         [TestMethod]
@@ -141,24 +129,12 @@ namespace UnitTest
             var defautUser = userSingleton.Where(x => validWx && x.WechatId == user.WechatId)
                .FirstOrDefault();
 
-            /**
-             * SELECT `org_id` AS `OrgId`, `company_id` AS `CompanyId`, `account`, `role`, `name`, `wechat_id` AS `WechatId`, `alipay_id` AS `AlipayId`, `tel`, `mail`, `avatar`, `sex`, `password`, `salt`, `status`, `extends_enum` AS `ExtendsEnum`, `registered`, `modified`, `id` 
-             * FROM `yep_users` 
-             * LIMIT 1
-             */
-
             var dataUser = userSingleton.Where(x => x.Account == user.Account ||
                 (validTel && x.Tel == user.Tel) || // 电话
                 (validMail && x.Mail == user.Mail) || // 邮件
                 (validWx && x.WechatId == user.WechatId) || // 微信账号
                 (validAlipay && x.AlipayId == user.AlipayId)) // 支付宝账户
                 .FirstOrDefault();
-            /**
-             *  SELECT `x`.`org_id` AS `OrgId`, `x`.`company_id` AS `CompanyId`, `x`.`account`, `x`.`role`, `x`.`name`, `x`.`wechat_id` AS `WechatId`, `x`.`alipay_id` AS `AlipayId`, `x`.`tel`, `x`.`mail`, `x`.`avatar`, `x`.`sex`, `x`.`password`, `x`.`salt`, `x`.`status`, `x`.`extends_enum` AS `ExtendsEnum`, `x`.`registered`, `x`.`modified`, `x`.`id` 
-             *  FROM `yep_users` `x`
-             *  WHERE (((`x`.`account` = ?Account) OR (`x`.`tel` = ?Tel)) OR (`x`.`mail` = ?Mail)) 
-             *  LIMIT 1
-             */
         }
 
         [TestMethod]
@@ -210,7 +186,7 @@ namespace UnitTest
                 .Limit(x => x.Account)
                 .Except(x => x.Id)
                 .ExecuteCommand();
-
+            
             userSingleton.AsExecuteable()
                 .Where(x => x.Id == 1)
                 .Delete();
@@ -249,26 +225,10 @@ namespace UnitTest
                 .Select(x => new
                 {
                     Id = Convert.ToString(x.Id),
-                    Name = x.Name,
-                    ShortName = x.ShortName,
+                    x.Name,
+                    x.ShortName,
                     HasChild = taxCodeSingleton.Any(y => y.ParentId == x.Id)
                 }).ToList();
-
-            /**
-             * SELECT 
-             * CONVERT(`x`.`Id`,CHAR) AS `Id`,
-             * `x`.`name` AS `Name`,
-             * `x`.`short_name` AS `ShortName`,
-             * (
-             *  SELECT CASE 
-             *  WHEN EXISTS(SELECT `y`.`Id` FROM `yep_tax_code` `y` WHERE (`y`.`parent_id`=`x`.`Id`)) 
-             *      THEN ?__variable_true 
-             *  ELSE ?__variable_false
-             *  END
-             * ) AS `HasChild` 
-             * FROM `yep_tax_code` `x`
-             * WHERE (`x`.`level`=?__variable_1)
-             */
         }
 
         [TestMethod]

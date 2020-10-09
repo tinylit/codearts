@@ -35,6 +35,7 @@ namespace CodeArts.Runtime
         /// 可读
         /// </summary>
         public override bool CanRead => Member.IsPublic;
+
         /// <summary>
         /// 可写
         /// </summary>

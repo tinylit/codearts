@@ -1,5 +1,4 @@
-﻿using CodeArts.ORM.Builders;
-using CodeArts.ORM.Exceptions;
+﻿using CodeArts.ORM.Exceptions;
 using CodeArts.ORM.Visitors;
 using System;
 using System.Collections.Generic;
@@ -16,6 +15,7 @@ namespace CodeArts.ORM
     public abstract class RepositoryProvider : IDbRepositoryProvider, IDbRepositoryExecuter
     {
         private static readonly AsyncLocal<bool> localCache = new AsyncLocal<bool>();
+        private readonly ISQLCorrectSettings settings;
 
         /// <summary>
         /// 构造函数
@@ -23,26 +23,20 @@ namespace CodeArts.ORM
         /// <param name="settings">SQL语句矫正设置</param>
         public RepositoryProvider(ISQLCorrectSettings settings)
         {
-            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
-
-        /// <summary>
-        /// SQL语句矫正设置
-        /// </summary>
-        protected ISQLCorrectSettings Settings { private set; get; }
 
         /// <summary>
         /// 创建SQL查询器
         /// </summary>
         /// <returns></returns>
-        public virtual IQueryVisitor Create() => new QueryVisitor(Settings);
+        public virtual IQueryVisitor Create() => new QueryVisitor(settings);
 
         /// <summary>
-        /// 创建执行器
+        /// 创建执行器。
         /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
         /// <returns></returns>
-        public virtual IExecuteBuilder<T> Create<T>() => new ExecuteBuilder<T>(Settings);
+        public virtual IExecuteVisitor CreateExe() => new ExecuteVisitor(settings);
 
         /// <summary>
         /// 查询第一个结果。
@@ -96,6 +90,8 @@ namespace CodeArts.ORM
                 throw new NotSupportedException("禁止在查询器分析中执行查询操作，如果必须，请将表达式查询结果用变量存储，再作为条件语句的一部分！");
             }
 
+            var sqlProfiler = SqlCapture.Current;
+
             using (var visitor = Create())
             {
                 localCache.Value = true;
@@ -111,6 +107,8 @@ namespace CodeArts.ORM
 
                 string sql = visitor.ToSQL();
 
+                sqlProfiler?.Capture(sql, visitor.Parameters, CommandBehavior.Select);
+
                 try
                 {
                     if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
@@ -122,17 +120,15 @@ namespace CodeArts.ORM
 
                     if (visitor.HasDefaultValue)
                     {
-                        object value = visitor.DefaultValue;
-
-                        if (value is TResult result)
+                        if (visitor.DefaultValue is TResult value)
                         {
-                            defaultValue = result;
+                            defaultValue = value;
                         }
                         else
                         {
                             Type conversionType = typeof(TResult);
 
-                            if (value is null)
+                            if (visitor.DefaultValue is null)
                             {
                                 if (conversionType.IsValueType)
                                 {
@@ -141,17 +137,17 @@ namespace CodeArts.ORM
                             }
                             else
                             {
-                                throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({value.GetType()})无法进行默认转换!");
+                                throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({visitor.DefaultValue.GetType()})无法进行默认转换!");
                             }
                         }
                     }
 
                     if (visitor.Required)
                     {
-                        return QueryFirst<TResult>(conn, sql, visitor.Parameters, visitor.TimeOut, visitor.HasDefaultValue, defaultValue, visitor.MissingDataError);
+                        return QueryFirst(conn, sql, visitor.Parameters, visitor.TimeOut, visitor.HasDefaultValue, defaultValue, visitor.MissingDataError);
                     }
 
-                    return QueryFirstOrDefault<TResult>(conn, sql, visitor.Parameters, visitor.TimeOut, defaultValue);
+                    return QueryFirstOrDefault(conn, sql, visitor.Parameters, visitor.TimeOut, defaultValue);
                 }
                 catch (DbException db)
                 {
@@ -166,31 +162,35 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="expression">表达式</param>
         /// <returns></returns>
-        public int Execute<T>(IDbConnection conn, Expression expression)
+        public int Execute(IDbConnection conn, Expression expression)
         {
             if (localCache.Value)
             {
                 throw new NotSupportedException("禁止在执行器分析中执行查询操作，如果必须，请将表达式查询结果用变量存储，再作为条件语句的一部分！");
             }
 
-            using (var builder = Create<T>())
+            var sqlProfiler = SqlCapture.Current;
+
+            using (var visitor = CreateExe())
             {
                 localCache.Value = true;
 
                 try
                 {
-                    builder.Evaluate(expression);
+                    visitor.Startup(expression);
                 }
                 finally
                 {
                     localCache.Value = false;
                 }
 
-                string sql = builder.ToSQL();
+                string sql = visitor.ToSQL();
+
+                sqlProfiler?.Capture(sql, visitor.Parameters, visitor.Behavior);
 
                 try
                 {
-                    return Execute(conn, sql, builder.Parameters, builder.TimeOut);
+                    return Execute(conn, sql, visitor.Parameters, visitor.TimeOut);
                 }
                 catch (DbException db)
                 {

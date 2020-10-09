@@ -26,8 +26,10 @@ namespace CodeArts.Mvc
         public void OnException(ExceptionContext context)
         {
             var json = Exceptions.ExceptionHandler.Handler(context.Exception);
-            if (json == null)
+            if (json is null)
+            {
                 return;
+            }
 
             ResultFilter?.Invoke(json);
 
@@ -54,8 +56,10 @@ namespace CodeArts.Mvc
         public override void OnException(HttpActionExecutedContext context)
         {
             var json = Exceptions.ExceptionHandler.Handler(context.Exception);
-            if (json == null)
+            if (json is null)
+            {
                 return;
+            }
 
             ResultFilter?.Invoke(json);
 

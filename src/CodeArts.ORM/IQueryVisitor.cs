@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-
-namespace CodeArts.ORM
+﻿namespace CodeArts.ORM
 {
     /// <summary>
     /// 查询访问器。
     /// </summary>
-    public interface IQueryVisitor : IDisposable
+    public interface IQueryVisitor : IStartupVisitor
     {
         /// <summary>
         /// 是否必须有查询或执行结果
@@ -33,22 +29,5 @@ namespace CodeArts.ORM
         /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。<see cref="System.Data.IDbCommand.CommandTimeout"/>
         /// </summary>
         int? TimeOut { get; }
-
-        /// <summary>
-        /// 表达式分析。
-        /// </summary>
-        /// <param name="node">节点</param>
-        Expression Startup(Expression node);
-
-        /// <summary>
-        /// 参数
-        /// </summary>
-        Dictionary<string, object> Parameters { get; }
-
-        /// <summary>
-        /// SQL语句
-        /// </summary>
-        /// <returns></returns>
-        string ToSQL();
     }
 }

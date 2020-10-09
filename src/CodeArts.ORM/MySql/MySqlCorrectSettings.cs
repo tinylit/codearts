@@ -1,10 +1,5 @@
-﻿using CodeArts.ORM.Exceptions;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace CodeArts.ORM.MySql
 {
@@ -13,12 +8,6 @@ namespace CodeArts.ORM.MySql
     /// </summary>
     public class MySqlCorrectSettings : ISQLCorrectSettings
     {
-        private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
-
-        private static readonly Regex PatternColumn = new Regex("select\\s+(?<column>((?!select|where).)+(select((?!from|select).)+from((?!from|select).)+)*((?!from|select).)*)\\s+from\\s+", RegexOptions.IgnoreCase);
-
-        private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(`\w+`\.)*(?<name>(`\w+`))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
-
         /// <summary>
         /// 字符串截取。 SUBSTRING
         /// </summary>
@@ -39,12 +28,12 @@ namespace CodeArts.ORM.MySql
         /// </summary>
         public bool IndexOfSwapPlaces => true;
 
-        private List<IVisitor> visitters;
+        private List<ICustomVisitor> visitters;
 
         /// <summary>
         /// 访问器
         /// </summary>
-        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
+        public IList<ICustomVisitor> Visitors => visitters ?? (visitters = new List<ICustomVisitor>());
 
         /// <summary>
         /// MySQL
@@ -74,14 +63,6 @@ namespace CodeArts.ORM.MySql
         /// SQL。
         /// </summary>
         /// <param name="sql">SQL。</param>
-        /// <param name="orderBy">排序。</param>
-        /// <returns></returns>
-        public virtual string ToSQL(string sql, string orderBy) => string.Concat(sql, orderBy);
-
-        /// <summary>
-        /// SQL。
-        /// </summary>
-        /// <param name="sql">SQL。</param>
         /// <param name="take">获取“<paramref name="take"/>”条数据。</param>
         /// <param name="skip">跳过“<paramref name="skip"/>”条数据。</param>
         /// <param name="orderBy">排序。</param>
@@ -91,6 +72,7 @@ namespace CodeArts.ORM.MySql
             var sb = new StringBuilder();
 
             sb.Append(sql)
+                .Append(orderBy)
                 .Append(" LIMIT ");
 
             if (skip > 0)
@@ -101,107 +83,6 @@ namespace CodeArts.ORM.MySql
 
             return sb.Append(take)
                 .ToString();
-        }
-
-        /// <summary>
-        /// 分页
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="take">获取N条</param>
-        /// <param name="skip">跳过M条</param>
-        /// <returns></returns>
-        public virtual string PageSql(string sql, int take, int skip)
-        {
-            var sb = new StringBuilder();
-
-            sb.Append(sql)
-                .Append(" LIMIT ");
-
-            if (skip > 0)
-            {
-                sb.Append(skip)
-                    .Append(",");
-            }
-
-            return sb.Append(take).ToString();
-        }
-
-        private Tuple<string, bool> GetColumns(string columns) => mapperCache.GetOrAdd(columns, _ =>
-        {
-            var list = ToSingleColumnCodeBlock(columns);
-
-            if (list.Count == 1)
-            {
-                var match = PatternSingleAsColumn.Match(list.First());
-
-                if (match.Success)
-                {
-                    return Tuple.Create(match.Groups["name"].Value, false);
-                }
-
-                return Tuple.Create(Name("__my_sql_col"), true);
-            }
-
-            return Tuple.Create(string.Join(",", list.ConvertAll(item =>
-            {
-                var match = PatternSingleAsColumn.Match(item);
-
-                if (match.Success)
-                {
-                    return match.Groups["name"].Value;
-                }
-
-                throw new DException("分页且多字段时,必须指定字段名!");
-            })), false);
-        });
-
-        /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
-        /// </summary>
-        /// <param name="columns">以“,”分割的列集合</param>
-        /// <returns></returns>
-        protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
-
-        /// <summary>
-        /// 分页（交集、并集等）
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="take">获取N条</param>
-        /// <param name="skip">跳过M条</param>
-        /// <param name="orderBy">排序</param>
-        /// <returns></returns>
-        public virtual string PageUnionSql(string sql, int take, int skip, string orderBy)
-        {
-            var sb = new StringBuilder();
-
-            var match = PatternColumn.Match(sql);
-
-            string value = match.Groups["column"].Value;
-
-            Tuple<string, bool> tuple = GetColumns(value);
-
-            if (tuple.Item2)
-            {
-                throw new DException("组合查询必须指定字段名!");
-            }
-
-            sb.Append("SELECT ")
-                .Append(tuple.Item1)
-                .Append(" FROM (")
-                .Append(sql)
-                .Append(") ")
-                .Append(Name("CTE"))
-                .Append(" ")
-                .Append(orderBy)
-                .Append(" LIMIT ");
-
-            if (skip > 0)
-            {
-                sb.Append(skip)
-                    .Append(",");
-            }
-
-            return sb.Append(take).ToString();
         }
     }
 }

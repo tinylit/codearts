@@ -19,7 +19,7 @@ namespace CodeArts.ORM.Visitors
         /// inherit。
         /// </summary>
         /// <returns></returns>
-        protected override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.All;
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.All;
 
         /// <summary>
         /// inherit。
@@ -27,6 +27,8 @@ namespace CodeArts.ORM.Visitors
         /// <returns></returns>
         protected override Expression StartupCore(MethodCallExpression node)
         {
+            writer.OpenBrace();
+
             using (var visitor = new AnyVisitor(this))
             {
                 visitor.Startup(node);
@@ -41,6 +43,8 @@ namespace CodeArts.ORM.Visitors
                     visitor.Startup(node);
                 }
             });
+
+            writer.CloseBrace();
 
             return node;
         }

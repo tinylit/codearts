@@ -6,7 +6,7 @@ using System.Reflection;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 执行能力
+    /// 执行能力。
     /// </summary>
     public static class Executeable
     {

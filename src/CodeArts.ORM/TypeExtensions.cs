@@ -23,6 +23,13 @@ namespace CodeArts.ORM
         public static bool IsQueryable(this Type type) => typeof(IQueryable).IsAssignableFrom(type);
 
         /// <summary>
+        /// 是否执行器的派生类。
+        /// </summary>
+        /// <param name="type">类型</param>
+        /// <returns></returns>
+        public static bool IsExecuteable(this Type type) => typeof(IExecuteable).IsAssignableFrom(type);
+
+        /// <summary>
         /// 是否为声明类型，或type为泛型且泛型参数类型包含声明。
         /// </summary>
         /// <param name="type">类型</param>

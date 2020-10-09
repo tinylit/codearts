@@ -22,7 +22,7 @@ namespace CodeArts
         private readonly long workerId = 0L; // 这个就是代表了机器id
         private readonly long datacenterId = 0L; // 这个就是代表了机房id
 
-        private static long sequence = 0L; // 代表当前毫秒内已经生成了多少个主键
+        private /* static */ long sequence = 0L; // 代表当前毫秒内已经生成了多少个主键
 
         /// <summary>
         /// 构造函数（机房：0，工作机号：0）
@@ -63,7 +63,10 @@ namespace CodeArts
         private static readonly int datacenterIdShift = sequenceBits + workerIdBits;
         private static readonly int timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;
         private static readonly long sequenceMask = -1L ^ (-1L << sequenceBits);
-        private long lastTimestamp = -1L;
+
+        private /* static */ long lastTimestamp = -1L;
+
+        private readonly object _lockObj = new object();
 
         /// <summary>
         /// 新ID
@@ -71,35 +74,39 @@ namespace CodeArts
         /// <returns></returns>
         public long Id()
         {
-            long timestamp = TimeGen();
-            if (timestamp < lastTimestamp)
+            lock (_lockObj)
             {
-                throw new Exception(string.Format("Clock moved backwards. Refusing to generate id for {0} milliseconds", lastTimestamp - timestamp));
-            }
+                long timestamp = TimeGen();
 
-            // 下面是说假设在同一个毫秒内，又发送了一个请求生成一个id
-            // 这个时候就得把seqence序号给递增1，最多就是4096
-            if (lastTimestamp == timestamp)
-            {
-                // 这个意思是说一个毫秒内最多只能有4096个数字，无论你传递多少进来，
-                //这个位运算保证始终就是在4096这个范围内，避免你自己传递个sequence超过了4096这个范围
-                sequence = (sequence + 1L) & sequenceMask;
-                if (sequence == 0L)
+                if (timestamp < lastTimestamp)
                 {
-                    timestamp = NextGen(lastTimestamp);
+                    throw new Exception(string.Format("Clock moved backwards. Refusing to generate id for {0} milliseconds", lastTimestamp - timestamp));
                 }
-            }
-            else
-            {
-                sequence = 0;
-            }
 
-            lastTimestamp = timestamp;
+                // 下面是说假设在同一个毫秒内，又发送了一个请求生成一个id
+                // 这个时候就得把seqence序号给递增1，最多就是4096
+                if (lastTimestamp == timestamp)
+                {
+                    // 这个意思是说一个毫秒内最多只能有4096个数字，无论你传递多少进来，
+                    //这个位运算保证始终就是在4096这个范围内，避免你自己传递个sequence超过了4096这个范围
+                    sequence = (sequence + 1L) & sequenceMask;
+                    if (sequence == 0L)
+                    {
+                        timestamp = NextGen(lastTimestamp);
+                    }
+                }
+                else
+                {
+                    sequence = 0L;
+                }
 
-            return (timestamp << timestampLeftShift)
-                    | (datacenterId << datacenterIdShift)
-                    | (workerId << workerIdShift)
-                    | sequence;
+                lastTimestamp = timestamp;
+
+                return (timestamp << timestampLeftShift)
+                        | (datacenterId << datacenterIdShift)
+                        | (workerId << workerIdShift)
+                        | sequence;
+            }
         }
 
         /// <summary>
@@ -122,11 +129,13 @@ namespace CodeArts
         /// <returns></returns>
         private static long NextGen(long lastTimestamp)
         {
-            long timestamp = TimeGen();
-            while (timestamp <= lastTimestamp)
+            long timestamp;
+
+            do
             {
                 timestamp = TimeGen();
-            }
+            } while (timestamp == lastTimestamp);
+
             return timestamp;
         }
     }

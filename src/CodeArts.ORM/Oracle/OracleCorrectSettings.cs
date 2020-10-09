@@ -15,20 +15,16 @@ namespace CodeArts.ORM.Oracle
     {
         private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
 
-        private static readonly Regex PatternOrderBy = new Regex(@"\border[\x20\t\r\n\f]+by[\x20\t\r\n\f]+[\s\S]+?$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
-
-        private static readonly Regex PatternWhere = new Regex(@"where[\x20\t\r\n\f]+(?!(\b(from|join)\b)[\s\S])+$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
-
-        private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<column>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\w+\.)*(?<name>(\w+))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
 
-        private List<IVisitor> visitters;
+        private List<ICustomVisitor> visitters;
 
         /// <summary>
         /// 访问器
         /// </summary>
-        public IList<IVisitor> Visitors => visitters ?? (visitters = new List<IVisitor>());
+        public IList<ICustomVisitor> Visitors => visitters ?? (visitters = new List<ICustomVisitor>());
 
         /// <summary>
         /// 字符串截取。 SUBSTR
@@ -112,159 +108,168 @@ namespace CodeArts.ORM.Oracle
         protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
 
         /// <summary>
-        /// 分页
+        /// 查询字段。
         /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="take">获取N条</param>
-        /// <param name="skip">跳过M条</param>
+        /// <param name="sql">SQL。</param>
         /// <returns></returns>
-        public virtual string PageSql(string sql, int take, int skip)
+        protected virtual Tuple<string, int> QueryFields(string sql) => CommonSettings.QueryFields(sql);
+
+        private bool IsExistsCondition(string sql, int startIndex)
         {
-            var sb = new StringBuilder();
+            int indexOf = sql.IndexOf(" WHERE ", startIndex, StringComparison.OrdinalIgnoreCase);
 
-            var match = PatternColumn.Match(sql);
-
-            if (!match.Success)
-                throw new DException("无法分析的SQL语句!");
-
-            var orderByMatch = PatternOrderBy.Match(sql, match.Index + match.Length);
-
-            string orderBy = orderByMatch.Value;
-
-            if (orderByMatch.Success)
+            if (indexOf == -1)
             {
-                sql = sql.Substring(0, sql.Length - orderByMatch.Length);
+                return false;
             }
 
-            if (skip < 0)
+            int indexOfSelect = sql.IndexOf("SELECT ", startIndex, indexOf, StringComparison.OrdinalIgnoreCase);
+
+            if (indexOfSelect == -1)
             {
-                return sb.Append(sql)
-                      .Append(PatternWhere.IsMatch(sql) ? " AND " : " WHERE ")
-                      .Append(Name("ROWNUM"))
-                      .Append(" <= ")
-                      .Append(take)
-                      .Append(" ")
-                      .Append(orderBy)
-                      .ToString();
+                return true;
             }
 
-            string value = match.Groups["column"].Value;
-
-            Tuple<string, bool> tuple = GetColumns(value);
-
-            if (tuple.Item2)
-            {
-                value += " AS " + tuple.Item1;
-            }
-
-            sql = sql.Substring(match.Length);
-
-            var name = Name("__Row_number_");
-
-            return sb.Append("SELECT ")
-                  .Append(tuple.Item1)
-                  .Append(" FROM (")
-                  .Append("SELECT ")
-                  .Append(value)
-                  .Append(", ")
-                  .Append(Name("ROWNUM"))
-                  .Append(" AS ")
-                  .Append(name)
-                  .Append(" FROM ")
-                  .Append(sql)
-                  .Append(PatternWhere.IsMatch(sql) ? " AND " : " WHERE ")
-                  .Append(Name("ROWNUM"))
-                  .Append(" <=")
-                  .Append(take + skip)
-                  .Append(" ")
-                  .Append(orderBy)
-                  .Append(")")
-                  .Append(Name("CTE"))
-                  .Append(" WHERE ")
-                  .Append(name)
-                  .Append(" > ")
-                  .Append(skip)
-                  .ToString();
+            return sql.IndexOf('(', indexOfSelect - 1) == -1 || sql.IndexOf(' ', indexOfSelect - 1) == -1;
         }
 
         /// <summary>
-        /// 分页（并集、交集等）
+        /// SQL。
         /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="take">获取N条</param>
-        /// <param name="skip">跳过M条</param>
-        /// <param name="orderBy">排序</param>
+        /// <param name="sql">SQL。</param>
+        /// <param name="take">获取“<paramref name="take"/>”条数据。</param>
+        /// <param name="skip">跳过“<paramref name="skip"/>”条数据。</param>
+        /// <param name="orderBy">排序。</param>
         /// <returns></returns>
-        public virtual string PageUnionSql(string sql, int take, int skip, string orderBy)
+        public string ToSQL(string sql, int take, int skip, string orderBy)
         {
+            Tuple<string, int> fields = QueryFields(sql);
+
+            Tuple<string, bool> tuple = GetColumns(fields.Item1);
+
+            string row_name = Name("__Row_Number_");
+
             var sb = new StringBuilder();
 
-            if (skip < 1)
+            int startIndex = fields.Item2 + fields.Item1.Length;
+
+            if (orderBy.IsEmpty())
             {
-                return sb.Append("SELECT * FROM (")
-                     .Append(sql)
-                     .Append(") ")
-                     .Append(Name("CTE"))
-                     .Append(" WHERE ")
-                     .Append(Name("ROWNUM"))
-                     .Append(" <= ")
-                     .Append(take)
-                     .Append(" ")
-                     .Append(orderBy)
-                     .ToString();
+                if (skip < 0)
+                {
+                    return sb.Append(sql)
+                         .Append(IsExistsCondition(sql, startIndex) ? " AND " : " WHERE ")
+                         .Append("ROWNUM")
+                         .Append("<=")
+                         .Append(take)
+                         .ToString();
+                }
+
+                sb.Append("SELECT ")
+                      .Append(tuple.Item1)
+                      .Append(" FROM (");
+
+                if (tuple.Item2)
+                {
+                    sb.Append(sql.Substring(0, startIndex))
+                        .Append(" AS ")
+                        .Append(tuple.Item1)
+                        .Append(", ")
+                        .Append("ROWNUM AS ")
+                        .Append(row_name)
+                        .Append(sql.Substring(startIndex));
+                }
+                else
+                {
+                    sb.Append(PatternSelect.Replace(sql, x =>
+                    {
+                        return string.Concat(x.Value, "ROWNUM AS ", row_name, ", ");
+                    }));
+                }
+
+                return sb.Append(IsExistsCondition(sql, startIndex) ? " AND " : " WHERE ")
+                      .Append("ROWNUM")
+                      .Append("<=")
+                      .Append(take + skip)
+                      .Append(")")
+                      .Append(Name("CTE_RowNumber"))
+                      .Append(" WHERE ")
+                      .Append(row_name)
+                      .Append(">")
+                      .Append(skip)
+                      .ToString();
             }
 
-            var match = PatternColumn.Match(sql);
+            sb.Append("SELECT ")
+                .Append(tuple.Item1);
 
-            if (!match.Success)
-                throw new DException("无法分析的SQL语句!");
+            if (skip < 0)
+            {
+                if (tuple.Item2)
+                {
+                    sb.Append(" FROM (")
+                        .Append("SELECT ")
+                        .Append(fields.Item1)
+                        .Append(" AS ")
+                        .Append(tuple.Item1);
+                }
 
-            string value = match.Groups["column"].Value;
+                sb.Append(", ")
+                    .Append("ROWNUM AS ")
+                    .Append(row_name)
+                    .Append(" FROM (")
+                    .Append(sql)
+                    .Append(orderBy)
+                    .Append(")")
+                    .Append(Name("CTE"))
+                    .Append(" WHERE ")
+                    .Append(Name("ROWNUM"))
+                    .Append("<=")
+                    .Append(take);
 
-            Tuple<string, bool> tuple = GetColumns(value);
+                if (tuple.Item2)
+                {
+                    sb.Append(") ")
+                        .Append(Name("CTE_RowNumber"));
+                }
+
+                return sb.ToString();
+            }
+
+            sb.Append("(")
+                .Append(tuple.Item1)
+                .Append(", ")
+                .Append("ROWNUM")
+                .Append(" AS ")
+                .Append(row_name)
+                .Append(" FROM (");
 
             if (tuple.Item2)
             {
-                throw new DException("组合查询必须指定字段名!");
+                sb.Append(sql.Substring(0, startIndex))
+                       .Append(" AS ")
+                       .Append(tuple.Item1)
+                       .Append(sql.Substring(startIndex));
+            }
+            else
+            {
+                sb.Append(sql);
             }
 
-            string row_name = Name("__Row_number_");
-
-            return sb.Append("SELECT ")
-                 .Append(tuple.Item1)
-                 .Append(" FROM (SELECT ")
-                 .Append(tuple.Item1)
-                 .Append(", ")
-                 .Append(Name("ROWNUM"))
-                 .Append(" AS ")
-                 .Append(row_name)
-                 .Append(" FROM (")
-                 .Append(sql)
-                 .Append(") ")
-                 .Append(Name("CTE_ROW_NUMBER"))
-                 .Append(") ")
-                 .Append(Name("CTE"))
-                 .Append(" WHERE ")
-                 .Append(row_name)
-                 .Append(" > ")
-                 .Append(skip)
-                 .Append(" AND ")
-                 .Append(row_name)
-                 .Append(" <= ")
-                 .Append(skip + take)
-                 .Append(" ")
-                 .Append(orderBy)
-                 .ToString();
-        }
-
-        public string ToSQL(string sql, string orderBy)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string ToSQL(string sql, int take, int skip, string orderBy)
-        {
-            throw new NotImplementedException();
+            return sb.Append(orderBy)
+                  .Append(")")
+                  .Append(Name("CTE"))
+                  .Append(" WHERE ")
+                  .Append("ROWNUM")
+                  .Append("<=")
+                  .Append(take + skip)
+                  .Append(")")
+                  .Append(Name("CTE_RowNumber"))
+                  .Append(" WHERE ")
+                  .Append(row_name)
+                  .Append(">")
+                  .Append(skip)
+                  .ToString();
         }
     }
 }

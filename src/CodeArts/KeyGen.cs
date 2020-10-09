@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CodeArts
+﻿namespace CodeArts
 {
     /// <summary>
     /// 主键生成器（默认：雪花算法）
@@ -17,7 +10,7 @@ namespace CodeArts
         /// <summary>
         /// 静态构造函数
         /// </summary>
-        static KeyGen() => _keyGen = RuntimeServManager.Singleton<IKeyGen, SnowflakeKeyGen>(keyGen => _keyGen = keyGen);
+        static KeyGen() => _keyGen = KeyGenFactory.Create(keyGen => _keyGen = keyGen.Create());
 
         /// <summary>
         /// 生成主键。

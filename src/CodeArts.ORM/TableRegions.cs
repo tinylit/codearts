@@ -12,9 +12,9 @@ namespace CodeArts.ORM
     /// <summary>
     /// 区域
     /// </summary>
-    public static class MapperRegions
+    public static class TableRegions
     {
-        private static readonly ConcurrentDictionary<Type, TableInfo> MapperCache =
+        private static readonly ConcurrentDictionary<Type, TableInfo> TableCache =
             new ConcurrentDictionary<Type, TableInfo>();
 
         /// <summary>
@@ -60,13 +60,13 @@ namespace CodeArts.ORM
 #endif
         }
 
-        private static TableInfo Aw_Resolve(Type type) => MapperCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), tableType =>
+        private static TableInfo Aw_Resolve(Type type) => TableCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), tableType =>
          {
              var keys = new List<string>();
-             var tokens = new Dictionary<string, TokenAttribute>(StringComparer.OrdinalIgnoreCase);
+             var tokens = new Dictionary<string, TokenAttribute>();
              var readOnlys = new List<string>();
-             var readWrites = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-             var readOrWrites = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+             var readWrites = new Dictionary<string, string>();
+             var readOrWrites = new Dictionary<string, string>();
 
              var typeStore = RuntimeTypeCache.Instance.GetCache(tableType);
 

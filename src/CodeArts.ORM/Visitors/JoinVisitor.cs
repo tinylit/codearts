@@ -11,7 +11,7 @@ namespace CodeArts.ORM.Visitors
     /// <summary>
     /// Join。
     /// </summary>
-    public class JoinVisitor : BaseVisitor
+    public class JoinVisitor : ConditionVisitor
     {
         private class JoinSelectVisitor : SelectVisitor
         {
@@ -90,7 +90,7 @@ namespace CodeArts.ORM.Visitors
         /// <summary>
         /// inherit。
         /// </summary>
-        protected override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Join;
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Join;
 
         /// <summary>
         /// inherit。
@@ -163,7 +163,7 @@ namespace CodeArts.ORM.Visitors
 
                 var prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
 
-                writer.TableName(GetTableName(tableInfo), prefix);
+                writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
 
             }, () =>
             {
@@ -177,6 +177,36 @@ namespace CodeArts.ORM.Visitors
 
                 base.Visit(node.Arguments[1]);
             });
+
+            return node;
+        }
+
+        private Expression JoinWhereMethod(Expression node)
+        {
+            while (node.NodeType == ExpressionType.Call && node is MethodCallExpression methodCall)
+            {
+                if (methodCall.Method.Name == MethodCall.From)
+                {
+                    throw new DSyntaxErrorException($"在连接函数中，禁止使用“{methodCall.Method.Name}”函数!");
+                }
+
+                if (methodCall.Method.Name == MethodCall.Where)
+                {
+                    base.UsingCondition(() => base.Visit(methodCall.Arguments[1]), whereIsNotEmpty =>
+                    {
+                        if (whereIsNotEmpty)
+                        {
+                            writer.And();
+                        }
+                    });
+
+                    node = methodCall.Arguments[0];
+
+                    continue;
+                }
+
+                break;
+            }
 
             return node;
         }
@@ -219,6 +249,8 @@ namespace CodeArts.ORM.Visitors
                 writer.Equal();
 
                 base.Visit(node.Arguments[3]);
+
+                rightNode = JoinWhereMethod(rightNode);
             });
 
             return node;

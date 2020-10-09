@@ -213,11 +213,6 @@ namespace CodeArts.ORM
                 _clearTimer.Start();
             }
 
-            if (threadConnection.ConnectionString.IsEmpty())
-            {
-
-            }
-
             return threadConnection;
         }
     }

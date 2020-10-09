@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>3.6.2.2</Version>
+		<Version>4.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>A Linq to SQL ORM framework.</Description>
@@ -31,17 +31,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Builders - 复制\BaseBuilder.cs" />
-	  <Compile Remove="Builders - 复制\ExecuteBuilder.cs" />
-	  <Compile Remove="Builders - 复制\QueryBuilder.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\CodeArts\CodeArts.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Builders - 复制\" />
-	</ItemGroup>
-
 </Project>

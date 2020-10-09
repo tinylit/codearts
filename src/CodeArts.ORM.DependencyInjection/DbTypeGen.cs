@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using static CodeArts.Emit.AstExpression;
@@ -190,7 +191,7 @@ namespace CodeArts.ORM
             });
 
 
-            var typeArgumentItem = MapperRegions.Resolve(typeArgument);
+            var typeArgumentItem = TableRegions.Resolve(typeArgument);
 
             storeItem.MethodStores.ForEach(x =>
             {
@@ -218,129 +219,99 @@ namespace CodeArts.ORM
                     method.Append(Call(DictionaryAdd, variable_params, Constant(y.Naming), Convert(paramter, typeof(object))));
                 });
 
-                bool required = false;
-                string missingMsg = null;
                 var sqlAttribute = x.GetCustomAttribute<SqlAttribute>() ?? throw new NotSupportedException($"方法“{x.Name}”未指定操作指令!");
                 var timeOutAttr = x.GetCustomAttribute<TimeOutAttribute>();
 
                 var sql = New(typeof(SQL), Constant(sqlAttribute.Sql));
                 var timeOut = Constant(timeOutAttr?.Value, typeof(int?));
 
-                switch (sqlAttribute)
+                ConvertAst thisArg = sqlAttribute.CommandType == CommandTypes.Select
+                ? Convert(This(repositoryType), typeof(ISelectable))
+                : Convert(This(repositoryType), typeof(IEditable));
+
+                if (sqlAttribute.CommandType == CommandTypes.Select)
                 {
-                    case SelectAttribute selectAttribute:
-                        required = selectAttribute.Required;
-                        missingMsg = selectAttribute.MissingMsg;
-                        goto default;
-                    default:
+                    if (x.MemberType.IsGenericType)
+                    {
+                        var typeArguments = x.MemberType.GetGenericArguments();
 
-                        ConvertAst thisArg;
+                        if (typeArguments.Length == 1 && !typeArguments.Any(y => y.IsKeyValuePair()))
+                        {
+                            var typeDefinition = x.MemberType.GetGenericTypeDefinition();
 
-                        if (sqlAttribute.CommandType == CommandTypes.Select)
-                        {
-                            thisArg = Convert(This(repositoryType), typeof(ISelectable));
-                        }
-                        else if (sqlAttribute.CommandType == CommandTypes.Insert || sqlAttribute.CommandType == CommandTypes.Update || sqlAttribute.CommandType == CommandTypes.Delete)
-                        {
-                            thisArg = Convert(This(repositoryType), typeof(IEditable));
-                        }
-                        else
-                        {
-                            throw new NotSupportedException($"“{sqlAttribute.CommandType}”指令不被支持!");
-                        }
+                            var valueType = typeof(IEnumerable<>).MakeGenericType(typeArguments);
 
-                        if (sqlAttribute.CommandType == CommandTypes.Select)
-                        {
-                            if (x.MemberType.IsGenericType)
+
+                            var queryMethod = QueryMethod.MakeGenericMethod(typeArguments);
+
+                            var bodyQuery = Call(queryMethod, thisArg, sql, variable_params, timeOut);
+
+                            if (valueType == x.MemberType)
                             {
-                                var typeArguments = x.MemberType.GetGenericArguments();
+                                method.Append(Return(bodyQuery));
 
-                                if (typeArguments.Length == 1 && !typeArguments.Any(y => y.IsKeyValuePair()))
-                                {
-                                    var typeDefinition = x.MemberType.GetGenericTypeDefinition();
-
-                                    var valueType = typeof(IEnumerable<>).MakeGenericType(typeArguments);
-
-
-                                    var queryMethod = QueryMethod.MakeGenericMethod(typeArguments);
-
-                                    var bodyQuery = Call(queryMethod, thisArg, sql, variable_params, timeOut);
-
-                                    if (valueType == x.MemberType)
-                                    {
-                                        method.Append(Return(bodyQuery));
-
-                                        break;
-                                    }
-
-                                    var variable = method.DeclareVariable(valueType);
-
-                                    method.Append(Assign(variable, bodyQuery));
-
-                                    var valueCast = Call(MapToMethod, Convert(variable, typeof(object)), Constant(x.MemberType));
-
-                                    method.Append(Return(Convert(valueCast, x.MemberType)));
-
-                                    break;
-                                }
+                                return;
                             }
 
-                            if (required)
-                            {
-                                var queryFirstMethod = QueryFirstMethod.MakeGenericMethod(x.MemberType);
+                            var variable = method.DeclareVariable(valueType);
 
-                                var bodyQueryFirst = Call(queryFirstMethod, thisArg, sql, Convert(variable_params, typeof(object)), Default(x.MemberType), Constant(timeOutAttr?.Value, typeof(int?)), Constant(missingMsg, typeof(string)));
+                            method.Append(Assign(variable, bodyQuery));
 
-                                method.Append(Return(Convert(bodyQueryFirst, x.MemberType)));
+                            var valueCast = Call(MapToMethod, Convert(variable, typeof(object)), Constant(x.MemberType));
 
-                                break;
-                            }
+                            method.Append(Return(Convert(valueCast, x.MemberType)));
 
-                            var queryFirstOrDefaultMethod = QueryFirstOrDefaultMethod.MakeGenericMethod(x.MemberType);
-
-                            var bodyQueryFirstOrDefault = Call(queryFirstOrDefaultMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(timeOutAttr?.Value, typeof(int?)));
-
-                            method.Append(Return(Convert(bodyQueryFirstOrDefault, x.MemberType)));
-
-                            break;
+                            return;
                         }
+                    }
 
-                        string commandName;
+                    var queryFirstOrDefaultMethod = QueryFirstOrDefaultMethod.MakeGenericMethod(x.MemberType);
 
-                        if (sqlAttribute.CommandType == CommandTypes.Insert)
-                        {
-                            commandName = nameof(IEditable.Insert);
-                        }
-                        else if (sqlAttribute.CommandType == CommandTypes.Update)
-                        {
-                            commandName = nameof(IEditable.Update);
-                        }
-                        else if (sqlAttribute.CommandType == CommandTypes.Delete)
-                        {
-                            commandName = nameof(IEditable.Delete);
-                        }
-                        else
-                        {
-                            throw new NotSupportedException($"“{sqlAttribute.CommandType}”指令不被支持!");
-                        }
+                    var defaultValueAttr = x.GetCustomAttribute<DefaultValueAttribute>();
 
-                        var commandMethod = typeof(IEditable).GetMethod(commandName, new Type[] { typeof(SQL), typeof(object), typeof(int?) });
+                    var bodyQueryFirstOrDefault = (defaultValueAttr is null || defaultValueAttr.Value is null)
+                    ? Call(queryFirstOrDefaultMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(timeOutAttr?.Value, typeof(int?)), Default(x.MemberType))
+                    : Call(queryFirstOrDefaultMethod, thisArg, sql, Convert(variable_params, typeof(object)), Constant(timeOutAttr?.Value, typeof(int?)), Constant(defaultValueAttr.Value, x.MemberType));
 
-                        var bodyExcute = Call(commandMethod, thisArg, sql, Convert(variable_params, typeof(object)), timeOut);
+                    method.Append(Return(Convert(bodyQueryFirstOrDefault, x.MemberType)));
 
-                        if (x.MemberType == typeof(int))
-                        {
-                            method.Append(Return(bodyExcute));
-                        }
-                        else if (x.MemberType == typeof(bool))
-                        {
-                            method.Append(Return(GreaterThan(bodyExcute, Constant(0))));
-                        }
-                        else
-                        {
-                            throw new NotSupportedException($"标记操作指令“{sqlAttribute.CommandType}”的方法，仅支持返回Int32或Boolean类型数据。");
-                        }
-                        break;
+                    return;
+                }
+
+                string commandName;
+
+                if (sqlAttribute.CommandType == CommandTypes.Insert)
+                {
+                    commandName = nameof(IEditable.Insert);
+                }
+                else if (sqlAttribute.CommandType == CommandTypes.Update)
+                {
+                    commandName = nameof(IEditable.Update);
+                }
+                else if (sqlAttribute.CommandType == CommandTypes.Delete)
+                {
+                    commandName = nameof(IEditable.Delete);
+                }
+                else
+                {
+                    throw new NotSupportedException($"“{sqlAttribute.CommandType}”指令不被支持!");
+                }
+
+                var commandMethod = typeof(IEditable).GetMethod(commandName, new Type[] { typeof(SQL), typeof(object), typeof(int?) });
+
+                var bodyExcute = Call(commandMethod, thisArg, sql, Convert(variable_params, typeof(object)), timeOut);
+
+                if (x.MemberType == typeof(int))
+                {
+                    method.Append(Return(bodyExcute));
+                }
+                else if (x.MemberType == typeof(bool))
+                {
+                    method.Append(Return(GreaterThan(bodyExcute, Constant(0))));
+                }
+                else
+                {
+                    throw new NotSupportedException($"标记操作指令“{sqlAttribute.CommandType}”的方法，仅支持返回Int32或Boolean类型数据。");
                 }
             });
 

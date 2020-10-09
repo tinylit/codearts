@@ -154,18 +154,18 @@ namespace CodeArts.ORM
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
-            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
+            System.Data.CommandBehavior behavior = System.Data.CommandBehavior.SequentialAccess | System.Data.CommandBehavior.SingleResult;
 
             if (settings.Engine == DatabaseEngine.SQLite)
             {
-                behavior &= ~CommandBehavior.SingleResult;
+                behavior &= ~System.Data.CommandBehavior.SingleResult;
             }
 
             if (isClosedConnection)
             {
                 conn.Open();
 
-                behavior |= CommandBehavior.CloseConnection;
+                behavior |= System.Data.CommandBehavior.CloseConnection;
             }
 
             try
@@ -217,18 +217,18 @@ namespace CodeArts.ORM
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
-            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+            System.Data.CommandBehavior behavior = System.Data.CommandBehavior.SequentialAccess | System.Data.CommandBehavior.SingleResult | System.Data.CommandBehavior.SingleRow;
 
             if (settings.Engine == DatabaseEngine.SQLite)
             {
-                behavior &= ~CommandBehavior.SingleResult;
+                behavior &= ~System.Data.CommandBehavior.SingleResult;
             }
 
             if (isClosedConnection)
             {
                 conn.Open();
 
-                behavior |= CommandBehavior.CloseConnection;
+                behavior |= System.Data.CommandBehavior.CloseConnection;
             }
 
             try
@@ -286,18 +286,18 @@ namespace CodeArts.ORM
         {
             bool isClosedConnection = conn.State == ConnectionState.Closed;
 
-            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+            System.Data.CommandBehavior behavior = System.Data.CommandBehavior.SequentialAccess | System.Data.CommandBehavior.SingleResult | System.Data.CommandBehavior.SingleRow;
 
             if (settings.Engine == DatabaseEngine.SQLite)
             {
-                behavior &= ~CommandBehavior.SingleResult;
+                behavior &= ~System.Data.CommandBehavior.SingleResult;
             }
 
             if (isClosedConnection)
             {
                 conn.Open();
 
-                behavior |= CommandBehavior.CloseConnection;
+                behavior |= System.Data.CommandBehavior.CloseConnection;
             }
 
             try

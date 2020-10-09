@@ -260,14 +260,14 @@ namespace CodeArts.ORM
             /// 执行并生成读取器。
             /// </summary>
             /// <returns></returns>
-            public IDataReader ExecuteReader(CommandBehavior behavior)
+            public IDataReader ExecuteReader(System.Data.CommandBehavior behavior)
             {
                 bool isClosedConnection = false;
 
-                if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.CloseConnection)
+                if ((behavior & System.Data.CommandBehavior.CloseConnection) == System.Data.CommandBehavior.CloseConnection)
                 {
                     isClosedConnection = true;
-                    behavior &= ~CommandBehavior.CloseConnection;
+                    behavior &= ~System.Data.CommandBehavior.CloseConnection;
                 }
 
                 return Add(command.ExecuteReader(behavior), isClosedConnection);
@@ -446,15 +446,7 @@ namespace CodeArts.ORM
             switch (State)
             {
                 case ConnectionState.Closed:
-                    try
-                    {
-                        _connection.Open();
-                    }
-                    catch (Exception e)
-                    {
-
-                        throw e;
-                    }
+                    _connection.Open();
                     break;
                 case ConnectionState.Connecting:
 
@@ -464,10 +456,15 @@ namespace CodeArts.ORM
 
                     } while (State == ConnectionState.Connecting);
 
-                    break;
+                    goto default;
                 case ConnectionState.Broken:
                     _connection.Close();
-                    _connection.Open();
+                    goto default;
+                default:
+                    if (_connection.State == ConnectionState.Closed)
+                    {
+                        _connection.Open();
+                    }
                     break;
             }
         }
@@ -565,10 +562,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 释放器不释放
         /// </summary>
-        void IDisposable.Dispose()
-        {
-            Interlocked.Increment(ref refUseCount);
-        }
+        void IDisposable.Dispose() => Interlocked.Increment(ref refUseCount);
 
         /// <summary>
         /// 复用。

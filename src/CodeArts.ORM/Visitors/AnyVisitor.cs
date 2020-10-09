@@ -18,7 +18,7 @@ namespace CodeArts.ORM.Visitors
             /// inherit。
             /// </summary>
             /// <returns></returns>
-            protected override bool CanResolve(MethodCallExpression node) =>
+            public override bool CanResolve(MethodCallExpression node) =>
                 node.Method.Name == MethodCall.Any || node.Method.Name == MethodCall.All;
 
             /// <summary>
@@ -49,7 +49,7 @@ namespace CodeArts.ORM.Visitors
         /// inherit。
         /// </summary>
         /// <returns></returns>
-        protected override bool CanResolve(MethodCallExpression node) =>
+        public override bool CanResolve(MethodCallExpression node) =>
             node.Method.Name == MethodCall.Any || node.Method.Name == MethodCall.All;
 
 

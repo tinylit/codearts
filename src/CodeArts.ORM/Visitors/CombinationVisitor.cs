@@ -37,7 +37,7 @@ namespace CodeArts.ORM.Visitors
         /// <summary>
         /// inherit。
         /// </summary>
-        protected override bool CanResolve(MethodCallExpression node) =>
+        public override bool CanResolve(MethodCallExpression node) =>
                 node.Method.Name == MethodCall.Union ||
                 node.Method.Name == MethodCall.Concat ||
                 node.Method.Name == MethodCall.Except ||

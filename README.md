@@ -293,7 +293,7 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 
     }
     ```
-    + Using JWT(Supports JWT authentication, login and authCode, and includes all normal features).
+    + Using JWT(Supports JWT authentication, and includes all normal features).
     ``` csharp
     public class Startup : JwtStartup {
 
@@ -315,8 +315,6 @@ ORDER BY [x].[uid],[y].[registertime] DESC
                 "Microsoft.Hosting.Lifetime": "Information"
             }
         },
-        "login": "api/values/login", //登录地址，返回登录信息，并自动生成登录令牌
-        "register": "api/values/register", // 注册地址，接口返回用户信息时，会自动生成登录令牌
         "jwt": {
 			"authority": "" // 使用JwtStartup时必须。
             //"secret": "",  //密钥
@@ -344,8 +342,6 @@ ORDER BY [x].[uid],[y].[registertime] DESC
         <appSettings>
             <!--jwt 密钥-->
             <!--<add key="jwt-secret" value="">-->
-            <!-- 登录地址：必须的 -->
-            <add key="login" value="api/values/login" />
         </appSettings>
     </configuration>
     ```

@@ -10,6 +10,8 @@ using System.Collections.Concurrent;
 using System.Timers;
 using System.Data;
 using CodeArts.ORM.Exceptions;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace CodeArts.ORM.Tests
 {
@@ -28,9 +30,6 @@ namespace CodeArts.ORM.Tests
 
         [Select("SELECT * FROM fei_users WHERE uid={id}")]
         T GetUser<T>(int id);
-
-        [Select("SELECT * FROM fei_users WHERE uid={id}", true)]
-        FeiUsers GetUserRequired(int id);
     }
 
     [TestClass]
@@ -54,15 +53,6 @@ namespace CodeArts.ORM.Tests
             var userDto = user.GetUser(91);
 
             var useDto3 = user.GetUser<FeiUsers>(90);
-
-            try
-            {
-                var userDto2 = user.GetUserRequired(91);
-            }
-            catch (DRequiredException)
-            {
-            }
-
         }
     }
 }

@@ -144,7 +144,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 实体表信息
         /// </summary>
-        public static ITableInfo TableInfo => tableInfo ?? (tableInfo = MapperRegions.Resolve(typeof(T)));
+        public static ITableInfo TableInfo => tableInfo ?? (tableInfo = TableRegions.Resolve(typeof(T)));
 
         /// <summary>
         /// 构造函数

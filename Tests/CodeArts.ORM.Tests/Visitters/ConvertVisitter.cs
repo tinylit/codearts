@@ -9,7 +9,7 @@ namespace UnitTest.Visiters
     /// <summary>
     /// Convert扩展支持
     /// </summary>
-    public class ConvertVisitter : IVisitor
+    public class ConvertVisitter : ICustomVisitor
     {
         public bool CanResolve(MethodCallExpression node) => node.Arguments.Count == 1 && node.Method.DeclaringType == typeof(Convert);
 

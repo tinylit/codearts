@@ -1,10 +1,14 @@
 ﻿namespace CodeArts.ORM
 {
     /// <summary>
-    /// 动作行为
+    /// 执行行为。
     /// </summary>
-    public enum ExecuteBehavior
+    public enum CommandBehavior
     {
+        /// <summary>
+        /// 查询。
+        /// </summary>
+        Select = 0,
         /// <summary>
         /// 更新
         /// </summary>

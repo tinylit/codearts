@@ -10,16 +10,15 @@ namespace CodeArts.ORM
     /// </summary>
     public class Writer
     {
-        private readonly IWriterMap writer;
+        private readonly IWriterMap writerMap;
 
         private readonly StringBuilder sb;
 
         private readonly StringBuilder sbOrder;
 
-        private readonly List<StringBuilder> builders = new List<StringBuilder>();
-
         private readonly ISQLCorrectSettings settings;
 
+        private readonly Writer writer;
         private bool writeOrderBy = false;
 
         private int parameterIndex = 0;
@@ -32,7 +31,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 参数索引。
         /// </summary>
-        protected virtual int ParameterIndex => ++parameterIndex;
+        protected virtual int ParameterIndex => writer is null ? ++parameterIndex : writer.ParameterIndex;
 
         private int appendAt = -1;
 
@@ -76,7 +75,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 参数集合。
         /// </summary>
-        public Dictionary<string, object> Parameters { internal set => parameters = value; get => parameters ?? (parameters = new Dictionary<string, object>()); }
+        public Dictionary<string, object> Parameters => parameters ?? (parameters = new Dictionary<string, object>());
 
         /// <summary>
         /// 构造函数
@@ -90,34 +89,51 @@ namespace CodeArts.ORM
 
             sbOrder = new StringBuilder();
 
-            this.parameterIndex = parameters?.Count ?? 0;
-
             this.parameters = parameters ?? new Dictionary<string, object>();
 
-            this.writer = writer ?? throw new ArgumentNullException(nameof(writer));
+            this.writerMap = writer ?? throw new ArgumentNullException(nameof(writer));
 
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="writer">写入器。</param>
+        public Writer(Writer writer)
+        {
+            sb = new StringBuilder();
+
+            sbOrder = new StringBuilder();
+
+            this.writer = writer;
+
+            this.parameters = writer.parameters;
+
+            this.writerMap = writer.writerMap;
+
+            this.settings = writer.settings;
+        }
+
+        /// <summary>
         /// )
         /// </summary>
-        public void CloseBrace() => Write(writer.CloseBrace);
+        public void CloseBrace() => Write(writerMap.CloseBrace);
 
         /// <summary>
         /// ,
         /// </summary>
-        public void Delimiter() => Write(writer.Delimiter);
+        public void Delimiter() => Write(writerMap.Delimiter);
 
         /// <summary>
         /// DISTINCT
         /// </summary>
-        public void Distinct() => Write("DISTINCT" + writer.WhiteSpace);
+        public void Distinct() => Write("DISTINCT" + writerMap.WhiteSpace);
 
         /// <summary>
         /// ''
         /// </summary>
-        public void EmptyString() => Write(writer.EmptyString);
+        public void EmptyString() => Write(writerMap.EmptyString);
 
         /// <summary>
         /// Exists
@@ -167,22 +183,22 @@ namespace CodeArts.ORM
         /// <summary>
         /// From
         /// </summary>
-        public void From() => Write(writer.WhiteSpace + "FROM" + writer.WhiteSpace);
+        public void From() => Write(writerMap.WhiteSpace + "FROM" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Left Join
         /// </summary>
-        public void Join() => Write(writer.WhiteSpace + "LEFT" + writer.WhiteSpace + "JOIN" + writer.WhiteSpace);
+        public void Join() => Write(writerMap.WhiteSpace + "LEFT" + writerMap.WhiteSpace + "JOIN" + writerMap.WhiteSpace);
 
         /// <summary>
         /// (
         /// </summary>
-        public void OpenBrace() => Write(writer.OpenBrace);
+        public void OpenBrace() => Write(writerMap.OpenBrace);
 
         /// <summary>
         /// Order By
         /// </summary>
-        public void OrderBy() => Write(writer.WhiteSpace + "ORDER" + writer.WhiteSpace + "BY" + writer.WhiteSpace);
+        public void OrderBy() => Write(writerMap.WhiteSpace + "ORDER" + writerMap.WhiteSpace + "BY" + writerMap.WhiteSpace);
 
         /// <summary>
         /// 参数
@@ -262,12 +278,12 @@ namespace CodeArts.ORM
         /// <summary>
         /// Select
         /// </summary>
-        public void Select() => Write("SELECT" + writer.WhiteSpace);
+        public void Select() => Write("SELECT" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Insert Into
         /// </summary>
-        public void Insert() => Write("INSERT" + writer.WhiteSpace + "INTO" + writer.WhiteSpace);
+        public void Insert() => Write("INSERT" + writerMap.WhiteSpace + "INTO" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Values
@@ -277,47 +293,47 @@ namespace CodeArts.ORM
         /// <summary>
         /// Update
         /// </summary>
-        public void Update() => Write("UPDATE" + writer.WhiteSpace);
+        public void Update() => Write("UPDATE" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Set
         /// </summary>
-        public void Set() => Write(writer.WhiteSpace + "SET" + writer.WhiteSpace);
+        public void Set() => Write(writerMap.WhiteSpace + "SET" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Delete
         /// </summary>
-        public void Delete() => Write("DELETE" + writer.WhiteSpace);
+        public void Delete() => Write("DELETE" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Where
         /// </summary>
-        public void Where() => Write(writer.WhiteSpace + "WHERE" + writer.WhiteSpace);
+        public void Where() => Write(writerMap.WhiteSpace + "WHERE" + writerMap.WhiteSpace);
 
         /// <summary>
         /// And
         /// </summary>
-        public void And() => Write(writer.WhiteSpace + (ReverseCondition ? "OR" : "AND") + writer.WhiteSpace);
+        public void And() => Write(writerMap.WhiteSpace + (ReverseCondition ? "OR" : "AND") + writerMap.WhiteSpace);
 
         /// <summary>
         /// Or
         /// </summary>
-        public void Or() => Write(writer.WhiteSpace + (ReverseCondition ? "AND" : "OR") + writer.WhiteSpace);
+        public void Or() => Write(writerMap.WhiteSpace + (ReverseCondition ? "AND" : "OR") + writerMap.WhiteSpace);
 
         /// <summary>
         /// Desc
         /// </summary>
-        public void Descending() => Write(writer.WhiteSpace + "DESC");
+        public void Descending() => Write(writerMap.WhiteSpace + "DESC");
 
         /// <summary>
         /// Is
         /// </summary>
-        public void Is() => Write(writer.WhiteSpace + "IS" + writer.WhiteSpace);
+        public void Is() => Write(writerMap.WhiteSpace + "IS" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Not
         /// </summary>
-        public void Not() => Write("NOT" + writer.WhiteSpace);
+        public void Not() => Write("NOT" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Null
@@ -342,12 +358,12 @@ namespace CodeArts.ORM
         /// 别名
         /// </summary>
         /// <param name="name">名称</param>
-        public void Alias(string name) => Write(writer.Name(name));
+        public void Alias(string name) => Write(writerMap.Name(name));
 
         /// <summary>
         /// AS
         /// </summary>
-        public void As() => Write(writer.WhiteSpace + "AS" + writer.WhiteSpace);
+        public void As() => Write(writerMap.WhiteSpace + "AS" + writerMap.WhiteSpace);
 
         /// <summary>
         /// AS {name}
@@ -369,24 +385,43 @@ namespace CodeArts.ORM
         /// 字段
         /// </summary>
         /// <param name="name">名称</param>
-        public void Name(string name) => Write(writer.Name(name));
-
-        /// <summary>
-        /// 空格
-        /// </summary>
-        public void WhiteSpace() => Write(writer.WhiteSpace);
+        public void Name(string name) => Write(writerMap.Name(name));
 
         /// <summary>
         /// {prefix}.{name}
         /// </summary>
         /// <param name="prefix">前缀</param>
         /// <param name="name">字段</param>
-        public void Name(string prefix, string name)
+        public void NameDot(string prefix, string name)
         {
             Limit(prefix);
 
             Name(name);
         }
+
+        /// <summary>
+        /// {name} {alias}
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <param name="alias">别名</param>
+        public void NameWhiteSpace(string name, string alias)
+        {
+            Name(name);
+
+            if (string.IsNullOrEmpty(alias))
+            {
+                return;
+            }
+
+            WhiteSpace();
+
+            Alias(alias);
+        }
+
+        /// <summary>
+        /// 空格
+        /// </summary>
+        public void WhiteSpace() => Write(writerMap.WhiteSpace);
 
         /// <summary>
         /// IS NULL
@@ -432,42 +467,6 @@ namespace CodeArts.ORM
         /// 截取函数
         /// </summary>
         public void SubstringMethod() => Write(settings.Substring);
-
-        /// <summary>
-        /// {name} {alias}
-        /// </summary>
-        /// <param name="name">名称</param>
-        /// <param name="alias">别名</param>
-        public void TableName(string name, string alias)
-        {
-            Name(name);
-
-            if (string.IsNullOrEmpty(alias))
-            {
-                return;
-            }
-
-            WhiteSpace();
-
-            Alias(alias);
-        }
-
-        /// <summary>
-        /// 添加写入器(有数据变化的时候或写入到写入器中)。
-        /// </summary>
-        /// <param name="builder">写入器。</param>
-        internal void AddWriter(StringBuilder builder) => builders.Add(builder ?? throw new ArgumentNullException(nameof(builder)));
-
-        /// <summary>
-        /// 移除写入器。
-        /// </summary>
-        /// <param name="builder">写入器。</param>
-        internal void RemoveWriter(StringBuilder builder) => builders.Remove(builder);
-
-        /// <summary>
-        /// 清空写入器。
-        /// </summary>
-        public void ClearWriter() => builders.Clear();
 
         /// <summary>
         /// 写入排序内容。
@@ -551,7 +550,7 @@ namespace CodeArts.ORM
         public void Equal() => Write(ExpressionType.Equal);
 
         /// <summary>
-        /// &lt;&gt;
+        /// !=
         /// </summary>
         public void NotEqual() => Write(ExpressionType.NotEqual);
 

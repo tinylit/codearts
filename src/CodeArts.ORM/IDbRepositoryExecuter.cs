@@ -12,9 +12,8 @@ namespace CodeArts.ORM
         /// <summary>
         /// 创建执行器
         /// </summary>
-        /// <typeparam name="T">实体</typeparam>
         /// <returns></returns>
-        IExecuteBuilder<T> Create<T>();
+        IExecuteVisitor CreateExe();
 
         /// <summary>
         /// 执行增删改功能
@@ -22,7 +21,7 @@ namespace CodeArts.ORM
         /// <param name="conn">数据库链接</param>
         /// <param name="expression">表达式</param>
         /// <returns>执行影响行</returns>
-        int Execute<T>(IDbConnection conn, Expression expression);
+        int Execute(IDbConnection conn, Expression expression);
 
         /// <summary>
         /// 执行增删改功能
