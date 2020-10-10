@@ -50,9 +50,7 @@ namespace CodeArts.ORM.Visitors
         /// </summary>
         internal readonly ConcurrentDictionary<Type, string> AliasCache = new ConcurrentDictionary<Type, string>();
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected BaseVisitor(ISQLCorrectSettings settings)
         {
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -60,9 +58,7 @@ namespace CodeArts.ORM.Visitors
             this.writer = CreateWriter(settings, CreateWriterMap(settings), new Dictionary<string, object>());
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected BaseVisitor(BaseVisitor visitor, bool isNewWriter = false)
         {
             this.visitor = visitor ?? throw new ArgumentNullException(nameof(visitor));
@@ -581,10 +577,7 @@ namespace CodeArts.ORM.Visitors
             return VisitMemberIsVariable(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitMember(MemberExpression node)
         {
             if (IsPlainVariable(node))

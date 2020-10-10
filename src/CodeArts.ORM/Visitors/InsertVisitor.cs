@@ -36,10 +36,7 @@ namespace CodeArts.ORM.Visitors
                 base.WriteMember(aggregationName, prefix, field, alias);
             }
 
-            /// <summary>
-            /// inherit。
-            /// </summary>
-            /// <returns></returns>
+            /// <inheritdoc />
             protected override Expression VisitNew(NewExpression node)
             {
                 var members = FilterMembers(node.Members);
@@ -154,9 +151,7 @@ namespace CodeArts.ORM.Visitors
 
         private readonly ExecuteVisitor visitor;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public InsertVisitor(ExecuteVisitor visitor) : base(visitor)
         {
             this.visitor = visitor;
@@ -173,14 +168,10 @@ namespace CodeArts.ORM.Visitors
             return base.VisitConstant(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Insert && node.Method.DeclaringType == typeof(Executeable);
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfExecuteable(MethodCallExpression node)
         {
             switch (node.Method.Name)

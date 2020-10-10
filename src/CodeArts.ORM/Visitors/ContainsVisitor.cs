@@ -8,22 +8,16 @@ namespace CodeArts.ORM.Visitors
     /// </summary>
     public class ContainsVisitor : BaseVisitor
     {
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public ContainsVisitor(BaseVisitor visitor) : base(visitor)
         {
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) =>
             node.Method.Name == MethodCall.Contains && node.Arguments.Count == 2;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             if (IsPlainVariable(node.Arguments[1]))

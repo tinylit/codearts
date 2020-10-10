@@ -26,26 +26,20 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public CombinationVisitor(BaseVisitor visitor) : base(visitor, true)
         {
 
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) =>
                 node.Method.Name == MethodCall.Union ||
                 node.Method.Name == MethodCall.Concat ||
                 node.Method.Name == MethodCall.Except ||
                 node.Method.Name == MethodCall.Intersect;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             using (var visitor = new CombinationSelectVisitor(this))

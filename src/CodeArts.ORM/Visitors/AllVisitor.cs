@@ -8,23 +8,15 @@ namespace CodeArts.ORM.Visitors
     /// </summary>
     public class AllVisitor : BaseVisitor
     {
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
+        /// <inheritdoc />
         public AllVisitor(BaseVisitor visitor) : base(visitor)
         {
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.All;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             writer.OpenBrace();

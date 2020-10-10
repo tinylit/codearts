@@ -24,16 +24,12 @@ namespace CodeArts.ORM.Visitors
         /// </summary>
         private readonly ConcurrentDictionary<Type, Type> CastCache = new ConcurrentDictionary<Type, Type>();
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public QueryVisitor(ISQLCorrectSettings settings) : base(settings)
         {
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfQueryable(MethodCallExpression node)
         {
             switch (node.Method.Name)
@@ -111,9 +107,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfSelect(MethodCallExpression node)
         {
             switch (node.Method.Name)
@@ -143,9 +137,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfQueryableAny(MethodCallExpression node)
         {
             try
@@ -162,9 +154,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfQueryableAll(MethodCallExpression node)
         {
             try
@@ -181,9 +171,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override void WriteMember(string aggregationName, string prefix, string field, string alias)
         {
             base.WriteMember(aggregationName, prefix, field, alias);
@@ -194,9 +182,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override void WriteMember(string prefix, string field, string alias)
         {
             base.WriteMember(prefix, field, alias);
@@ -207,9 +193,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override void VisitNewMember(MemberInfo memberInfo, Expression memberExp, Type memberOfHostType)
         {
             base.VisitNewMember(memberInfo, memberExp, memberOfHostType);
@@ -217,10 +201,7 @@ namespace CodeArts.ORM.Visitors
             writer.As(memberInfo.Name);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
 #if NET40
         protected override ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
 #else
@@ -243,10 +224,7 @@ namespace CodeArts.ORM.Visitors
                 ;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Type TypeToUltimateType(Type entryType)
         {
             var ultimateType = base.TypeToUltimateType(entryType);
@@ -259,10 +237,7 @@ namespace CodeArts.ORM.Visitors
             return ultimateType;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
 #if NET40
         protected override IDictionary<string, string> FilterMembers(IDictionary<string, string> members)
 #else

@@ -14,17 +14,11 @@ namespace CodeArts.ORM.Visitors
             {
             }
 
-            /// <summary>
-            /// inherit。
-            /// </summary>
-            /// <returns></returns>
+            /// <inheritdoc />
             public override bool CanResolve(MethodCallExpression node) =>
                 node.Method.Name == MethodCall.Any || node.Method.Name == MethodCall.All;
 
-            /// <summary>
-            /// inherit。
-            /// </summary>
-            /// <returns></returns>
+            /// <inheritdoc />
             protected override Expression StartupCore(MethodCallExpression node)
             {
                 if (node.Arguments.Count == 1)
@@ -38,25 +32,17 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public AnyVisitor(BaseVisitor visitor) : base(visitor)
         {
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) =>
             node.Method.Name == MethodCall.Any || node.Method.Name == MethodCall.All;
 
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             writer.Exists();

@@ -100,17 +100,13 @@ namespace CodeArts.ORM.Visitors
 
         private readonly bool hasVisitor = false;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public ConditionVisitor(ISQLCorrectSettings settings) : base(settings)
         {
             whereSwitch = new SmartSwitch(this.writer.Where, this.writer.And);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public ConditionVisitor(BaseVisitor visitor, bool isNewWriter = false) : base(visitor, isNewWriter)
         {
             hasVisitor = true;

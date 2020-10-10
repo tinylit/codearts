@@ -27,18 +27,12 @@ namespace CodeArts.Tests
                      rsv_idx = 2,
                      ie = "utf8"
                  })
-                 .AppendQueryString(new
-                 {
-                     wd = "sql2",
-                     rsv_spt = 1,
-                     rsv_iqid = "0x822dd2a900206e39",
-                     issp = 1,
-                     rsv_bp = 1,
-                     rsv_idx = 2,
-                     ie = "utf8"
-                 })
                  .JsonCast(new Dictionary<string, string>())
                  .JsonCatch((s, e) =>
+                 {
+                     return new Dictionary<string, string>();
+                 })
+                 .WebCatch(e =>
                  {
                      return new Dictionary<string, string>();
                  })

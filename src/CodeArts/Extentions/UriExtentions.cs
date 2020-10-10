@@ -79,7 +79,6 @@ namespace System
             #region IDisposable Support
             private bool disposedValue = false; // 要检测冗余调用
 
-            /// <inheritdoc />
             protected virtual void Dispose(bool disposing)
             {
                 if (disposing)
@@ -88,7 +87,6 @@ namespace System
                 }
             }
 
-            /// <inheritdoc />
             public void Dispose()
             {
                 if (!disposedValue)
@@ -103,50 +101,18 @@ namespace System
         }
 
         private interface IDisposableFileRequestable : IDisposable
-        {
-            /// <summary>
-            /// 上传文件
-            /// </summary>
-            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
-            /// <param name="timeout">超时时间，单位：毫秒</param>
+        {            
             byte[] UploadFile(string fileName, int timeout = 5000);
-
-            /// <summary>
-            /// 上传文件
-            /// </summary>
-            /// <param name="method">求取方式</param>
-            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
-            /// <param name="timeout">超时时间，单位：毫秒</param>
+                        
             byte[] UploadFile(string method, string fileName, int timeout = 5000);
-
-            /// <summary>
-            /// 下载文件
-            /// </summary>
-            /// <param name="fileName">本地文件地址：文件将下载到这个路径下。</param>
-            /// <param name="timeout">超时时间，单位：毫秒</param>
+                        
             void DownloadFile(string fileName, int timeout = 5000);
 
 #if !NET40
-            /// <summary>
-            /// 上传文件
-            /// </summary>
-            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
-            /// <param name="timeout">超时时间，单位：毫秒</param>
             Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000);
 
-            /// <summary>
-            /// 上传文件
-            /// </summary>
-            /// <param name="method">求取方式</param>
-            /// <param name="fileName">本地文件地址：指定文件将被上传到服务地址。</param>
-            /// <param name="timeout">超时时间，单位：毫秒</param>
             Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000);
 
-            /// <summary>
-            /// 下载文件
-            /// </summary>
-            /// <param name="fileName">本地文件地址：文件将下载到这个路径下。</param>
-            /// <param name="timeout">超时时间，单位：毫秒</param>
             Task DownloadFileAsync(string fileName, int timeout = 5000);
 #endif
         }
@@ -315,10 +281,9 @@ namespace System
         }
 
         #region 补充
-        private class CatchRequestable : RequestableExtend<string>, ICatchRequestable, IResultStringCatchRequestable
+        private class CatchRequestable : RequestableExtend<string>, ICatchRequestable
         {
             private Action<WebException> log;
-            private Func<WebException, string> returnValue;
             private Requestable<string> requestable;
             private IDisposableFileRequestable file;
 
@@ -342,15 +307,9 @@ namespace System
             }
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue)
-            {
-                this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
-
-                return this;
-            }
+                => new ResultStringCatchRequestable(this, returnValue);
 
             public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
-
-            IFinallyStringRequestable IResultStringCatchRequestable.Finally(Action log) => new FinallyRequestable(this, file, log);
 
             public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
 
@@ -366,12 +325,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    if (returnValue is null)
-                    {
-                        throw;
-                    }
-
-                    return returnValue.Invoke(e);
+                    throw;
                 }
             }
 
@@ -451,12 +405,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    if (returnValue is null)
-                    {
-                        throw;
-                    }
-
-                    return returnValue.Invoke(e);
+                    throw;
                 }
             }
 
@@ -542,7 +491,6 @@ namespace System
                     log = null;
                     file = null;
                     requestable = null;
-                    returnValue = null;
                 }
 
                 base.Dispose(disposing);
@@ -1500,7 +1448,6 @@ namespace System
         {
             private Action<string, Exception> log;
             private Func<string, Exception, T> returnValue;
-            private Func<WebException, T> returnValue2;
             private readonly NamingType namingType;
             private Requestable<string> requestable;
 
@@ -1516,12 +1463,8 @@ namespace System
                 this.log = log;
             }
 
-            public IResultCatchRequestable<T> JsonCatch(Func<WebException, T> returnValue)
-            {
-                returnValue2 = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
-
-                return this;
-            }
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
+                => new ResultCatchRequestable<T>(this, returnValue);
 
             public IJsonCatchRequestable<T> JsonCatch(Action<string, Exception> log)
             {
@@ -1546,21 +1489,7 @@ namespace System
 
             public override T RequestImplement(string method, int timeout = 5000)
             {
-                string value = default;
-
-                try
-                {
-                    value = requestable.RequestImplement(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (returnValue2 is null)
-                    {
-                        throw;
-                    }
-
-                    return returnValue2.Invoke(e);
-                }
+                string value = requestable.RequestImplement(method, timeout);
 
                 try
                 {
@@ -1595,21 +1524,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                string value = default;
-
-                try
-                {
-                    value = await requestable.RequestImplementAsync(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (returnValue2 is null)
-                    {
-                        throw;
-                    }
-
-                    return returnValue2.Invoke(e);
-                }
+                string value = await requestable.RequestImplementAsync(method, timeout);
 
                 try
                 {
@@ -1637,7 +1552,6 @@ namespace System
                     log = null;
                     requestable = null;
                     returnValue = null;
-                    returnValue2 = null;
                 }
 
                 base.Dispose(disposing);
@@ -1656,6 +1570,9 @@ namespace System
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
                 this.namingType = namingType;
             }
+
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
+                => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
@@ -1719,7 +1636,6 @@ namespace System
         {
             private Action<string, XmlException> log;
             private Func<string, XmlException, T> returnValue;
-            private Func<WebException, T> returnValue2;
             private Requestable<string> requestable;
 
             public XmlCatchRequestable(Requestable<string> requestable, Action<string, XmlException> log)
@@ -1730,13 +1646,6 @@ namespace System
                 }
                 this.log = log;
                 this.requestable = requestable;
-            }
-
-            public IResultCatchRequestable<T> XmlCatch(Func<WebException, T> returnValue)
-            {
-                returnValue2 = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
-
-                return this;
             }
 
             public IXmlCatchRequestable<T> XmlCatch(Action<string, XmlException> log)
@@ -1758,25 +1667,14 @@ namespace System
                 return this;
             }
 
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
+                => new ResultCatchRequestable<T>(this, returnValue);
+
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
             public override T RequestImplement(string method, int timeout = 5000)
             {
-                string value = default;
-
-                try
-                {
-                    value = requestable.RequestImplement(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (returnValue2 is null)
-                    {
-                        throw;
-                    }
-
-                    return returnValue2.Invoke(e);
-                }
+                string value = requestable.RequestImplement(method, timeout);
 
                 try
                 {
@@ -1798,21 +1696,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                string value = default;
-
-                try
-                {
-                    value = await requestable.RequestImplementAsync(method, timeout);
-                }
-                catch (WebException e)
-                {
-                    if (returnValue2 is null)
-                    {
-                        throw;
-                    }
-
-                    return returnValue2.Invoke(e);
-                }
+                string value = await requestable.RequestImplementAsync(method, timeout);
 
                 try
                 {
@@ -1840,7 +1724,6 @@ namespace System
                     log = null;
                     requestable = null;
                     returnValue = null;
-                    returnValue2 = null;
                 }
 
                 base.Dispose(disposing);
@@ -1857,6 +1740,9 @@ namespace System
                 this.requestable = requestable;
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
             }
+
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
+                => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
@@ -1954,8 +1840,8 @@ namespace System
 
         private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestable
         {
-            private Requestable<string> requestable;
             private Action log;
+            private Requestable<string> requestable;
 
             public FinallyStringRequestable(Requestable<string> requestable, Action log)
             {
@@ -2193,6 +2079,8 @@ namespace System
                         }
                     }
 
+                    var dic2 = new Dictionary<string, string>();
+
                     foreach (var arg in query.Split('&'))
                     {
                         if (arg.Length == 0)
@@ -2200,8 +2088,24 @@ namespace System
                             continue;
                         }
 
-                        dic[arg.Split('=').First()] = arg;
+                        string key = arg.Split('=').First();
+
+                        if (dic2.TryGetValue(key, out string oldValue))
+                        {
+                            dic2[key] = string.Concat(oldValue, "&", arg);
+                        }
+                        else
+                        {
+                            dic2[key] = arg;
+                        }
                     }
+
+                    foreach (var kv in dic2)
+                    {
+                        dic[kv.Key] = kv.Value;
+                    }
+
+                    dic2.Clear();
 
                     string urlStr = __uri.ToString();
 
@@ -2509,8 +2413,8 @@ namespace System
 
         private class ResultStringCatchRequestable : RequestableExtend<string>, IResultStringCatchRequestable
         {
-            private readonly Requestable<string> requestable;
-            private readonly Func<WebException, string> returnValue;
+            private Requestable<string> requestable;
+            private Func<WebException, string> returnValue;
 
             public ResultStringCatchRequestable(Requestable<string> requestable, Func<WebException, string> returnValue)
             {
@@ -2545,11 +2449,23 @@ namespace System
                 }
             }
 #endif
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    requestable?.Dispose();
+
+                    requestable = null;
+                    returnValue = null;
+                }
+
+                base.Dispose(disposing);
+            }
         }
 
         private class JsonRequestable<T> : RequestableExtend<T>, IJsonRequestable<T>
         {
-            private readonly Requestable<string> requestable;
+            private Requestable<string> requestable;
 
             public JsonRequestable(Requestable<string> requestable, NamingType namingType)
             {
@@ -2583,7 +2499,9 @@ namespace System
             {
                 if (disposing)
                 {
-                    requestable.Dispose();
+                    requestable?.Dispose();
+
+                    requestable = null;
                 }
 
                 base.Dispose(disposing);
@@ -2592,7 +2510,7 @@ namespace System
 
         private class XmlRequestable<T> : RequestableExtend<T>, IXmlRequestable<T>
         {
-            private readonly Requestable<string> requestable;
+            private Requestable<string> requestable;
 
             public XmlRequestable(Requestable<string> requestable)
             {
@@ -2623,7 +2541,8 @@ namespace System
             {
                 if (disposing)
                 {
-                    requestable.Dispose();
+                    requestable?.Dispose();
+                    requestable = null;
                 }
 
                 base.Dispose(disposing);

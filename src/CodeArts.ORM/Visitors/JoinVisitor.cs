@@ -29,9 +29,7 @@ namespace CodeArts.ORM.Visitors
 
         private readonly BaseVisitor visitor;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public JoinVisitor(BaseVisitor visitor) : base(visitor)
         {
             this.visitor = visitor;
@@ -87,14 +85,10 @@ namespace CodeArts.ORM.Visitors
             return true;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Join;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.Type.IsQueryable())
@@ -105,9 +99,7 @@ namespace CodeArts.ORM.Visitors
             return base.VisitConstant(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             if (!IsValidExpretion(node.Arguments[0]))

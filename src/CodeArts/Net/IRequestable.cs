@@ -564,7 +564,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultCatchRequestable<T> XmlCatch(Func<WebException, T> returnValue);
+        IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常
@@ -598,7 +598,7 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
         /// <returns></returns>
-        IResultCatchRequestable<T> JsonCatch(Func<WebException, T> returnValue);
+        IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
 
         /// <summary>
         /// 捕获Web异常
@@ -640,6 +640,12 @@ namespace CodeArts.Net
     /// </summary>
     public interface IJsonResultCatchRequestable<T> : IResultCatchRequestable<T>
     {
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
     }
 
     /// <summary>
@@ -647,6 +653,12 @@ namespace CodeArts.Net
     /// </summary>
     public interface IXmlResultCatchRequestable<T> : IResultCatchRequestable<T>
     {
+        /// <summary>
+        /// 捕获Web异常，并返回结果（返回最后一次的结果）。
+        /// </summary>
+        /// <param name="returnValue">异常捕获,并返回异常情况下的结果</param>
+        /// <returns></returns>
+        IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
     }
 
     /// <summary>

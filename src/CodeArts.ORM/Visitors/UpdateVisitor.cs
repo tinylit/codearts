@@ -16,17 +16,13 @@ namespace CodeArts.ORM.Visitors
     {
         private readonly ExecuteVisitor visitor;
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public UpdateVisitor(ExecuteVisitor visitor) : base(visitor)
         {
             this.visitor = visitor;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Update && node.Method.DeclaringType == typeof(Executeable);
 
         /// <inheritdoc />
@@ -40,9 +36,7 @@ namespace CodeArts.ORM.Visitors
             return base.VisitConstant(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfExecuteable(MethodCallExpression node)
         {
             switch (node.Method.Name)
@@ -94,10 +88,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitNew(NewExpression node)
         {
             var enumerator = node.Members.GetEnumerator();

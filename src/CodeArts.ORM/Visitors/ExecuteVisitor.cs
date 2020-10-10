@@ -8,15 +8,12 @@ namespace CodeArts.ORM.Visitors
     /// </summary>
     public class ExecuteVisitor : BaseVisitor, IExecuteVisitor
     {
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public ExecuteVisitor(ISQLCorrectSettings settings) : base(settings)
         {
         }
-        /// <summary>
-        /// inherit。
-        /// </summary>
+
+        /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node)
             => (node.Method.Name == MethodCall.Insert || node.Method.Name == MethodCall.Update || node.Method.Name == MethodCall.Delete) && node.Method.DeclaringType == typeof(Executeable);
 
@@ -27,9 +24,7 @@ namespace CodeArts.ORM.Visitors
             return node.Arguments[0];
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfExecuteable(MethodCallExpression node)
         {
             switch (node.Method.Name)

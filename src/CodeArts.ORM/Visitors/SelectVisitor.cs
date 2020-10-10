@@ -110,26 +110,19 @@ namespace CodeArts.ORM.Visitors
 
         private readonly ConcurrentDictionary<Type, List<string>> JoinCache = new ConcurrentDictionary<Type, List<string>>();
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         public SelectVisitor(BaseVisitor visitor) : base(visitor, true)
         {
             orderBySwitch = new OrderBySwitch(writer.OrderBy, writer.Delimiter);
         }
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        
+        /// <inheritdoc />
         public SelectVisitor(ISQLCorrectSettings settings) : base(settings)
         {
             orderBySwitch = new OrderBySwitch(writer.OrderBy, writer.Delimiter);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             return UsingSelect(node, base.StartupCore);
@@ -176,10 +169,7 @@ namespace CodeArts.ORM.Visitors
             return result;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
         {
             if (hasCombination)
@@ -190,10 +180,7 @@ namespace CodeArts.ORM.Visitors
             return base.VisitParameter(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.Type.IsQueryable())
@@ -220,10 +207,7 @@ namespace CodeArts.ORM.Visitors
             return base.VisitConstant(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override bool TryGetEntryAlias(Type entryType, string parameterName, bool check, out string aliasName)
         {
             if (hasJoin && parameterName.IsNotEmpty() && JoinCache.TryGetValue(entryType, out List<string> list) && list.Contains(parameterName))
@@ -422,9 +406,7 @@ namespace CodeArts.ORM.Visitors
             return default;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
+        /// <inheritdoc />
         protected override Expression VisitOfQueryable(MethodCallExpression node)
         {
             string name = node.Method.Name;
@@ -701,10 +683,7 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected virtual Expression VisitJoin(MethodCallExpression node)
         {
             using (var visitor = new JoinVisitor(this))
@@ -715,10 +694,7 @@ namespace CodeArts.ORM.Visitors
             return node;
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitCondition(MethodCallExpression node)
         {
             if (buildSelect)
@@ -729,10 +705,7 @@ namespace CodeArts.ORM.Visitors
             return base.VisitCondition(node);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitCombination(MethodCallExpression node)
         {
             try
@@ -825,10 +798,7 @@ namespace CodeArts.ORM.Visitors
             VisitCheckIfSubconnection(memberExp);
         }
 
-        /// <summary>
-        /// inherit。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitNew(NewExpression node)
         {
             var members = FilterMembers(node.Members);
