@@ -18,14 +18,18 @@ namespace CodeArts.ORM
     /// </summary>
     public class DbTypeGen : ITypeGen
     {
-        private static readonly Type[] supportGenericTypes = new Type[] { typeof(IDbMapper<>), typeof(IDbRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEditable<>), typeof(IEnumerable<>) };
-        private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IEditable), typeof(ISelectable), typeof(IEnumerable) };
+        private static readonly Type[] supportGenericTypes = new Type[] { typeof(IDbMapper<>), typeof(IWriteRepository<>), typeof(IReadRepository<>), typeof(IRepository<>), typeof(IOrderedQueryable<>), typeof(IQueryable<>), typeof(IEnumerable<>) };
+        private static readonly Type[] supportTypes = new Type[] { typeof(IQueryable), typeof(IOrderedQueryable), typeof(IQueryProvider), typeof(IWriteRepository), typeof(IReadRepository), typeof(IEnumerable) };
         private static readonly ConcurrentDictionary<Type, Type> TypeCache = new ConcurrentDictionary<Type, Type>();
         private static readonly MethodInfo DictionaryAdd = typeof(Dictionary<string, object>).GetMethod("Add", BindingFlags.Public | BindingFlags.Instance);
         private static readonly MethodInfo MapToMethod = typeof(ObjectExtentions).GetMethod(nameof(ObjectExtentions.MapTo), new Type[] { typeof(object), typeof(Type) });
-        private static readonly MethodInfo QueryFirstOrDefaultMethod = typeof(ISelectable).GetMethod(nameof(ISelectable.QueryFirstOrDefault));
-        private static readonly MethodInfo QueryFirstMethod = typeof(ISelectable).GetMethod(nameof(ISelectable.QueryFirst));
-        private static readonly MethodInfo QueryMethod = typeof(ISelectable).GetMethod(nameof(ISelectable.Query));
+        private static readonly MethodInfo QueryFirstOrDefaultMethod = typeof(IReadRepository).GetMethod(nameof(IReadRepository.QueryFirstOrDefault));
+        private static readonly MethodInfo QueryFirstMethod = typeof(IReadRepository).GetMethod(nameof(IReadRepository.QueryFirst));
+        private static readonly MethodInfo QueryMethod = typeof(IReadRepository).GetMethod(nameof(IReadRepository.Query));
+
+        private static readonly MethodInfo InsertMethod = typeof(IWriteRepository).GetMethod(nameof(IWriteRepository.Insert));
+        private static readonly MethodInfo UpdateMethod = typeof(IWriteRepository).GetMethod(nameof(IWriteRepository.Update));
+        private static readonly MethodInfo DeleteMethod = typeof(IWriteRepository).GetMethod(nameof(IWriteRepository.Delete));
 
         /// <summary>
         /// 创建类型。
@@ -112,23 +116,17 @@ namespace CodeArts.ORM
 
             var repositoryAttr = storeItem.GetCustomAttribute<RepositoryAttribute>();
 
-            if (!storeItem.MethodStores.All(x => x.IsDefined<SelectAttribute>()) || interfaces.Any(x =>
-              {
-                  if (x.IsGenericType)
-                  {
-                      var typeDefinition = x.GetGenericTypeDefinition();
-
-                      return typeDefinition == typeof(IDbRepository<>) || typeDefinition == typeof(IEditable<>);
-                  }
-
-                  return x == typeof(IEditable);
-              }))
+            if (storeItem.MethodStores.All(x => x.IsDefined<SelectAttribute>()))
             {
-                repositoryType = typeof(DbRepository<>).MakeGenericType(typeArgument);
+                repositoryType = typeof(ReadRepository<>).MakeGenericType(typeArgument);
+            }
+            else if (storeItem.MethodStores.All(x => !x.IsDefined<SelectAttribute>()))
+            {
+                repositoryType = typeof(WriteRepository<>).MakeGenericType(typeArgument);
             }
             else
             {
-                repositoryType = typeof(Repository<>).MakeGenericType(typeArgument);
+                repositoryType = typeof(ReadWriteRepository<>).MakeGenericType(typeArgument);
             }
 
             if (repositoryAttr is null)
@@ -226,8 +224,8 @@ namespace CodeArts.ORM
                 var timeOut = Constant(timeOutAttr?.Value, typeof(int?));
 
                 ConvertAst thisArg = sqlAttribute.CommandType == CommandTypes.Select
-                ? Convert(This(repositoryType), typeof(ISelectable))
-                : Convert(This(repositoryType), typeof(IEditable));
+                ? Convert(This(repositoryType), typeof(IReadRepository))
+                : Convert(This(repositoryType), typeof(IWriteRepository));
 
                 if (sqlAttribute.CommandType == CommandTypes.Select)
                 {
@@ -278,26 +276,24 @@ namespace CodeArts.ORM
                     return;
                 }
 
-                string commandName;
+                MethodInfo commandMethod;
 
                 if (sqlAttribute.CommandType == CommandTypes.Insert)
                 {
-                    commandName = nameof(IEditable.Insert);
+                    commandMethod = InsertMethod;
                 }
                 else if (sqlAttribute.CommandType == CommandTypes.Update)
                 {
-                    commandName = nameof(IEditable.Update);
+                    commandMethod = UpdateMethod;
                 }
                 else if (sqlAttribute.CommandType == CommandTypes.Delete)
                 {
-                    commandName = nameof(IEditable.Delete);
+                    commandMethod = DeleteMethod;
                 }
                 else
                 {
                     throw new NotSupportedException($"“{sqlAttribute.CommandType}”指令不被支持!");
                 }
-
-                var commandMethod = typeof(IEditable).GetMethod(commandName, new Type[] { typeof(SQL), typeof(object), typeof(int?) });
 
                 var bodyExcute = Call(commandMethod, thisArg, sql, Convert(variable_params, typeof(object)), timeOut);
 

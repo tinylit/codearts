@@ -5,7 +5,7 @@ using UnitTest.Serialize;
 namespace CodeArts.ORM.Domain
 {
     [SqlServerConnection]
-    public class UserRepository : DbRepository<FeiUsers>
+    public class UserRepository : ReadWriteRepository<FeiUsers>
     {
         protected override bool QueryAuthorize(ISQL sql) => true;
 

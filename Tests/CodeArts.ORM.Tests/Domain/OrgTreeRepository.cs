@@ -5,7 +5,7 @@ using UnitTest.Serialize;
 namespace UnitTest.Domain
 {
     [DefaultDbConfig]
-    public class OrgTreeRepository : DbRepository<OrgTree>
+    public class OrgTreeRepository : ReadWriteRepository<OrgTree>
     {
     }
 }

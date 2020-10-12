@@ -1,7 +1,6 @@
 ﻿using CodeArts.ORM.Exceptions;
 using CodeArts.Runtime;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,11 +14,18 @@ using System.Transactions;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 数据仓储（支持增删查改）
+    /// 数据写入器。
     /// </summary>
-    /// <typeparam name="T">元素类型</typeparam>
-    public class DbRepository<T> : Repository<T>, IDbRepository<T>, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEditable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEditable, IEnumerable where T : class, IEntiy
+    /// <typeparam name="T"></typeparam>
+    public class DbWriter<T> where T : class, IEntiy
     {
+        /// <summary>
+        /// 实体表信息
+        /// </summary>
+        public static ITableInfo TableInfo { get; }
+
+        static DbWriter() => TableInfo = TableRegions.Resolve<T>();
+
         /// <summary>
         /// 最大参数长度
         /// </summary>
@@ -49,30 +55,13 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 数据库执行器
-        /// </summary>
-        protected virtual IDbRepositoryExecuter DbExecuter => DbConnectionManager.Create(DbAdapter);
-
-        private static IKeyGen _keyGen;
-
-        /// <summary>
-        /// 静态构造函数。
-        /// </summary>
-        static DbRepository() => _keyGen = KeyGenFactory.Create(keyGen => _keyGen = keyGen.Create());
-
-        /// <summary>
-        /// 主键生成器。
-        /// </summary>
-        public virtual long NewId() => _keyGen.Id();
-
-        /// <summary>
         /// 执行器
         /// </summary>
         private class Executeable : IExecuteable<T>, IExecuteProvider<T>
         {
-            public Executeable(IEditable<T> executer) => Executer = executer ?? throw new ArgumentNullException(nameof(executer));
+            public Executeable(IWriteRepository<T> executer) => Executer = executer ?? throw new ArgumentNullException(nameof(executer));
 
-            protected Executeable(IEditable<T> executer, Expression expression) : this(executer) => _Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+            protected Executeable(IWriteRepository<T> executer, Expression expression) : this(executer) => _Expression = expression ?? throw new ArgumentNullException(nameof(expression));
 
             private readonly Expression _Expression = null;
 
@@ -80,7 +69,7 @@ namespace CodeArts.ORM
 
             public IExecuteProvider<T> Provider => this;
 
-            public IEditable<T> Executer { get; }
+            public IWriteRepository<T> Executer { get; }
 
             public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
 
@@ -94,12 +83,11 @@ namespace CodeArts.ORM
         /// </summary>
         private abstract class RouteExecuteable : IRouteExecuteable<T>
         {
-            public RouteExecuteable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, T[] entries, Func<string, Dictionary<string, object>, int?, int> executer)
+            public RouteExecuteable(IRouteExecuter executeable, IRouteProvider<T> provider, ICollection<T> entries)
             {
-                this.executer = executer ?? throw new ArgumentNullException(nameof(executer));
                 this.Entries = entries ?? throw new ArgumentNullException(nameof(entries));
-                this.Settings = settings ?? throw new ArgumentNullException(nameof(settings));
                 this.Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+                this.executeable = executeable ?? throw new ArgumentNullException(nameof(executeable));
             }
 
             static RouteExecuteable()
@@ -115,17 +103,17 @@ namespace CodeArts.ORM
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
-            private readonly Func<string, Dictionary<string, object>, int?, int> executer;
+            private readonly IRouteExecuter executeable;
 
-            public IRouteExecuteProvider<T> Provider { get; }
+            public IRouteProvider<T> Provider { get; }
 
-            public T[] Entries { get; }
+            public ICollection<T> Entries { get; }
 
-            public ISQLCorrectSimSettings Settings { get; private set; }
+            public ISQLCorrectSimSettings Settings => executeable.Settings;
 
             public int ExecuteCommand(int? commandTimeout = null)
             {
-                if (Entries.Length > 0)
+                if (Entries.Count > 0)
                 {
                     return Execute(commandTimeout);
                 }
@@ -135,12 +123,12 @@ namespace CodeArts.ORM
 
             public abstract int Execute(int? commandTimeout);
 
-            public int Execute(string sql, Dictionary<string, object> param, int? commandTimeout) => executer.Invoke(sql, param, commandTimeout);
+            public int Execute(string sql, Dictionary<string, object> param, int? commandTimeout) => executeable.ExecuteCommand(sql, param, commandTimeout);
         }
 
         private class Deleteable : RouteExecuteable, IDeleteable<T>
         {
-            public Deleteable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, T[] entries, Func<string, Dictionary<string, object>, int?, int> executer) : base(settings, provider, entries, executer)
+            public Deleteable(IRouteExecuter<T> executeable, ICollection<T> entries) : base(executeable, executeable.CreateRouteProvider(CommandBehavior.Delete), entries)
             {
                 wheres = defaultWhere;
             }
@@ -165,7 +153,9 @@ namespace CodeArts.ORM
                     var wheres = where.Invoke(item);
 
                     if (wheres.Length == 0)
+                    {
                         throw new DException("未指定删除条件!");
+                    }
 
                     var columns = typeRegions.ReadOrWrites
                         .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
@@ -173,7 +163,9 @@ namespace CodeArts.ORM
                         .ToArray();
 
                     if (columns.Length == 0)
+                    {
                         throw new DException("未指定删除条件!");
+                    }
 
                     parameter_count += columns.Length;
 
@@ -338,7 +330,7 @@ namespace CodeArts.ORM
                     throw new DException("未指定删除条件!");
                 }
 
-                if (Entries.Length <= MAX_PARAMETERS_COUNT)
+                if (Entries.Count <= MAX_PARAMETERS_COUNT)
                 {
                     var parameters = new Dictionary<string, object>();
 
@@ -349,7 +341,7 @@ namespace CodeArts.ORM
 
                 var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
 
-                for (int i = 0; i < Entries.Length; i += MAX_PARAMETERS_COUNT)
+                for (int i = 0; i < Entries.Count; i += MAX_PARAMETERS_COUNT)
                 {
                     var parameters = new Dictionary<string, object>();
 
@@ -398,7 +390,7 @@ namespace CodeArts.ORM
                         .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
                         .ToList();
 
-                if (Entries.Length * columns.Count <= MAX_PARAMETERS_COUNT)
+                if (Entries.Count * columns.Count <= MAX_PARAMETERS_COUNT)
                 {
                     var parameters = new Dictionary<string, object>();
 
@@ -411,7 +403,7 @@ namespace CodeArts.ORM
 
                 var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
 
-                for (int i = 0; i < Entries.Length; i += offset)
+                for (int i = 0; i < Entries.Count; i += offset)
                 {
                     var parameters = new Dictionary<string, object>();
 
@@ -603,7 +595,7 @@ namespace CodeArts.ORM
 
         private class Insertable : RouteExecuteable, IInsertable<T>
         {
-            public Insertable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, T[] entries, Func<string, Dictionary<string, object>, int?, int> executer) : base(settings, provider, entries, executer)
+            public Insertable(IRouteExecuter<T> executeable, ICollection<T> entries) : base(executeable, executeable.CreateRouteProvider(CommandBehavior.Insert), entries)
             {
             }
 
@@ -642,7 +634,7 @@ namespace CodeArts.ORM
 
                 var insert_columns = columns.ToList();
 
-                int parameter_count = Entries.Length * insert_columns.Count;
+                int parameter_count = Entries.Count * insert_columns.Count;
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
@@ -654,7 +646,7 @@ namespace CodeArts.ORM
                 int offset = MAX_PARAMETERS_COUNT / insert_columns.Count;
                 var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
 
-                for (int i = 0; i < Entries.Length; i += offset)
+                for (int i = 0; i < Entries.Count; i += offset)
                 {
                     sqls.Add(SqlGenerator(Entries.Skip(i).Take(offset).ToList(), insert_columns));
                 }
@@ -797,7 +789,7 @@ namespace CodeArts.ORM
 
         private class Updateable : RouteExecuteable, IUpdateable<T>
         {
-            public Updateable(ISQLCorrectSimSettings settings, IRouteExecuteProvider<T> provider, T[] collect, Func<string, Dictionary<string, object>, int?, int> executer) : base(settings, provider, collect, executer)
+            public Updateable(IRouteExecuter<T> executeable, ICollection<T> entries) : base(executeable, executeable.CreateRouteProvider(CommandBehavior.Update), entries)
             {
             }
 
@@ -880,7 +872,7 @@ namespace CodeArts.ORM
                     )
                     .ToList();
 
-                parameter_count += update_columns.Count * Entries.Length;
+                parameter_count += update_columns.Count * Entries.Count;
 
                 if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
                 {
@@ -1119,268 +1111,38 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 插入、更新、删除执行器
+        /// 赋予插入能力。
         /// </summary>
+        /// <param name="executeable">分析器。</param>
+        /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public IExecuteable<T> AsExecuteable() => new Executeable(this);
+        public static IInsertable<T> AsInsertable(IRouteExecuter<T> executeable, ICollection<T> entries)
+            => new Insertable(executeable, entries);
 
         /// <summary>
-        /// 创建路由执行器
+        /// 赋予更新能力。
         /// </summary>
+        /// <param name="executeable">分析器。</param>
+        /// <param name="entries">集合。</param>
         /// <returns></returns>
-        protected virtual IRouteExecuteProvider<T> CreateRouteExecuteProvider(CommandBehavior behavior) => RouteExecuter<T>.Instance;
+        public static IUpdateable<T> AsUpdateable(IRouteExecuter<T> executeable, ICollection<T> entries)
+            => new Updateable(executeable, entries);
 
         /// <summary>
-        /// 插入路由执行器
+        /// 赋予删除能力。
         /// </summary>
-        /// <param name="entry">项目</param>
+        /// <param name="executeable">分析器。</param>
+        /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public IInsertable<T> AsInsertable(T entry)
-        {
-            if (entry is null)
-            {
-                throw new ArgumentNullException(nameof(entry));
-            }
-
-            return AsInsertable(new T[] { entry });
-        }
+        public static IDeleteable<T> AsDeleteable(IRouteExecuter<T> executeable, ICollection<T> entries)
+            => new Deleteable(executeable, entries);
 
         /// <summary>
-        /// 插入路由执行器
+        /// 赋予执行能力。
         /// </summary>
-        /// <param name="entries">项目集合</param>
+        /// <param name="editable">编辑。</param>
         /// <returns></returns>
-        public IInsertable<T> AsInsertable(List<T> entries)
-        {
-            if (entries is null)
-            {
-                throw new ArgumentNullException(nameof(entries));
-            }
-
-            return AsInsertable(entries.ToArray());
-        }
-
-        /// <summary>
-        /// 插入路由执行器
-        /// </summary>
-        /// <param name="entries">项目集合</param>
-        /// <returns></returns>
-        public virtual IInsertable<T> AsInsertable(T[] entries) => new Insertable(Settings, CreateRouteExecuteProvider(CommandBehavior.Insert), entries, Execute);
-
-        /// <summary>
-        /// 更新路由执行器
-        /// </summary>
-        /// <param name="entry">项目</param>
-        /// <returns></returns>
-        public IUpdateable<T> AsUpdateable(T entry)
-        {
-            if (entry is null)
-            {
-                throw new ArgumentNullException(nameof(entry));
-            }
-
-            return AsUpdateable(new T[] { entry });
-        }
-
-        /// <summary>
-        /// 更新路由执行器
-        /// </summary>
-        /// <param name="entries">项目集合</param>
-        /// <returns></returns>
-        public IUpdateable<T> AsUpdateable(List<T> entries)
-        {
-            if (entries is null)
-            {
-                throw new ArgumentNullException(nameof(entries));
-            }
-
-            return AsUpdateable(entries.ToArray());
-        }
-
-        /// <summary>
-        /// 更新路由执行器
-        /// </summary>
-        /// <param name="entries">项目集合</param>
-        /// <returns></returns>
-        public virtual IUpdateable<T> AsUpdateable(T[] entries) => new Updateable(Settings, CreateRouteExecuteProvider(CommandBehavior.Update), entries, Execute);
-
-        /// <summary>
-        /// 删除路由执行器
-        /// </summary>
-        /// <param name="entry">项目</param>
-        /// <returns></returns>
-        public IDeleteable<T> AsDeleteable(T entry)
-        {
-            if (entry is null)
-            {
-                throw new ArgumentNullException(nameof(entry));
-            }
-
-            return AsDeleteable(new T[] { entry });
-        }
-
-        /// <summary>
-        /// 删除路由执行器
-        /// </summary>
-        /// <param name="entries">项目集合</param>
-        /// <returns></returns>
-        public IDeleteable<T> AsDeleteable(List<T> entries)
-        {
-            if (entries is null)
-            {
-                throw new ArgumentNullException(nameof(entries));
-            }
-
-            return AsDeleteable(entries.ToArray());
-        }
-
-        /// <summary>
-        /// 删除路由执行器
-        /// </summary>
-        /// <param name="entries">项目集合</param>
-        /// <returns></returns>
-        public virtual IDeleteable<T> AsDeleteable(T[] entries) => new Deleteable(Settings, CreateRouteExecuteProvider(CommandBehavior.Delete), entries, Execute);
-
-        /// <summary>
-        /// 表达式分析
-        /// </summary>
-        /// <param name="expression">表达式</param>
-        /// <returns></returns>
-        int IEditable<T>.Excute(Expression expression) => DbExecuter.Execute(Connection, expression);
-
-        /// <summary>
-        /// 执行语句
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        protected int Insert(SQL sql, object param = null, int? commandTimeout = null)
-        {
-            if (ExecuteAuthorize(sql, CommandTypes.Insert))
-            {
-                return Execute(sql, param, commandTimeout);
-            }
-
-            throw new NonAuthorizedException();
-        }
-
-        /// <summary>
-        /// 执行语句
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        int IEditable.Insert(SQL sql, object param, int? commandTimeout) => Insert(sql, param, commandTimeout);
-
-        /// <summary>
-        /// 执行语句
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        protected int Update(SQL sql, object param = null, int? commandTimeout = null)
-        {
-            if (ExecuteAuthorize(sql, CommandTypes.Update))
-            {
-                return Execute(sql, param, commandTimeout);
-            }
-
-            throw new NonAuthorizedException();
-        }
-
-        /// <summary>
-        /// 执行语句
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        int IEditable.Update(SQL sql, object param, int? commandTimeout) => Update(sql, param, commandTimeout);
-
-        /// <summary>
-        /// 执行语句
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        protected int Delete(SQL sql, object param = null, int? commandTimeout = null)
-        {
-            if (ExecuteAuthorize(sql, CommandTypes.Delete))
-            {
-                return Execute(sql, param, commandTimeout);
-            }
-
-            throw new NonAuthorizedException();
-        }
-
-        /// <summary>
-        /// 执行语句
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        int IEditable.Delete(SQL sql, object param, int? commandTimeout) => Delete(sql, param, commandTimeout);
-
-        /// <summary>
-        /// 执行SQL验证。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual bool ExecuteAuthorize(ISQL sql, UppercaseString commandType)
-        {
-            if (sql.Tables.All(x => x.CommandType == CommandTypes.Select))
-            {
-                return false;
-            }
-
-            return sql.Tables.All(x => x.CommandType == CommandTypes.Select || x.CommandType == commandType && string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        /// <summary>
-        /// 执行SQL验证
-        /// </summary>
-        /// <returns></returns>
-        protected virtual bool ExecuteAuthorize(ISQL sql)
-        {
-            if (sql.Tables.All(x => x.CommandType == CommandTypes.Select))
-            {
-                return false;
-            }
-
-            return sql.Tables.All(x => x.CommandType == CommandTypes.Select || string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        /// <summary>
-        /// 执行。
-        /// </summary>
-        /// <param name="sql">SQL。</param>
-        /// <param name="param">参数。</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <returns></returns>
-        private int Execute(string sql, Dictionary<string, object> param, int? commandTimeout = null)
-        {
-            return DbExecuter.Execute(Connection, sql, param, commandTimeout);
-        }
-
-        /// <summary>
-        /// 执行
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns>影响行</returns>
-        protected virtual int Execute(ISQL sql, object param = null, int? commandTimeout = null)
-        {
-            if (!ExecuteAuthorize(sql))
-            {
-                throw new NonAuthorizedException();
-            }
-
-            return Execute(sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
-        }
+        public static IExecuteable<T> AsExecuteable(IWriteRepository<T> editable)
+            => new Executeable(editable);
     }
 }

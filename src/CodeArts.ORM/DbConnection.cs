@@ -580,7 +580,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 释放内存
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose() => Dispose(Interlocked.CompareExchange(ref refUseCount, 0, 0) == 0);
 
         /// <summary>
         /// 释放内存
@@ -588,7 +588,7 @@ namespace CodeArts.ORM
         /// <param name="disposing">确认释放</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && Interlocked.CompareExchange(ref refUseCount, 0, 0) == 0)
+            if (disposing)
             {
                 _connection?.Close();
                 _connection?.Dispose();

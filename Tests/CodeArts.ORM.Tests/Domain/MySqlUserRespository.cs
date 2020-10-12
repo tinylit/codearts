@@ -5,7 +5,7 @@ using UnitTest.Serialize;
 namespace UnitTest.Domain
 {
     [DefaultDbConfig]
-    public class MySqlUserRespository : DbRepository<User>
+    public class MySqlUserRespository : ReadWriteRepository<User>
     {
 
     }

@@ -7,7 +7,7 @@ using UnitTest.Serialize;
 namespace CodeArts.ORM.Tests.Domain
 {
     [DefaultDbConfig]
-    public class OrmTestRepository : DbRepository<OrmTest>
+    public class OrmTestRepository : ReadWriteRepository<OrmTest>
     {
     }
 }

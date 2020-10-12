@@ -8,7 +8,6 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 
 namespace CodeArts.ORM
 {
@@ -79,11 +78,6 @@ namespace CodeArts.ORM
         protected Repository()
         {
             ConnectionConfig = GetDbConfig() ?? throw new NoNullAllowedException("未找到数据链接配置信息!");
-
-            if (ConnectionConfig.ConnectionString.IsEmpty())
-            {
-
-            }
         }
         /// <summary>
         /// 链接
@@ -92,11 +86,6 @@ namespace CodeArts.ORM
         public Repository(IReadOnlyConnectionConfig connectionConfig)
         {
             ConnectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
-
-            if (ConnectionConfig.ConnectionString.IsEmpty())
-            {
-
-            }
         }
 
         /// <summary> 执行数据库事务 </summary>
@@ -138,18 +127,12 @@ namespace CodeArts.ORM
     /// 数据仓储
     /// </summary>
     /// <typeparam name="T">实体类型</typeparam>
-    public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, ISelectable, IEnumerable
+    public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEnumerable
     {
-        private static ITableInfo tableInfo;
-        /// <summary>
-        /// 实体表信息
-        /// </summary>
-        public static ITableInfo TableInfo => tableInfo ?? (tableInfo = TableRegions.Resolve(typeof(T)));
-
         /// <summary>
         /// 构造函数
         /// </summary>
-        public Repository() : base()
+        public Repository()
         {
         }
 
@@ -181,6 +164,7 @@ namespace CodeArts.ORM
         /// 仓库供应器
         /// </summary>
         protected virtual IDbRepositoryProvider DbProvider => DbConnectionManager.Create(DbAdapter);
+
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
             if (expression == null)
@@ -195,7 +179,7 @@ namespace CodeArts.ORM
                 throw new ArgumentException("无效表达式!", nameof(expression));
             }
 
-            Type type2 = typeof(Repository<>).MakeGenericType(type.GetGenericArguments());
+            Type type2 = typeof(ReadRepository<>).MakeGenericType(type.GetGenericArguments());
 
             return (IQueryable)Activator.CreateInstance(type2, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[2]
             {
@@ -203,6 +187,7 @@ namespace CodeArts.ORM
                 expression
             }, null);
         }
+
         /// <summary>
         /// 创建IQueryable
         /// </summary>
@@ -251,130 +236,6 @@ namespace CodeArts.ORM
         /// 表达式
         /// </summary>
         public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
-
-        /// <summary>
-        /// 查询SQL验证
-        /// </summary>
-        /// <returns></returns>
-        protected virtual bool QueryAuthorize(ISQL sql) => sql.Tables.All(x => x.CommandType == CommandTypes.Select) && sql.Tables.Any(x => string.Equals(x.Name, TableInfo.TableName, StringComparison.OrdinalIgnoreCase));
-
-        /// <summary>
-        /// 构建参数。
-        /// </summary>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数对象</param>
-        /// <returns></returns>
-        protected virtual Dictionary<string, object> BuildParameters(ISQL sql, object param = null)
-        {
-            if (param is null)
-            {
-                if (sql.Parameters.Count > 0)
-                {
-                    throw new DSyntaxErrorException("参数少于SQL所需的参数!");
-                }
-
-                return null;
-            }
-
-            var type = param.GetType();
-
-            if (type.IsValueType || type == typeof(string))
-            {
-                if (sql.Parameters.Count > 1)
-                {
-                    throw new DSyntaxErrorException("参数少于SQL所需的参数!");
-                }
-
-                var token = sql.Parameters.First();
-
-                return new Dictionary<string, object>
-                {
-                    [token.Name] = param
-                };
-            }
-
-            if (!(param is Dictionary<string, object> parameters))
-            {
-                parameters = param.MapTo<Dictionary<string, object>>();
-            }
-
-            if (parameters.Count < sql.Parameters.Count)
-            {
-                throw new DSyntaxErrorException("参数少于SQL所需的参数!");
-            }
-
-            if (!sql.Parameters.All(x => parameters.Any(y => y.Key == x.Name)))
-            {
-                throw new DSyntaxErrorException("参数不匹配!");
-            }
-
-            return parameters;
-        }
-
-        /// <summary>
-        /// 查询一条数据(未查询到数据)。
-        /// </summary>
-        /// <typeparam name="TResult">结果。</typeparam>
-        /// <param name="sql">SQL。</param>
-        /// <param name="param">参数。</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="defaultValue">默认值。</param>
-        /// <returns></returns>
-        protected virtual TResult QueryFirstOrDefault<TResult>(SQL sql, object param = null, int? commandTimeout = null, TResult defaultValue = default)
-        {
-            if (!QueryAuthorize(sql))
-            {
-                throw new NonAuthorizedException();
-            }
-
-            return DbProvider.QueryFirstOrDefault<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout, defaultValue);
-        }
-
-        TResult ISelectable.QueryFirstOrDefault<TResult>(SQL sql, object param, int? commandTimeout, TResult defaultValue) => QueryFirstOrDefault<TResult>(sql, param, commandTimeout, defaultValue);
-
-        /// <summary>
-        /// 查询一条数据
-        /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <param name="hasDefaultValue">含默认值。</param>
-        /// <param name="defaultValue">默认值（仅“<paramref name="hasDefaultValue"/>”为真时，有效）。</param>
-        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
-        /// <returns></returns>
-        protected virtual TResult QueryFirst<TResult>(SQL sql, object param = null, int? commandTimeout = null, bool hasDefaultValue = false, TResult defaultValue = default, string missingMsg = null)
-        {
-            if (!QueryAuthorize(sql))
-            {
-                throw new NonAuthorizedException();
-            }
-
-            return DbProvider.QueryFirst<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout, hasDefaultValue, defaultValue, missingMsg);
-        }
-
-        TResult ISelectable.QueryFirst<TResult>(SQL sql, object param, int? commandTimeout, bool hasDefaultValue, TResult defaultValue, string missingMsg) => QueryFirst<TResult>(sql, param, commandTimeout, hasDefaultValue, defaultValue, missingMsg);
-
-        /// <summary>
-        /// 查询所有数据
-        /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns></returns>
-        protected virtual IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null)
-        {
-            if (!QueryAuthorize(sql))
-            {
-                throw new NonAuthorizedException();
-            }
-
-            return DbProvider.Query<TResult>(Connection, sql.ToString(Settings), BuildParameters(sql, param), commandTimeout);
-
-        }
-
-        IEnumerable<TResult> ISelectable.Query<TResult>(SQL sql, object param, int? commandTimeout) => Query<TResult>(sql, param, commandTimeout);
 
         private IEnumerator<T> GetEnumerator()
         {

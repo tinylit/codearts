@@ -6,7 +6,7 @@ namespace UnitTest.Domain
     /// <summary>
     /// 发票仓库
     /// </summary>
-    public class TaxCodeRepository : DbRepository<TaxCode>
+    public class TaxCodeRepository : ReadWriteRepository<TaxCode>
     {
         protected override ConnectionConfig GetDbConfig()
         {

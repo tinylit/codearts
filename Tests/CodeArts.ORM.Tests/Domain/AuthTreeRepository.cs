@@ -5,7 +5,7 @@ using UnitTest.Serialize;
 namespace UnitTest.Domain
 {
     [DefaultDbConfig]
-    public class AuthTreeRepository : DbRepository<AuthTree>
+    public class AuthTreeRepository : ReadWriteRepository<AuthTree>
     {
 
     }

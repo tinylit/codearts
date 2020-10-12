@@ -3,9 +3,9 @@
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 查询能力
+    /// 可读仓库。
     /// </summary>
-    public interface ISelectable
+    public interface IReadRepository
     {
         /// <summary>
         /// 查询第一个结果。
@@ -41,5 +41,12 @@ namespace CodeArts.ORM
         /// <param name="commandTimeout">超时时间</param>
         /// <returns></returns>
         IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null);
+    }
+
+    /// <summary>
+    /// 可读仓库。
+    /// </summary>
+    public interface IReadRepository<T> : IReadRepository where T : class, IEntiy
+    {
     }
 }

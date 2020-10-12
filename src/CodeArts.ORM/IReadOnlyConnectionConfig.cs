@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace CodeArts.ORM
+﻿namespace CodeArts.ORM
 {
     /// <summary>
     /// 只读配置
@@ -9,8 +7,10 @@ namespace CodeArts.ORM
     {
         /// <summary> 连接名称 </summary>
         string Name { get; }
+
         /// <summary> 数据库驱动名称 </summary>
         string ProviderName { get; }
+
         /// <summary> 连接字符串 </summary>
         string ConnectionString { get; }
     }

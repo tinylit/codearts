@@ -7,7 +7,7 @@ namespace Mvc461.Domain
     /// 用户仓库
     /// </summary>
     [DbConfig]
-    public class UserRepository : DbRepository<User>
+    public class UserRepository : ReadWriteRepository<User>
     {
     }
 }

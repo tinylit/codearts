@@ -8,17 +8,17 @@ namespace CodeArts.ORM
     /// <summary>
     /// 路由执行器。
     /// </summary>
-    public sealed class RouteExecuter<T> : IRouteExecuteProvider<T>
+    public sealed class RouteProvider<T> : IRouteProvider<T>
     {
         /// <summary>
         /// 单例。
         /// </summary>
-        public static IRouteExecuteProvider<T> Instance { private set; get; }
+        public static IRouteProvider<T> Instance { private set; get; }
 
         /// <summary>
         /// 静态构造函数
         /// </summary>
-        static RouteExecuter() => Instance = RuntimeServManager.Singleton<IRouteExecuteProvider<T>, RouteExecuter<T>>(instance => Instance = instance);
+        static RouteProvider() => Instance = RuntimeServManager.Singleton<IRouteProvider<T>, RouteProvider<T>>(instance => Instance = instance);
 
         private static Func<T, string[]> Conditional(ParameterExpression parameter, Expression test, MemberExpression ifTrue, MemberExpression ifFalse)
         {
@@ -31,9 +31,9 @@ namespace CodeArts.ORM
             return source => new string[] { invoke.Invoke(source) };
         }
 
-        string[] IRouteExecuteProvider<T>.Except<TColumn>(Expression<Func<T, TColumn>> lamda) => Limit(lamda);
+        string[] IRouteProvider<T>.Except<TColumn>(Expression<Func<T, TColumn>> lamda) => Limit(lamda);
 
-        string[] IRouteExecuteProvider<T>.Limit<TColumn>(Expression<Func<T, TColumn>> lamda)
+        string[] IRouteProvider<T>.Limit<TColumn>(Expression<Func<T, TColumn>> lamda)
         {
             if (lamda.Parameters.Count > 1)
                 throw new DSyntaxErrorException();
@@ -70,7 +70,7 @@ namespace CodeArts.ORM
             throw new NotImplementedException();
         }
 
-        Func<T, string[]> IRouteExecuteProvider<T>.Where<TColumn>(Expression<Func<T, TColumn>> lamda)
+        Func<T, string[]> IRouteProvider<T>.Where<TColumn>(Expression<Func<T, TColumn>> lamda)
         {
             if (lamda.Parameters.Count > 1)
                 throw new DSyntaxErrorException();

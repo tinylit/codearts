@@ -5,7 +5,7 @@ using UnitTest.Serialize;
 namespace UnitTest.Domain
 {
     [DefaultDbConfig]
-    public class AuthShipRepository : DbRepository<AuthShip>
+    public class AuthShipRepository : ReadWriteRepository<AuthShip>
     {
     }
 }

@@ -15,35 +15,95 @@ namespace CodeArts.ORM
         /// <summary>
         /// 事务连接
         /// </summary>
-        private class TransactionConnection : DbConnection
+        private class TransactionConnection : IDbConnection
         {
             private int refCount = 0;
+
+            private readonly IDbConnection connection;
+
+            public string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
+
+            public int ConnectionTimeout => connection.ConnectionTimeout;
+
+            public string Database => connection.Database;
+
+            public ConnectionState State => connection.State;
+
             /// <summary>
             /// 构造函数
             /// </summary>
             /// <param name="connection">源链接</param>
-            public TransactionConnection(IDbConnection connection) : base(connection)
+            public TransactionConnection(IDbConnection connection)
             {
+                this.connection = connection;
             }
 
-            /// <summary>
-            /// 获取链接
-            /// </summary>
+            /// <summary> 获取连接 </summary>
             /// <returns></returns>
             public IDbConnection GetConnection()
             {
                 Interlocked.Increment(ref refCount);
 
-                return ReuseConnection();
+                return this;
             }
 
-            public override void Close() { }
+            public void Close() { }
 
-            protected override void Dispose(bool disposing)
+            public IDbTransaction BeginTransaction() => connection.BeginTransaction();
+
+            public IDbTransaction BeginTransaction(IsolationLevel il) => connection.BeginTransaction(il);
+
+            public void ChangeDatabase(string databaseName) => connection.ChangeDatabase(databaseName);
+
+            public IDbCommand CreateCommand() => connection.CreateCommand();
+
+            public void Open()
             {
-                if (disposing && Interlocked.Decrement(ref refCount) == 0)
+                switch (State)
                 {
-                    base.Dispose(disposing);
+                    case ConnectionState.Closed:
+                        connection.Open();
+                        break;
+                    case ConnectionState.Connecting:
+
+                        do
+                        {
+                            Thread.Sleep(5);
+
+                        } while (State == ConnectionState.Connecting);
+
+                        goto default;
+                    case ConnectionState.Broken:
+                        connection.Close();
+                        goto default;
+                    default:
+                        if (connection.State == ConnectionState.Closed)
+                        {
+                            connection.Open();
+                        }
+                        break;
+                }
+            }
+
+            void IDisposable.Dispose() { }
+
+            /// <summary>
+            /// 释放内存
+            /// </summary>
+            public void Dispose() => Dispose(Interlocked.Decrement(ref refCount) == 0);
+
+            /// <summary>
+            /// 释放内存
+            /// </summary>
+            /// <param name="disposing">确认释放</param>
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    connection?.Close();
+                    connection?.Dispose();
+
+                    GC.SuppressFinalize(this);
                 }
             }
         }

@@ -4,9 +4,9 @@ using System.Linq.Expressions;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 路由执行提供者
+    /// 路由执行提供者。
     /// </summary>
-    public interface IRouteExecuteProvider<T>
+    public interface IRouteProvider<T>
     {
         /// <summary>
         /// 动作需要操作的字段

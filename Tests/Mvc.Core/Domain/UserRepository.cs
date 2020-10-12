@@ -7,7 +7,7 @@ namespace Mvc.Core.Domain
     /// 用户仓库
     /// </summary>
     [DbConfig("connectionStrings:default")]
-    public class UserRepository : DbRepository<User>
+    public class UserRepository : ReadWriteRepository<User>
     {
 
     }
