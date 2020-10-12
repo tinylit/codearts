@@ -163,37 +163,6 @@ First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). 
 PM> Install-Package CodeArts
 ```
 
-### How to use Proxy?
-##### The method proxies with "out" or "ref" arguments are not supported!
-* Using the interface proxy.
-``` csharp
-	var of = ProxyGenerator.Of<IEmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate interface proxy.
-	
-	var instance = new EmitTest(); // Interface implementation class.
-	
-	var interceptor = new Interceptor(); // The interceptor.
-
-	var proxy = of.Of(instance, interceptor); //Gets the interface proxy instance for the specified instance.
-```
-
-* Use a proxy class with a default constructor.
-``` csharp
-	var of = ProxyGenerator.New<EmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate class proxy.
-	
-	var interceptor = new Interceptor(); // The interceptor.
-
-	var proxy = of.New(interceptor); // Gets an instance of a proxy.
-```
-
-* Using the class proxy.
-``` csharp
-	var of = ProxyGenerator.CreateInstance<EmitTest>(new ProxyOptions(new NonIsByRefMethodsHook())); // Generate class proxy.
-
-	var interceptor = new Interceptor(); // The interceptor.
-
-	var proxy = of.CreateInstance(interceptor, ...args/* The constructor parameter of the proscribed class. */); // Gets an instance of a proxy.
-```
-
 ### How to use ORM?
 * Entities defined.
 ``` csharp
@@ -250,7 +219,7 @@ PM> Install-Package CodeArts
     var user = new UserRepository();
     var details = new UserDetailsRepository();
     var userWx = new UserWeChatRepository();
-    var result = from x in user
+    var result = from x in user.From(x => x.TableName) // 指定查询表（数据分表）。
                     join y in details on x.Id equals y.Id
                     join z in userWx on x.Id equals z.Uid
                     where x.Id > 0 && y.Id < y1 && x.Username.Contains(str)

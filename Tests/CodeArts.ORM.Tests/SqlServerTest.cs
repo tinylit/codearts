@@ -955,9 +955,10 @@ namespace UnitTest
             var user = new UserRepository();
             var userdetails = new UserDetailsRepository();
 
-            var results = userdetails.Where(x => x.Id > 100)
-                 .Where(x => user.Any(y => x.Id == y.Id))
-                 .ToList();
+            var results = userdetails
+                .Where(x => x.Id > 100)
+                .Where(x => user.Any(y => x.Id == y.Id))
+                .ToList();
         }
 
         [TestMethod]
@@ -1223,6 +1224,32 @@ namespace UnitTest
                        };
 
             var results = linq.ToList();
+        }
+
+        [TestMethod]
+        public void FromTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var results = userdetails
+                .From(x => x.TableName) //? 指定查询表（数据分表）。
+                .Where(x => x.Id > 100)
+                .Where(x => user.Any(y => x.Id == y.Id))
+                .ToList();
+        }
+
+        [TestMethod]
+        public void FromJoinTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var results = userdetails
+                .From(x => x.TableName) //? 每个查询链都可指定查询表（数据分表）。
+                .Where(x => x.Id > 100)
+                .Where(x => user.Any(y => x.Id == y.Id))
+                .ToList();
         }
 
         [TestMethod]
