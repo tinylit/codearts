@@ -1242,14 +1242,17 @@ namespace UnitTest
         [TestMethod]
         public void FromJoinTest()
         {
+            var y = 100;
+            var str = "1";
             var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user.From(x => x.TableName) //? 指定查询表（数据分表）。
+                         join d in details on x.Id equals d.Id
+                         where x.Id > 0 && d.Id < y && x.Username.Contains(str)
+                         orderby x.Id, d.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, OOID = d.Id, DDD = y };
 
-            var results = userdetails
-                .From(x => x.TableName) //? 每个查询链都可指定查询表（数据分表）。
-                .Where(x => x.Id > 100)
-                .Where(x => user.Any(y => x.Id == y.Id))
-                .ToList();
+            var list = result.ToList();
         }
 
         [TestMethod]

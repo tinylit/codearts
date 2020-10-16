@@ -1,12 +1,10 @@
 ﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
-using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
-using System.Net.NetworkInformation;
 #else
+using System;
 using System.Web;
-using System.Management;
 #endif
 
 namespace CodeArts.Mvc
@@ -27,7 +25,9 @@ namespace CodeArts.Mvc
             string ipAddress = context.Connection.RemoteIpAddress.ToString();
 
             if (ipAddress == "::1")
+            {
                 return "127.0.0.1";
+            }
 
             return ipAddress;
         }
@@ -36,13 +36,20 @@ namespace CodeArts.Mvc
         {
             string ipAddress = context.Request.ServerVariables["REMOTE_ADDR"];
 
-            if (string.IsNullOrEmpty(ipAddress))
+            if (ipAddress.IsEmpty())
             {
                 if (context.Request.ServerVariables["HTTP_VIA"] != null)
-                    ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"].ToString().Split(',')[0].Trim();
+                {
+                    ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"]?.ToString();
+
+                    if (ipAddress.IsNotEmpty())
+                    {
+                        ipAddress = ipAddress.Split(',')[0].Trim();
+                    }
+                }
             }
 
-            if (string.IsNullOrEmpty(ipAddress))
+            if (ipAddress.IsEmpty())
             {
                 ipAddress = context.Request.UserHostAddress;
             }
@@ -53,43 +60,6 @@ namespace CodeArts.Mvc
             }
 
             return ipAddress;
-        }
-#endif
-
-        /// <summary>
-        /// 获取客户端Mac地址
-        /// </summary>
-        /// <param name="_">请求上下文</param>
-        /// <returns></returns>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-        public static string GetRemoteMacAddress(this HttpContext _)
-        {
-            var networks = NetworkInterface.GetAllNetworkInterfaces();
-            foreach (var network in networks.Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Ethernet))
-            {
-                var physicalAddress = network.GetPhysicalAddress();
-
-                return string.Join("-", physicalAddress.GetAddressBytes().Select(b => b.ToString("X2")));
-            }
-
-            return null;
-        }
-#else
-        public static string GetRemoteMacAddress(this HttpContext _)
-        {
-            using (ManagementClass mc = new ManagementClass("Win32_NetworkAdapterConfiguration"))
-            {
-                ManagementObjectCollection moc2 = mc.GetInstances();
-
-                foreach (ManagementObject mo in moc2)
-                {
-                    if ((bool)mo["IPEnabled"] == true)
-                    {
-                        return mo["MacAddress"].ToString();
-                    }
-                }
-            }
-            return null;
         }
 #endif
 
