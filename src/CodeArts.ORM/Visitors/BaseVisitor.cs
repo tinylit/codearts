@@ -839,7 +839,7 @@ namespace CodeArts.ORM.Visitors
                     {
                         tableGetter = tableInfo;
 
-                        return node;
+                        return base.Visit(node.Arguments[0]);
                     }
 
                     throw new NotSupportedException("函数“From”的参数类型必须是“System.Func<ITableInfo, string>”委托!");

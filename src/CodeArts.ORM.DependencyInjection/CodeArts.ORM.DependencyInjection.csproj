@@ -6,7 +6,7 @@
 		<RootNamespace>CodeArts.ORM</RootNamespace>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>4.0.0.0</Version>
+		<Version>4.1.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>Provide dependency injection support for ORM.</Description>
