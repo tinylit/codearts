@@ -37,9 +37,18 @@ namespace CodeArts.Casting
     {
         private static readonly Type typeSelf = typeof(CopyToExpression<TCopyto>);
 
-        private static readonly MethodInfo MapMethod = typeof(Mapper).GetMethod(nameof(Mapper.Map), new Type[] { typeof(object), typeof(Type) });
-        private static readonly MethodInfo CastMethod = typeof(Mapper).GetMethod(nameof(Mapper.Cast), new Type[] { typeof(object), typeof(Type) });
+        private static readonly MethodInfo MapGenericMethod;
+        private static readonly MethodInfo CastGenericMethod;
         private static readonly Type NullableType = typeof(Nullable<>);
+
+        static CopyToExpression()
+        {
+            var mapperMethods = typeof(Mapper).GetMethods(BindingFlags.Public | BindingFlags.Static);
+
+            MapGenericMethod = mapperMethods.Single(x => x.Name == nameof(Mapper.Map) && x.IsGenericMethod);
+
+            CastGenericMethod = mapperMethods.Single(x => x.Name == nameof(Mapper.Cast) && x.IsGenericMethod);
+        }
 
         /// <summary>
         /// 类型创建器。
@@ -364,13 +373,15 @@ namespace CodeArts.Casting
                         }
                         catch (InvalidOperationException)
                         {
-                            var body = right.Type.IsValueType
-                                ? Convert(Call(null, convertMethod, Convert(right, typeof(object)), Constant(left.Type)), left.Type)
-                                : Convert(Call(null, convertMethod, right, Constant(left.Type)), left.Type);
+                            var rightObjExp = right.Type.IsValueType
+                                ? Convert(right, typeof(object))
+                                : right;
+
+                            var body = Convert(Call(null, convertMethod, rightObjExp, Constant(left.Type)), left.Type);
 
                             if (left.Type.IsValueType || left.Type == typeof(string))
                             {
-                                right = TryCatch(body, Catch(typeof(Exception), Call(null, CastMethod, right, Constant(left.Type))));
+                                right = TryCatch(body, Catch(typeof(Exception), Call(null, CastGenericMethod.MakeGenericMethod(left.Type), rightObjExp, Default(left.Type))));
                             }
                             else
                             {
@@ -382,14 +393,11 @@ namespace CodeArts.Casting
 
                 if (left.Type.IsValueType)
                 {
-                    if (AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value || !left.Type.IsNullable())
+                    if (AllowNullDestinationValues.Value || !left.Type.IsNullable())
                     {
                         list.Add(Assign(left, right));
-
-                        return;
                     }
-
-                    if (!AllowNullDestinationValues.Value)
+                    else
                     {
                         list.Add(IfThen(NotEqual(right, nullCst), Assign(left, right)));
                     }
@@ -408,14 +416,18 @@ namespace CodeArts.Casting
 
                 if (left.Type == typeof(string))
                 {
-                    if (AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value)
+                    if (info.CanRead && !AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value)
                     {
-                        list.Add(Assign(left, right));
+                        list.Add(Assign(left, Coalesce(right, Coalesce(left, Constant(string.Empty)))));
 
                         return;
                     }
 
-                    if (!AllowNullDestinationValues.Value)
+                    if (AllowNullDestinationValues.Value)
+                    {
+                        list.Add(Assign(left, right));
+                    }
+                    else
                     {
                         list.Add(IfThen(NotEqual(right, nullCst), Assign(left, right)));
                     }
@@ -430,7 +442,7 @@ namespace CodeArts.Casting
 
                 if (IsDepthMapping.Value)
                 {
-                    list.Add(Assign(left, Call(null, MapMethod, right.Type.IsValueType ? Convert(right, ObjectType) : right, Constant(left.Type))));
+                    list.Add(Assign(left, Call(null, MapGenericMethod.MakeGenericMethod(left.Type), right.Type.IsValueType ? Convert(right, ObjectType) : right, Default(left.Type))));
                 }
                 else
                 {
@@ -457,13 +469,15 @@ namespace CodeArts.Casting
                         }
                         catch (InvalidOperationException)
                         {
-                            var body = node.Type.IsValueType
-                                ? Convert(Call(null, convertMethod, Convert(node, typeof(object)), Constant(parameterType)), parameterType)
-                                : Convert(Call(null, convertMethod, node, Constant(parameterType)), parameterType);
+                            var rightObjExp = node.Type.IsValueType
+                                ? Convert(node, typeof(object))
+                                : node;
+
+                            var body = Convert(Call(null, convertMethod, rightObjExp, Constant(parameterType)), parameterType);
 
                             if (parameterType.IsValueType || parameterType == typeof(string))
                             {
-                                node = TryCatch(body, Catch(typeof(Exception), Call(null, CastMethod, node, Constant(parameterType))));
+                                node = TryCatch(body, Catch(typeof(Exception), Call(null, CastGenericMethod.MakeGenericMethod(parameterType), rightObjExp, Default(parameterType))));
                             }
                             else
                             {
@@ -475,14 +489,11 @@ namespace CodeArts.Casting
 
                 if (parameterType.IsValueType)
                 {
-                    if (AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value || !parameterType.IsNullable())
+                    if (AllowNullDestinationValues.Value || !parameterType.IsNullable())
                     {
                         list.Add(Assign(nameExp, node));
-
-                        return;
                     }
-
-                    if (!AllowNullDestinationValues.Value)
+                    else
                     {
                         list.Add(IfThen(NotEqual(node, nullCst), Assign(nameExp, node)));
                     }
@@ -508,13 +519,6 @@ namespace CodeArts.Casting
 
                 if (parameterType == typeof(string))
                 {
-                    if (AllowNullDestinationValues.Value && AllowNullPropagationMapping.Value)
-                    {
-                        list.Add(Assign(nameExp, node));
-
-                        return;
-                    }
-
                     if (!AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value)
                     {
                         list.Add(Assign(nameExp, Coalesce(node, Coalesce(nameExp, Constant(string.Empty)))));
@@ -522,7 +526,11 @@ namespace CodeArts.Casting
                         return;
                     }
 
-                    if (!AllowNullDestinationValues.Value)
+                    if (AllowNullDestinationValues.Value)
+                    {
+                        list.Add(Assign(nameExp, node));
+                    }
+                    else
                     {
                         list.Add(IfThen(NotEqual(node, nullCst), Assign(nameExp, node)));
                     }
@@ -537,7 +545,7 @@ namespace CodeArts.Casting
 
                 if (IsDepthMapping.Value)
                 {
-                    list.Add(Assign(nameExp, Call(null, MapMethod, node.Type.IsValueType ? Convert(node, ObjectType) : node, Constant(parameterType))));
+                    list.Add(Assign(nameExp, Call(null, MapGenericMethod.MakeGenericMethod(info.ParameterType), node.Type.IsValueType ? Convert(node, ObjectType) : node, Default(info.ParameterType))));
                 }
                 else
                 {
