@@ -41,6 +41,11 @@ namespace CodeArts.ORM
             bool IsActive { get; }
 
             /// <summary>
+            /// 是否已释放。
+            /// </summary>
+            bool IsReleased { get; }
+
+            /// <summary>
             /// 活动时间。
             /// </summary>
             DateTime ActiveTime { get; }
@@ -229,13 +234,14 @@ namespace CodeArts.ORM
 
             private readonly IDbConnection connection; //数据库连接
             private readonly double? connectionHeartbeat; //心跳
+            private readonly bool useCache;
             private ConnectionState connectionState = ConnectionState.Closed;
             private Thread isActiveThread = Thread.CurrentThread;
-            public DbConnection(IDbConnection connection) => this.connection = connection;
-
-            public DbConnection(IDbConnection connection, double connectionHeartbeat) : this(connection)
+            public DbConnection(IDbConnection connection, double connectionHeartbeat, bool useCache)
             {
+                this.connection = connection;
                 this.connectionHeartbeat = new double?(connectionHeartbeat);
+                this.useCache = useCache;
             }
 
             public string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
@@ -317,16 +323,22 @@ namespace CodeArts.ORM
 
             public bool IsActive { get; private set; } = true;
 
-            /// <summary>
-            /// 活动时间。
-            /// </summary>
+            public bool IsReleased { private set; get; }
+
             public DateTime ActiveTime { get; private set; }
 
             public void Dispose()
             {
                 IsActive = false;
 
-                Close();
+                if (useCache)
+                {
+                    Close();
+                }
+                else
+                {
+                    Destroy();
+                }
             }
 
             public IDbConnection ReuseConnection()
@@ -348,6 +360,8 @@ namespace CodeArts.ORM
             {
                 if (disposing)
                 {
+                    IsReleased = true;
+
                     connection?.Close();
                     connection?.Dispose();
 
@@ -527,17 +541,15 @@ namespace CodeArts.ORM
             }
 
             private readonly double? connectionHeartbeat; //心跳
+            private readonly bool useCache;
             private ConnectionState connectionState = ConnectionState.Closed;
             private Thread isActiveThread = Thread.CurrentThread;
 
-            public DispatchConnection(System.Data.Common.DbConnection connection)
+            public DispatchConnection(System.Data.Common.DbConnection connection, double connectionHeartbeat, bool useCache)
             {
                 this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            }
-
-            public DispatchConnection(System.Data.Common.DbConnection connection, double connectionHeartbeat) : this(connection)
-            {
                 this.connectionHeartbeat = new double?(connectionHeartbeat);
+                this.useCache = useCache;
             }
 
             public override string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
@@ -612,6 +624,8 @@ namespace CodeArts.ORM
 
             public bool IsAlive => connection.State == ConnectionState.Open;
 
+            public bool IsReleased { private set; get; }
+
             public DateTime ActiveTime { get; private set; }
 
             public bool IsActive { get; private set; } = true;
@@ -631,7 +645,14 @@ namespace CodeArts.ORM
             {
                 IsActive = false;
 
-                Close();
+                if (useCache)
+                {
+                    Close();
+                }
+                else
+                {
+                    Destroy();
+                }
             }
 
             public void Destroy() => Dispose(true);
@@ -653,6 +674,8 @@ namespace CodeArts.ORM
             {
                 if (disposing)
                 {
+                    IsReleased = true;
+
                     connection?.Close();
                     connection?.Dispose();
 
@@ -755,7 +778,7 @@ namespace CodeArts.ORM
 
                 IDispatchConnection connection;
 
-                if (adapter.MaxPoolSize == connections.Count)
+                if (adapter.MaxPoolSize == connections.Count && connections.RemoveAll(x => x.IsReleased) == 0)
                 {
                     if (connections.Any(x => !x.IsThreadActive || !x.IsActive))
                     {
@@ -764,7 +787,7 @@ namespace CodeArts.ORM
                             connection = connections //? 线程已关闭的。
                                  .FirstOrDefault(x => !x.IsThreadActive) ?? connections
                                  .Where(x => !x.IsActive)
-                                 .OrderBy(x => x.ActiveTime) //? 移除最近一次使用时间最久的链接。
+                                 .OrderBy(x => x.ActiveTime) //? 移除最长时间不活跃的链接。
                                  .FirstOrDefault();
 
                             if (connection is null)
@@ -787,11 +810,11 @@ namespace CodeArts.ORM
 
                 if (conn is System.Data.Common.DbConnection dbConnection)
                 {
-                    connection = new DispatchConnection(dbConnection, adapter.ConnectionHeartbeat);
+                    connection = new DispatchConnection(dbConnection, adapter.ConnectionHeartbeat, useCache);
                 }
                 else
                 {
-                    connection = new DbConnection(conn, adapter.ConnectionHeartbeat);
+                    connection = new DbConnection(conn, adapter.ConnectionHeartbeat, useCache);
                 }
 
                 lock (connections)
