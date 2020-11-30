@@ -21,7 +21,7 @@ namespace UnitTest
     [TestClass]
     public class MySqlTest
     {
-        private static bool isCompleted = true;
+        private static bool isCompleted;
 
         private readonly MySqlUserRespository userSingleton = Singleton<MySqlUserRespository>.Instance;
         private readonly AuthShipRepository authShipSingleton = Singleton<AuthShipRepository>.Instance;
@@ -253,16 +253,11 @@ namespace UnitTest
                 });
             }
 
-            using (TransactionScope transaction = new TransactionScope())
-            {
-                var j = ormTest.AsInsertable(list).ExecuteCommand();
+            var j = ormTest.AsInsertable(list).ExecuteCommand();
 
-                var results = ormTest.ToList();
+            var results = ormTest.ToList();
 
-                var k = ormTest.AsDeleteable(list).ExecuteCommand();
-
-                transaction.Complete();
-            }
+            var k = ormTest.AsDeleteable(list).ExecuteCommand();
         }
 
         [TestMethod]
