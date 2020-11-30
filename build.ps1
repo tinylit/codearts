@@ -10,17 +10,18 @@ Write-Host "  dotnet --version:" (dotnet --version)
 $packageOutputFolder = "$PSScriptRoot\.nupkgs"
 $projectsToBuild =
     'CodeArts',
-    'CodeArts.Defaults',
-    'CodeArts.Cache.Redis',
+    'CodeArts.Caching',
+    'CodeArts.MemoryCaching',
+    'CodeArts.RedisCaching',
+    'CodeArts.Casting',
+    'CodeArts.Configuration',
+    'CodeArts.Json',
+    'CodeArts.Net',
     'CodeArts.Emit',
-	'CodeArts.Proxies',
     'CodeArts.Mvc',
     'CodeArts.ORM',
-    'CodeArts.ORM.DependencyInjection',
     'CodeArts.MySql',
-	'CodeArts.SignalR',
-    'CodeArts.SqlServer',
-	'CodeArts.SignalR.Core'
+    'CodeArts.SqlServer'
 
 mkdir -Force $packageOutputFolder | Out-Null
 Write-Host "Clearing existing $packageOutputFolder..." -NoNewline

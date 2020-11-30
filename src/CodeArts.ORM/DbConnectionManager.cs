@@ -8,7 +8,7 @@ using System.Reflection;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 数据库链接管理器
+    /// 数据库链接管理器。
     /// </summary>
     public static class DbConnectionManager
     {
@@ -19,7 +19,7 @@ namespace CodeArts.ORM
         private static readonly ConcurrentDictionary<IDbConnectionAdapter, RepositoryProvider> Providers;
 
         /// <summary>
-        /// 静态构造函数
+        /// 静态构造函数。
         /// </summary>
         static DbConnectionManager()
         {
@@ -28,11 +28,11 @@ namespace CodeArts.ORM
             FactoryProviders = new Dictionary<string, Func<IDbConnectionAdapter, RepositoryProvider>>();
         }
 
-        /// <summary> 注册适配器 </summary>
-        /// <param name="adapter">适配器</param>
+        /// <summary> 注册适配器。</summary>
+        /// <param name="adapter">适配器。</param>
         public static void RegisterAdapter(IDbConnectionAdapter adapter)
         {
-            if (adapter == null)
+            if (adapter is null)
             {
                 throw new ArgumentNullException(nameof(adapter));
             }
@@ -46,7 +46,7 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 为当前所有为指定仓库供应器的适配器添加此仓库供应器
+        /// 为当前所有为指定仓库供应器的适配器添加此仓库供应器。
         /// </summary>
         public static void RegisterProvider<T>() where T : RepositoryProvider
         {
@@ -57,11 +57,11 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 为数据库适配器指定仓库提供者
+        /// 为数据库适配器指定仓库提供者。
         /// </summary>
-        /// <param name="providerName">供应商名称</param>
-        /// <exception cref="ArgumentException">providerName不能为Null或空字符串!</exception>
-        /// <exception cref="NotImplementedException">供应器类型必须包含公共构造函数!</exception>
+        /// <param name="providerName">供应商名称。</param>
+        /// <exception cref="ArgumentException">providerName不能为Null或空字符串！</exception>
+        /// <exception cref="NotImplementedException">供应器类型必须包含公共构造函数！</exception>
         public static void RegisterProvider<T>(string providerName) where T : RepositoryProvider
         {
             if (string.IsNullOrEmpty(providerName))
@@ -94,7 +94,7 @@ namespace CodeArts.ORM
 
             parameters.ForEach(item =>
             {
-                if (typeof(ISQLCorrectSettings).IsAssignableFrom(item.ParameterType))
+                if (typeof(ISQLCorrectSimSettings).IsAssignableFrom(item.ParameterType))
                 {
                     list.Add(adapter => adapter.Settings);
                 }
@@ -119,12 +119,12 @@ namespace CodeArts.ORM
             FactoryProviders[key] = adapter => (RepositoryProvider)constructor.Invoke(list.ConvertAll(factoty => factoty(adapter)).ToArray());
         }
 
-        /// <summary> 创建数据库适配器 </summary>
-        /// <param name="providerName">供应商名称</param>
+        /// <summary> 创建数据库适配器。</summary>
+        /// <param name="providerName">供应商名称。</param>
         /// <returns></returns>
         public static IDbConnectionAdapter Get(string providerName)
         {
-            if (providerName == null)
+            if (providerName is null)
             {
                 throw new ArgumentNullException(nameof(providerName));
             }
@@ -143,13 +143,13 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 获取数据仓促供应器
+        /// 获取数据仓促供应器。
         /// </summary>
-        /// <param name="adapter">适配器</param>
+        /// <param name="adapter">适配器。</param>
         /// <returns></returns>
         public static RepositoryProvider Create(IDbConnectionAdapter adapter)
         {
-            if (adapter == null)
+            if (adapter is null)
             {
                 throw new ArgumentNullException(nameof(adapter));
             }

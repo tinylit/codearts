@@ -8,14 +8,24 @@ using Transaction = System.Transactions.Transaction;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 事务连接池
+    /// 事务连接池。
     /// </summary>
     public static class TransactionConnections
     {
-        /// <summary>
-        /// 事务连接
-        /// </summary>
-        private class TransactionConnection : IDbConnection
+        private interface ITransactionConnection : IDbConnection
+        {
+            /// <summary>
+            /// 释放。
+            /// </summary>
+            void Destroy();
+
+            /// <summary>
+            /// 复用。
+            /// </summary>
+            /// <returns></returns>
+            IDbConnection ReuseConnection();
+        }
+        private class DbConnection : ITransactionConnection
         {
             private int refCount = 0;
 
@@ -29,18 +39,12 @@ namespace CodeArts.ORM
 
             public ConnectionState State => connection.State;
 
-            /// <summary>
-            /// 构造函数
-            /// </summary>
-            /// <param name="connection">源链接</param>
-            public TransactionConnection(IDbConnection connection)
+            public DbConnection(IDbConnection connection)
             {
                 this.connection = connection;
             }
 
-            /// <summary> 获取连接 </summary>
-            /// <returns></returns>
-            public IDbConnection GetConnection()
+            public IDbConnection ReuseConnection()
             {
                 Interlocked.Increment(ref refCount);
 
@@ -85,18 +89,9 @@ namespace CodeArts.ORM
                 }
             }
 
-            void IDisposable.Dispose() { }
-
-            /// <summary>
-            /// 释放内存
-            /// </summary>
             public void Dispose() => Dispose(Interlocked.Decrement(ref refCount) == 0);
 
-            /// <summary>
-            /// 释放内存
-            /// </summary>
-            /// <param name="disposing">确认释放</param>
-            protected virtual void Dispose(bool disposing)
+            protected void Dispose(bool disposing)
             {
                 if (disposing)
                 {
@@ -106,18 +101,102 @@ namespace CodeArts.ORM
                     GC.SuppressFinalize(this);
                 }
             }
+
+            public void Destroy() => Dispose(true);
         }
 
-        private static readonly ConcurrentDictionary<Transaction, Dictionary<string, TransactionConnection>> transactionConnections = new ConcurrentDictionary<Transaction, Dictionary<string, TransactionConnection>>();
+        private class TransactionConnection : System.Data.Common.DbConnection, ITransactionConnection
+        {
+            private int refCount = 0;
+
+            private readonly System.Data.Common.DbConnection connection;
+
+            public override string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
+
+            public override string Database => connection.Database;
+
+            public override string DataSource => connection.DataSource;
+
+            public override string ServerVersion => connection.ServerVersion;
+
+            public override ConnectionState State => connection.State;
+
+            public TransactionConnection(System.Data.Common.DbConnection connection)
+            {
+                this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            }
+
+            public IDbConnection ReuseConnection()
+            {
+                Interlocked.Increment(ref refCount);
+
+                return this;
+            }
+
+            void IDisposable.Dispose() => Dispose(Interlocked.Decrement(ref refCount) == 0);
+
+            public void Destroy() => Dispose(true);
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    connection?.Close();
+                    connection?.Dispose();
+
+                    GC.SuppressFinalize(this);
+                }
+
+                base.Dispose(true);
+            }
+
+            protected override System.Data.Common.DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => connection.BeginTransaction(isolationLevel);
+
+            public override void Close() { }
+
+            public override void ChangeDatabase(string databaseName) => connection.ChangeDatabase(databaseName);
+
+            protected override System.Data.Common.DbCommand CreateDbCommand() => connection.CreateCommand();
+
+            public override void Open()
+            {
+                switch (State)
+                {
+                    case ConnectionState.Closed:
+                        connection.Open();
+                        break;
+                    case ConnectionState.Connecting:
+
+                        do
+                        {
+                            Thread.Sleep(5);
+
+                        } while (State == ConnectionState.Connecting);
+
+                        goto default;
+                    case ConnectionState.Broken:
+                        connection.Close();
+                        goto default;
+                    default:
+                        if (connection.State == ConnectionState.Closed)
+                        {
+                            connection.Open();
+                        }
+                        break;
+                }
+            }
+        }
+
+        private static readonly ConcurrentDictionary<Transaction, Dictionary<string, ITransactionConnection>> transactionConnections = new ConcurrentDictionary<Transaction, Dictionary<string, ITransactionConnection>>();
         /// <summary>
-        /// 获取数据库连接
+        /// 获取数据库连接。
         /// </summary>
-        /// <param name="connectionString">连接字符串</param>
-        /// <param name="adapter">数据库适配器</param>
+        /// <param name="connectionString">连接字符串。</param>
+        /// <param name="adapter">数据库适配器。</param>
         /// <returns></returns>
         public static IDbConnection GetConnection(string connectionString, IDbConnectionAdapter adapter)
         {
-            if (adapter == null)
+            if (adapter is null)
             {
                 throw new ArgumentNullException(nameof(adapter));
             }
@@ -129,31 +208,43 @@ namespace CodeArts.ORM
                 return null;
             }
 
-            Dictionary<string, TransactionConnection> dictionary = transactionConnections.GetOrAdd(current, transaction =>
+            Dictionary<string, ITransactionConnection> dictionary = transactionConnections.GetOrAdd(current, transaction =>
             {
                 transaction.TransactionCompleted += OnTransactionCompleted;
 
-                return new Dictionary<string, TransactionConnection>();
+                return new Dictionary<string, ITransactionConnection>();
             });
 
             lock (dictionary)
             {
-                if (!dictionary.TryGetValue(connectionString, out TransactionConnection info))
+
+                if (!dictionary.TryGetValue(connectionString, out ITransactionConnection info))
                 {
-                    dictionary.Add(connectionString, info = new TransactionConnection(adapter.Create(connectionString)));
+                    var conn = DispatchConnections.Instance.GetConnection(connectionString, adapter, false);
+
+                    if (conn is System.Data.Common.DbConnection dbConnection)
+                    {
+                        info = new TransactionConnection(dbConnection);
+                    }
+                    else
+                    {
+                        info = new DbConnection(conn);
+                    }
+
+                    dictionary.Add(connectionString, info);
                 }
 
-                return info.GetConnection();
+                return info.ReuseConnection();
             }
         }
 
         private static void OnTransactionCompleted(object sender, System.Transactions.TransactionEventArgs e)
         {
-            if (transactionConnections.TryRemove(e.Transaction, out Dictionary<string, TransactionConnection> dictionary))
+            if (transactionConnections.TryRemove(e.Transaction, out Dictionary<string, ITransactionConnection> dictionary))
             {
-                foreach (TransactionConnection value in dictionary.Values)
+                foreach (ITransactionConnection value in dictionary.Values)
                 {
-                    value.Dispose();
+                    value.Destroy();
                 }
 
                 dictionary.Clear();

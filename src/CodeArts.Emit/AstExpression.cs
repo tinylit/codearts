@@ -7,17 +7,10 @@ using System.Reflection.Emit;
 namespace CodeArts.Emit
 {
     /// <summary>
-    /// 表达式
+    /// 表达式。
     /// </summary>
     public abstract class AstExpression
     {
-        private static class AssignableVoid { }
-
-        /// <summary>
-        /// 暂不确定的类型。
-        /// </summary>
-        public static readonly Type AssignableVoidType = typeof(AssignableVoid);
-
         /// <summary>
         /// 构造函数。
         /// </summary>
@@ -27,7 +20,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 加载数据。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public abstract void Load(ILGenerator ilg);
 
         /// <summary>
@@ -46,14 +39,14 @@ namespace CodeArts.Emit
         /// <summary>
         /// 默认值。
         /// </summary>
-        /// <param name="defaultType">默认值</param>
+        /// <param name="defaultType">默认值。</param>
         /// <returns></returns>
         public static DefaultAst Default(Type defaultType) => new DefaultAst(defaultType);
 
         /// <summary>
         /// 常量。
         /// </summary>
-        /// <param name="value">值</param>
+        /// <param name="value">值。</param>
         /// <returns></returns>
         public static ConstantAst Constant(object value) => new ConstantAst(value);
 

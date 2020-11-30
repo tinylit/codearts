@@ -6,7 +6,7 @@ using System.Text;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// SQL写入流
+    /// SQL写入流。
     /// </summary>
     public class Writer
     {
@@ -24,7 +24,7 @@ namespace CodeArts.ORM
         private int parameterIndex = 0;
 
         /// <summary>
-        /// 参数名称
+        /// 参数名称。
         /// </summary>
         protected virtual string ParameterName => string.Concat("__variable_", ParameterIndex.ToString());
 
@@ -38,7 +38,7 @@ namespace CodeArts.ORM
         private int appendOrderByAt = -1;
 
         /// <summary>
-        /// 写入位置
+        /// 写入位置。
         /// </summary>
         public int AppendAt
         {
@@ -57,18 +57,20 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 内容长度
+        /// 内容长度。
         /// </summary>
         public int Length => sb.Length;
+
         /// <summary>
         /// 条件取反。
         /// </summary>
-        public bool ReverseCondition { get; internal set; }
+        public bool IsReverseCondition { get; private set; }
+
         /// <summary>
         /// 移除数据。
         /// </summary>
-        /// <param name="index">索引开始位置</param>
-        /// <param name="lenght">移除字符长度</param>
+        /// <param name="index">索引开始位置。</param>
+        /// <param name="lenght">移除字符长度。</param>
         public void Remove(int index, int lenght) => sb.Remove(index, lenght);
 
         private Dictionary<string, object> parameters;
@@ -78,7 +80,7 @@ namespace CodeArts.ORM
         public Dictionary<string, object> Parameters => parameters ?? (parameters = new Dictionary<string, object>());
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         /// <param name="settings">SQL矫正配置。</param>
         /// <param name="writer">写入配置。</param>
@@ -128,7 +130,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// DISTINCT
         /// </summary>
-        public void Distinct() => Write("DISTINCT" + writerMap.WhiteSpace);
+        public virtual void Distinct() => Write("DISTINCT" + writerMap.WhiteSpace);
 
         /// <summary>
         /// ''
@@ -140,7 +142,7 @@ namespace CodeArts.ORM
         /// </summary>
         public void Exists()
         {
-            if (ReverseCondition)
+            if (IsReverseCondition)
             {
                 Not();
             }
@@ -155,7 +157,7 @@ namespace CodeArts.ORM
         {
             WhiteSpace();
 
-            if (ReverseCondition)
+            if (IsReverseCondition)
             {
                 Not();
             }
@@ -172,7 +174,7 @@ namespace CodeArts.ORM
         {
             WhiteSpace();
 
-            if (ReverseCondition)
+            if (IsReverseCondition)
             {
                 Not();
             }
@@ -201,12 +203,12 @@ namespace CodeArts.ORM
         public void OrderBy() => Write(writerMap.WhiteSpace + "ORDER" + writerMap.WhiteSpace + "BY" + writerMap.WhiteSpace);
 
         /// <summary>
-        /// 参数
+        /// 参数。
         /// </summary>
-        /// <param name="parameterValue">参数值</param>
+        /// <param name="parameterValue">参数值。</param>
         public virtual void Parameter(object parameterValue)
         {
-            if (parameterValue == null)
+            if (parameterValue is null)
             {
                 Null();
 
@@ -236,20 +238,20 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 参数
+        /// 参数。
         /// </summary>
-        /// <param name="parameterName">参数名称</param>
-        /// <param name="parameterValue">参数值</param>
+        /// <param name="parameterName">参数名称。</param>
+        /// <param name="parameterValue">参数值。</param>
         public void Parameter(string parameterName, object parameterValue)
         {
-            if (parameterValue == null)
+            if (parameterValue is null)
             {
                 Null();
 
                 return;
             }
 
-            if (parameterName == null || parameterName.Length == 0)
+            if (parameterName is null || parameterName.Length == 0)
             {
                 Parameter(parameterValue);
 
@@ -285,6 +287,36 @@ namespace CodeArts.ORM
         /// </summary>
         public void Insert() => Write("INSERT" + writerMap.WhiteSpace + "INTO" + writerMap.WhiteSpace);
 
+        private int usingIndex = 0;
+        private readonly Stack<int> usingStack = new Stack<int>();
+
+        /// <summary>
+        /// 方法使用。
+        /// </summary>
+        /// <param name="action">方法。</param>
+        /// <returns></returns>
+        public string UsingAction(Action action)
+        {
+            int startIndex = sb.Length;
+
+            if (usingIndex > 0)
+            {
+                usingStack.Push(startIndex);
+            }
+
+            usingIndex++;
+
+            action.Invoke();
+
+            int usingLength = usingStack.Count == usingIndex
+                ? usingStack.Pop()
+                : sb.Length;
+
+            usingIndex--;
+
+            return sb.ToString(startIndex, usingLength - startIndex);
+        }
+
         /// <summary>
         /// Values
         /// </summary>
@@ -313,12 +345,12 @@ namespace CodeArts.ORM
         /// <summary>
         /// And
         /// </summary>
-        public void And() => Write(writerMap.WhiteSpace + (ReverseCondition ? "OR" : "AND") + writerMap.WhiteSpace);
+        public void And() => Write(writerMap.WhiteSpace + (IsReverseCondition ? "OR" : "AND") + writerMap.WhiteSpace);
 
         /// <summary>
         /// Or
         /// </summary>
-        public void Or() => Write(writerMap.WhiteSpace + (ReverseCondition ? "AND" : "OR") + writerMap.WhiteSpace);
+        public void Or() => Write(writerMap.WhiteSpace + (IsReverseCondition ? "AND" : "OR") + writerMap.WhiteSpace);
 
         /// <summary>
         /// Desc
@@ -333,17 +365,17 @@ namespace CodeArts.ORM
         /// <summary>
         /// Not
         /// </summary>
-        public void Not() => Write("NOT" + writerMap.WhiteSpace);
+        private void Not() => Write("NOT" + writerMap.WhiteSpace);
 
         /// <summary>
         /// Null
         /// </summary>
-        public virtual void Null() => Write("NULL");
+        public void Null() => Write("NULL");
 
         /// <summary>
         /// {prefix}.
         /// </summary>
-        /// <param name="prefix">字段前缀</param>
+        /// <param name="prefix">字段前缀。</param>
         public void Limit(string prefix)
         {
             if (prefix.IsNotEmpty())
@@ -355,9 +387,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 别名
+        /// 别名。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         public void Alias(string name) => Write(writerMap.Name(name));
 
         /// <summary>
@@ -368,7 +400,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// AS {name}
         /// </summary>
-        /// <param name="name">别名</param>
+        /// <param name="name">别名。</param>
         public void As(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -382,16 +414,16 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 字段
+        /// 字段。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         public void Name(string name) => Write(writerMap.Name(name));
 
         /// <summary>
         /// {prefix}.{name}
         /// </summary>
-        /// <param name="prefix">前缀</param>
-        /// <param name="name">字段</param>
+        /// <param name="prefix">前缀。</param>
+        /// <param name="name">字段。</param>
         public void NameDot(string prefix, string name)
         {
             Limit(prefix);
@@ -402,8 +434,8 @@ namespace CodeArts.ORM
         /// <summary>
         /// {name} {alias}
         /// </summary>
-        /// <param name="name">名称</param>
-        /// <param name="alias">别名</param>
+        /// <param name="name">名称。</param>
+        /// <param name="alias">别名。</param>
         public void NameWhiteSpace(string name, string alias)
         {
             Name(name);
@@ -419,7 +451,7 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 空格
+        /// “ ”
         /// </summary>
         public void WhiteSpace() => Write(writerMap.WhiteSpace);
 
@@ -430,7 +462,7 @@ namespace CodeArts.ORM
         {
             Is();
 
-            if (ReverseCondition)
+            if (IsReverseCondition)
             {
                 Not();
             }
@@ -445,7 +477,7 @@ namespace CodeArts.ORM
         {
             Is();
 
-            if (!ReverseCondition)
+            if (!IsReverseCondition)
             {
                 Not();
             }
@@ -454,24 +486,24 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 长度函数
+        /// 长度函数。
         /// </summary>
         public void LengthMethod() => Write(settings.Length);
 
         /// <summary>
-        /// 索引函数
+        /// 索引函数。
         /// </summary>
         public void IndexOfMethod() => Write(settings.IndexOf);
 
         /// <summary>
-        /// 截取函数
+        /// 截取函数。
         /// </summary>
         public void SubstringMethod() => Write(settings.Substring);
 
         /// <summary>
         /// 写入排序内容。
         /// </summary>
-        /// <param name="action"></param>
+        /// <param name="action">方法。</param>
         public void UsingSort(Action action)
         {
             writeOrderBy = true;
@@ -484,7 +516,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 写入内容。
         /// </summary>
-        /// <param name="value">内容</param>
+        /// <param name="value">内容。</param>
         public void Write(string value)
         {
             if (value == null || value.Length == 0)
@@ -520,28 +552,10 @@ namespace CodeArts.ORM
         /// <summary>
         /// 写入类型。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
+        /// <param name="nodeType">节点类型。</param>
         public void Write(ExpressionType nodeType)
         {
-            Write(ExpressionExtensions.GetOperator(ReverseCondition ? nodeType.ReverseWhere() : nodeType));
-        }
-
-        /// <summary>
-        /// 写入类型。
-        /// </summary>
-        /// <param name="nodeType">节点类型</param>
-        /// <param name="left">左节点类型</param>
-        /// <param name="right">右节点类型</param>
-        public virtual void WriteAdd(ExpressionType nodeType, Type left, Type right)
-        {
-            if (settings.Engine == DatabaseEngine.Oracle)
-            {
-                Write(" || ");
-            }
-            else
-            {
-                Write(ExpressionExtensions.GetOperator(ReverseCondition ? nodeType.ReverseWhere() : nodeType));
-            }
+            Write(ExpressionExtensions.GetOperator(IsReverseCondition ? nodeType.ReverseWhere() : nodeType));
         }
 
         /// <summary>
@@ -555,9 +569,40 @@ namespace CodeArts.ORM
         public void NotEqual() => Write(ExpressionType.NotEqual);
 
         /// <summary>
+        /// 条件反转。
+        /// </summary>
+        /// <param name="reverseCondition">方法。</param>
+        public void ReverseCondition(Action reverseCondition)
+        {
+            IsReverseCondition ^= true;
+
+            reverseCondition.Invoke();
+
+            IsReverseCondition ^= true;
+        }
+
+        /// <summary>
+        /// 条件反转。
+        /// </summary>
+        /// <param name="reverseCondition">方法。</param>
+        public T ReverseCondition<T>(Func<T> reverseCondition)
+        {
+            IsReverseCondition ^= true;
+
+            try
+            {
+                return reverseCondition.Invoke();
+            }
+            finally
+            {
+                IsReverseCondition ^= true;
+            }
+        }
+
+        /// <summary>
         /// false
         /// </summary>
-        public virtual void BooleanFalse()
+        public void BooleanFalse()
         {
             Parameter("__variable_false", false);
         }
@@ -565,7 +610,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// true
         /// </summary>
-        public virtual void BooleanTrue()
+        public void BooleanTrue()
         {
             Parameter("__variable_true", true);
         }
@@ -573,8 +618,8 @@ namespace CodeArts.ORM
         /// <summary>
         /// 返回写入器数据。
         /// </summary>
-        /// <param name="startIndex">开始位置</param>
-        /// <param name="length">长度</param>
+        /// <param name="startIndex">开始位置。</param>
+        /// <param name="length">长度。</param>
         /// <returns></returns>
         public string ToString(int startIndex, int length) => sb.ToString(startIndex, length);
 

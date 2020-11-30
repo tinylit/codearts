@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -9,10 +8,17 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public abstract class MemberAst : AssignAstExpression
     {
+        private static class AnyAssignable { }
+
+        /// <summary>
+        /// 暂不确定的类型。
+        /// </summary>
+        private static readonly Type AnyAssignableType = typeof(AnyAssignable);
+
         /// <summary>
         /// 当前上下文对象。
         /// </summary>
-        private static readonly ThisAst Instance = new ThisAst(AssignableVoidType);
+        private static readonly ThisAst Instance = new ThisAst(AnyAssignableType);
 
         /// <summary>
         /// 引用。
@@ -29,7 +35,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="returnType">返回值类型。</param>
-        /// <param name="isStatic">是静态成员</param>
+        /// <param name="isStatic">是静态成员。</param>
         protected MemberAst(Type returnType, bool isStatic) : base(returnType)
         {
             if (isStatic)

@@ -1,10 +1,11 @@
 ﻿using CodeArts.ORM.Exceptions;
-using CodeArts.Runtime;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if NET40
 using System.Collections.ObjectModel;
+#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -136,7 +137,7 @@ namespace CodeArts.ORM.Visitors
         /// <summary>
         /// 启动核心流程。
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">启动节点。</param>
         /// <returns></returns>
         protected virtual Expression StartupCore(MethodCallExpression node)
         {
@@ -144,9 +145,9 @@ namespace CodeArts.ORM.Visitors
         }
 
         /// <summary>
-        /// 创建写入映射关系
+        /// 创建写入映射关系。
         /// </summary>
-        /// <param name="settings">修正配置</param>
+        /// <param name="settings">修正配置。</param>
         /// <returns></returns>
         protected virtual IWriterMap CreateWriterMap(ISQLCorrectSettings settings) => visitor?.CreateWriterMap(settings) ?? new WriterMap(settings);
 
@@ -223,7 +224,7 @@ namespace CodeArts.ORM.Visitors
 
             Type baseType = repositoryType;
 
-            while (baseType.IsQueryable() || baseType.IsExecuteable())
+            while (baseType.IsQueryable())
             {
                 if (baseType.IsGenericType)
                 {
@@ -304,42 +305,6 @@ namespace CodeArts.ORM.Visitors
         }
 
         /// <summary>
-        /// 条件反转。
-        /// </summary>
-        /// <returns></returns>
-        protected T InvertWhere<T>(Func<T> invoke)
-        {
-            try
-            {
-                writer.ReverseCondition ^= true;
-
-                return invoke.Invoke();
-            }
-            finally
-            {
-                writer.ReverseCondition ^= true;
-            }
-        }
-
-        /// <summary>
-        /// 条件反转。
-        /// </summary>
-        /// <returns></returns>
-        protected void InvertWhere(Action invoke)
-        {
-            try
-            {
-                writer.ReverseCondition ^= true;
-
-                invoke.Invoke();
-            }
-            finally
-            {
-                writer.ReverseCondition ^= true;
-            }
-        }
-
-        /// <summary>
         /// 业务流程。
         /// </summary>
         /// <param name="work">执行。</param>
@@ -402,9 +367,9 @@ namespace CodeArts.ORM.Visitors
         #endregion
 
         /// <summary>
-        /// 过来成员
+        /// 绑定成员。
         /// </summary>
-        /// <param name="bindings">成员集合</param>
+        /// <param name="bindings">成员集合。</param>
         /// <returns></returns>
 #if NET40
         protected virtual ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings) => bindings;
@@ -424,12 +389,6 @@ namespace CodeArts.ORM.Visitors
             if (value is IQueryable queryable)
             {
                 base.Visit(queryable.Expression);
-
-                return node;
-            }
-            else if (value is IExecuteable executeable)
-            {
-                base.Visit(executeable.Expression);
 
                 return node;
             }
@@ -497,24 +456,30 @@ namespace CodeArts.ORM.Visitors
         }
 
         /// <summary>
-        /// 写入指定成员
+        /// 写入指定成员。
         /// </summary>
-        /// <param name="prefix">前缀</param>
-        /// <param name="members">成员集合</param>
+        /// <param name="prefix">前缀。</param>
+        /// <param name="members">成员集合。</param>
         protected virtual void WriteMembers(string prefix, IEnumerable<KeyValuePair<string, string>> members)
         {
             var enumerator = members.GetEnumerator();
 
             if (enumerator.MoveNext())
             {
-                WriteMember(prefix, enumerator.Current.Value, enumerator.Current.Key);
-
-                while (enumerator.MoveNext())
+                do
                 {
-                    writer.Delimiter();
-
                     WriteMember(prefix, enumerator.Current.Value, enumerator.Current.Key);
-                }
+
+                    if (enumerator.MoveNext())
+                    {
+                        writer.Delimiter();
+
+                        continue;
+                    }
+
+                    break;
+
+                } while (true);
             }
             else
             {
@@ -677,11 +642,7 @@ namespace CodeArts.ORM.Visitors
             return node;
         }
 
-        /// <summary>
-        /// Invoke
-        /// </summary>
-        /// <param name="node">参数</param>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitInvocation(InvocationExpression node)
         {
             return base.Visit(node.Expression);
@@ -695,9 +656,12 @@ namespace CodeArts.ORM.Visitors
                 throw new DSyntaxErrorException("禁止使用布尔常量作为条件语句或结果!");
             }
 
-            var value = node.Value as ConstantExpression;
+            if (node.Type.IsQueryable())
+            {
+                return node;
+            }
 
-            writer.Parameter((value ?? node).GetValueFromExpression());
+            writer.Parameter((node.Value as ConstantExpression ?? node).GetValueFromExpression());
 
             return node;
         }
@@ -738,14 +702,9 @@ namespace CodeArts.ORM.Visitors
                 return VisitOfQueryable(node);
             }
 
-            if (declaringType == typeof(SelectExtentions))
+            if (declaringType == typeof(RepositoryExtentions))
             {
                 return VisitOfSelect(node);
-            }
-
-            if (declaringType == typeof(Executeable))
-            {
-                return VisitOfExecuteable(node);
             }
 
             return VisitByCustom(node);
@@ -849,37 +808,6 @@ namespace CodeArts.ORM.Visitors
         }
 
         /// <summary>
-        /// 使用 CodeArts.ORM.Executeable 的函数。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual Expression VisitOfExecuteable(MethodCallExpression node)
-        {
-            switch (node.Method.Name)
-            {
-                case MethodCall.From:
-                    var objExp = node.Arguments[1];
-
-                    if (!IsPlainVariable(objExp))
-                    {
-                        throw new NotSupportedException("函数“From”的参数必须是常量!");
-                    }
-
-                    var valueObj = objExp.GetValueFromExpression();
-
-                    if (valueObj is Func<ITableInfo, string> tableInfo)
-                    {
-                        tableGetter = tableInfo;
-
-                        return node;
-                    }
-
-                    throw new NotSupportedException("函数“From”的参数类型必须是“System.Func<ITableInfo, string>”委托!");
-                default:
-                    throw new NotSupportedException($"类型“{node.Method.DeclaringType}”的函数“{node.Method.Name}”不被支持!");
-            }
-        }
-
-        /// <summary>
         /// 是普通变量。
         /// </summary>
         /// <param name="node">节点。</param>
@@ -949,19 +877,12 @@ namespace CodeArts.ORM.Visitors
             }
         }
 
-        /// <summary>
-        /// 包装表达式
-        /// </summary>
-        /// <param name="node">节点</param>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override Expression VisitUnary(UnaryExpression node)
         {
             if (node.NodeType == ExpressionType.Not)
             {
-                return InvertWhere(() =>
-                {
-                    return base.VisitUnary(node);
-                });
+                return writer.ReverseCondition(() => base.VisitUnary(node));
             }
 
             return base.VisitUnary(node);

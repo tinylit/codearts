@@ -4,11 +4,11 @@ using UnitTest.Domain.Entities;
 namespace UnitTest.Domain
 {
     /// <summary>
-    /// 发票仓库
+    /// 发票仓库。
     /// </summary>
-    public class TaxCodeRepository : ReadWriteRepository<TaxCode>
+    public class TaxCodeRepository : DbRepository<TaxCode>
     {
-        protected override ConnectionConfig GetDbConfig()
+        protected override IReadOnlyConnectionConfig GetDbConfig()
         {
             return new ConnectionConfig
             {

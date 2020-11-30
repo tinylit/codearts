@@ -10,7 +10,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 指令行为。
         /// </summary>
-        CommandBehavior Behavior { get; }
+        ActionBehavior Behavior { get; }
 
         /// <summary>
         /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。<see cref="System.Data.IDbCommand.CommandTimeout"/>

@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using CodeArts.Mvc.Authentication;
 using System;
 #if NET40
@@ -8,15 +8,15 @@ using System.Threading;
 namespace CodeArts.Mvc.Builder
 {
     /// <summary>
-    /// Jwt 认证扩展
+    /// Jwt 认证扩展。
     /// </summary>
     public static class JwtBearerApplicationBuilderExtensions
     {
         /// <summary>
         /// 使用 JWT 认证。
         /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="events">认证配置</param>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="events">认证配置。</param>
         /// <returns></returns>
         public static IApplicationBuilder UseJwtBearer(this IApplicationBuilder app, JwtBearerEvents events)
         {

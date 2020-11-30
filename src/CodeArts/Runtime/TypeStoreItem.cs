@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 #if NET40
 using System.Collections.ObjectModel;
 #else
@@ -9,41 +10,43 @@ using System.Linq;
 namespace CodeArts.Runtime
 {
     /// <summary>
-    /// 类型地图
+    /// 类型项目。
     /// </summary>
     public class TypeStoreItem : StoreItem
     {
+        private static readonly ConcurrentDictionary<Type, TypeStoreItem> ItemCache = new ConcurrentDictionary<Type, TypeStoreItem>();
+
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="type">类型</param>
-        public TypeStoreItem(Type type) : base(Attribute.GetCustomAttributes(type))
+        /// <param name="type">类型。</param>
+        private TypeStoreItem(Type type) : base(type)
         {
-            Type = type;
+            Type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
         /// <summary>
-        /// 类型名称
+        /// 类型名称。
         /// </summary>
         public override string Name => Type.Name;
 
         /// <summary>
-        /// 类型全名
+        /// 类型全名。
         /// </summary>
         public string FullName => Type.FullName;
 
         /// <summary>
-        /// 静态类
+        /// 静态类。
         /// </summary>
         public bool IsStatic => Type.IsAbstract && Type.IsSealed;
 
         /// <summary>
-        /// 公共类
+        /// 公共类。
         /// </summary>
         public bool IsPublic => Type.IsPublic;
 
         /// <summary>
-        /// 类型
+        /// 类型。
         /// </summary>
         public Type Type { get; }
 
@@ -58,20 +61,20 @@ namespace CodeArts.Runtime
         private ReadOnlyCollection<PropertyStoreItem> propertyStores;
 
         /// <summary>
-        /// 属性
+        /// 属性。
         /// </summary>
         public ReadOnlyCollection<PropertyStoreItem> PropertyStores
         {
             get
             {
-                if (propertyStores == null)
+                if (propertyStores is null)
                 {
                     lock (Lock_PropertyObj)
                     {
-                        if (propertyStores == null)
+                        if (propertyStores is null)
                         {
                             propertyStores = Type.GetProperties()
-                                .Select(info => new PropertyStoreItem(info))
+                                .Select(info => PropertyStoreItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -84,20 +87,20 @@ namespace CodeArts.Runtime
 
         private ReadOnlyCollection<FieldStoreItem> fieldStores;
         /// <summary>
-        /// 字段
+        /// 字段。
         /// </summary>
         public ReadOnlyCollection<FieldStoreItem> FieldStores
         {
             get
             {
-                if (fieldStores == null)
+                if (fieldStores is null)
                 {
                     lock (Lock_FieldObj)
                     {
-                        if (fieldStores == null)
+                        if (fieldStores is null)
                         {
                             fieldStores = Type.GetFields()
-                                .Select(info => new FieldStoreItem(info))
+                                .Select(info => FieldStoreItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -109,20 +112,20 @@ namespace CodeArts.Runtime
 
         private ReadOnlyCollection<MethodStoreItem> methodStores;
         /// <summary>
-        /// 方法
+        /// 方法。
         /// </summary>
         public ReadOnlyCollection<MethodStoreItem> MethodStores
         {
             get
             {
-                if (methodStores == null)
+                if (methodStores is null)
                 {
                     lock (Lock_MethodObj)
                     {
-                        if (methodStores == null)
+                        if (methodStores is null)
                         {
                             methodStores = Type.GetMethods()
-                                .Select(info => new MethodStoreItem(info))
+                                .Select(info => MethodStoreItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -134,20 +137,20 @@ namespace CodeArts.Runtime
 
         private ReadOnlyCollection<ConstructorStoreItem> constructorStores;
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public ReadOnlyCollection<ConstructorStoreItem> ConstructorStores
         {
             get
             {
-                if (constructorStores == null)
+                if (constructorStores is null)
                 {
                     lock (Lock_ConstructorObj)
                     {
-                        if (constructorStores == null)
+                        if (constructorStores is null)
                         {
                             constructorStores = Type.GetConstructors()
-                                .Select(info => new ConstructorStoreItem(info))
+                                .Select(info => ConstructorStoreItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -161,20 +164,20 @@ namespace CodeArts.Runtime
         private IReadOnlyCollection<PropertyStoreItem> propertyStores;
 
         /// <summary>
-        /// 属性
+        /// 属性。
         /// </summary>
         public IReadOnlyCollection<PropertyStoreItem> PropertyStores
         {
             get
             {
-                if (propertyStores == null)
+                if (propertyStores is null)
                 {
                     lock (Lock_PropertyObj)
                     {
-                        if (propertyStores == null)
+                        if (propertyStores is null)
                         {
                             propertyStores = Type.GetProperties()
-                                .Select(info => new PropertyStoreItem(info))
+                                .Select(info => PropertyStoreItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -186,20 +189,20 @@ namespace CodeArts.Runtime
 
         private IReadOnlyCollection<FieldStoreItem> fieldStores;
         /// <summary>
-        /// 字段
+        /// 字段。
         /// </summary>
         public IReadOnlyCollection<FieldStoreItem> FieldStores
         {
             get
             {
-                if (fieldStores == null)
+                if (fieldStores is null)
                 {
                     lock (Lock_FieldObj)
                     {
-                        if (fieldStores == null)
+                        if (fieldStores is null)
                         {
                             fieldStores = Type.GetFields()
-                                .Select(info => new FieldStoreItem(info))
+                                .Select(info => FieldStoreItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -210,20 +213,20 @@ namespace CodeArts.Runtime
 
         private IReadOnlyCollection<MethodStoreItem> methodStores;
         /// <summary>
-        /// 方法
+        /// 方法。
         /// </summary>
         public IReadOnlyCollection<MethodStoreItem> MethodStores
         {
             get
             {
-                if (methodStores == null)
+                if (methodStores is null)
                 {
                     lock (Lock_MethodObj)
                     {
-                        if (methodStores == null)
+                        if (methodStores is null)
                         {
                             methodStores = Type.GetMethods()
-                                .Select(info => new MethodStoreItem(info))
+                                .Select(info => MethodStoreItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -234,20 +237,20 @@ namespace CodeArts.Runtime
 
         private IReadOnlyCollection<ConstructorStoreItem> constructorStores;
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public IReadOnlyCollection<ConstructorStoreItem> ConstructorStores
         {
             get
             {
-                if (constructorStores == null)
+                if (constructorStores is null)
                 {
                     lock (Lock_ConstructorObj)
                     {
-                        if (constructorStores == null)
+                        if (constructorStores is null)
                         {
                             constructorStores = Type.GetConstructors()
-                                .Select(info => new ConstructorStoreItem(info))
+                                .Select(info => ConstructorStoreItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -256,5 +259,19 @@ namespace CodeArts.Runtime
             }
         }
 #endif
+
+        /// <summary>
+        /// 获取仓储项目。
+        /// </summary>
+        /// <typeparam name="T">类型。</typeparam>
+        /// <returns></returns>
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
+
+        /// <summary>
+        /// 获取仓储项目。
+        /// </summary>
+        /// <param name="type">类型。</param>
+        /// <returns></returns>
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
     }
 }

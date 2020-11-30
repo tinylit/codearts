@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace CodeArts.SignalR
 {
     /// <summary>
-    /// 信箱模块
+    /// 信箱模块。
     /// </summary>
     public class MailPipelineModule : HubPipelineModule
     {
@@ -16,7 +16,7 @@ namespace CodeArts.SignalR
         private static readonly ConcurrentDictionary<Type, HubDescriptor> hubConnections = new ConcurrentDictionary<Type, HubDescriptor>();
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public MailPipelineModule(IMail mail)
         {
@@ -26,8 +26,8 @@ namespace CodeArts.SignalR
         /// <summary>
         /// 认证链接前。
         /// </summary>
-        /// <param name="hubDescriptor">消息中心信息</param>
-        /// <param name="request">请求</param>
+        /// <param name="hubDescriptor">消息中心信息。</param>
+        /// <param name="request">请求。</param>
         /// <returns></returns>
         protected override bool OnBeforeAuthorizeConnect(HubDescriptor hubDescriptor, IRequest request)
         {
@@ -37,7 +37,7 @@ namespace CodeArts.SignalR
         /// <summary>
         /// 连接成功后做一些事情。
         /// </summary>
-        /// <param name="hub">消息中心</param>
+        /// <param name="hub">消息中心。</param>
         protected override void OnAfterConnect(IHub hub)
         {
             var request = hub.Context.Request;
@@ -60,7 +60,7 @@ namespace CodeArts.SignalR
         /// <summary>
         /// 连接成功后做一些事情。
         /// </summary>
-        /// <param name="hub">消息中心</param>
+        /// <param name="hub">消息中心。</param>
         protected override void OnAfterReconnect(IHub hub)
         {
             var request = hub.Context.Request;

@@ -18,7 +18,7 @@ namespace CodeArts.Tests
 
             var key2 = KeyGen.Create(6680757690605506560);
 
-            RuntimeServManager.TryAddSingleton<IKeyGenFactory>(new SnowflakeFactory(5, 12));
+            RuntimeServPools.TryAddSingleton<IKeyGenFactory>(new SnowflakeFactory(5, 12));
 
             var id = KeyGen.New();
 
@@ -57,9 +57,9 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Test3()
         {
-            var keyGen1 = KeyGenFactory.Create(_=>{ });
-            var keyGen2 = KeyGenFactory.Create(_=>{ });
-            var keyGen3 = KeyGenFactory.Create(_=>{ });
+            var keyGen1 = KeyGenFactory.Create();
+            var keyGen2 = KeyGenFactory.Create();
+            var keyGen3 = KeyGenFactory.Create();
 
             var list1 = new long[1000000];
             var list2 = new long[1000000];

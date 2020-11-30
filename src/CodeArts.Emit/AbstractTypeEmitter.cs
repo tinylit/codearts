@@ -20,7 +20,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="builder">类型构造器</param>
+        /// <param name="builder">类型构造器。</param>
         protected AbstractTypeEmitter(TypeBuilder builder)
         {
             this.builder = builder;
@@ -37,6 +37,7 @@ namespace CodeArts.Emit
                 {
                     throw new InvalidOperationException("接口不具有“BaseType”属性!");
                 }
+
                 return builder.BaseType;
             }
         }

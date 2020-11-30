@@ -1,13 +1,11 @@
 ﻿using CodeArts.ORM;
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace UnitTest.Visiters
 {
     /// <summary>
-    /// Convert扩展支持
+    /// Convert扩展支持。
     /// </summary>
     public class ConvertVisitter : ICustomVisitor
     {

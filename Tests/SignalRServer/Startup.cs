@@ -1,5 +1,5 @@
 ﻿using CodeArts;
-using CodeArts.Cache;
+using CodeArts.Caching;
 using CodeArts.Config;
 using CodeArts.Serialize.Json;
 using CodeArts.SignalR;
@@ -11,22 +11,21 @@ using System.Diagnostics;
 namespace SignalRServer
 {
     /// <summary>
-    /// 启动类
+    /// 启动类。
     /// </summary>
     public class Startup
     {
         /// <summary>
-        /// 配置
+        /// 配置。
         /// </summary>
         /// <param name="app"></param>
         public void Configuration(IAppBuilder app)
         {
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
-            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
 
             //? 缓存服务
-            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
-            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+            CachingManager.RegisterProvider(new MemoryCachingProvider(), Level.First);
 
             app.Map("/signalr", map =>
             {

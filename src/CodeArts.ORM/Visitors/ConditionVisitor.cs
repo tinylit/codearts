@@ -1,11 +1,8 @@
 ﻿using CodeArts.ORM.Exceptions;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeArts.ORM.Visitors
 {
@@ -17,7 +14,7 @@ namespace CodeArts.ORM.Visitors
         #region 匿名内部类
 
         /// <summary>
-        /// 智能开关
+        /// 智能开关。
         /// </summary>
         private class SmartSwitch
         {
@@ -124,14 +121,9 @@ namespace CodeArts.ORM.Visitors
                 return VisitOfQueryable(node);
             }
 
-            if (declaringType == typeof(SelectExtentions))
+            if (declaringType == typeof(RepositoryExtentions))
             {
                 return VisitOfSelect(node);
-            }
-
-            if (declaringType == typeof(Executeable))
-            {
-                return VisitOfExecuteable(node);
             }
 
             if (declaringType == typeof(Enumerable))
@@ -165,7 +157,7 @@ namespace CodeArts.ORM.Visitors
                 case MethodCall.TakeWhile:
                     return VisitCondition(node);
                 case MethodCall.SkipWhile:
-                    return InvertWhere(() => VisitCondition(node));
+                    return writer.ReverseCondition(() => VisitCondition(node));
                 default:
                     return base.VisitOfQueryable(node);
             }
@@ -264,7 +256,7 @@ namespace CodeArts.ORM.Visitors
 
             if (node.Arguments.Count == index)
             {
-                if (enumerator.MoveNext() ^ writer.ReverseCondition)
+                if (enumerator.MoveNext() ^ writer.IsReverseCondition)
                 {
                     return node;
                 }
@@ -288,7 +280,7 @@ namespace CodeArts.ORM.Visitors
 
             if (enumerator.MoveNext())
             {
-                if (enumerator.Current == null)
+                if (enumerator.Current is null)
                 {
                     throw new ArgumentNullException(parameterExp.Name);
                 }
@@ -299,7 +291,7 @@ namespace CodeArts.ORM.Visitors
 
                 while (enumerator.MoveNext())
                 {
-                    if (enumerator.Current == null)
+                    if (enumerator.Current is null)
                     {
                         throw new ArgumentNullException(parameterExp.Name);
                     }
@@ -428,7 +420,7 @@ namespace CodeArts.ORM.Visitors
 
             if (text.Length == 0)
             {
-                InvertWhere(writer.IsNull);
+                writer.ReverseCondition(writer.IsNull);
             }
             else
             {
@@ -862,7 +854,7 @@ namespace CodeArts.ORM.Visitors
         /// </summary>
         /// <param name="whereCore">条件表达式分析部分。</param>
         /// <param name="whereIf">表达式分析结果是否不为空。</param>
-        /// <param name="autoConditionRelation">自动建立条件关系</param>
+        /// <param name="autoConditionRelation">自动建立条件关系。</param>
         /// <returns></returns>
         protected Expression UsingCondition(Func<Expression> whereCore, Action<bool> whereIf = null, bool autoConditionRelation = false)
         {
@@ -906,7 +898,7 @@ namespace CodeArts.ORM.Visitors
 
                 if (isConditionBalance)
                 {
-                    if (value.Equals(!writer.ReverseCondition))
+                    if (value.Equals(!writer.IsReverseCondition))
                     {
                         return node;
                     }
@@ -1098,17 +1090,20 @@ namespace CodeArts.ORM.Visitors
         {
             if (IsPlainVariable(node.Left, true))
             {
-                int length = writer.Length;
+                var nodeValue = node.Left.GetValueFromExpression();
 
-                ignoreNullable = true;
-
-                VisitCheckIfSubconnection(node.Left);
-
-                ignoreNullable = false;
-
-                if (writer.Length == length)
+                if (nodeValue is null)
                 {
-                    VisitCheckIfSubconnection(node.Right);
+                    return VisitCheckIfSubconnection(node.Right);
+                }
+
+                if (node.Left is MemberExpression memberExp)
+                {
+                    writer.Parameter(memberExp.Member.Name, nodeValue);
+                }
+                else
+                {
+                    writer.Parameter(nodeValue);
                 }
 
                 return node;
@@ -1391,7 +1386,7 @@ namespace CodeArts.ORM.Visitors
 
             if (isAndOrLike && left.Type.IsBoolean() && IsPlainVariable(left, true))
             {
-                if (writer.ReverseCondition)
+                if (writer.IsReverseCondition)
                 {
                     isAndLike ^= isOrLike;
                     isOrLike ^= isAndLike;
@@ -1518,7 +1513,7 @@ namespace CodeArts.ORM.Visitors
 
         private void BooleanFalse(bool allwaysFalse)
         {
-            if (allwaysFalse || !writer.ReverseCondition)
+            if (allwaysFalse || !writer.IsReverseCondition)
             {
                 writer.BooleanTrue();
 

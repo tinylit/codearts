@@ -39,7 +39,7 @@ namespace MVC461.Controllers
         {
             var data = this.user.Where(x => x.Id == 10000).FirstOrDefault();
 
-            return this.user.AsInsertable(user.MapTo<User>()).ExecuteCommand() > 0;
+            return this.user.AsInsertable(Mapper.Map<User>(user)).ExecuteCommand() > 0;
         }
     }
 
@@ -47,24 +47,24 @@ namespace MVC461.Controllers
     public class UserDto
     {
         /// <summary>
-        /// ID
+        /// ID。
         /// </summary>
         public ulong Id { get; set; }
         /// <summary>
-        /// 机构ID
+        /// 机构ID。
         /// </summary>
         public ulong OrgId { get; set; }
         /// <summary>
-        /// 公司ID
+        /// 公司ID。
         /// </summary>
         public long CompanyId { get; set; }
         /// <summary>
-        /// 账户
+        /// 账户。
         /// </summary>
         [Display(Name = "用户账户")]
         public string Account { get; set; }
         /// <summary>
-        /// 用户名称
+        /// 用户名称。
         /// </summary>
         [Display(Name = "用户名称")]
         public string Name { get; set; }
@@ -94,11 +94,7 @@ namespace MVC461.Controllers
             return new object[] { TestEnum.Normal, 1000000uL, 10000000000000000000uL };
         }
 
-        /// <summary>
-        /// 获取数据
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         // GET api/values/5
         [HttpGet]
         public ulong Get(ulong id)
@@ -108,14 +104,14 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         // POST api/values
         [HttpPost]
-        public DResult Post([FromBody]UserDto value)
+        public DResult Post([FromBody] UserDto value)
         {
             return dependency.AddUser(value) ? DResult.Ok() : DResult.Error("新增数据失败!");
         }
         /// <inheritdoc />
         // PUT api/values/5
         [HttpPut]
-        public void Put(int id, [FromBody]ValueModel value)
+        public void Put(int id, [FromBody] ValueModel value)
         {
 
         }
@@ -130,7 +126,7 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         [HttpGet]
         [ActionName("login")]
-        public DResult Login(string account, [Required][MinLength(15)]string password)
+        public DResult Login(string account, [Required][MinLength(15)] string password)
         {
             return DResult.Ok(new
             {

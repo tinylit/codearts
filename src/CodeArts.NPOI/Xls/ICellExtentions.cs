@@ -4,14 +4,14 @@ using System;
 namespace CodeArts.NPOI.Xls
 {
     /// <summary>
-    /// Cell 扩展
+    /// Cell 扩展。
     /// </summary>
     public static class ICellExtentions
     {
         /// <summary>
-        /// 创建下一个格子
+        /// 创建下一个格子。
         /// </summary>
-        /// <param name="cell">单元格</param>
+        /// <param name="cell">单元格。</param>
         /// <returns></returns>
         public static ICell CreateNextCell(this ICell cell)
         {
@@ -19,18 +19,18 @@ namespace CodeArts.NPOI.Xls
         }
 
         /// <summary>
-        /// 为单元格设置样式
+        /// 为单元格设置样式。
         /// </summary>
-        /// <param name="cell">单元格</param>
-        /// <param name="header">表头样式</param>
+        /// <param name="cell">单元格。</param>
+        /// <param name="header">表头样式。</param>
         public static void StyleCb(this ICell cell, IHeaderProvider header)
         {
-            if (cell == null)
+            if (cell is null)
             {
                 throw new ArgumentNullException(nameof(cell));
             }
 
-            if (header == null)
+            if (header is null)
             {
                 throw new ArgumentNullException(nameof(header));
             }
@@ -62,12 +62,12 @@ namespace CodeArts.NPOI.Xls
         }
 
         /// <summary>
-        /// 设置内容居中的单元格
+        /// 设置内容居中的单元格。
         /// </summary>
-        /// <param name="cell">单元格</param>
+        /// <param name="cell">单元格。</param>
         public static void StyleCenter(this ICell cell)
         {
-            if (cell == null)
+            if (cell is null)
             {
                 throw new ArgumentNullException(nameof(cell));
             }

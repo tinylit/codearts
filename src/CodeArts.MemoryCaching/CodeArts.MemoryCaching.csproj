@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Authors>Tiny Lit</Authors>
+    <Company>Tiny Lit</Company>
+    <Description>In-memory cache implementation.</Description>
+    <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
+    <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+    <Version>5.0.0.0</Version>
+    <RootNamespace>CodeArts.Caching</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory">
+      <Version>2.1.1</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory">
+      <Version>3.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Runtime.Caching">
+      <Version>4.6.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
+    <Reference Include="System.Runtime.Caching" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeArts.Caching\CodeArts.Caching.csproj" />
+  </ItemGroup>
+  
+</Project>

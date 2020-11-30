@@ -1,57 +1,66 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace CodeArts.Runtime
 {
     /// <summary>
-    /// 属性仓库
+    /// 属性仓库。
     /// </summary>
     public class PropertyStoreItem : StoreItem<PropertyInfo>
     {
+        private static readonly ConcurrentDictionary<PropertyInfo, PropertyStoreItem> ItemCache = new ConcurrentDictionary<PropertyInfo, PropertyStoreItem>();
+
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="info">属性</param>
-        public PropertyStoreItem(PropertyInfo info) : base(info)
+        /// <param name="info">属性。</param>
+        private PropertyStoreItem(PropertyInfo info) : base(info)
         {
         }
 
         /// <summary>
-        /// 属性类型
+        /// 属性类型。
         /// </summary>
         public override Type MemberType => Member.PropertyType;
 
 #if NET40
 
         /// <summary>
-        /// 静态属性
+        /// 静态属性。
         /// </summary>
         public override bool IsStatic => Member.GetGetMethod(true)?.IsStatic ?? Member.GetSetMethod(true)?.IsStatic ?? false;
 
         /// <summary>
-        /// 公共属性
+        /// 公共属性。
         /// </summary>
         public override bool IsPublic => Member.GetGetMethod(true)?.IsPublic ?? Member.GetSetMethod(true)?.IsPublic ?? false;
 #else
         /// <summary>
-        /// 静态属性
+        /// 静态属性。
         /// </summary>
         public override bool IsStatic => Member.GetMethod?.IsStatic ?? Member.SetMethod?.IsStatic ?? false;
 
         /// <summary>
-        /// 公共属性
+        /// 公共属性。
         /// </summary>
         public override bool IsPublic => Member.GetMethod?.IsPublic ?? Member.SetMethod?.IsPublic ?? false;
 #endif
         /// <summary>
-        /// 可读
+        /// 是否可读。
         /// </summary>
         public override bool CanRead => Member.CanRead;
 
         /// <summary>
-        /// 可写
+        /// 是否可写。
         /// </summary>
         public override bool CanWrite => Member.CanWrite;
 
+        /// <summary>
+        /// 获取仓储项目。
+        /// </summary>
+        /// <param name="info">信息。</param>
+        /// <returns></returns>
+        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new PropertyStoreItem(propertyInfo));
     }
 }

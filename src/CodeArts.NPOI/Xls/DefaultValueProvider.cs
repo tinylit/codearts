@@ -4,23 +4,23 @@ using System;
 namespace CodeArts.NPOI.Xls
 {
     /// <summary>
-    /// 默认值提供器
+    /// 默认值提供器。
     /// </summary>
-    public class DefaultValueProvider : DesignMode.Singleton<DefaultValueProvider>, IValueProvider
+    public class DefaultValueProvider : Singleton<DefaultValueProvider>, IValueProvider
     {
         /// <summary>
-        /// 私有构造函数
+        /// 私有构造函数。
         /// </summary>
         private DefaultValueProvider() { }
 
         /// <summary>
-        /// 设置值
+        /// 设置值。
         /// </summary>
-        /// <param name="cell">单元格</param>
-        /// <param name="value">值</param>
+        /// <param name="cell">单元格。</param>
+        /// <param name="value">值。</param>
         public void SetValue(ICell cell, object value)
         {
-            if (value == null)
+            if (value is null)
             {
                 cell.SetCellValue(string.Empty);
             }

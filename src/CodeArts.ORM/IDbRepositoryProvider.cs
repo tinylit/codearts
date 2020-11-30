@@ -1,16 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Data;
-using System.Linq.Expressions;
+#if NET_NORMAL
+using System.Threading;
+using System.Threading.Tasks;
+#endif
 
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 仓储提供者
+    /// 仓储提供者。
     /// </summary>
     public interface IDbRepositoryProvider
     {
         /// <summary>
-        /// 创建查询器
+        /// 创建查询器。
         /// </summary>
         /// <returns></returns>
         IQueryVisitor Create();
@@ -19,47 +22,39 @@ namespace CodeArts.ORM
         /// 查询第一个结果。
         /// </summary>
         /// <typeparam name="T">结果类型。</typeparam>
-        /// <param name="conn">数据库链接。</param>
-        /// <param name="sql">SQL。</param>
-        /// <param name="parameters">参数。</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="defaultValue">默认值。</param>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
         /// <returns></returns>
-        T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, T defaultValue = default);
+        T Read<T>(IDbContext context, CommandSql<T> commandSql);
 
+        /// <summary>
+        /// 查询列表集合。
+        /// </summary>
+        /// <typeparam name="T">集合元素类型。</typeparam>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <returns></returns>
+        IEnumerable<T> Query<T>(IDbContext context, CommandSql commandSql);
+
+#if NET_NORMAL
         /// <summary>
         /// 查询第一个结果。
         /// </summary>
         /// <typeparam name="T">结果类型。</typeparam>
-        /// <param name="conn">数据库链接。</param>
-        /// <param name="sql">SQL。</param>
-        /// <param name="parameters">参数。</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="hasDefaultValue">是否包含默认值。</param>
-        /// <param name="defaultValue">默认值（仅“<paramref name="hasDefaultValue"/>”为真时，有效）。</param>
-        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, bool hasDefaultValue = false, T defaultValue = default, string missingMsg = null);
+        Task<T> ReadAsync<T>(IDbContext context, CommandSql<T> commandSql, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// 查询列表集合
+        /// 查询列表集合。
         /// </summary>
-        /// <typeparam name="T">集合元素类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">查询语句</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="T">集合元素类型。</typeparam>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
         /// <returns></returns>
-        IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
-
-        /// <summary>
-        /// 测评表达式语句（查询）
-        /// </summary>
-        /// <typeparam name="T">仓储泛型类型</typeparam>
-        /// <typeparam name="TResult">返回值类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="expression">查询表达式</param>
-        /// <returns></returns>
-        TResult Evaluate<T, TResult>(IDbConnection conn, Expression expression);
+        IAsyncEnumerable<T> QueryAsync<T>(IDbContext context, CommandSql commandSql);
+#endif
     }
 }

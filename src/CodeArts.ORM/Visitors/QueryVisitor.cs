@@ -1,4 +1,5 @@
 ﻿using CodeArts.ORM.Exceptions;
+using CodeArts.Runtime;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -58,7 +59,7 @@ namespace CodeArts.ORM.Visitors
 
                     CastCache.GetOrAdd(type, _ => TypeToEntryType(originalType));
 
-                    var entry = RuntimeTypeCache.Instance.GetCache(type);
+                    var entry = TypeStoreItem.Get(type);
 
                     if (MemberFilters is null)
                     {

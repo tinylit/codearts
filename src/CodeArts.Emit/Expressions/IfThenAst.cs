@@ -27,7 +27,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="test">条件。</param>
         /// <param name="ifTrue">为真的代码块。</param>
-        /// <param name="returnType">返回类型</param>
+        /// <param name="returnType">返回类型。</param>
         public IfThenAst(AstExpression test, AstExpression ifTrue, Type returnType) : base(returnType)
         {
             this.test = test ?? throw new ArgumentNullException(nameof(test));
@@ -50,7 +50,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             if (ReturnType == typeof(void))

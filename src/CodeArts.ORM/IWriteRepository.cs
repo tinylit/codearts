@@ -13,7 +13,7 @@ namespace CodeArts.ORM
         ISQLCorrectSimSettings Settings { get; }
 
         /// <summary>
-        /// 执行
+        /// 执行。
         /// </summary>
         /// <param name="sql">SQL语句。</param>
         /// <param name="param">参数。</param>
@@ -22,7 +22,7 @@ namespace CodeArts.ORM
         int Insert(SQL sql, object param = null, int? commandTimeout = null);
 
         /// <summary>
-        /// 执行
+        /// 执行。
         /// </summary>
         /// <param name="sql">SQL语句。</param>
         /// <param name="param">参数。</param>
@@ -31,7 +31,7 @@ namespace CodeArts.ORM
         int Update(SQL sql, object param = null, int? commandTimeout = null);
 
         /// <summary>
-        /// 执行
+        /// 执行。
         /// </summary>
         /// <param name="sql">SQL语句。</param>
         /// <param name="param">参数。</param>
@@ -40,9 +40,9 @@ namespace CodeArts.ORM
         int Delete(SQL sql, object param = null, int? commandTimeout = null);
 
         /// <summary>
-        /// 执行
+        /// 执行。
         /// </summary>
-        /// <param name="expression">表达式</param>
+        /// <param name="expression">表达式。</param>
         /// <returns></returns>
         int Excute(Expression expression);
     }

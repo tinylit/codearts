@@ -1,28 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>4.0.0.0</Version>
-    <Authors>Tiny Lit</Authors>
-    <Company>Tiny Lit</Company>
-    <Description>A lightweight infrastructure.</Description>
-    <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
-    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Version>5.0.0.0</Version>
+		<Authors>Tiny Lit</Authors>
+		<Company>Tiny Lit</Company>
+		<Description>Provides classes that allow a compiler or tool to emit metadata and optionally generate a PE file on disk.</Description>
+		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
+		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
+		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+	</PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <PackageReference Include="System.Reflection.Emit" Version="4.6.0" />
-  </ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+		<PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CodeArts\CodeArts.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\CodeArts\CodeArts.csproj" />
+	</ItemGroup>
 
 </Project>

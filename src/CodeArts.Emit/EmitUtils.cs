@@ -9,7 +9,7 @@ using System.Reflection.Emit;
 namespace CodeArts.Emit
 {
     /// <summary>
-    /// 工具
+    /// 工具。
     /// </summary>
     public static class EmitUtils
     {
@@ -1026,8 +1026,8 @@ namespace CodeArts.Emit
         /// <summary>
         /// 发行指定类型的默认值。
         /// </summary>
-        /// <param name="ilg">指令</param>
-        /// <param name="type">类型</param>
+        /// <param name="ilg">指令。</param>
+        /// <param name="type">类型。</param>
         public static void EmitDefaultValueOfType(ILGenerator ilg, Type type)
         {
             switch (Type.GetTypeCode(type))

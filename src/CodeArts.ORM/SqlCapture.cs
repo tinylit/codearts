@@ -49,21 +49,17 @@ namespace CodeArts.ORM
         /// <summary>
         /// 已捕获。
         /// </summary>
-        public Action<SqlCaptureContext> Captured { get; set; }
+        public Action<CommandSql> Captured { get; set; }
 
         /// <summary>
         /// 捕获。
         /// </summary>
-        /// <param name="sql">语句。</param>
-        /// <param name="parameters">参数。</param>
-        /// <param name="behavior">行为。</param>
-        public virtual void Capture(string sql, Dictionary<string, object> parameters, CommandBehavior behavior)
+        /// <param name="commandSql">命令SQL。</param>
+        public virtual void Capture(CommandSql commandSql)
         {
-            var context = new SqlCaptureContext(sql, parameters, behavior);
+            Captured?.Invoke(commandSql);
 
-            Captured?.Invoke(context);
-
-            capture?.Captured?.Invoke(context);
+            capture?.Captured?.Invoke(commandSql);
         }
 
         /// <summary>
@@ -88,46 +84,5 @@ namespace CodeArts.ORM
                 threadSqlProfilers[thread] = capture;
             }
         }
-    }
-
-    /// <summary>
-    /// SQL 捕获上下文。
-    /// </summary>
-    public class SqlCaptureContext
-    {
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        public SqlCaptureContext(string sql, Dictionary<string, object> parameters, CommandBehavior behavior)
-        {
-            if (string.IsNullOrEmpty(sql))
-            {
-                throw new ArgumentException($"“{nameof(sql)}”不能是 Null 或为空。", nameof(sql));
-            }
-
-            if (parameters is null)
-            {
-                throw new ArgumentNullException(nameof(parameters));
-            }
-
-            Sql = sql;
-            Parameters = parameters;
-            Behavior = behavior;
-        }
-
-        /// <summary>
-        /// 语句。
-        /// </summary>
-        public string Sql { get; }
-
-        /// <summary>
-        /// 参数。
-        /// </summary>
-        public Dictionary<string, object> Parameters { get; }
-
-        /// <summary>
-        /// 行为。
-        /// </summary>
-        public CommandBehavior Behavior { get; }
     }
 }

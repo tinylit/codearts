@@ -9,66 +9,66 @@ using System.Text.RegularExpressions;
 namespace CodeArts.ORM.SqlServer
 {
     /// <summary>
-    /// SqlServer矫正设置
+    /// SqlServer矫正设置。
     /// </summary>
     public class SqlServerCorrectSettings : ISQLCorrectSettings
     {
         private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
 
-        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select(([\x20\t\r\n\f]+distinct)+)?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\[\w+\]\.)*(?<name>(\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
-   
-        
+
+
         /// <summary>
-        /// 字符串截取。 SUBSTRING
+        /// 字符串截取。 SUBSTRING。
         /// </summary>
         public string Substring => "SUBSTRING";
 
         /// <summary>
-        /// 字符串索引。 CHARINDEX
+        /// 字符串索引。 CHARINDEX。
         /// </summary>
         public string IndexOf => "CHARINDEX";
 
         /// <summary>
-        /// 字符串长度。 LEN
+        /// 字符串长度。 LEN。
         /// </summary>
         public string Length => "LEN";
 
         /// <summary>
-        /// 索引位置对调。 true.
+        /// 索引位置对调。 true。
         /// </summary>
         public bool IndexOfSwapPlaces => true;
 
         private List<ICustomVisitor> visitters;
 
         /// <summary>
-        /// 格式化
+        /// 格式化。
         /// </summary>
         public IList<ICustomVisitor> Visitors => visitters ?? (visitters = new List<ICustomVisitor>());
 
         /// <summary>
-        /// SqlServer
+        /// SqlServer。
         /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.SqlServer;
 
 
         private ICollection<IFormatter> formatters;
         /// <summary>
-        /// 格式化集合
+        /// 格式化集合。
         /// </summary>
         public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
 
         /// <summary>
-        /// 字段
+        /// 字段。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string Name(string name) => string.Concat("[", name, "]");
         /// <summary>
-        /// 参数名称
+        /// 参数名称。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("@", name);
 
@@ -102,9 +102,9 @@ namespace CodeArts.ORM.SqlServer
         });
 
         /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）。
         /// </summary>
-        /// <param name="columns">以“,”分割的列集合</param>
+        /// <param name="columns">以“,”分割的列集合。</param>
         /// <returns></returns>
         protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
 
@@ -123,13 +123,13 @@ namespace CodeArts.ORM.SqlServer
         /// <param name="skip">跳过“<paramref name="skip"/>”条数据。</param>
         /// <param name="orderBy">排序。</param>
         /// <returns></returns>
-        public string ToSQL(string sql, int take, int skip, string orderBy)
+        public virtual string ToSQL(string sql, int take, int skip, string orderBy)
         {
             if (skip < 1)
             {
                 return string.Concat(PatternSelect.Replace(sql, x =>
                 {
-                    return string.Concat(x.Value, "TOP ", take.ToString(), " ");
+                    return string.Concat(x.Value, "TOP (", take.ToString(), ") ");
                 }), orderBy);
             }
 
@@ -140,6 +140,11 @@ namespace CodeArts.ORM.SqlServer
             string row_name = Name("__Row_Number_");
 
             var sb = new StringBuilder();
+
+            if (orderBy.IsEmpty())
+            {
+                orderBy = " ORDER BY 1";
+            }
 
             sb.Append("SELECT ")
                 .Append(tuple.Item1)

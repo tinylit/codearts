@@ -17,8 +17,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="body">内容</param>
-        /// <param name="catchs">异常捕获</param>
+        /// <param name="body">内容。</param>
+        /// <param name="catchs">异常捕获。</param>
         public TryAst(AstExpression body, params CatchAst[] catchs) : this(body, catchs, null)
         {
         }
@@ -26,8 +26,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="body">内容</param>
-        /// <param name="finally">结束</param>
+        /// <param name="body">内容。</param>
+        /// <param name="finally">结束。</param>
         public TryAst(AstExpression body, FinallyAst @finally) : this(body, null, @finally)
         {
         }
@@ -35,9 +35,9 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="body">内容</param>
-        /// <param name="catchs">异常捕获</param>
-        /// <param name="finally">结束</param>
+        /// <param name="body">内容。</param>
+        /// <param name="catchs">异常捕获。</param>
+        /// <param name="finally">结束。</param>
         public TryAst(AstExpression body, CatchAst[] catchs, FinallyAst @finally) : base(body.ReturnType)
         {
             if ((catchs is null || catchs.Length == 0) && @finally is null)
@@ -61,7 +61,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             ilg.BeginExceptionBlock();

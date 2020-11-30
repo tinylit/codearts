@@ -1,44 +1,44 @@
 ﻿namespace CodeArts.ORM
 {
     /// <summary>
-    /// 数据库引擎
+    /// 数据库引擎。
     /// </summary>
     public enum DatabaseEngine
     {
         /// <summary>
-        /// 正常
+        /// 正常。
         /// </summary>
         Normal = 0,
         /// <summary>
-        /// Oracle
+        /// Oracle。
         /// </summary>
         Oracle = 1,
         /// <summary>
-        /// MySQL
+        /// MySQL。
         /// </summary>
         MySQL = 2,
         /// <summary>
-        /// SqlServer
+        /// SqlServer。
         /// </summary>
         SqlServer = 3,
         /// <summary>
-        /// PostgreSQL
+        /// PostgreSQL。
         /// </summary>
         PostgreSQL = 4,
         /// <summary>
-        /// DB2
+        /// DB2。
         /// </summary>
         DB2 = 5,
         /// <summary>
-        /// Sybase
+        /// Sybase。
         /// </summary>
         Sybase = 6,
         /// <summary>
-        /// Access
+        /// Access。
         /// </summary>
         Access = 7,
         /// <summary>
-        /// SQLite
+        /// SQLite。
         /// </summary>
         SQLite = 8
     }

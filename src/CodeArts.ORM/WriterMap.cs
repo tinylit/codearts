@@ -3,7 +3,7 @@
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// SQL写入流
+    /// SQL写入流。
     /// </summary>
     public class WriterMap : IWriterMap
     {
@@ -11,7 +11,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="settings">SQL 矫正配置</param>
+        /// <param name="settings">SQL 矫正配置。</param>
         public WriterMap(ISQLCorrectSettings settings)
         {
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -33,20 +33,20 @@ namespace CodeArts.ORM
         /// </summary>
         public string EmptyString => "''";
         /// <summary>
-        /// 空格
+        /// “ ”
         /// </summary>
         public string WhiteSpace => " ";
 
         /// <summary>
-        /// 参数名称
+        /// 参数名称。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public virtual string ParamterName(string name) => settings.ParamterName(name);
         /// <summary>
-        /// 字段
+        /// 字段。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public virtual string Name(string name) => settings.Name(name);
     }

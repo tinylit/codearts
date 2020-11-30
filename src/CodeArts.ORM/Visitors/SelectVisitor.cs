@@ -1,9 +1,10 @@
 ﻿using CodeArts.ORM.Exceptions;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if NET40
 using System.Collections.ObjectModel;
+#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -17,7 +18,7 @@ namespace CodeArts.ORM.Visitors
     {
         #region 匿名内部类。
         /// <summary>
-        /// 智能开关
+        /// 智能开关。
         /// </summary>
         private class OrderBySwitch
         {
@@ -115,7 +116,7 @@ namespace CodeArts.ORM.Visitors
         {
             orderBySwitch = new OrderBySwitch(writer.OrderBy, writer.Delimiter);
         }
-        
+
         /// <inheritdoc />
         public SelectVisitor(ISQLCorrectSettings settings) : base(settings)
         {
@@ -159,10 +160,7 @@ namespace CodeArts.ORM.Visitors
 
             buildSelect = false;
 
-            base.Workflow(() =>
-            {
-                action = Select(node);
-            }, () => result = work.Invoke(node));
+            Workflow(() => action = Select(node), () => result = work.Invoke(node));
 
             action?.Invoke();
 
@@ -236,11 +234,11 @@ namespace CodeArts.ORM.Visitors
         }
 
         /// <summary>
-        /// 写入指定成员
+        /// 写入指定成员。
         /// </summary>
         /// <param name="aggregationName">聚合函数名称。</param>
-        /// <param name="prefix">前缀</param>
-        /// <param name="names">成员集合</param>
+        /// <param name="prefix">前缀。</param>
+        /// <param name="names">成员集合。</param>
         protected virtual void WriteMembers(string aggregationName, string prefix, IEnumerable<KeyValuePair<string, string>> names)
         {
             var kv = names.GetEnumerator();
@@ -261,7 +259,7 @@ namespace CodeArts.ORM.Visitors
         /// <summary>
         /// Select。
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点。</param>
         protected virtual Expression Select(ConstantExpression node)
         {
             var parameterType = TypeToUltimateType(node.Type);
@@ -289,7 +287,7 @@ namespace CodeArts.ORM.Visitors
         /// <summary>
         /// Select。
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="node">节点。</param>
         protected virtual Action Select(MethodCallExpression node)
         {
             string name = node.Method.Name;
@@ -305,7 +303,7 @@ namespace CodeArts.ORM.Visitors
 
             Expression parameterExp = node.Arguments[0];
 
-            var tableInfo = base.MakeTableInfo(parameterExp.Type);
+            var tableInfo = MakeTableInfo(parameterExp.Type);
 
             var members = FilterMembers(tableInfo.ReadOrWrites);
 
@@ -375,11 +373,13 @@ namespace CodeArts.ORM.Visitors
                     base.Visit(node.Arguments[1]);
 
                     prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
+
                     break;
                 default:
                     prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
 
                     WriteMembers(prefix, members);
+
                     break;
             }
 
@@ -777,9 +777,9 @@ namespace CodeArts.ORM.Visitors
         }
 
         /// <summary>
-        /// 过滤成员
+        /// 过滤成员。
         /// </summary>
-        /// <param name="members">成员集合</param>
+        /// <param name="members">成员集合。</param>
         /// <returns></returns>
 #if NET40
         protected virtual ReadOnlyCollection<MemberInfo> FilterMembers(ReadOnlyCollection<MemberInfo> members) => members;

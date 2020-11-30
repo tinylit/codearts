@@ -9,14 +9,14 @@ using System.Linq;
 namespace CodeArts.SignalR
 {
     /// <summary>
-    /// SignalRAppBuilder 扩展
+    /// SignalRAppBuilder 扩展。
     /// </summary>
     public static class SignalRAppBuilderExtensions
     {
         /// <summary>
         /// 注册所有hub链接。 <see cref="HubRouteBuilder.MapHub{THub}(PathString)"/> Hub类名小写作为参数（如果类名以hub结束，将会去除hub后作为参数）。
         /// </summary>
-        /// <param name="app">程序配置</param>
+        /// <param name="app">程序配置。</param>
         /// <returns></returns>
         public static IApplicationBuilder UseSignalR(this IApplicationBuilder app)
             => app.UseSignalR(builder =>
@@ -48,8 +48,8 @@ namespace CodeArts.SignalR
         /// <summary>
         /// 注册所有hub链接。 <see cref="HubRouteBuilder.MapHub{THub}(PathString, Action{HttpConnectionDispatcherOptions})"/> Hub类名小写作为参数（如果类名以hub结束，将会去除hub后作为参数）。
         /// </summary>
-        /// <param name="app">程序配置</param>
-        /// <param name="configureOptions">配置</param>
+        /// <param name="app">程序配置。</param>
+        /// <param name="configureOptions">配置。</param>
         /// <returns></returns>
         public static IApplicationBuilder UseSignalR(this IApplicationBuilder app, Action<HttpConnectionDispatcherOptions> configureOptions)
             => app.UseSignalR(builder =>

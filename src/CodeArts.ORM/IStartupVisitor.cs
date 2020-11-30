@@ -17,12 +17,12 @@ namespace CodeArts.ORM
         Expression Startup(Expression node);
 
         /// <summary>
-        /// 参数
+        /// 参数。
         /// </summary>
         Dictionary<string, object> Parameters { get; }
 
         /// <summary>
-        /// SQL语句
+        /// SQL语句。
         /// </summary>
         /// <returns></returns>
         string ToSQL();

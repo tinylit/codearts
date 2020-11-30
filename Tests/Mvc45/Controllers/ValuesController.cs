@@ -33,11 +33,7 @@ namespace Mvc45.Controllers
             return new string[] { "value1", "value2" };
         }
 
-        /// <summary>
-        /// 获取数据
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         // GET api/values/5
         [HttpGet]
         public string Get(int id)

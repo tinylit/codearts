@@ -1,4 +1,4 @@
-﻿#if  NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if  NET40 || NET_NORMAL
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -266,7 +266,7 @@ namespace CodeArts.Mvc
                 {
                     if (flag)
                     {
-                        if (stringBuilder == null)
+                        if (stringBuilder is null)
                         {
                             stringBuilder = new StringBuilder(Value.Length * 3);
                         }
@@ -289,7 +289,7 @@ namespace CodeArts.Mvc
                 }
                 if (!flag)
                 {
-                    if (stringBuilder == null)
+                    if (stringBuilder is null)
                     {
                         stringBuilder = new StringBuilder(Value.Length * 3);
                     }
@@ -307,7 +307,7 @@ namespace CodeArts.Mvc
             }
             if (num > 0)
             {
-                if (stringBuilder == null)
+                if (stringBuilder is null)
                 {
                     stringBuilder = new StringBuilder(Value.Length * 3);
                 }
@@ -341,7 +341,7 @@ namespace CodeArts.Mvc
         /// <returns>The resulting PathString</returns>
         public static PathString FromUriComponent(Uri uri)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException("uri");
             }
@@ -495,13 +495,13 @@ namespace CodeArts.Mvc
         /// <returns>True if both PathString values are equal</returns>
         public override bool Equals(object obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 return !HasValue;
             }
-            if (obj is PathString)
+            if (obj is PathString path)
             {
-                return Equals((PathString)obj);
+                return Equals(path);
             }
             return false;
         }

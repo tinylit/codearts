@@ -1,36 +1,37 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.Linq.Expressions;
+﻿using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 仓储执行器
+    /// 仓储执行器。
     /// </summary>
     public interface IDbRepositoryExecuter
     {
         /// <summary>
-        /// 创建执行器
+        /// 创建执行器。
         /// </summary>
         /// <returns></returns>
         IExecuteVisitor CreateExe();
 
         /// <summary>
-        /// 执行增删改功能
+        /// 执行增删改功能。
         /// </summary>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="expression">表达式</param>
-        /// <returns>执行影响行</returns>
-        int Execute(IDbConnection conn, Expression expression);
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <returns>执行影响行。</returns>
+        int Execute(IDbContext context,  CommandSql commandSql);
 
+#if NET_NORMAL
         /// <summary>
-        /// 执行增删改功能
+        /// 执行增删改功能。
         /// </summary>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">执行语句</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <returns>执行影响行</returns>
-        int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null);
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns>执行影响行。</returns>
+        Task<int> ExecuteAsync(IDbContext context, CommandSql commandSql, CancellationToken cancellationToken = default);
+#endif
     }
 }

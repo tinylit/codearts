@@ -8,7 +8,7 @@ using System.Data;
 namespace CodeArts.NPOI
 {
     /// <summary>
-    /// 表扩展
+    /// 表扩展。
     /// </summary>
     public static class SheetExtentions
     {

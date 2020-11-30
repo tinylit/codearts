@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Runtime;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 #if NET40
@@ -10,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 区域
+    /// 区域。
     /// </summary>
     public static class TableRegions
     {
@@ -18,7 +19,7 @@ namespace CodeArts.ORM
             new ConcurrentDictionary<Type, TableInfo>();
 
         /// <summary>
-        /// 表
+        /// 表。
         /// </summary>
         private class TableInfo : ITableInfo
         {
@@ -68,11 +69,11 @@ namespace CodeArts.ORM
              var readWrites = new Dictionary<string, string>();
              var readOrWrites = new Dictionary<string, string>();
 
-             var typeStore = RuntimeTypeCache.Instance.GetCache(tableType);
+             var typeStore = TypeStoreItem.Get(tableType);
 
              foreach (var item in typeStore.PropertyStores)
              {
-                 if (item.IsDefined<IgnoreAttribute>())
+                 if (item.Ignore)
                  {
                      continue;
                  }
@@ -107,9 +108,9 @@ namespace CodeArts.ORM
          });
 
         /// <summary>
-        /// 获取指定类型的表结构
+        /// 获取指定类型的表结构。
         /// </summary>
-        /// <param name="type">类型</param>
+        /// <param name="type">类型。</param>
         /// <returns></returns>
         public static ITableInfo Resolve(Type type)
         {
@@ -126,9 +127,9 @@ namespace CodeArts.ORM
             return Aw_Resolve(type);
         }
         /// <summary>
-        /// 获取指定泛型类型的表结构
+        /// 获取指定泛型类型的表结构。
         /// </summary>
-        /// <typeparam name="T">泛型参数</typeparam>
+        /// <typeparam name="T">泛型参数。</typeparam>
         /// <returns></returns>
         public static ITableInfo Resolve<T>() where T : class => Aw_Resolve(typeof(T));
     }

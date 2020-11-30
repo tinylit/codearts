@@ -5,7 +5,7 @@ using System;
 namespace UnitTest.Serialize
 {
     /// <summary>
-    /// 数据库供应器
+    /// 数据库供应器。
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public class SqlServerConnectionAttribute : DbConfigAttribute

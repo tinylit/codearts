@@ -6,19 +6,19 @@ using System.Text.RegularExpressions;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 配置
+    /// 配置。
     /// </summary>
     public static class CommonSettings
     {
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
-        /// 参数分析
+        /// 参数分析。
         /// </summary>
-        /// <param name="value">执行语句</param>
-        /// <param name="startIndex">参数起始位置</param>
-        /// <param name="leftCount">左括号出现次数</param>
-        /// <param name="rightCount">右括号出现次数</param>
+        /// <param name="value">执行语句。</param>
+        /// <param name="startIndex">参数起始位置。</param>
+        /// <param name="leftCount">左括号出现次数。</param>
+        /// <param name="rightCount">右括号出现次数。</param>
         /// <returns></returns>
         private static int ParameterAnalysis(string value, int startIndex, int leftCount, int rightCount)
         {
@@ -43,10 +43,10 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 参数分析
+        /// 参数分析。
         /// </summary>
-        /// <param name="value">查询语句</param>
-        /// <param name="startIndex">参数起始位置</param>
+        /// <param name="value">查询语句。</param>
+        /// <param name="startIndex">参数起始位置。</param>
         /// <returns></returns>
         private static int ParameterAnalysis(string value, int startIndex)
         {
@@ -93,9 +93,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）。
         /// </summary>
-        /// <param name="columns">以“,”分割的列集合</param>
+        /// <param name="columns">以“,”分割的列集合。</param>
         /// <returns></returns>
         public static List<string> ToSingleColumnCodeBlock(string columns)
         {

@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NET_CORE
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +18,7 @@ using System.Text;
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// Jwt 认证基类
+    /// Jwt 认证基类。
     /// </summary>
     public class JwtStartup : DStartup
     {
@@ -26,24 +26,24 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
 #else
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
 #endif
         public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
         {
         }
 
         /// <summary>
-        /// 服务配置（这个方法被运行时调用。使用此方法向容器添加服务。）
+        /// 服务配置（这个方法被运行时调用。使用此方法向容器添加服务）。
         /// 通过“jwt:authority”配置 <see cref="JwtBearerOptions.Authority"/>。
         /// </summary>
-        /// <param name="services">服务集合</param>
+        /// <param name="services">服务集合。</param>
         public override void ConfigureServices(IServiceCollection services)
         {
             services.AddAuthentication(options =>
@@ -78,7 +78,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置SwaggerGen。
         /// </summary>
-        /// <param name="options">SwaggerGen配置项</param>
+        /// <param name="options">SwaggerGen配置项。</param>
         protected override void ConfigureSwaggerGen(SwaggerGenOptions options)
         {
             base.ConfigureSwaggerGen(options);
@@ -121,10 +121,10 @@ namespace CodeArts.Mvc
         }
 
         /// <summary>
-        /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道。）
+        /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道）。
         /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="env">环境变量</param>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="env">环境变量。</param>
 #if NETCOREAPP3_1
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 #else
@@ -156,7 +156,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
         public JwtStartup(bool useDependencyInjection = true) : base(useDependencyInjection)
         {
         }
@@ -165,8 +165,8 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
         public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
         {
         }
@@ -174,7 +174,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置Swagger。
         /// </summary>
-        /// <param name="config">Swagger文档配置项</param>
+        /// <param name="config">Swagger文档配置项。</param>
         protected override void ConfigureSwagger(SwaggerDocsConfig config)
         {
             config.ApiKey("Authorization")
@@ -188,7 +188,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置SwaggerUi。
         /// </summary>
-        /// <param name="config">SwaggerUi配置项</param>
+        /// <param name="config">SwaggerUi配置项。</param>
         protected override void ConfigureSwaggerUi(SwaggerUiConfig config)
         {
             config.EnableApiKeySupport("Authorization", "header");
@@ -200,7 +200,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置中间件。
         /// </summary>
-        /// <param name="builder">方案构造器</param>
+        /// <param name="builder">方案构造器。</param>
         public virtual void Configure(IApplicationBuilder builder)
         {
             builder.UseJwtBearer(JwtBearerEvents.Authorization);

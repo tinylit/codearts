@@ -1,43 +1,43 @@
-﻿using System.Linq.Expressions;
+﻿using System.Linq;
+using System.Linq.Expressions;
 
 namespace CodeArts.ORM.Visitors
 {
     /// <summary>
     /// 删除访问器。
     /// </summary>
-    public class DeleteVisitor : ConditionVisitor
+    public class DeleteVisitor : ConditionVisitor, IExecuteVisitor
     {
-        private readonly ExecuteVisitor visitor;
-
         /// <inheritdoc />
         public DeleteVisitor(ExecuteVisitor visitor) : base(visitor)
         {
-            this.visitor = visitor;
         }
 
-        /// <inheritdoc />
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Type.IsExecuteable())
-            {
-                return node;
-            }
+        /// <summary>
+        /// 行为。
+        /// </summary>
+        public ActionBehavior Behavior => ActionBehavior.Delete;
 
-            return base.VisitConstant(node);
-        }
-
-        /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Delete && node.Method.DeclaringType == typeof(Executeable);
+        /// <summary>
+        /// 超时时间。
+        /// </summary>
+        public int? TimeOut { private set; get; }
 
         /// <inheritdoc />
-        protected override Expression VisitOfExecuteable(MethodCallExpression node)
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Delete && node.Method.DeclaringType == typeof(RepositoryExtentions);
+
+        /// <inheritdoc />
+        protected override Expression VisitOfSelect(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
-                case MethodCall.Where:
-                    return base.VisitCondition(node);
                 case MethodCall.TimeOut:
-                    return base.Visit(visitor.VisitOfTimeOut(node));
+
+                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
+                    
+                    base.Visit(node.Arguments[0]);
+
+                    return node;
                 case MethodCall.Delete:
 
                     Expression objectExp = node.Arguments[0];
@@ -70,7 +70,7 @@ namespace CodeArts.ORM.Visitors
 
                     return node;
                 default:
-                    return base.VisitOfExecuteable(node);
+                    return base.VisitOfSelect(node);
             }
         }
     }

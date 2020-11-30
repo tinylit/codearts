@@ -93,9 +93,9 @@ namespace CodeArts.Emit
         /// <summary>
         /// 声明参数。
         /// </summary>
-        /// <param name="parameterType">参数类型</param>
-        /// <param name="attributes">属性</param>
-        /// <param name="strParamName">名称</param>
+        /// <param name="parameterType">参数类型。</param>
+        /// <param name="attributes">属性。</param>
+        /// <param name="strParamName">名称。</param>
         /// <returns></returns>
         public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
         {

@@ -1,354 +1,436 @@
-﻿using CodeArts.ORM.Exceptions;
+﻿using CodeArts.ORM.Common;
+using CodeArts.ORM.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 代码艺术
+    /// 代码艺术。
     /// </summary>
     public class CodeArtsProvider : RepositoryProvider
     {
         private readonly ISQLCorrectSettings settings;
-        private static readonly Dictionary<Type, DbType> typeMap;
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="settings">SQL矫正配置</param>
+        /// <param name="settings">SQL矫正配置。</param>
         public CodeArtsProvider(ISQLCorrectSettings settings) : base(settings)
         {
-            this.settings = settings;
-        }
-
-        static CodeArtsProvider()
-        {
-            typeMap = new Dictionary<Type, DbType>
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = DbType.Time,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(object)] = DbType.Object
-            };
-        }
-
-        private static DbType LookupDbType(Type dataType)
-        {
-            if (dataType.IsEnum)
-            {
-                dataType = Enum.GetUnderlyingType(dataType);
-            }
-            else if (dataType.IsNullable())
-            {
-                dataType = Nullable.GetUnderlyingType(dataType);
-            }
-
-            if (typeMap.TryGetValue(dataType, out DbType dbType))
-            {
-                return dbType;
-            }
-
-            if (dataType.FullName == "System.Data.Linq.Binary")
-            {
-                return DbType.Binary;
-            }
-
-            return DbType.Object;
-        }
-
-        private void AddParameterAuto(IDbCommand command, Dictionary<string, object> parameters)
-        {
-            if (parameters is null || parameters.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var kv in parameters)
-            {
-                AddParameterAuto(command, kv.Key, kv.Value);
-            }
-        }
-
-        private void AddParameterAuto(IDbCommand command, string key, object value)
-        {
-            switch (key[0])
-            {
-                case '@':
-                case '?':
-                case ':':
-                    key = key.Substring(1);
-                    break;
-            }
-
-            var dbParameter = command.CreateParameter();
-
-            dbParameter.Value = value ?? DBNull.Value;
-            dbParameter.ParameterName = settings.ParamterName(key);
-            dbParameter.Direction = ParameterDirection.Input;
-            dbParameter.DbType = value == null ? DbType.Object : LookupDbType(value.GetType());
-
-            command.Parameters.Add(dbParameter);
-        }
-
-        /// <summary>
-        /// 执行SQL。
-        /// </summary>
-        /// <param name="conn">数据库连接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <returns></returns>
-        public override int Execute(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
-        {
-            bool isClosedConnection = conn.State == ConnectionState.Closed;
-
-            if (isClosedConnection)
-            {
-                conn.Open();
-            }
-
-            try
-            {
-                using (var command = conn.CreateCommand())
-                {
-                    command.CommandText = sql;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        command.CommandTimeout = commandTimeout.Value;
-                    }
-
-                    AddParameterAuto(command, parameters);
-
-                    return command.ExecuteNonQuery();
-                }
-            }
-            finally
-            {
-                if (isClosedConnection)
-                {
-                    conn.Close();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 查询。
-        /// </summary>
-        /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库连接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <returns></returns>
-        public override IEnumerable<T> Query<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null)
-        {
-            bool isClosedConnection = conn.State == ConnectionState.Closed;
-
-            System.Data.CommandBehavior behavior = System.Data.CommandBehavior.SequentialAccess | System.Data.CommandBehavior.SingleResult;
-
-            if (settings.Engine == DatabaseEngine.SQLite)
-            {
-                behavior &= ~System.Data.CommandBehavior.SingleResult;
-            }
-
-            if (isClosedConnection)
-            {
-                conn.Open();
-
-                behavior |= System.Data.CommandBehavior.CloseConnection;
-            }
-
-            try
-            {
-                using (var command = conn.CreateCommand())
-                {
-                    command.CommandText = sql;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        command.CommandTimeout = commandTimeout.Value;
-                    }
-
-                    AddParameterAuto(command, parameters);
-
-                    using (var dr = command.ExecuteReader(behavior))
-                    {
-                        isClosedConnection = false;
-
-                        while (dr.Read())
-                        {
-                            yield return dr.MapTo<T>();
-                        }
-
-                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
-                    }
-                }
-            }
-            finally
-            {
-                if (isClosedConnection)
-                {
-                    conn.Close();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 查询第一个结果。
-        /// </summary>
-        /// <typeparam name="T">结果类型</typeparam>
-        /// <param name="conn">数据库链接</param>
-        /// <param name="sql">SQL</param>
-        /// <param name="parameters">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
-        /// <param name="defaultValue">默认值。</param>
-        /// <returns></returns>
-        public override T QueryFirstOrDefault<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, T defaultValue = default)
-        {
-            bool isClosedConnection = conn.State == ConnectionState.Closed;
-
-            System.Data.CommandBehavior behavior = System.Data.CommandBehavior.SequentialAccess | System.Data.CommandBehavior.SingleResult | System.Data.CommandBehavior.SingleRow;
-
-            if (settings.Engine == DatabaseEngine.SQLite)
-            {
-                behavior &= ~System.Data.CommandBehavior.SingleResult;
-            }
-
-            if (isClosedConnection)
-            {
-                conn.Open();
-
-                behavior |= System.Data.CommandBehavior.CloseConnection;
-            }
-
-            try
-            {
-                using (var command = conn.CreateCommand())
-                {
-                    command.CommandText = sql;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        command.CommandTimeout = commandTimeout.Value;
-                    }
-
-                    AddParameterAuto(command, parameters);
-
-                    using (var dr = command.ExecuteReader(behavior))
-                    {
-                        isClosedConnection = false;
-
-                        if (dr.Read())
-                        {
-                            defaultValue = dr.MapTo<T>();
-
-                            while (dr.Read()) { /* ignore subsequent rows */ }
-                        }
-
-                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
-                    }
-                }
-            }
-            finally
-            {
-                if (isClosedConnection)
-                {
-                    conn.Close();
-                }
-            }
-
-            return defaultValue;
+            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         /// <summary>
         /// 查询第一个结果。
         /// </summary>
         /// <typeparam name="T">结果类型。</typeparam>
-        /// <param name="conn">数据库链接。</param>
-        /// <param name="sql">SQL。</param>
-        /// <param name="parameters">参数。</param>
-        /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="hasDefaultValue">是否包含默认值。</param>
-        /// <param name="defaultValue">默认值（仅“<paramref name="hasDefaultValue"/>”为真时，有效）。</param>
-        /// <param name="missingMsg">未查询到数据时，异常信息。</param>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
         /// <returns></returns>
-        public override T QueryFirst<T>(IDbConnection conn, string sql, Dictionary<string, object> parameters = null, int? commandTimeout = null, bool hasDefaultValue = false, T defaultValue = default, string missingMsg = null)
+        public override T Read<T>(IDbContext context, CommandSql<T> commandSql)
         {
-            bool isClosedConnection = conn.State == ConnectionState.Closed;
-
-            System.Data.CommandBehavior behavior = System.Data.CommandBehavior.SequentialAccess | System.Data.CommandBehavior.SingleResult | System.Data.CommandBehavior.SingleRow;
-
-            if (settings.Engine == DatabaseEngine.SQLite)
+            using (var connection = context.CreateDb())
             {
-                behavior &= ~System.Data.CommandBehavior.SingleResult;
-            }
+                bool isClosedConnection = connection.State == ConnectionState.Closed;
 
-            if (isClosedConnection)
-            {
-                conn.Open();
+                CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
 
-                behavior |= System.Data.CommandBehavior.CloseConnection;
-            }
-
-            try
-            {
-                using (var command = conn.CreateCommand())
-                {
-                    command.CommandText = sql;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        command.CommandTimeout = commandTimeout.Value;
-                    }
-
-                    AddParameterAuto(command, parameters);
-
-                    using (var dr = command.ExecuteReader(behavior))
-                    {
-                        isClosedConnection = false;
-
-                        if (dr.Read())
-                        {
-                            defaultValue = dr.MapTo<T>();
-
-                            while (dr.Read()) { /* ignore subsequent rows */ }
-                        }
-                        else if (!hasDefaultValue)
-                        {
-                            throw new DRequiredException(missingMsg);
-                        }
-
-                        while (dr.NextResult()) { /* ignore subsequent result sets */ }
-                    }
-                }
-            }
-            finally
-            {
                 if (isClosedConnection)
                 {
-                    conn.Close();
+                    connection.Open();
+
+                    behavior |= CommandBehavior.CloseConnection;
+                }
+
+                T defaultValue = commandSql.DefaultValue;
+
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = commandSql.Sql;
+
+                        if (commandSql.CommandTimeout.HasValue)
+                        {
+                            command.CommandTimeout = commandSql.CommandTimeout.Value;
+                        }
+
+                        AddParameterAuto(command, commandSql.Parameters);
+
+                        using (var dr = command.ExecuteReader(behavior))
+                        {
+                            isClosedConnection = false;
+
+                            if (dr.Read())
+                            {
+                                defaultValue = Mapper.Map<T>(dr);
+
+                                while (dr.Read()) { /* ignore subsequent rows */ }
+                            }
+                            else if (!commandSql.HasDefaultValue)
+                            {
+                                throw new DRequiredException(commandSql.MissingMsg);
+                            }
+
+                            while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (isClosedConnection)
+                    {
+                        connection.Close();
+                    }
+                }
+
+                return defaultValue;
+            }
+        }
+
+        /// <summary>
+        /// 查询列表集合。
+        /// </summary>
+        /// <typeparam name="T">集合元素类型。</typeparam>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <returns></returns>
+        public override IEnumerable<T> Query<T>(IDbContext context, CommandSql commandSql)
+        {
+            using (var connection = context.CreateDb())
+            {
+                bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+                CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
+
+                if (settings.Engine == DatabaseEngine.SQLite)
+                {
+                    behavior &= ~CommandBehavior.SingleResult;
+                }
+
+                if (isClosedConnection)
+                {
+                    connection.Open();
+
+                    behavior |= CommandBehavior.CloseConnection;
+                }
+
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = commandSql.Sql;
+
+                        if (commandSql.CommandTimeout.HasValue)
+                        {
+                            command.CommandTimeout = commandSql.CommandTimeout.Value;
+                        }
+
+                        AddParameterAuto(command, commandSql.Parameters);
+
+                        using (var dr = command.ExecuteReader(behavior))
+                        {
+                            isClosedConnection = false;
+
+                            while (dr.Read())
+                            {
+                                yield return Mapper.Map<T>(dr);
+                            }
+
+                            while (dr.NextResult()) { /* ignore subsequent result sets */ }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (isClosedConnection)
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 执行增删改功能。
+        /// </summary>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <returns>执行影响行。</returns>
+        public override int Execute(IDbContext context, CommandSql commandSql)
+        {
+            using (var connection = context.CreateDb())
+            {
+                bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+                if (isClosedConnection)
+                {
+                    connection.Open();
+                }
+
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = commandSql.Sql;
+
+                        if (commandSql.CommandTimeout.HasValue)
+                        {
+                            command.CommandTimeout = commandSql.CommandTimeout.Value;
+                        }
+
+                        AddParameterAuto(command, commandSql.Parameters);
+
+                        return command.ExecuteNonQuery();
+                    }
+                }
+                finally
+                {
+                    if (isClosedConnection)
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+        }
+
+#if NET_NORMAL
+
+        private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
+        {
+            private readonly IDbContext context;
+            private readonly Action<DbCommand, object> readyParam;
+            private readonly CommandSql commandSql;
+
+            private IAsyncEnumerator<T> enumerator;
+
+            public AsyncEnumerable(IDbContext context, Action<DbCommand, object> readyParam, CommandSql commandSql)
+            {
+                this.context = context;
+                this.readyParam = readyParam;
+                this.commandSql = commandSql;
+            }
+
+            public IAsyncEnumerator<T> GetAsyncEnumerator() => enumerator ?? (enumerator = new AsyncEnumerator<T>(context, readyParam, commandSql));
+        }
+
+        private sealed class AsyncEnumerator<T> : IAsyncEnumerator<T>
+        {
+            private readonly IDbContext context;
+            private readonly Action<DbCommand, object> readyParam;
+            private readonly CommandSql commandSql;
+            private bool isClosedConnection = false;
+            private bool isReadyConnection = false;
+            private bool isReadyCommand = false;
+            private bool isReadyDataReader = false;
+
+            private DbConnection dbConnection;
+            private DbCommand dbCommand;
+            private System.Data.Common.DbDataReader dbDataReader;
+
+            public AsyncEnumerator(IDbContext context, Action<DbCommand, object> readyParam, CommandSql commandSql)
+            {
+                this.context = context;
+                this.readyParam = readyParam;
+                this.commandSql = commandSql;
+            }
+
+            public T Current => Mapper.Map<T>(dbDataReader);
+
+            public void Dispose()
+            {
+                if (isReadyDataReader)
+                {
+                    dbDataReader.Close();
+                    dbDataReader.Dispose();
+                }
+
+                if (isReadyCommand)
+                {
+                    dbCommand.Dispose();
+                }
+
+                if (isClosedConnection)
+                {
+                    dbConnection.Close();
+                }
+
+                if (isReadyConnection)
+                {
+                    dbConnection.Dispose();
                 }
             }
 
-            return defaultValue;
+            public async Task<bool> MoveNext(CancellationToken cancellationToken)
+            {
+                if (isReadyDataReader)
+                {
+                    return await dbDataReader.ReadAsync(cancellationToken);
+                }
+
+                CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
+
+                dbConnection = context.CreateDb();
+
+                isReadyConnection = true;
+
+                isClosedConnection = dbConnection.State == ConnectionState.Closed;
+
+                if (isClosedConnection)
+                {
+                    await dbConnection.OpenAsync(cancellationToken);
+
+                    behavior |= CommandBehavior.CloseConnection;
+                }
+
+                dbCommand = dbConnection.CreateCommand();
+
+                dbCommand.CommandText = commandSql.Sql;
+
+                if (commandSql.CommandTimeout.HasValue)
+                {
+                    dbCommand.CommandTimeout = commandSql.CommandTimeout.Value;
+                }
+
+                isReadyCommand = true;
+
+                readyParam.Invoke(dbCommand, commandSql.Parameters);
+
+                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken);
+
+                isReadyDataReader = true;
+
+                isClosedConnection = false;
+
+                return await dbDataReader.ReadAsync(cancellationToken);
+            }
         }
+
+        /// <summary>
+        /// 查询第一个结果。
+        /// </summary>
+        /// <typeparam name="T">结果类型。</typeparam>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public override async Task<T> ReadAsync<T>(IDbContext context, CommandSql<T> commandSql, CancellationToken cancellationToken = default)
+        {
+            using (DbConnection connection = context.CreateDb())
+            {
+                bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+                CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+
+                if (isClosedConnection)
+                {
+                    await connection.OpenAsync(cancellationToken);
+
+                    behavior |= CommandBehavior.CloseConnection;
+                }
+
+                T defaultValue = commandSql.DefaultValue;
+
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = commandSql.Sql;
+
+                        if (commandSql.CommandTimeout.HasValue)
+                        {
+                            command.CommandTimeout = commandSql.CommandTimeout.Value;
+                        }
+
+                        AddParameterAuto(command, commandSql.Parameters);
+
+                        using (var dr = await command.ExecuteReaderAsync(behavior, cancellationToken))
+                        {
+                            isClosedConnection = false;
+
+                            if (await dr.ReadAsync(cancellationToken))
+                            {
+                                defaultValue = Mapper.Map<T>(dr);
+
+                                while (await dr.ReadAsync(cancellationToken)) { /* ignore subsequent rows */ }
+                            }
+                            else if (!commandSql.HasDefaultValue)
+                            {
+                                throw new DRequiredException(commandSql.MissingMsg);
+                            }
+
+                            while (await dr.NextResultAsync(cancellationToken)) { /* ignore subsequent result sets */ }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (isClosedConnection)
+                    {
+                        connection.Close();
+                    }
+                }
+
+                return defaultValue;
+            }
+        }
+
+        /// <summary>
+        /// 查询列表集合。
+        /// </summary>
+        /// <typeparam name="T">集合元素类型。</typeparam>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <returns></returns>
+        public override IAsyncEnumerable<T> QueryAsync<T>(IDbContext context, CommandSql commandSql) => new AsyncEnumerable<T>(context, AddParameterAuto, commandSql);
+
+        /// <summary>
+        /// 执行增删改功能。
+        /// </summary>
+        /// <param name="context">数据库上下文。</param>
+        /// <param name="commandSql">命令SQL。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns>执行影响行。</returns>
+        public override async Task<int> ExecuteAsync(IDbContext context, CommandSql commandSql, CancellationToken cancellationToken = default)
+        {
+            using (var connection = context.CreateDb())
+            {
+                bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+                if (isClosedConnection)
+                {
+                    await connection.OpenAsync(cancellationToken);
+                }
+
+                try
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = commandSql.Sql;
+
+                        if (commandSql.CommandTimeout.HasValue)
+                        {
+                            command.CommandTimeout = commandSql.CommandTimeout.Value;
+                        }
+
+                        AddParameterAuto(command, commandSql.Parameters);
+
+                        return await command.ExecuteNonQueryAsyc(cancellationToken);
+                    }
+                }
+                finally
+                {
+                    if (isClosedConnection)
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+        }
+#endif
     }
 }

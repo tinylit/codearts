@@ -9,65 +9,65 @@ using System.Text.RegularExpressions;
 namespace CodeArts.ORM.Oracle
 {
     /// <summary>
-    /// Oracle 矫正配置
+    /// Oracle 矫正配置。
     /// </summary>
     public class OracleCorrectSettings : ISQLCorrectSettings
     {
         private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
 
-        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select([\x20\t\r\n\f]+distinct)+?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\w+\.)*(?<name>(\w+))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
 
         private List<ICustomVisitor> visitters;
 
         /// <summary>
-        /// 访问器
+        /// 访问器。
         /// </summary>
         public IList<ICustomVisitor> Visitors => visitters ?? (visitters = new List<ICustomVisitor>());
 
         /// <summary>
-        /// 字符串截取。 SUBSTR
+        /// 字符串截取。 SUBSTR。
         /// </summary>
         public string Substring => "SUBSTR";
 
         /// <summary>
-        /// 字符串索引。 INSTR
+        /// 字符串索引。 INSTR。
         /// </summary>
         public string IndexOf => "INSTR";
 
         /// <summary>
-        /// 字符串长度。 LENGTH
+        /// 字符串长度。 LENGTH。
         /// </summary>
         public string Length => "LENGTH";
 
         /// <summary>
-        /// 索引项是否交换位置。 false.
+        /// 索引项是否交换位置。 false。
         /// </summary>
         public bool IndexOfSwapPlaces => false;
 
         /// <summary>
-        /// Oracle
+        /// Oracle。
         /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.Oracle;
 
         private ICollection<IFormatter> formatters;
         /// <summary>
-        /// 格式化集合
+        /// 格式化集合。
         /// </summary>
         public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
 
         /// <summary>
-        /// 字段
+        /// 字段。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string Name(string name) => name;
 
         /// <summary>
-        /// 参数名称
+        /// 参数名称。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat(":", name);
 
@@ -101,9 +101,9 @@ namespace CodeArts.ORM.Oracle
         });
 
         /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）
+        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）。
         /// </summary>
-        /// <param name="columns">以“,”分割的列集合</param>
+        /// <param name="columns">以“,”分割的列集合。</param>
         /// <returns></returns>
         protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
 
@@ -203,7 +203,7 @@ namespace CodeArts.ORM.Oracle
             sb.Append("SELECT ")
                 .Append(tuple.Item1);
 
-            if (skip < 0)
+            if (skip <= 0)
             {
                 if (tuple.Item2)
                 {

@@ -1,9 +1,9 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
 using System.Web;
 #endif
 
@@ -19,7 +19,7 @@ namespace CodeArts.Mvc.DependencyInjection
         private readonly ConcurrentDictionary<ServiceDescriptor, object> singletions = new ConcurrentDictionary<ServiceDescriptor, object>();
         private readonly ConcurrentDictionary<Type, Func<IServiceProvider, object>> implementations = new ConcurrentDictionary<Type, Func<IServiceProvider, object>>();
         private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
         private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
 #endif
         internal ServiceProvider(IEnumerable<ServiceDescriptor> serviceDescriptors)
@@ -117,7 +117,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                         return service.ImplementationFactory.Invoke(this);
                     });
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
                 case ServiceLifetime.Scoped:
                     return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
                     {

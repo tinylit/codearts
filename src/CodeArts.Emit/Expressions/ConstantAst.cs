@@ -15,7 +15,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="value">值</param>
+        /// <param name="value">值。</param>
         public ConstantAst(object value) : this(value, null)
         {
         }
@@ -23,8 +23,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="value">值</param>
-        /// <param name="type">值类型</param>
+        /// <param name="value">值。</param>
+        /// <param name="type">值类型。</param>
         public ConstantAst(object value, Type type) : base(type ?? value?.GetType() ?? typeof(object))
         {
             if (value is null || value.GetType() == ReturnType || ReturnType.IsAssignableFrom(value.GetType()))
@@ -40,7 +40,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg) => EmitUtils.EmitConstantOfType(ilg, value, ReturnType);
     }
 }

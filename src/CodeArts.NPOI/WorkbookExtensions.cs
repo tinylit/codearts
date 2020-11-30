@@ -10,18 +10,18 @@ using System.IO;
 namespace CodeArts.NPOI
 {
     /// <summary>
-    /// Workbook 扩展
+    /// Workbook 扩展。
     /// </summary>
     public static class WorkbookExtensions
     {
         /// <summary>
-        /// 转byte字节流
+        /// 转byte字节流。
         /// </summary>
-        /// <param name="workbook">办公文件</param>
+        /// <param name="workbook">办公文件。</param>
         /// <returns></returns>
         public static byte[] ToBytes(this IWorkbook workbook)
         {
-            if (workbook == null)
+            if (workbook is null)
             {
                 throw new ArgumentNullException(nameof(workbook));
             }
@@ -34,69 +34,69 @@ namespace CodeArts.NPOI
         }
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook(this DataTable source, string sheetName)
             => new XSSFWorkbook().Append(sheetName, source);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="aliaWithProviders">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook<TProvider>(this DataTable source, string sheetName, Dictionary<string, TProvider> aliaWithProviders) where TProvider : IDataProvider
             => new XSSFWorkbook().Append(sheetName, source, aliaWithProviders);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="alias">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook<T>(this IEnumerable<T> source, string sheetName, IExportProvider<T> provider, Dictionary<string, string> alias)
             => new XSSFWorkbook().Append(sheetName, source, provider, alias);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="alias">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook(this IEnumerable<Dictionary<string, object>> source, string sheetName, Dictionary<string, string> alias)
             => source.AsWorkbook(sheetName, KeyValuePairExportProvider.Instance, alias);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="alias">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook(this IDictionary<Dictionary<string, object>, Dictionary<string, object>> source, string sheetName, Dictionary<string, string> alias)
             => source.AsWorkbook(sheetName, DictionaryExportProvider.Instance, alias);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="alias">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook(this IDictionary<Dictionary<string, object>, List<Dictionary<string, object>>> source, string sheetName, Dictionary<string, string> alias)
             => source.AsWorkbook(sheetName, DictionaryListExportProvider.Instance, alias);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="aliaWithProviders">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook<T, TProvider>(this IEnumerable<T> source, string sheetName, IExportProvider<T> provider, Dictionary<string, TProvider> aliaWithProviders)
@@ -104,10 +104,10 @@ namespace CodeArts.NPOI
             => new XSSFWorkbook().Append(sheetName, source, provider, aliaWithProviders);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="aliaWithProviders">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook<TProvider>(this IEnumerable<Dictionary<string, object>> source, string sheetName, Dictionary<string, TProvider> aliaWithProviders)
@@ -115,10 +115,10 @@ namespace CodeArts.NPOI
             => source.AsWorkbook(sheetName, KeyValuePairExportProvider.Instance, aliaWithProviders);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="aliaWithProviders">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook<TProvider>(this IDictionary<Dictionary<string, object>, Dictionary<string, object>> source, string sheetName, Dictionary<string, TProvider> aliaWithProviders)
@@ -126,10 +126,10 @@ namespace CodeArts.NPOI
             => source.AsWorkbook(sheetName, DictionaryExportProvider.Instance, aliaWithProviders);
 
         /// <summary>
-        /// 生成Xls文件实体
+        /// 生成Xls文件实体。
         /// </summary>
-        /// <param name="source">实体对象</param>
-        /// <param name="sheetName">表名称</param>
+        /// <param name="source">实体对象。</param>
+        /// <param name="sheetName">表名称。</param>
         /// <param name="aliaWithProviders">列别名（设置时，与keyValues中的key相同项的value作为列名excel，并且只会生成包含于alias中的数据列）。</param>
         /// <returns></returns>
         public static IWorkbook AsWorkbook<TProvider>(this IDictionary<Dictionary<string, object>, List<Dictionary<string, object>>> source, string sheetName, Dictionary<string, TProvider> aliaWithProviders)

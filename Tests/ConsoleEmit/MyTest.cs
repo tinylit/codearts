@@ -39,7 +39,7 @@ namespace ConsoleEmit
             IIntercept invokeBinder = new InvokeBinder(instance, (MethodInfo)MethodBase.GetMethodFromHandle(new RuntimeMethodHandle(), typeof(IEmit).TypeHandle), arguments);
             interceptor.Intercept(invokeBinder);
             object returnValue = invokeBinder.ReturnValue;
-            if (returnValue == null)
+            if (returnValue is null)
             {
                 throw new InvalidOperationException("Interceptors failed to set a return value, or swallowed the exception thrown by the target.");
             }
@@ -56,7 +56,7 @@ namespace ConsoleEmit
             IIntercept invokeBinder = new InvokeBinder(instance, (MethodInfo)MethodBase.GetMethodFromHandle(new RuntimeMethodHandle(), typeof(IEmit).TypeHandle), arguments);
             interceptor.Intercept(invokeBinder);
             object returnValue = invokeBinder.ReturnValue;
-            if (returnValue == null)
+            if (returnValue is null)
             {
                 throw new InvalidOperationException("Interceptors failed to set a return value, or swallowed the exception thrown by the target.");
             }

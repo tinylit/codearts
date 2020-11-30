@@ -5,38 +5,37 @@ using System.Text;
 namespace System
 {
     /// <summary>
-    /// 加密模式
+    /// 加密模式。
     /// </summary>
     public enum CryptoKind
     {
         /// <summary>
-        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:8 Max:8 Skip:0），IV（8）
+        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:8 Max:8 Skip:0），IV（8）。
         /// </summary>
         DES,
         /// <summary>
-        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:16 Max:24 Skip:8），IV（8）
+        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:16 Max:24 Skip:8），IV（8）。
         /// </summary>
         TripleDES,
         /// <summary>
-        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:5 Max:16 Skip:1），IV（8）
+        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:5 Max:16 Skip:1），IV（8）。
         /// </summary>
         RC2,
         /// <summary>
-        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:16 Max:32 Skip:8），IV（16）
+        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:16 Max:32 Skip:8），IV（16）。
         /// </summary>
         Rijndael,
         /// <summary>
-        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:16 Max:32 Skip:8），IV（16）
+        /// 有效的 KEY 与 IV 长度，以英文字符为单位： KEY（Min:16 Max:32 Skip:8），IV（16）。
         /// </summary>
         AES
     }
 
     /// <summary>
-    /// 加密扩展
+    /// 加密扩展。
     /// </summary>
     public static class CryptoExtentions
     {
-        /// <summary> 获取对称加密方法 </summary>
         private static SymmetricAlgorithm GetSymmetricAlgorithm(CryptoKind kind)
         {
             SymmetricAlgorithm algorithm = null;
@@ -66,9 +65,9 @@ namespace System
         /// <summary>
         /// 对称加密（<see cref="CipherMode.ECB"/>，<seealso cref="PaddingMode.PKCS7"/>）。
         /// </summary>
-        /// <param name="data">内容</param>
-        /// <param name="key">键</param>
-        /// <param name="kind">加密方式</param>
+        /// <param name="data">内容。</param>
+        /// <param name="key">键。</param>
+        /// <param name="kind">加密方式。</param>
         /// <returns></returns>
         public static string Encrypt(this string data, string key, CryptoKind kind = CryptoKind.DES)
         {
@@ -119,9 +118,9 @@ namespace System
         /// <summary>
         /// 对称减密（<see cref="CipherMode.ECB"/>，<seealso cref="PaddingMode.PKCS7"/>）。
         /// </summary>
-        /// <param name="data">内容</param>
-        /// <param name="key">键</param>
-        /// <param name="kind">减密方式</param>
+        /// <param name="data">内容。</param>
+        /// <param name="key">键。</param>
+        /// <param name="kind">减密方式。</param>
         /// <returns></returns>
         public static string Decrypt(this string data, string key, CryptoKind kind = CryptoKind.DES)
         {
@@ -169,12 +168,12 @@ namespace System
         }
 
         /// <summary>
-        /// 对称加密
+        /// 对称加密。
         /// </summary>
-        /// <param name="data">内容</param>
-        /// <param name="key">键</param>
-        /// <param name="iv">初始化向量</param>
-        /// <param name="kind">加密方式</param>
+        /// <param name="data">内容。</param>
+        /// <param name="key">键。</param>
+        /// <param name="iv">初始化向量。</param>
+        /// <param name="kind">加密方式。</param>
         /// <returns></returns>
         public static string Encrypt(this string data, string key, string iv, CryptoKind kind = CryptoKind.DES)
         {
@@ -228,12 +227,12 @@ namespace System
         }
 
         /// <summary>
-        /// 对称减密
+        /// 对称减密。
         /// </summary>
-        /// <param name="data">内容</param>
-        /// <param name="key">键</param>
-        /// <param name="iv">初始化向量</param>
-        /// <param name="kind">减密方式</param>
+        /// <param name="data">内容。</param>
+        /// <param name="key">键。</param>
+        /// <param name="iv">初始化向量。</param>
+        /// <param name="kind">减密方式。</param>
         /// <returns></returns>
         public static string Decrypt(this string data, string key, string iv, CryptoKind kind = CryptoKind.DES)
         {
@@ -287,10 +286,10 @@ namespace System
         }
 
         /// <summary>
-        /// 使用 RSA 公钥加密
+        /// 使用 RSA 公钥加密。
         /// </summary>
-        /// <param name="data">数据</param>
-        /// <param name="publicKey">公钥</param>
+        /// <param name="data">数据。</param>
+        /// <param name="publicKey">公钥。</param>
         /// <returns></returns>
         public static string RsaEncrypt(this string data, string publicKey)
         {
@@ -308,7 +307,7 @@ namespace System
             {
                 rsa.FromXmlString(publicKey);
 
-#if NET40 || NET45 || NET451 || NET452
+#if NET40 || NET45
 
                 return Convert.ToBase64String(rsa.EncryptValue(Encoding.UTF8.GetBytes(data)));
 #else
@@ -318,10 +317,10 @@ namespace System
         }
 
         /// <summary>
-        /// 使用 RSA 私钥解密
+        /// 使用 RSA 私钥解密。
         /// </summary>
-        /// <param name="data">数据</param>
-        /// <param name="privateKey">私钥</param>
+        /// <param name="data">数据。</param>
+        /// <param name="privateKey">私钥。</param>
         /// <returns></returns>
         public static string RsaDecrypt(this string data, string privateKey)
         {
@@ -329,7 +328,7 @@ namespace System
             {
                 rsa.FromXmlString(privateKey);
 
-#if NET40 || NET45 || NET451 || NET452
+#if NET40 || NET45
 
                 return Encoding.UTF8.GetString(rsa.DecryptValue(Convert.FromBase64String(data)));
 #else
@@ -340,11 +339,11 @@ namespace System
         }
 
         /// <summary>
-        /// MD5加密(32个字符)
+        /// MD5加密(32个字符)。
         /// </summary>
-        /// <param name="data">数据</param>
-        /// <param name="encoding">编码，默认：UTF8</param>
-        /// <param name="toUpperCase">是否转为大小</param>
+        /// <param name="data">数据。</param>
+        /// <param name="encoding">编码，默认：UTF8。</param>
+        /// <param name="toUpperCase">是否转为大小。</param>
         /// <returns></returns>
         public static string Md5(this string data, Encoding encoding = null, bool toUpperCase = true)
         {
@@ -357,7 +356,7 @@ namespace System
 
             using (var md5 = MD5.Create())
             {
-                buffer = md5.ComputeHash(data.ToBytes(encoding ?? Encoding.UTF8));
+                buffer = md5.ComputeHash((encoding ?? Encoding.UTF8).GetBytes(data));
             }
 
             var sb = new StringBuilder();
@@ -368,15 +367,5 @@ namespace System
 
             return sb.ToString();
         }
-
-        /// <summary>
-        /// MD5加密(16个字符)
-        /// </summary>
-        /// <param name="data">数据</param>
-        /// <param name="encoding">编码，默认：UTF8</param>
-        /// <param name="toUpperCase">是否转为大小</param>
-        /// <returns></returns>
-        public static string MD5Light(this string data, Encoding encoding = null, bool toUpperCase = true)
-            => data.Md5(encoding ?? Encoding.UTF8, toUpperCase).Substring(8, 16);
     }
 }

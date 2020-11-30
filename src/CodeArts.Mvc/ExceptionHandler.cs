@@ -1,5 +1,5 @@
 ﻿using CodeArts.Mvc;
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
 using Microsoft.Extensions.Logging;
 #else
 using log4net;
@@ -12,10 +12,10 @@ using System.Net;
 
 namespace CodeArts.Exceptions
 {
-    /// <summary> 异常处理类 </summary>
+    /// <summary> 异常处理类。 </summary>
     public static class ExceptionHandler
     {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
         private static ILogger logger;
 #if NETCOREAPP3_1
         private static ILogger Logger => logger ??= LoggerManager.GetLogger(typeof(ExceptionHandler));
@@ -31,23 +31,23 @@ namespace CodeArts.Exceptions
         /// <summary>
         /// 添加异常适配器(系统约定的<see cref="CodeException"/>不接受适配器处理)。
         /// </summary>
-        /// <param name="adapter">适配器</param>
+        /// <param name="adapter">适配器。</param>
         public static void Add(ExceptionAdapter adapter) => Adapters.Add(adapter ?? throw new ArgumentNullException(nameof(adapter)));
 
-        /// <summary> 异常事件 </summary>
+        /// <summary> 异常事件。 </summary>
         public static event Action<Exception> OnException;
 
-        /// <summary> 服务异常事件 </summary>
+        /// <summary> 服务异常事件。 </summary>
         public static event Action<CodeException> OnCodeException;
 
-        /// <summary> 服务异常事件 </summary>
+        /// <summary> 服务异常事件。 </summary>
         public static event Action<ServException> OnServException;
 
-        /// <summary> 业务异常事件 </summary>
+        /// <summary> 业务异常事件。 </summary>
         public static event Action<BusiException> OnBusiException;
 
-        /// <summary> 异常处理 </summary>
-        /// <param name="exception">异常信息</param>
+        /// <summary> 异常处理。 </summary>
+        /// <param name="exception">异常信息。</param>
         public static DResult Handler(Exception exception)
         {
             var error = exception.GetBaseException();
@@ -92,7 +92,7 @@ namespace CodeArts.Exceptions
                         return DResult.Error(error.Message);
                     }
 
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
                     Logger.LogError(error, error.Message);
 #else
                     Logger.Error(error.Message, error);

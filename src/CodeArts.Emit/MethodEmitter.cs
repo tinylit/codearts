@@ -1,7 +1,8 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -10,12 +11,15 @@ namespace CodeArts.Emit
     /// <summary>
     /// 方法。
     /// </summary>
+    [DebuggerDisplay("{ReturnType.Name} {Name}({ParemetersNames})")]
     public class MethodEmitter : BlockAst
     {
         private MethodBuilder builder;
         private int parameterIndex = 0;
         private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
+
+        private string ParemetersNames => string.Join(",", Parameters.Select(x => string.Concat(x.ReturnType.Name, " ", x.ParameterName)));
 
         /// <summary>
         /// 构造函数。
@@ -26,7 +30,7 @@ namespace CodeArts.Emit
         public MethodEmitter(string name, MethodAttributes attributes, Type returnType) : base(returnType)
         {
             Name = name;
-            Attributes = attributes;
+            Attributes = attributes; 
         }
 
         /// <summary>
@@ -53,17 +57,17 @@ namespace CodeArts.Emit
         /// <summary>
         /// 声明参数。
         /// </summary>
-        /// <param name="parameterType">参数类型</param>
-        /// <param name="strParamName">名称</param>
+        /// <param name="parameterType">参数类型。</param>
+        /// <param name="strParamName">名称。</param>
         /// <returns></returns>
         public ParamterEmitter DefineParameter(Type parameterType, string strParamName) => DefineParameter(parameterType, ParameterAttributes.None, strParamName);
 
         /// <summary>
         /// 声明参数。
         /// </summary>
-        /// <param name="parameterType">参数类型</param>
-        /// <param name="attributes">属性</param>
-        /// <param name="strParamName">名称</param>
+        /// <param name="parameterType">参数类型。</param>
+        /// <param name="attributes">属性。</param>
+        /// <param name="strParamName">名称。</param>
         /// <returns></returns>
         public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
         {
@@ -86,19 +90,6 @@ namespace CodeArts.Emit
             customAttributes.Add(customBuilder);
         }
 
-        private bool ImplementedByRuntime
-        {
-            get
-            {
-#if NET40
-                var attributes = builder.GetMethodImplementationFlags();
-#else
-                var attributes = builder.MethodImplementationFlags;
-#endif
-                return (attributes & MethodImplAttributes.Runtime) != MethodImplAttributes.IL;
-            }
-        }
-
         /// <summary>
         /// 发行。
         /// </summary>
@@ -115,11 +106,6 @@ namespace CodeArts.Emit
             foreach (var item in customAttributes)
             {
                 builder.SetCustomAttribute(item);
-            }
-
-            if (!ImplementedByRuntime && IsEmpty)
-            {
-                Append(new ReturnAst(new VoidAst()));
             }
 
             base.Load(builder.GetILGenerator());

@@ -26,10 +26,17 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            body?.Load(ilg);
+            if (body is null)
+            {
+                ilg.Emit(OpCodes.Nop);
+            }
+            else
+            {
+                body.Load(ilg);
+            }
 
             ilg.Emit(OpCodes.Ret);
         }

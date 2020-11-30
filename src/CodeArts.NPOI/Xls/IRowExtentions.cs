@@ -3,14 +3,14 @@
 namespace CodeArts.NPOI.Xls
 {
     /// <summary>
-    /// Row 拓展类
+    /// Row 拓展类。
     /// </summary>
     public static class IRowExtentions
     {
         /// <summary>
-        /// 创建下一个格子
+        /// 创建下一个格子。
         /// </summary>
-        /// <param name="cell">单元格</param>
+        /// <param name="row">单元。</param>
         /// <returns></returns>
         public static ICell CreateNextCell(this IRow row)
         {

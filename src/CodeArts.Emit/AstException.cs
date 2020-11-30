@@ -16,7 +16,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="message">异常信息</param>
+        /// <param name="message">异常信息。</param>
         public AstException(string message) : base(message)
         {
         }

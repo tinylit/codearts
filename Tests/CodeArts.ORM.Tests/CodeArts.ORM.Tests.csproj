@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>    
-	<ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj" />    
-	<ProjectReference Include="..\..\src\CodeArts.ORM.DependencyInjection\CodeArts.ORM.DependencyInjection.csproj" />
+	<ProjectReference Include="..\..\src\CodeArts.Casting\CodeArts.Casting.csproj" />    
+	<ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.SqlServer\CodeArts.SqlServer.csproj" />
   </ItemGroup>
 

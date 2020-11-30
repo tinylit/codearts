@@ -14,7 +14,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="body">表达式</param>
+        /// <param name="body">表达式。</param>
         public FinallyAst(AstExpression body) : base(typeof(void))
         {
             this.body = body ?? throw new System.ArgumentNullException(nameof(body));
@@ -23,7 +23,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             ilg.BeginFinallyBlock();

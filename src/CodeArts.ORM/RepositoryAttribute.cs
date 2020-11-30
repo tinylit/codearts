@@ -3,15 +3,15 @@
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 仓库
+    /// 仓库。
     /// </summary>
     [AttributeUsage(AttributeTargets.Interface)]
     public class RepositoryAttribute : Attribute
     {
         /// <summary>
-        /// 仓库
+        /// 仓库。
         /// </summary>
-        /// <param name="repositoryType">仓库类型</param>
+        /// <param name="repositoryType">仓库类型。</param>
         public RepositoryAttribute(Type repositoryType)
         {
             if (typeof(Repository).IsAssignableFrom(repositoryType))
@@ -24,7 +24,7 @@ namespace CodeArts.ORM
             }
         }
         /// <summary>
-        /// 仓库类型
+        /// 仓库类型。
         /// </summary>
         public Type RepositoryType { get; }
     }

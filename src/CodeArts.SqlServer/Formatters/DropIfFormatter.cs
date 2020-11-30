@@ -6,13 +6,13 @@ using System.Text.RegularExpressions;
 namespace CodeArts.SqlServer.Formatters
 {
     /// <summary>
-    /// 
+    /// Drop 命令。
     /// </summary>
     public class DropIfFormatter : AdapterFormatter<DropIfFormatter>, IFormatter
     {
         private static readonly Regex PatternDropIf = new Regex(@"\bdrop[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\[\w\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public DropIfFormatter() : base(PatternDropIf)
         {
@@ -21,10 +21,10 @@ namespace CodeArts.SqlServer.Formatters
         /// <summary>
         /// 条件删除。
         /// </summary>
-        /// <param name="item">匹配内容</param>
-        /// <param name="command">命令</param>
-        /// <param name="if">条件</param>
-        /// <param name="name">表或视图名称</param>
+        /// <param name="item">匹配内容。</param>
+        /// <param name="command">命令。</param>
+        /// <param name="if">条件。</param>
+        /// <param name="name">表或视图名称。</param>
         /// <returns></returns>
         public string DropIf(Match item, string command, Group @if, string name)
         {

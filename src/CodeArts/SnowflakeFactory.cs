@@ -9,15 +9,15 @@
         private readonly int datacenterId = 0;
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public SnowflakeFactory() { }
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="workerId">机器ID</param>
-        /// <param name="datacenterId">机房ID</param>
+        /// <param name="workerId">机器ID。</param>
+        /// <param name="datacenterId">机房ID。</param>
         public SnowflakeFactory(int workerId, int datacenterId)
         {
             this.workerId = workerId;

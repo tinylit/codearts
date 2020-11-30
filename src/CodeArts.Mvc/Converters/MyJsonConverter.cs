@@ -9,14 +9,14 @@ using System.Text.Json.Serialization;
 namespace CodeArts.Mvc.Converters
 {
     /// <summary>
-    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
+    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）。
     /// </summary>
     public class MyJsonConverterFactory : JsonConverterFactory
     {
         /// <summary>
-        /// 是否可以调整
+        /// 是否可以调整。
         /// </summary>
-        /// <param name="typeToConvert">数据类型</param>
+        /// <param name="typeToConvert">数据类型。</param>
         /// <returns></returns>
         public override bool CanConvert(Type typeToConvert)
         {
@@ -41,10 +41,10 @@ namespace CodeArts.Mvc.Converters
         }
 
         /// <summary>
-        /// 创建转换器
+        /// 创建转换器。
         /// </summary>
-        /// <param name="typeToConvert">转换的目标类型</param>
-        /// <param name="options">配置</param>
+        /// <param name="typeToConvert">转换的目标类型。</param>
+        /// <param name="options">配置。</param>
         /// <returns></returns>
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
             => typeToConvert.IsArray
@@ -243,7 +243,7 @@ namespace CodeArts.Mvc.Converters
 
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
-                    return elements.MapTo(typeToConvert);
+                    return Mapper.Map(elements, typeToConvert);
                 }
 
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
@@ -251,7 +251,7 @@ namespace CodeArts.Mvc.Converters
                     elements.Add(JsonSerializer.Deserialize<T>(ref reader, options));
                 }
 
-                return elements.MapTo(typeToConvert);
+                return Mapper.Map(elements, typeToConvert);
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
@@ -272,14 +272,14 @@ namespace CodeArts.Mvc.Converters
     }
 
     /// <summary>
-    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
+    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）。
     /// </summary>
     public class MyJsonConverter : JsonConverter<object>
     {
         /// <summary>
-        /// 是否可以调整
+        /// 是否可以调整。
         /// </summary>
-        /// <param name="typeToConvert">数据类型</param>
+        /// <param name="typeToConvert">数据类型。</param>
         /// <returns></returns>
         public override bool CanConvert(Type typeToConvert) => typeToConvert.IsValueType || typeof(string) == typeToConvert;
 
@@ -353,11 +353,11 @@ namespace CodeArts.Mvc.Converters
         }
 
         /// <summary>
-        /// 读取数据
+        /// 读取数据。
         /// </summary>
-        /// <param name="reader">读取器</param>
-        /// <param name="typeToConvert">目标类型</param>
-        /// <param name="options">配置</param>
+        /// <param name="reader">读取器。</param>
+        /// <param name="typeToConvert">目标类型。</param>
+        /// <param name="options">配置。</param>
         /// <returns></returns>
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -395,17 +395,17 @@ namespace CodeArts.Mvc.Converters
                 }
             }
 
-            return value.CastTo(typeToConvert);
+            return Mapper.Cast(value, typeToConvert);
         }
         /// <summary>
-        /// 写入
+        /// 写入。
         /// </summary>
-        /// <param name="writer">写入器</param>
-        /// <param name="value">数据</param>
-        /// <param name="options">配置</param>
+        /// <param name="writer">写入器。</param>
+        /// <param name="value">数据。</param>
+        /// <param name="options">配置。</param>
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
                 return;
@@ -465,26 +465,26 @@ using System;
 namespace CodeArts.Mvc.Converters
 {
     /// <summary>
-    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）
+    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）。
     /// </summary>
     public class MyJsonConverter : JsonConverter
     {
         /// <summary>
-        /// 是否可以调整
+        /// 是否可以调整。
         /// </summary>
-        /// <param name="objectType">数据类型</param>
+        /// <param name="objectType">数据类型。</param>
         /// <returns></returns>
         public override bool CanConvert(Type objectType) => objectType.IsValueType || typeof(string) == objectType;
 
         /// <summary>
-        /// 改变数据
+        /// 改变数据。
         /// </summary>
-        /// <param name="source">源类型</param>
-        /// <param name="conversionType">目标类型</param>
+        /// <param name="source">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
         private object ChangeType(object source, Type conversionType)
         {
-            if (source == null) return source;
+            if (source is null) return source;
 
             if (source.GetType() == conversionType)
                 return source;
@@ -568,16 +568,16 @@ namespace CodeArts.Mvc.Converters
             if (conversionType == typeof(string))
                 return source.ToString();
 
-            return source.CastTo(conversionType);
+            return Mapper.Cast(source, conversionType);
         }
 
         /// <summary>
-        /// 读取JSON
+        /// 读取JSON。
         /// </summary>
-        /// <param name="reader">阅读器</param>
-        /// <param name="objectType">数据类型</param>
-        /// <param name="existingValue">值</param>
-        /// <param name="serializer">解析器</param>
+        /// <param name="reader">阅读器。</param>
+        /// <param name="objectType">数据类型。</param>
+        /// <param name="existingValue">值。</param>
+        /// <param name="serializer">解析器。</param>
         /// <returns></returns>
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
@@ -589,14 +589,14 @@ namespace CodeArts.Mvc.Converters
         }
 
         /// <summary>
-        /// 写入JSON
+        /// 写入JSON。
         /// </summary>
-        /// <param name="writer">写入器</param>
-        /// <param name="value">值</param>
-        /// <param name="serializer">解析器</param>
+        /// <param name="writer">写入器。</param>
+        /// <param name="value">值。</param>
+        /// <param name="serializer">解析器。</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNull();
                 return;

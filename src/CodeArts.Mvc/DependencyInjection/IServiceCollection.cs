@@ -1,11 +1,11 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using System.Collections;
 using System.Collections.Generic;
 
 namespace CodeArts.Mvc.DependencyInjection
 {
     /// <summary>
-    /// 服务集合
+    /// 服务集合。
     /// </summary>
     public interface IServiceCollection : IList<ServiceDescriptor>, ICollection<ServiceDescriptor>, IEnumerable<ServiceDescriptor>, IEnumerable
     {

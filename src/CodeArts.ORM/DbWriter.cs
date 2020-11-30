@@ -1,4 +1,5 @@
-﻿using CodeArts.ORM.Exceptions;
+﻿using CodeArts.ORM.Common;
+using CodeArts.ORM.Exceptions;
 using CodeArts.Runtime;
 using System;
 using System.Collections.Concurrent;
@@ -9,6 +10,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Transactions;
 
 namespace CodeArts.ORM
@@ -16,35 +20,259 @@ namespace CodeArts.ORM
     /// <summary>
     /// 数据写入器。
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class DbWriter<T> where T : class, IEntiy
+    public class DbWriter
+    {
+        // look for ? / @ / :
+        private static readonly Regex smellsLikeOleDb = new Regex(@"(?<![\p{L}\p{N}@_])[?:@]([\p{L}\p{N}_][\p{L}\p{N}@_]*)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        private static readonly Dictionary<Type, DbType> typeMap;
+
+        static DbWriter()
+        {
+            typeMap = new Dictionary<Type, DbType>
+            {
+                [typeof(byte)] = DbType.Byte,
+                [typeof(sbyte)] = DbType.SByte,
+                [typeof(short)] = DbType.Int16,
+                [typeof(ushort)] = DbType.UInt16,
+                [typeof(int)] = DbType.Int32,
+                [typeof(uint)] = DbType.UInt32,
+                [typeof(long)] = DbType.Int64,
+                [typeof(ulong)] = DbType.UInt64,
+                [typeof(float)] = DbType.Single,
+                [typeof(double)] = DbType.Double,
+                [typeof(decimal)] = DbType.Decimal,
+                [typeof(bool)] = DbType.Boolean,
+                [typeof(string)] = DbType.String,
+                [typeof(char)] = DbType.StringFixedLength,
+                [typeof(Guid)] = DbType.Guid,
+                [typeof(DateTime)] = DbType.DateTime,
+                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan)] = DbType.Time,
+                [typeof(byte[])] = DbType.Binary,
+                [typeof(object)] = DbType.Object
+            };
+        }
+
+        private static DbType LookupDbType(Type dataType)
+        {
+            if (dataType.IsEnum)
+            {
+                dataType = Enum.GetUnderlyingType(dataType);
+            }
+            else if (dataType.IsNullable())
+            {
+                dataType = Nullable.GetUnderlyingType(dataType);
+            }
+
+            if (typeMap.TryGetValue(dataType, out DbType dbType))
+            {
+                return dbType;
+            }
+
+            if (dataType.FullName == "System.Data.Linq.Binary")
+            {
+                return DbType.Binary;
+            }
+
+            return DbType.Object;
+        }
+
+        /// <summary>
+        /// 参数适配。
+        /// </summary>
+        /// <param name="command">命令。</param>
+        /// <param name="param">参数。</param>
+        public static void AddParameterAuto(DbCommand command, object param = null)
+        {
+            switch (param)
+            {
+                case IDictionary<string, ParameterValue> parameters:
+                    foreach (var kv in parameters)
+                    {
+                        AddParameterAuto(command, kv.Key, kv.Value);
+                    }
+                    break;
+                case IDictionary<string, object> dic:
+                    foreach (var kv in dic)
+                    {
+                        if (kv.Value is ParameterValue parameterValue)
+                        {
+                            AddParameterAuto(command, kv.Key, parameterValue);
+                        }
+                        else
+                        {
+                            AddParameterAuto(command, kv.Key, kv.Value);
+                        }
+                    }
+                    break;
+                default:
+                    var matches = smellsLikeOleDb.Matches(command.CommandText);
+
+                    if (matches.Count == 0)
+                    {
+                        return;
+                    }
+
+                    if (param is null)
+                    {
+                        throw new NotSupportedException();
+                    }
+
+                    var tokens = new List<string>(matches.Count);
+
+                    foreach (Match item in matches)
+                    {
+                        tokens.Add(item.Groups[1].Value);
+                    }
+
+                    var paramType = param.GetType();
+
+                    if (paramType.IsValueType || paramType == typeof(string))
+                    {
+                        if (matches.Count == 1)
+                        {
+                            AddParameterAuto(command, tokens[0], param);
+
+                            break;
+                        }
+
+                        throw new NotSupportedException();
+                    }
+
+                    var storeItem = TypeStoreItem.Get(paramType);
+
+                    storeItem.PropertyStores
+                        .Where(x => x.CanRead && tokens.Contains(x.Name))
+                        .ForEach(x =>
+                        {
+                            var value = x.Member.GetValue(param, null);
+
+                            if (value is null)
+                            {
+                                AddParameterAuto(command, x.Name, new ParameterValue(x.MemberType));
+                            }
+                            else if (value is ParameterValue parameterValue)
+                            {
+                                AddParameterAuto(command, x.Name, parameterValue);
+                            }
+                            else
+                            {
+                                AddParameterAuto(command, x.Name, value);
+                            }
+                        });
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 参数适配。
+        /// </summary>
+        /// <param name="command">命令。</param>
+        /// <param name="key">参数名称。</param>
+        /// <param name="value">参数值。</param>
+        public static void AddParameterAuto(DbCommand command, string key, ParameterValue value)
+        {
+            var dbParameter = command.CreateParameter();
+
+            dbParameter.Value = value.IsNull ? DBNull.Value : value.Value;
+            dbParameter.ParameterName = key;
+            dbParameter.Direction = ParameterDirection.Input;
+            dbParameter.DbType = LookupDbType(value.ValueType);
+
+            command.Parameters.Add(dbParameter);
+        }
+
+        /// <summary>
+        /// 参数适配。
+        /// </summary>
+        /// <param name="command">命令。</param>
+        /// <param name="key">参数名称。</param>
+        /// <param name="value">参数值。</param>
+        public static void AddParameterAuto(DbCommand command, string key, object value)
+        {
+            var dbParameter = command.CreateParameter();
+
+            switch (value)
+            {
+                case IDbDataParameter dbDataParameter when dbParameter is IDbDataParameter parameter:
+
+                    parameter.Value = dbDataParameter.Value;
+                    parameter.ParameterName = key;
+                    parameter.Direction = dbDataParameter.Direction;
+                    parameter.DbType = dbDataParameter.DbType;
+                    parameter.SourceColumn = dbDataParameter.SourceColumn;
+                    parameter.SourceVersion = dbDataParameter.SourceVersion;
+
+                    if (dbParameter is System.Data.Common.DbParameter myParameter)
+                    {
+                        myParameter.IsNullable = dbDataParameter.IsNullable;
+                    }
+
+                    parameter.Scale = dbDataParameter.Scale;
+                    parameter.Size = dbDataParameter.Size;
+                    parameter.Precision = dbDataParameter.Precision;
+
+                    command.Parameters.Add(dbParameter);
+                    break;
+                case IDataParameter dataParameter:
+                    dbParameter.Value = dataParameter.Value;
+                    dbParameter.ParameterName = key;
+                    dbParameter.Direction = dataParameter.Direction;
+                    dbParameter.DbType = dataParameter.DbType;
+                    dbParameter.SourceColumn = dataParameter.SourceColumn;
+                    dbParameter.SourceVersion = dataParameter.SourceVersion;
+                    break;
+                case ParameterValue parameterValue:
+                    dbParameter.Value = parameterValue.IsNull ? DBNull.Value : parameterValue.Value;
+                    dbParameter.ParameterName = key;
+                    dbParameter.Direction = ParameterDirection.Input;
+                    dbParameter.DbType = LookupDbType(parameterValue.ValueType);
+                    break;
+                default:
+                    dbParameter.Value = value ?? DBNull.Value;
+                    dbParameter.ParameterName = key;
+                    dbParameter.Direction = ParameterDirection.Input;
+                    dbParameter.DbType = value is null ? DbType.Object : LookupDbType(value.GetType());
+                    break;
+            }
+
+            command.Parameters.Add(dbParameter);
+        }
+    }
+
+    /// <summary>
+    /// 数据写入器。
+    /// </summary>
+    /// <typeparam name="TEntity">实体类型。</typeparam>
+    public class DbWriter<TEntity> where TEntity : class, IEntiy
     {
         /// <summary>
-        /// 实体表信息
+        /// 实体表信息。
         /// </summary>
         public static ITableInfo TableInfo { get; }
 
-        static DbWriter() => TableInfo = TableRegions.Resolve<T>();
+        static DbWriter() => TableInfo = TableRegions.Resolve<TEntity>();
 
         /// <summary>
-        /// 最大参数长度
+        /// 最大参数长度。
         /// </summary>
         public const int MAX_PARAMETERS_COUNT = 1000;
         /// <summary>
-        /// 最大IN SQL 参数长度（取自 Oracle 9I）
+        /// 最大IN SQL 参数长度（取自 Oracle 9I）。
         /// </summary>
         public const int MAX_IN_SQL_PARAMETERS_COUNT = 256;
 
         /// <summary>
-        /// 数据验证
+        /// 数据验证。
         /// </summary>
-        /// <param name="value">值</param>
-        /// <param name="validationContext">验证上下文</param>
-        /// <param name="validationAttributes">验证属性集合</param>
+        /// <param name="value">值。</param>
+        /// <param name="validationContext">验证上下文。</param>
+        /// <param name="validationAttributes">验证属性集合。</param>
         private static void ValidateValue(object value, ValidationContext validationContext, IEnumerable<ValidationAttribute> validationAttributes)
         {
             //? 内容为空的时候不进行【数据类型和正则表达式验证】，内容空验证请使用【RequiredAttribute】。
-            if (value is string text && string.IsNullOrEmpty(text))
+            if (value is string text && text.IsEmpty())
             {
                 validationAttributes = validationAttributes
                     .Except(validationAttributes.OfType<DataTypeAttribute>())
@@ -55,45 +283,20 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 执行器
+        /// 路由执行力。
         /// </summary>
-        private class Executeable : IExecuteable<T>, IExecuteProvider<T>
+        private abstract class DbRouteExecuter : IDbRouteExecuter<TEntity>
         {
-            public Executeable(IWriteRepository<T> executer) => Executer = executer ?? throw new ArgumentNullException(nameof(executer));
-
-            protected Executeable(IWriteRepository<T> executer, Expression expression) : this(executer) => _Expression = expression ?? throw new ArgumentNullException(nameof(expression));
-
-            private readonly Expression _Expression = null;
-
-            private Expression _ContextExpression = null;
-
-            public IExecuteProvider<T> Provider => this;
-
-            public IWriteRepository<T> Executer { get; }
-
-            public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
-
-            public IExecuteable<T> CreateExecute(Expression expression) => new Executeable(Executer, expression);
-
-            public int Execute(Expression expression) => Executer.Excute(expression);
-        }
-
-        /// <summary>
-        /// 路由执行力
-        /// </summary>
-        private abstract class RouteExecuteable : IRouteExecuteable<T>
-        {
-            public RouteExecuteable(IRouteExecuter executeable, IRouteProvider<T> provider, ICollection<T> entries)
+            public DbRouteExecuter(IDbContext<TEntity> context, ICollection<TEntity> entries)
             {
                 this.Entries = entries ?? throw new ArgumentNullException(nameof(entries));
-                this.Provider = provider ?? throw new ArgumentNullException(nameof(provider));
-                this.executeable = executeable ?? throw new ArgumentNullException(nameof(executeable));
+                this.context = context ?? throw new ArgumentNullException(nameof(context));
             }
 
-            static RouteExecuteable()
+            static DbRouteExecuter()
             {
-                typeStore = RuntimeTypeCache.Instance.GetCache<T>();
-                typeRegions = TableRegions.Resolve<T>();
+                typeStore = TypeStoreItem.Get<TEntity>();
+                typeRegions = TableRegions.Resolve<TEntity>();
                 defaultLimit = typeRegions.ReadWrites.Keys.ToArray();
                 defaultWhere = typeRegions.Keys.ToArray();
             }
@@ -102,214 +305,254 @@ namespace CodeArts.ORM
             protected static readonly ITableInfo typeRegions;
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
+            private readonly IDbContext<TEntity> context;
+            private TransactionScopeOption? transactionScopeOption = null;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
-            private readonly IRouteExecuter executeable;
 
-            public IRouteProvider<T> Provider { get; }
+            public IDbRouteExecuter<TEntity> UseTransaction(TransactionScopeOption transactionScopeOption)
+            {
+                this.transactionScopeOption = transactionScopeOption;
 
-            public ICollection<T> Entries { get; }
+                return this;
+            }
 
-            public ISQLCorrectSimSettings Settings => executeable.Settings;
+            public IDbRouter<TEntity> DbRouter => DbRouter<TEntity>.Instance;
+
+            public ICollection<TEntity> Entries { get; }
+
+            public ISQLCorrectSimSettings Settings => context.Settings;
 
             public int ExecuteCommand(int? commandTimeout = null)
             {
-                if (Entries.Count > 0)
+                if (Entries.Count == 0)
                 {
-                    return Execute(commandTimeout);
+                    return 0;
                 }
 
-                return 0;
+                var results = PrepareCommand();
+
+                if (results.Count == 0)
+                {
+                    throw new NotSupportedException();
+                }
+
+                if (transactionScopeOption.HasValue || results.Count > 0)
+                {
+                    return UseTransactionExecute(results, commandTimeout);
+                }
+
+                return Execute(results, commandTimeout);
             }
 
-            public abstract int Execute(int? commandTimeout);
+            private int Execute(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout)
+            {
+                int influenceLine = 0;
 
-            public int Execute(string sql, Dictionary<string, object> param, int? commandTimeout) => executeable.ExecuteCommand(sql, param, commandTimeout);
+                if (!commandTimeout.HasValue)
+                {
+                    using (var connection = context.CreateDb())
+                    {
+                        connection.Open();
+
+                        results.ForEach(x =>
+                        {
+                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                            SqlCapture.Current?.Capture(commandSql);
+
+                            using (var command = connection.CreateCommand())
+                            {
+                                command.CommandText = commandSql.Sql;
+
+                                foreach (var kv in x.Item2)
+                                {
+                                    DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                }
+
+                                influenceLine += command.ExecuteNonQuery();
+                            }
+                        });
+                    }
+
+                    return influenceLine;
+                }
+
+                Stopwatch stopwatch = new Stopwatch();
+
+                int remainingTime = commandTimeout.Value;
+
+                using (var connection = context.CreateDb())
+                {
+                    connection.Open();
+
+                    results.ForEach(x =>
+                    {
+                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                        SqlCapture.Current?.Capture(commandSql);
+
+                        using (var command = connection.CreateCommand())
+                        {
+                            command.CommandText = commandSql.Sql;
+
+                            command.CommandTimeout = remainingTime;
+
+                            foreach (var kv in x.Item2)
+                            {
+                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                            }
+
+                            stopwatch.Restart();
+
+                            influenceLine += command.ExecuteNonQuery();
+
+                            stopwatch.Stop();
+
+                            remainingTime -= (int)(stopwatch.ElapsedMilliseconds / 1000);
+                        }
+                    });
+                }
+
+                return influenceLine;
+            }
+
+            private int UseTransactionExecute(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout)
+            {
+                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required))
+                {
+                    int influenceLine = Execute(results, commandTimeout);
+
+                    transaction.Complete();
+
+                    return influenceLine;
+                }
+            }
+
+            /// <summary>
+            /// 准备命令。
+            /// </summary>
+            /// <returns></returns>
+            public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
+
+#if NET_NORMAL
+            public Task<int> ExecuteCommandAsync(int? commandTimeout = null, CancellationToken cancellationToken = default)
+            {
+                if (Entries.Count == 0)
+                {
+                    return Task.FromResult(0);
+                }
+
+                var results = PrepareCommand();
+
+                if (results.Count == 0)
+                {
+                    throw new NotSupportedException();
+                }
+
+                if (transactionScopeOption.HasValue || results.Count > 0)
+                {
+                    return UseTransactionAsync(results, commandTimeout, cancellationToken);
+                }
+
+                return ExecutedAsync(results, commandTimeout, cancellationToken);
+            }
+
+            private async Task<int> ExecutedAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
+            {
+                int influenceLine = 0;
+
+                if (!commandTimeout.HasValue)
+                {
+                    using (var connection = context.CreateDb())
+                    {
+                        await connection.OpenAsync(cancellationToken);
+
+                        foreach (var x in results)
+                        {
+                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                            SqlCapture.Current?.Capture(commandSql);
+
+                            using (var command = connection.CreateCommand())
+                            {
+                                command.CommandText = commandSql.Sql;
+
+                                foreach (var kv in x.Item2)
+                                {
+                                    DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                }
+
+                                influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken);
+                            }
+                        }
+                    }
+
+                    return influenceLine;
+                }
+
+                Stopwatch stopwatch = new Stopwatch();
+
+                int remainingTime = commandTimeout.Value;
+
+                using (var connection = context.CreateDb())
+                {
+                    await connection.OpenAsync(cancellationToken);
+
+                    foreach (var x in results)
+                    {
+                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                        SqlCapture.Current?.Capture(commandSql);
+
+                        using (var command = connection.CreateCommand())
+                        {
+                            command.CommandText = commandSql.Sql;
+
+                            command.CommandTimeout = remainingTime;
+
+                            foreach (var kv in x.Item2)
+                            {
+                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                            }
+
+                            stopwatch.Restart();
+
+                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken);
+
+                            stopwatch.Stop();
+
+                            remainingTime -= (int)(stopwatch.ElapsedMilliseconds / 1000);
+                        }
+                    }
+
+                    return influenceLine;
+                }
+            }
+
+            private async Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
+            {
+                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required))
+                {
+                    int influenceLine = await ExecutedAsync(results, commandTimeout, cancellationToken);
+
+                    transaction.Complete();
+
+                    return influenceLine;
+                }
+            }
+#endif
         }
-
-        private class Deleteable : RouteExecuteable, IDeleteable<T>
+        private class Deleteable : DbRouteExecuter, IDeleteable<TEntity>
         {
-            public Deleteable(IRouteExecuter<T> executeable, ICollection<T> entries) : base(executeable, executeable.CreateRouteProvider(CommandBehavior.Delete), entries)
+            public Deleteable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
             {
                 wheres = defaultWhere;
             }
 
             private string[] wheres;
-            private Func<T, string[]> where;
+            private Func<TEntity, string[]> where;
             private Func<ITableInfo, string> from;
-            private TransactionScopeOption? option = TransactionScopeOption.Required;
-            public override int Execute(int? commandTimeout)
-            {
-                if (where is null)
-                {
-                    return wheres.Length == 1 ? Simple(commandTimeout) : Complex(commandTimeout);
-                }
-
-                var dicRoot = new List<KeyValuePair<T, string>>();
-
-                int parameter_count = 0;
-
-                var listRoot = Entries.GroupBy(item =>
-                {
-                    var wheres = where.Invoke(item);
-
-                    if (wheres.Length == 0)
-                    {
-                        throw new DException("未指定删除条件!");
-                    }
-
-                    var columns = typeRegions.ReadOrWrites
-                        .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
-                        .Select(x => x.Value)
-                        .ToArray();
-
-                    if (columns.Length == 0)
-                    {
-                        throw new DException("未指定删除条件!");
-                    }
-
-                    parameter_count += columns.Length;
-
-                    return string.Join(",", columns);
-
-                }).ToList();
-
-                var parameters = new Dictionary<string, object>();
-
-                if (parameter_count <= MAX_PARAMETERS_COUNT)
-                {
-                    string sql = string.Join(";", listRoot.Select((item, index) =>
-                    {
-                        if (item.Key.IndexOf(',') > -1)
-                        {
-                            var keys = item.Key.Split(',');
-
-                            return Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Value)).ToList(), item, index, parameters);
-                        }
-
-                        return Simple(TableInfo.ReadWrites.First(x => x.Value == item.Key), item, index, parameters);
-                    }));
-
-                    return Transaction(() => Execute(sql, parameters, commandTimeout));
-                }
-
-                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
-
-                int group_index = 0;
-
-                parameter_count = 0;
-
-                StringBuilder sb = new StringBuilder();
-
-                foreach (var item in listRoot)
-                {
-                    if (parameter_count >= MAX_PARAMETERS_COUNT)
-                    {
-                        sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), parameters));
-
-                        group_index = 0;
-
-                        parameter_count = 0;
-
-                        sb = new StringBuilder();
-
-                        parameters = new Dictionary<string, object>();
-                    }
-
-                    if (sb.Length > 0)
-                    {
-                        sb.Append(';');
-                    }
-
-                    if (item.Key.IndexOf(',') > -1)
-                    {
-                        string[] keys = item.Key.Split(',');
-
-                        parameter_count += keys.Length;
-
-                        if (parameter_count > MAX_PARAMETERS_COUNT)
-                        {
-                            sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), parameters));
-
-                            group_index = 0;
-
-                            parameter_count = keys.Length;
-
-                            sb = new StringBuilder();
-
-                            parameters = new Dictionary<string, object>();
-                        }
-
-                        sb.Append(Complex(TableInfo.ReadWrites.Where(x => keys.Contains(x.Key)).ToList(), item, group_index, parameters));
-                    }
-                    else
-                    {
-                        parameter_count++;
-
-                        sb.Append(Simple(TableInfo.ReadWrites.First(x => x.Key == item.Key), item, group_index, parameters));
-                    }
-
-                    group_index++;
-                }
-
-                if (sb.Length > 0)
-                {
-                    sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), parameters));
-                }
-
-                return Transaction(() =>
-                 {
-                     int affected_rows = 0;
-
-                     if (commandTimeout.HasValue)
-                     {
-                         var sw = new Stopwatch();
-
-                         var milliseconds = commandTimeout.Value * 1000L;
-
-                         foreach (var kv in sqls)
-                         {
-                             sw.Start();
-
-                             affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-
-                             sw.Stop();
-
-                             if (sw.ElapsedMilliseconds > milliseconds)
-                             {
-                                 throw new TimeoutException();
-                             }
-                         }
-
-                         return affected_rows;
-                     }
-
-                     foreach (var kv in sqls)
-                     {
-                         affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-                     }
-
-                     return affected_rows;
-                 });
-            }
-
-            private int Transaction(Func<int> factroy)
-            {
-                if (!option.HasValue)
-                {
-                    return factroy.Invoke();
-                }
-
-                using (TransactionScope transaction = new TransactionScope(option.Value))
-                {
-                    int affected_rows = factroy.Invoke();
-
-                    transaction.Complete();
-
-                    return affected_rows;
-                }
-            }
-
-            private int Simple(int? commandTimeout)
+            private List<Tuple<string, Dictionary<string, ParameterValue>>> Simple()
             {
                 bool flag = true;
                 string value = wheres[0];
@@ -330,73 +573,36 @@ namespace CodeArts.ORM
                     throw new DException("未指定删除条件!");
                 }
 
+                List<Tuple<string, Dictionary<string, ParameterValue>>> results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
+
                 if (Entries.Count <= MAX_PARAMETERS_COUNT)
                 {
-                    var parameters = new Dictionary<string, object>();
-
-                    var sql = Simple(column, Entries, 0, parameters);
-
-                    return Transaction(() => Execute(sql, parameters, commandTimeout));
+                    results.Add(Simple(column, Entries));
+                }
+                else
+                {
+                    for (int i = 0; i < Entries.Count; i += MAX_PARAMETERS_COUNT)
+                    {
+                        results.Add(Simple(column, Entries.Skip(i).Take(MAX_PARAMETERS_COUNT)));
+                    }
                 }
 
-                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
-
-                for (int i = 0; i < Entries.Count; i += MAX_PARAMETERS_COUNT)
-                {
-                    var parameters = new Dictionary<string, object>();
-
-                    var sql = Simple(column, Entries.Skip(i).Take(MAX_PARAMETERS_COUNT), 0, parameters);
-
-                    sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sql, parameters));
-                }
-
-                return Transaction(() =>
-                {
-                    int affected_rows = 0;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        var sw = new Stopwatch();
-
-                        var milliseconds = commandTimeout.Value * 1000L;
-
-                        foreach (var kv in sqls)
-                        {
-                            sw.Start();
-
-                            affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-
-                            sw.Stop();
-
-                            if (sw.ElapsedMilliseconds > milliseconds)
-                            {
-                                throw new TimeoutException();
-                            }
-                        }
-                    }
-
-                    foreach (var kv in sqls)
-                    {
-                        affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-                    }
-
-                    return affected_rows;
-                });
+                return results;
             }
 
-            private int Complex(int? commandTimeout)
+            private List<Tuple<string, Dictionary<string, ParameterValue>>> Complex()
             {
+                List<Tuple<string, Dictionary<string, ParameterValue>>> results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
+
                 var columns = typeRegions.ReadWrites
                         .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
                         .ToList();
 
                 if (Entries.Count * columns.Count <= MAX_PARAMETERS_COUNT)
                 {
-                    var parameters = new Dictionary<string, object>();
+                    results.Add(Complex(columns, Entries));
 
-                    var sql = Complex(columns, Entries, 0, parameters);
-
-                    return Transaction(() => Execute(sql, parameters, commandTimeout));
+                    return results;
                 }
 
                 int offset = MAX_PARAMETERS_COUNT / columns.Count;
@@ -405,48 +611,135 @@ namespace CodeArts.ORM
 
                 for (int i = 0; i < Entries.Count; i += offset)
                 {
-                    var parameters = new Dictionary<string, object>();
-
-                    var sql = Complex(columns, Entries.Skip(i).Take(offset), 0, parameters);
-
-                    sqls.Add(new KeyValuePair<string, Dictionary<string, object>>(sql, parameters));
+                    results.Add(Complex(columns, Entries.Skip(i).Take(offset)));
                 }
 
-                return Transaction(() =>
-                {
-                    int affected_rows = 0;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        var sw = new Stopwatch();
-
-                        var milliseconds = commandTimeout.Value * 1000L;
-
-                        foreach (var kv in sqls)
-                        {
-                            sw.Start();
-
-                            affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-
-                            sw.Stop();
-
-                            if (sw.ElapsedMilliseconds > milliseconds)
-                            {
-                                throw new TimeoutException();
-                            }
-                        }
-                    }
-
-                    foreach (var kv in sqls)
-                    {
-                        affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-                    }
-
-                    return affected_rows;
-                });
+                return results;
             }
 
-            private string Simple(KeyValuePair<string, string> column, IEnumerable<T> collect, int group, Dictionary<string, object> parameters)
+            private Tuple<string, Dictionary<string, ParameterValue>> Simple(KeyValuePair<string, string> column, IEnumerable<TEntity> collect)
+            {
+                var sb = new StringBuilder();
+
+                string name = column.Key.ToUrlCase();
+                string tableName = Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName);
+
+                var storeItem = typeStore.PropertyStores.First(x => x.Name == column.Key);
+
+                sb.Append("DELETE FROM ")
+                .Append(tableName)
+                .Append(" WHERE ")
+                .Append(column.Value);
+
+                Dictionary<string, ParameterValue> parameters = new Dictionary<string, ParameterValue>();
+
+                var list = collect.Select((item, index) =>
+                 {
+                     var context = new ValidationContext(item, null, null)
+                     {
+                         MemberName = storeItem.Member.Name
+                     };
+
+                     var value = storeItem.Member.GetValue(item, null);
+
+                     var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
+
+                     if (attrs.Any())
+                     {
+                         ValidateValue(value, context, attrs);
+
+                         value = storeItem.Member.GetValue(item, null);
+                     }
+
+                     var parameterKey = index == 0 ?
+                         name
+                         :
+                         $"{name}_{index}";
+
+                     parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
+
+                     return Settings.ParamterName(parameterKey);
+
+                 }).ToList();
+
+                if (list.Count == 1)
+                {
+                    return new Tuple<string, Dictionary<string, ParameterValue>>(sb.Append("=")
+                        .Append(list[0])
+                        .ToString(), parameters);
+                }
+
+                if (list.Count <= MAX_IN_SQL_PARAMETERS_COUNT)
+                {
+                    return new Tuple<string, Dictionary<string, ParameterValue>>(sb.Append(" IN (")
+                     .Append(string.Join(",", list))
+                     .Append(")")
+                     .ToString(), parameters);
+                }
+
+                for (int i = 0; i < list.Count; i += MAX_IN_SQL_PARAMETERS_COUNT)
+                {
+                    if (i > 0)
+                    {
+                        sb.Append("DELETE FROM ")
+                            .Append(tableName)
+                            .Append(" WHERE ")
+                            .Append(column.Value);
+                    }
+
+                    sb.Append(" IN (")
+                     .Append(string.Join(",", list.Skip(i).Take(MAX_IN_SQL_PARAMETERS_COUNT)))
+                     .Append(")")
+                     .AppendLine(";");
+                }
+
+                return new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters);
+            }
+
+            private Tuple<string, Dictionary<string, ParameterValue>> Complex(List<KeyValuePair<string, string>> columns, IEnumerable<TEntity> collect)
+            {
+                var sb = new StringBuilder();
+
+                var parameters = new Dictionary<string, ParameterValue>();
+
+                sb.Append("DELETE FROM ")
+                   .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
+                   .Append(" WHERE ")
+                   .Append(string.Join(" OR ", collect.Select((item, index) =>
+                   {
+                       var context = new ValidationContext(item, null, null);
+
+                       return string.Concat("(", string.Join(" AND ", columns.Select(kv =>
+                       {
+                           var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
+
+                           var value = storeItem.Member.GetValue(item, null);
+
+                           context.MemberName = storeItem.Member.Name;
+
+                           var attrs = storeItem.Attributes.OfType<ValidationAttribute>();
+
+                           if (attrs.Any())
+                           {
+                               ValidateValue(value, context, attrs);
+
+                               value = storeItem.Member.GetValue(item, null);
+                           }
+
+                           var parameterKey = index == 0
+                           ? Settings.ParamterName(kv.Key.ToUrlCase())
+                           : Settings.ParamterName($"{kv.Key.ToUrlCase()}_{index}");
+
+                           parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
+
+                           return string.Concat(Settings.Name(kv.Value), "=", parameterKey);
+                       })), ")");
+                   })));
+
+                return new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters);
+            }
+
+            private string Simple(KeyValuePair<string, string> column, IEnumerable<TEntity> collect, int groupIndex, Dictionary<string, ParameterValue> parameters)
             {
                 var sb = new StringBuilder();
 
@@ -478,14 +771,15 @@ namespace CodeArts.ORM
                          value = storeItem.Member.GetValue(item, null);
                      }
 
-                     var parameterKey = group == 0 && index == 0 ?
+                     var parameterKey = index == 0 && groupIndex == 0 ?
                          name
                          :
-                         $"{name}_{group}_{index}";
+                         $"{name}_{groupIndex}_{index}";
 
-                     parameters.Add(parameterKey, value);
+                     parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
                      return Settings.ParamterName(parameterKey);
+
                  }).ToList();
 
                 if (list.Count == 1)
@@ -522,7 +816,7 @@ namespace CodeArts.ORM
                 return sb.ToString();
             }
 
-            private string Complex(List<KeyValuePair<string, string>> columns, IEnumerable<T> collect, int group, Dictionary<string, object> parameters)
+            private string Complex(List<KeyValuePair<string, string>> columns, IEnumerable<TEntity> collect, int groupIndex, Dictionary<string, ParameterValue> parameters)
             {
                 var sb = new StringBuilder();
 
@@ -550,12 +844,11 @@ namespace CodeArts.ORM
                                value = storeItem.Member.GetValue(item, null);
                            }
 
-                           var parameterKey = group == 0 && index == 0 ?
-                           Settings.ParamterName(kv.Key.ToUrlCase())
-                           :
-                           Settings.ParamterName($"{kv.Key.ToUrlCase()}_{group}_{index}");
+                           var parameterKey = index == 0 && groupIndex == 0
+                           ? Settings.ParamterName(kv.Key.ToUrlCase())
+                           : Settings.ParamterName($"{kv.Key.ToUrlCase()}_{groupIndex}_{index}");
 
-                           parameters.Add(parameterKey, value);
+                           parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
                            return string.Concat(Settings.Name(kv.Value), "=", parameterKey);
                        })), ")");
@@ -564,131 +857,165 @@ namespace CodeArts.ORM
                 return sb.ToString();
             }
 
-            public IDeleteable<T> From(Func<ITableInfo, string> table)
+            public IDeleteable<TEntity> From(Func<ITableInfo, string> table)
             {
                 from = table;
 
                 return this;
             }
 
-            public IDeleteable<T> Where(string[] columns)
+            public IDeleteable<TEntity> Where(string[] columns)
             {
                 wheres = columns ?? throw new ArgumentNullException(nameof(columns));
 
                 return this;
             }
 
-            public IDeleteable<T> Where<TColumn>(Expression<Func<T, TColumn>> columns)
+            public IDeleteable<TEntity> Where<TColumn>(Expression<Func<TEntity, TColumn>> columns)
             {
-                where = Provider.Where(columns);
+                where = DbRouter.Where(columns);
 
                 return this;
             }
 
-            public IDeleteable<T> UseTransaction(TransactionScopeOption option)
+            public override List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand()
             {
-                this.option = option;
+                if (where is null)
+                {
+                    if (wheres.Length == 0)
+                    {
+                        throw new DException("未指定删除条件!");
+                    }
 
-                return this;
+                    return wheres.Length == 1 ? Simple() : Complex();
+                }
+
+                var dicRoot = new List<KeyValuePair<TEntity, string>>();
+
+                int parameterCount = 0;
+
+                var listRoot = Entries.GroupBy(item =>
+                {
+                    var wheres = where.Invoke(item);
+
+                    if (wheres.Length == 0)
+                    {
+                        throw new DException("未指定删除条件!");
+                    }
+
+                    var columns = typeRegions.ReadOrWrites
+                        .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
+                        .Select(x => x.Value)
+                        .ToArray();
+
+                    if (columns.Length == 0)
+                    {
+                        throw new DException("未指定删除条件!");
+                    }
+
+                    parameterCount += columns.Length;
+
+                    return columns;
+
+                }).ToList();
+
+                var parameters = new Dictionary<string, ParameterValue>();
+
+                List<Tuple<string, Dictionary<string, ParameterValue>>> results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
+
+                if (parameterCount <= MAX_PARAMETERS_COUNT)
+                {
+                    string sql = string.Join(";", listRoot.Select((item, index) =>
+                    {
+                        if (item.Key.Length > 1)
+                        {
+                            return Complex(TableInfo.ReadWrites.Where(x => item.Key.Contains(x.Value)).ToList(), item, index, parameters);
+                        }
+
+                        string key = item.Key[0];
+
+                        return Simple(TableInfo.ReadWrites.First(x => x.Value == key), item, index, parameters);
+                    }));
+
+                    results.Add(new Tuple<string, Dictionary<string, ParameterValue>>(sql, parameters));
+
+                    return results;
+                }
+
+                int groupIndex = 0;
+
+                parameterCount = 0;
+
+                StringBuilder sb = new StringBuilder();
+
+                foreach (var item in listRoot.OrderBy(x => x.Key.Length))
+                {
+                    parameterCount += item.Key.Length;
+
+                    if (parameterCount > MAX_PARAMETERS_COUNT)
+                    {
+                        results.Add(new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters));
+
+                        sb.Clear();
+
+                        groupIndex = 0;
+
+                        parameters.Clear();
+
+                        parameterCount = item.Key.Length;
+                    }
+
+                    if (sb.Length > 0)
+                    {
+                        sb.Append(';');
+                    }
+
+                    if (item.Key.Length > 1)
+                    {
+                        sb.Append(Complex(TableInfo.ReadWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
+                    }
+                    else
+                    {
+                        string key = item.Key[0];
+
+                        sb.Append(Simple(TableInfo.ReadWrites.First(x => x.Key == key), item, groupIndex, parameters));
+                    }
+
+                    groupIndex++;
+                }
+
+                if (sb.Length > 0)
+                {
+                    results.Add(new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters));
+                }
+
+                return results;
             }
         }
 
-        private class Insertable : RouteExecuteable, IInsertable<T>
+        private class Insertable : DbRouteExecuter, IInsertable<TEntity>
         {
-            public Insertable(IRouteExecuter<T> executeable, ICollection<T> entries) : base(executeable, executeable.CreateRouteProvider(CommandBehavior.Insert), entries)
+            public Insertable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
             {
             }
 
             private string[] limits;
             private string[] excepts;
             private Func<ITableInfo, string> from;
-            private TransactionScopeOption? option = TransactionScopeOption.Required;
 
-            public IInsertable<T> Except(string[] columns)
+            public IInsertable<TEntity> Except(string[] columns)
             {
                 excepts = columns ?? throw new ArgumentNullException(nameof(columns));
 
                 return this;
             }
 
-            public IInsertable<T> Except<TColumn>(Expression<Func<T, TColumn>> columns) => Except(Provider.Except(columns));
+            public IInsertable<TEntity> Except<TColumn>(Expression<Func<TEntity, TColumn>> columns) => Except(DbRouter.Except(columns));
 
-            public override int Execute(int? commandTimeout)
-            {
-                IEnumerable<KeyValuePair<string, string>> columns = typeRegions.ReadWrites;
-
-                if (!(limits is null))
-                {
-                    columns = columns.Where(x => limits.Any(y => y == x.Key || y == x.Value));
-                }
-
-                if (!(excepts is null))
-                {
-                    columns = columns.Where(x => !excepts.Any(y => y == x.Key || y == x.Value));
-                }
-
-                if (!columns.Any())
-                {
-                    throw new DException("未指定插入字段!");
-                }
-
-                var insert_columns = columns.ToList();
-
-                int parameter_count = Entries.Count * insert_columns.Count;
-
-                if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
-                {
-                    var kv = SqlGenerator(Entries, insert_columns);
-
-                    return Transaction(() => Execute(kv.Key, kv.Value, commandTimeout));
-                }
-
-                int offset = MAX_PARAMETERS_COUNT / insert_columns.Count;
-                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
-
-                for (int i = 0; i < Entries.Count; i += offset)
-                {
-                    sqls.Add(SqlGenerator(Entries.Skip(i).Take(offset).ToList(), insert_columns));
-                }
-
-                return Transaction(() =>
-                {
-                    int affected_rows = 0;
-
-                    if (commandTimeout.HasValue)
-                    {
-                        var sw = new Stopwatch();
-
-                        var milliseconds = commandTimeout.Value * 1000L;
-
-                        foreach (var kv in sqls)
-                        {
-                            sw.Start();
-
-                            affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-
-                            sw.Stop();
-
-                            if (sw.ElapsedMilliseconds > milliseconds)
-                            {
-                                throw new TimeoutException();
-                            }
-                        }
-                    }
-
-                    foreach (var kv in sqls)
-                    {
-                        affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-                    }
-
-                    return affected_rows;
-                });
-            }
-
-            private KeyValuePair<string, Dictionary<string, object>> SqlGenerator(IEnumerable<T> list, List<KeyValuePair<string, string>> columns)
+            private Tuple<string, Dictionary<string, ParameterValue>> SqlGenerator(IEnumerable<TEntity> list, List<KeyValuePair<string, string>> columns)
             {
                 var sb = new StringBuilder();
-                var paramters = new Dictionary<string, object>();
+                var parameters = new Dictionary<string, ParameterValue>();
 
                 sb.Append("INSERT INTO ")
                     .Append(Settings.Name(from?.Invoke(typeRegions) ?? typeRegions.TableName))
@@ -733,86 +1060,36 @@ namespace CodeArts.ORM
                             if (attrs.Any())
                             {
                                 ValidateValue(value, context, attrs);
-
-                                value = storeItem.Member.GetValue(item, null);
                             }
 
-                            paramters.Add(parameterKey, value);
+                            parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
                             return Settings.ParamterName(parameterKey);
+
                         })), ")");
                     })));
 
-                return new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), paramters);
+                return new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters);
             }
 
-            public IInsertable<T> From(Func<ITableInfo, string> table)
+            public IInsertable<TEntity> From(Func<ITableInfo, string> table)
             {
                 from = table ?? throw new ArgumentNullException(nameof(table));
 
                 return this;
             }
 
-            public IInsertable<T> Limit(string[] columns)
+            public IInsertable<TEntity> Limit(string[] columns)
             {
                 limits = columns ?? throw new ArgumentNullException(nameof(columns));
 
                 return this;
             }
 
-            public IInsertable<T> Limit<TColumn>(Expression<Func<T, TColumn>> columns) => Limit(Provider.Limit(columns));
+            public IInsertable<TEntity> Limit<TColumn>(Expression<Func<TEntity, TColumn>> columns) => Limit(DbRouter.Limit(columns));
 
-            private int Transaction(Func<int> factroy)
+            public override List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand()
             {
-                if (!option.HasValue)
-                {
-                    return factroy.Invoke();
-                }
-
-                using (TransactionScope transaction = new TransactionScope(option.Value))
-                {
-                    int affected_rows = factroy.Invoke();
-
-                    transaction.Complete();
-
-                    return affected_rows;
-                }
-            }
-
-            public IInsertable<T> UseTransaction(TransactionScopeOption option)
-            {
-                this.option = option;
-
-                return this;
-            }
-        }
-
-        private class Updateable : RouteExecuteable, IUpdateable<T>
-        {
-            public Updateable(IRouteExecuter<T> executeable, ICollection<T> entries) : base(executeable, executeable.CreateRouteProvider(CommandBehavior.Update), entries)
-            {
-            }
-
-            private string[] limits;
-            private string[] excepts;
-            private Func<T, string[]> where;
-            private Func<ITableInfo, T, string> from;
-            private TransactionScopeOption? option = TransactionScopeOption.Required;
-
-            public IUpdateable<T> Except(string[] columns)
-            {
-                excepts = columns ?? throw new ArgumentNullException(nameof(columns));
-
-                return this;
-            }
-
-            public IUpdateable<T> Except<TColumn>(Expression<Func<T, TColumn>> columns) => Except(Provider.Except(columns));
-
-            public override int Execute(int? commandTimeout)
-            {
-                var sb = new StringBuilder();
-                var paramters = new Dictionary<string, object>();
-
                 IEnumerable<KeyValuePair<string, string>> columns = typeRegions.ReadWrites;
 
                 if (!(limits is null))
@@ -826,128 +1103,58 @@ namespace CodeArts.ORM
                 }
 
                 if (!columns.Any())
-                    throw new DException("未指定更新字段!");
-
-                columns = columns.Union(typeRegions.ReadWrites
-                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
-                    );
-
-                int parameter_count = 0;
-
-                var dicRoot = new List<KeyValuePair<T, string[]>>();
-
-                Entries.ForEach(item =>
                 {
-                    var wheres = where?.Invoke(item) ?? defaultWhere;
+                    throw new DException("未指定插入字段!");
+                }
 
-                    if (wheres.Length == 0)
-                        throw new DException("未指定更新条件");
+                var results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
 
-                    var where_columns = typeRegions.ReadWrites
-                            .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
-                            .Select(x => x.Value)
-                            .ToArray();
+                var insertColumns = columns.ToList();
 
-                    if (where_columns.Length == 0)
-                        throw new DException("未指定更新条件!");
+                int parameterCount = Entries.Count * insertColumns.Count;
 
-                    if (typeRegions.Tokens.Count > 0)
+                if (parameterCount <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
+                {
+                    results.Add(SqlGenerator(Entries, insertColumns));
+                }
+                else
+                {
+                    int offset = MAX_PARAMETERS_COUNT / insertColumns.Count;
+
+                    for (int i = 0; i < Entries.Count; i += offset)
                     {
-                        where_columns = where_columns
-                        .Concat(typeRegions.ReadOrWrites
-                            .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
-                            .Select(x => x.Value))
-                        .Distinct()
-                        .ToArray();
+                        results.Add(SqlGenerator(Entries.Skip(i).Take(offset), insertColumns));
                     }
-
-                    parameter_count += where_columns.Length;
-
-                    dicRoot.Add(new KeyValuePair<T, string[]>(item, where_columns));
-                });
-
-                var update_columns = columns
-                    .Union(typeRegions.ReadWrites
-                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
-                    )
-                    .ToList();
-
-                parameter_count += update_columns.Count * Entries.Count;
-
-                if (parameter_count <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
-                {
-                    var kv = SqlGenerator(dicRoot, update_columns);
-
-                    return Transaction(() => Execute(kv.Key, kv.Value, commandTimeout));
                 }
 
-                parameter_count = 0;
+                return results;
+            }
+        }
 
-                var sqls = new List<KeyValuePair<string, Dictionary<string, object>>>();
-
-                var dic = new List<KeyValuePair<T, string[]>>();
-
-                foreach (var item in dicRoot)
-                {
-                    parameter_count += update_columns.Count + item.Value.Length;
-
-                    if (parameter_count > MAX_PARAMETERS_COUNT)
-                    {
-                        sqls.Add(SqlGenerator(dic, update_columns));
-
-                        dic = new List<KeyValuePair<T, string[]>>();
-
-                        parameter_count = update_columns.Count + item.Value.Length;
-                    }
-
-                    dic.Add(new KeyValuePair<T, string[]>(item.Key, item.Value));
-                }
-
-                if (dic.Count > 0)
-                {
-                    sqls.Add(SqlGenerator(dic, update_columns));
-                }
-
-                return Transaction(() =>
-                 {
-                     int affected_rows = 0;
-
-                     if (commandTimeout.HasValue)
-                     {
-                         var sw = new Stopwatch();
-
-                         var milliseconds = commandTimeout.Value * 1000L;
-
-                         foreach (var kv in sqls)
-                         {
-                             sw.Start();
-
-                             affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-
-                             sw.Stop();
-
-                             if (sw.ElapsedMilliseconds > milliseconds)
-                             {
-                                 throw new TimeoutException();
-                             }
-                         }
-
-                         return affected_rows;
-                     }
-
-                     foreach (var kv in sqls)
-                     {
-                         affected_rows += Execute(kv.Key, kv.Value, commandTimeout);
-                     }
-
-                     return affected_rows;
-                 });
+        private class Updateable : DbRouteExecuter, IUpdateable<TEntity>
+        {
+            public Updateable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
+            {
             }
 
-            private KeyValuePair<string, Dictionary<string, object>> SqlGenerator(List<KeyValuePair<T, string[]>> list, List<KeyValuePair<string, string>> columns)
+            private string[] limits;
+            private string[] excepts;
+            private Func<TEntity, string[]> where;
+            private Func<ITableInfo, TEntity, string> from;
+
+            public IUpdateable<TEntity> Except(string[] columns)
+            {
+                excepts = columns ?? throw new ArgumentNullException(nameof(columns));
+
+                return this;
+            }
+
+            public IUpdateable<TEntity> Except<TColumn>(Expression<Func<TEntity, TColumn>> columns) => Except(DbRouter.Except(columns));
+
+            private Tuple<string, Dictionary<string, ParameterValue>> SqlGenerator(List<KeyValuePair<TEntity, string[]>> list, List<KeyValuePair<string, string>> columns)
             {
                 var sb = new StringBuilder();
-                var paramters = new Dictionary<string, object>();
+                var parameters = new Dictionary<string, ParameterValue>();
 
                 list.ForEach((kvr, index) =>
                 {
@@ -977,18 +1184,18 @@ namespace CodeArts.ORM
                         if (attrs.Any())
                         {
                             ValidateValue(value, context, attrs);
-
-                            value = storeItem.Member.GetValue(entry, null);
                         }
 
-                        paramters.Add(parameterKey, value);
+                        parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
                         if (typeRegions.Tokens.TryGetValue(kv.Key, out TokenAttribute token))
                         {
                             value = token.Create();
 
                             if (value is null)
+                            {
                                 throw new NoNullAllowedException("令牌不允许为空!");
+                            }
 
                             storeItem.Member.SetValue(entry, value, null);
                         }
@@ -1021,11 +1228,9 @@ namespace CodeArts.ORM
                             if (attrs.Any())
                             {
                                 ValidateValue(value, context, attrs);
-
-                                value = storeItem.Member.GetValue(entry, null);
                             }
 
-                            paramters.Add(parameterKey, value);
+                            parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
                             return string.Concat(Settings.Name(kv.Value), "=", Settings.ParamterName(parameterKey));
 
@@ -1035,10 +1240,10 @@ namespace CodeArts.ORM
                         .Append(";");
                 });
 
-                return new KeyValuePair<string, Dictionary<string, object>>(sb.ToString(), paramters);
+                return new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters);
             }
 
-            public IUpdateable<T> From(Func<ITableInfo, string> table)
+            public IUpdateable<TEntity> From(Func<ITableInfo, string> table)
             {
                 if (table is null)
                 {
@@ -1050,23 +1255,23 @@ namespace CodeArts.ORM
                 return this;
             }
 
-            public IUpdateable<T> From(Func<ITableInfo, T, string> table)
+            public IUpdateable<TEntity> From(Func<ITableInfo, TEntity, string> table)
             {
                 from = table ?? throw new ArgumentNullException(nameof(table));
 
                 return this;
             }
 
-            public IUpdateable<T> Limit(string[] columns)
+            public IUpdateable<TEntity> Limit(string[] columns)
             {
                 limits = columns ?? throw new ArgumentNullException(nameof(columns));
 
                 return this;
             }
 
-            public IUpdateable<T> Limit<TColumn>(Expression<Func<T, TColumn>> columns) => Limit(Provider.Limit(columns));
+            public IUpdateable<TEntity> Limit<TColumn>(Expression<Func<TEntity, TColumn>> columns) => Limit(DbRouter.Limit(columns));
 
-            public IUpdateable<T> Where(string[] columns)
+            public IUpdateable<TEntity> Where(string[] columns)
             {
                 if (columns is null)
                 {
@@ -1078,35 +1283,114 @@ namespace CodeArts.ORM
                 return this;
             }
 
-            public IUpdateable<T> Where<TColumn>(Expression<Func<T, TColumn>> columns)
+            public IUpdateable<TEntity> Where<TColumn>(Expression<Func<TEntity, TColumn>> columns)
             {
-                where = Provider.Where(columns);
+                where = DbRouter.Where(columns);
 
                 return this;
             }
 
-            private int Transaction(Func<int> factroy)
+            public override List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand()
             {
-                if (!option.HasValue)
+                var sb = new StringBuilder();
+                var paramters = new Dictionary<string, object>();
+
+                IEnumerable<KeyValuePair<string, string>> columns = typeRegions.ReadWrites;
+
+                if (!(limits is null))
                 {
-                    return factroy.Invoke();
+                    columns = columns.Where(x => limits.Any(y => y == x.Key || y == x.Value));
                 }
 
-                using (TransactionScope transaction = new TransactionScope(option.Value))
+                if (!(excepts is null))
                 {
-                    int affected_rows = factroy.Invoke();
-
-                    transaction.Complete();
-
-                    return affected_rows;
+                    columns = columns.Where(x => !excepts.Any(y => y == x.Key || y == x.Value));
                 }
-            }
 
-            public IUpdateable<T> UseTransaction(TransactionScopeOption option)
-            {
-                this.option = option;
+                if (!columns.Any())
+                    throw new DException("未指定更新字段!");
 
-                return this;
+                columns = columns.Union(typeRegions.ReadWrites
+                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
+                    );
+
+                int parameterCount = 0;
+
+                var dicRoot = new List<KeyValuePair<TEntity, string[]>>();
+
+                Entries.ForEach(item =>
+                {
+                    var wheres = where?.Invoke(item) ?? defaultWhere;
+
+                    if (wheres.Length == 0)
+                        throw new DException("未指定更新条件");
+
+                    var whereColumns = typeRegions.ReadWrites
+                            .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
+                            .Select(x => x.Value)
+                            .ToArray();
+
+                    if (whereColumns.Length == 0)
+                        throw new DException("未指定更新条件!");
+
+                    if (typeRegions.Tokens.Count > 0)
+                    {
+                        whereColumns = whereColumns
+                        .Concat(typeRegions.ReadOrWrites
+                            .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
+                            .Select(x => x.Value))
+                        .Distinct()
+                        .ToArray();
+                    }
+
+                    parameterCount += whereColumns.Length;
+
+                    dicRoot.Add(new KeyValuePair<TEntity, string[]>(item, whereColumns));
+                });
+
+                var updateColumns = columns
+                    .Union(typeRegions.ReadWrites
+                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
+                    )
+                    .ToList();
+
+                var results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
+
+                parameterCount += updateColumns.Count * Entries.Count;
+
+                if (parameterCount <= MAX_PARAMETERS_COUNT) // 所有数据库的参数个数最小限制 => 取自 Oracle 9i
+                {
+                    results.Add(SqlGenerator(dicRoot, updateColumns));
+
+                    return results;
+                }
+
+                parameterCount = 0;
+
+                var dic = new List<KeyValuePair<TEntity, string[]>>();
+
+                foreach (var kv in dicRoot.OrderBy(x => x.Value.Length))
+                {
+                    parameterCount += updateColumns.Count + kv.Value.Length;
+
+                    if (parameterCount > MAX_PARAMETERS_COUNT)
+                    {
+                        parameterCount = updateColumns.Count + kv.Value.Length;
+
+                        results.Add(SqlGenerator(dic, updateColumns));
+
+                        dic.Clear();
+                    }
+
+                    dic.Add(new KeyValuePair<TEntity, string[]>(kv.Key, kv.Value));
+                }
+
+                if (dic.Count > 0)
+                {
+                    results.Add(SqlGenerator(dic, updateColumns));
+                }
+
+                return results;
             }
         }
 
@@ -1116,7 +1400,7 @@ namespace CodeArts.ORM
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IInsertable<T> AsInsertable(IRouteExecuter<T> executeable, ICollection<T> entries)
+        public static IInsertable<TEntity> AsInsertable(IDbContext<TEntity> executeable, ICollection<TEntity> entries)
             => new Insertable(executeable, entries);
 
         /// <summary>
@@ -1125,7 +1409,7 @@ namespace CodeArts.ORM
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IUpdateable<T> AsUpdateable(IRouteExecuter<T> executeable, ICollection<T> entries)
+        public static IUpdateable<TEntity> AsUpdateable(IDbContext<TEntity> executeable, ICollection<TEntity> entries)
             => new Updateable(executeable, entries);
 
         /// <summary>
@@ -1134,15 +1418,7 @@ namespace CodeArts.ORM
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IDeleteable<T> AsDeleteable(IRouteExecuter<T> executeable, ICollection<T> entries)
+        public static IDeleteable<TEntity> AsDeleteable(IDbContext<TEntity> executeable, ICollection<TEntity> entries)
             => new Deleteable(executeable, entries);
-
-        /// <summary>
-        /// 赋予执行能力。
-        /// </summary>
-        /// <param name="editable">编辑。</param>
-        /// <returns></returns>
-        public static IExecuteable<T> AsExecuteable(IWriteRepository<T> editable)
-            => new Executeable(editable);
     }
 }

@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using System;
 
 namespace CodeArts.Mvc.DependencyInjection
@@ -21,15 +21,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient(this IServiceCollection services, Type serviceType, Type implementationType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException("implementationType");
             }
@@ -48,15 +48,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object> implementationFactory)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -75,7 +75,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services) where TService : class where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
@@ -92,11 +92,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient(this IServiceCollection services, Type serviceType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
@@ -113,7 +113,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient<TService>(this IServiceCollection services) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
@@ -132,11 +132,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -157,17 +157,17 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient" />
         public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services, Func<IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
             return services.AddTransient(typeof(TService), implementationFactory);
         }
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
         /// <summary>
         /// Adds a scoped service of the type specified in <paramref name="serviceType" /> with an
         /// implementation of the type specified in <paramref name="implementationType" /> to the
@@ -180,15 +180,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped(this IServiceCollection services, Type serviceType, Type implementationType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException("implementationType");
             }
@@ -207,15 +207,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object> implementationFactory)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -234,7 +234,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped<TService, TImplementation>(this IServiceCollection services) where TService : class where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
@@ -251,11 +251,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped(this IServiceCollection services, Type serviceType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
@@ -272,7 +272,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped<TService>(this IServiceCollection services) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
@@ -291,11 +291,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -316,11 +316,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" />
         public static IServiceCollection AddScoped<TService, TImplementation>(this IServiceCollection services, Func<IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -339,15 +339,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton(this IServiceCollection services, Type serviceType, Type implementationType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException("implementationType");
             }
@@ -366,15 +366,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton(this IServiceCollection services, Type serviceType, Func<IServiceProvider, object> implementationFactory)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -393,7 +393,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services) where TService : class where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
@@ -410,11 +410,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton(this IServiceCollection services, Type serviceType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
@@ -431,7 +431,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton<TService>(this IServiceCollection services) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
@@ -450,11 +450,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -475,11 +475,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services, Func<IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -498,15 +498,15 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton(this IServiceCollection services, Type serviceType, object implementationInstance)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException("implementationInstance");
             }
@@ -526,11 +526,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <seealso cref="F:Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" />
         public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, TService implementationInstance) where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException("services");
             }
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException("implementationInstance");
             }

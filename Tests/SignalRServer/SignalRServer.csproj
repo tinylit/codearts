@@ -123,9 +123,21 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CodeArts.Defaults\CodeArts.Defaults.csproj">
-      <Project>{8dd6eac1-5f61-4072-8150-6d3df72dae65}</Project>
-      <Name>CodeArts.Defaults</Name>
+    <ProjectReference Include="..\..\src\CodeArts.Caching\CodeArts.Caching.csproj">
+      <Project>{1f1dcdc3-9a3e-4af6-97da-96644aa03aea}</Project>
+      <Name>CodeArts.Caching</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj">
+      <Project>{2fe5dea1-f628-476b-bacf-0fa220537a29}</Project>
+      <Name>CodeArts.Configuration</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.Json\CodeArts.Json.csproj">
+      <Project>{769368d2-b5df-491b-acc9-f17d074463c7}</Project>
+      <Name>CodeArts.Json</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.MemoryCaching\CodeArts.MemoryCaching.csproj">
+      <Project>{0292186a-a2b4-4979-be6f-245c48d7f15a}</Project>
+      <Name>CodeArts.MemoryCaching</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.SignalR.Core\CodeArts.SignalR.Core.csproj">
       <Project>{14b466a0-3709-439b-a9f1-ee8d3319a75e}</Project>

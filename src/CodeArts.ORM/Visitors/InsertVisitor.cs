@@ -1,7 +1,5 @@
 ﻿using CodeArts.ORM.Exceptions;
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,7 +9,7 @@ namespace CodeArts.ORM.Visitors
     /// <summary>
     /// 插入访问器。
     /// </summary>
-    public class InsertVisitor : BaseVisitor
+    public class InsertVisitor : BaseVisitor, IExecuteVisitor
     {
         private class InsertSelectVisitor : SelectVisitor
         {
@@ -97,6 +95,11 @@ namespace CodeArts.ORM.Visitors
             {
                 var bindings = FilterMemberBindings(node.Bindings);
 
+                if (bindings.Count == 0)
+                {
+                    throw new DException("未指定插入字段!");
+                }
+
                 var enumerator = bindings.GetEnumerator();
 
                 if (enumerator.MoveNext())
@@ -142,42 +145,42 @@ namespace CodeArts.ORM.Visitors
 
                     return node;
                 }
-                else
-                {
-                    throw new DException("未指定插入字段!");
-                }
+
+                throw new DException("未指定插入字段!");
             }
         }
-
-        private readonly ExecuteVisitor visitor;
 
         /// <inheritdoc />
         public InsertVisitor(ExecuteVisitor visitor) : base(visitor)
         {
-            this.visitor = visitor;
         }
 
-        /// <inheritdoc />
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Type.IsExecuteable())
-            {
-                return node;
-            }
+        /// <summary>
+        /// 行为。
+        /// </summary>
+        public ActionBehavior Behavior => ActionBehavior.Insert;
 
-            return base.VisitConstant(node);
-        }
+        /// <summary>
+        /// 超时时间。
+        /// </summary>
+        public int? TimeOut { private set; get; }
 
-        /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Insert && node.Method.DeclaringType == typeof(Executeable);
 
         /// <inheritdoc />
-        protected override Expression VisitOfExecuteable(MethodCallExpression node)
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Insert && node.Method.DeclaringType == typeof(RepositoryExtentions);
+
+        /// <inheritdoc />
+        protected override Expression VisitOfSelect(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
                 case MethodCall.TimeOut:
-                    return base.Visit(visitor.VisitOfTimeOut(node));
+
+                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
+
+                    base.Visit(node.Arguments[0]);
+
+                    return node;
                 case MethodCall.Insert:
 
                     var insertFields = new List<string>();
@@ -188,7 +191,7 @@ namespace CodeArts.ORM.Visitors
 
                     Workflow(() =>
                     {
-                        var tableInfo = base.MakeTableInfo(objectExp.Type);
+                        var tableInfo = MakeTableInfo(objectExp.Type);
 
                         writer.Insert();
 
@@ -225,7 +228,7 @@ namespace CodeArts.ORM.Visitors
 
                     return node;
                 default:
-                    return base.VisitOfExecuteable(node);
+                    return base.VisitOfSelect(node);
             }
         }
     }

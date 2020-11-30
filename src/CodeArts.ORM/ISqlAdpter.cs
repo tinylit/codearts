@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// SQL 适配器
+    /// SQL 适配器。
     /// </summary>
     public interface ISqlAdpter
     {
@@ -50,7 +50,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// SQL 格式化（格式化为数据库可执行的语句）。
         /// </summary>
-        /// <param name="sql">语句</param>
+        /// <param name="sql">语句。</param>
         /// <param name="settings">配置。</param>
         /// <returns></returns>
         string Format(string sql, ISQLCorrectSimSettings settings);

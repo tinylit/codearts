@@ -9,24 +9,24 @@ using System;
 namespace Owin
 {
     /// <summary>
-    /// Mail 扩展
+    /// Mail 扩展。
     /// </summary>
     public static class MailExtensions
     {
         /// <summary>
-        /// 使用信箱功能
+        /// 使用信箱功能。
         /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="mail">信箱</param>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="mail">信箱。</param>
         /// <returns></returns>
         public static void RunSignalR(this IAppBuilder app, IMail mail) => app.RunSignalR(new HubConfiguration(), mail);
 
         /// <summary>
-        /// 使用信箱功能
+        /// 使用信箱功能。
         /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="configuration">配置</param>
-        /// <param name="mail">信箱</param>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="configuration">配置。</param>
+        /// <param name="mail">信箱。</param>
         /// <returns></returns>
         public static void RunSignalR(this IAppBuilder app, HubConfiguration configuration, IMail mail)
         {
@@ -50,31 +50,31 @@ namespace Owin
         }
 
         /// <summary>
-        /// 使用信箱功能
+        /// 使用信箱功能。
         /// </summary>
-        /// <typeparam name="TConnection">持久连接</typeparam>
-        /// <param name="app">项目构建器</param>
-        /// <param name="mail">信箱</param>
+        /// <typeparam name="TConnection">持久连接。</typeparam>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="mail">信箱。</param>
         public static void RunSignalR<TConnection>(this IAppBuilder app, IMail mail) where TConnection : PersistentConnection
             => app.RunSignalR<TConnection>(new ConnectionConfiguration(), mail);
 
         /// <summary>
-        /// 使用信箱功能
+        /// 使用信箱功能。
         /// </summary>
-        /// <typeparam name="TConnection">持久连接</typeparam>
-        /// <param name="app">项目构建器</param>
-        /// <param name="configuration">连接配置</param>
-        /// <param name="mail">信箱</param>
+        /// <typeparam name="TConnection">持久连接。</typeparam>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="configuration">连接配置。</param>
+        /// <param name="mail">信箱。</param>
         public static void RunSignalR<TConnection>(this IAppBuilder app, ConnectionConfiguration configuration, IMail mail) where TConnection : PersistentConnection
             => app.RunSignalR(typeof(TConnection), configuration, mail);
 
         /// <summary>
-        /// 使用信箱功能
+        /// 使用信箱功能。
         /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="connectionType">连接类型</param>
-        /// <param name="configuration">连接配置</param>
-        /// <param name="mail">信箱</param>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="connectionType">连接类型。</param>
+        /// <param name="configuration">连接配置。</param>
+        /// <param name="mail">信箱。</param>
         public static void RunSignalR(this IAppBuilder app, Type connectionType, ConnectionConfiguration configuration, IMail mail)
         {
             if (connectionType is null)

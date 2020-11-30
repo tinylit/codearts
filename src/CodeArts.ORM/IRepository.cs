@@ -5,10 +5,10 @@ using System.Linq;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 仓储基本接口
+    /// 仓储基本接口。
     /// </summary>
-    /// <typeparam name="T">实体类型</typeparam>
-    public interface IRepository<T> : IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IQueryable, IEnumerable
+    /// <typeparam name="T">实体类型。</typeparam>
+    public interface IRepository<T> : IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IEnumerable
     {
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 #else
 using System.Web.Http.Metadata;
@@ -11,7 +11,7 @@ using System.Web.Http.Validation;
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// 模型验证器
+    /// 模型验证器。
     /// </summary>
     public static class ModelValidator
     {
@@ -19,10 +19,10 @@ namespace CodeArts.Mvc
         private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>> ValidationCache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>>();
 
         /// <summary>
-        /// 消息验证（校验异常时，返回自定义的错误消息）
+        /// 消息验证（校验异常时，返回自定义的错误消息）。
         /// </summary>
-        /// <typeparam name="T">验证属性</typeparam>
-        /// <param name="validator">验证器</param>
+        /// <typeparam name="T">验证属性。</typeparam>
+        /// <param name="validator">验证器。</param>
         public static void CustomValidate<T>(Func<T, ValidationContext, string> validator) where T : ValidationAttribute
         {
             if (validator is null)
@@ -34,10 +34,10 @@ namespace CodeArts.Mvc
         }
 
         /// <summary>
-        /// 消息验证（校验异常时，返回自定义的错误消息）
+        /// 消息验证（校验异常时，返回自定义的错误消息）。
         /// </summary>
-        /// <typeparam name="T">验证属性</typeparam>
-        /// <param name="validator">验证器</param>
+        /// <typeparam name="T">验证属性。</typeparam>
+        /// <param name="validator">验证器。</param>
         public static void CustomValidate<T>(Func<T, ValidationContext, object, string> validator) where T : ValidationAttribute
         {
             if (validator is null)
@@ -47,16 +47,16 @@ namespace CodeArts.Mvc
 
             ValidationCache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context, value);
         }
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
         /// <summary>
-        /// 数据验证
+        /// 数据验证。
         /// </summary>
-        /// <param name="validationContext">验证上下文</param>
-        /// <param name="validator">验证器</param>
-        /// <param name="validationAttribute">验证属性</param>
+        /// <param name="validationContext">验证上下文。</param>
+        /// <param name="validator">验证器。</param>
+        /// <param name="validationAttribute">验证属性。</param>
         public static IEnumerable<ModelValidationResult> Validate(ModelValidationContext validationContext, IModelValidator validator, ValidationAttribute validationAttribute)
         {
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
@@ -78,7 +78,14 @@ namespace CodeArts.Mvc
             else if (ValidationCache.TryGetValue(validationAttribute.GetType(), out Func<ValidationAttribute, ValidationContext, object, string> invoke))
             {
                 var metadata = validationContext.ModelMetadata;
-                var memberName = metadata.Name;
+#if NETCOREAPP3_1
+var memberName =metadata.Name;
+#else
+                var memberName = metadata.MetadataKind == Microsoft.AspNetCore.Mvc.ModelBinding.Metadata.ModelMetadataKind.Property
+                    ? metadata.PropertyName
+                    : metadata.DisplayName;
+#endif
+
                 var container = validationContext.Container;
 
                 var context = new ValidationContext(
@@ -108,14 +115,14 @@ namespace CodeArts.Mvc
             }
         }
 #else
-        /// <summary>
-        /// 数据验证
-        /// </summary>
-        /// <param name="validator">验证器</param>
-        /// <param name="metadata">模型数据</param>
-        /// <param name="validationAttribute">验证属性</param>
-        /// <param name="container">数据</param>
-        public static IEnumerable<ModelValidationResult> Validate(System.Web.Http.Validation.ModelValidator validator, ModelMetadata metadata, ValidationAttribute validationAttribute, object container)
+                /// <summary>
+                /// 数据验证。
+                /// </summary>
+                /// <param name="validator">验证器。</param>
+                /// <param name="metadata">模型数据。</param>
+                /// <param name="validationAttribute">验证属性。</param>
+                /// <param name="container">数据。</param>
+                public static IEnumerable<ModelValidationResult> Validate(System.Web.Http.Validation.ModelValidator validator, ModelMetadata metadata, ValidationAttribute validationAttribute, object container)
         {
             if (validator is null)
             {

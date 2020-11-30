@@ -1,50 +1,45 @@
 ﻿using CodeArts.ORM.Exceptions;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeArts.ORM.Visitors
 {
     /// <summary>
     /// 更新访问器。
     /// </summary>
-    public class UpdateVisitor : ConditionVisitor
+    public class UpdateVisitor : ConditionVisitor, IExecuteVisitor
     {
-        private readonly ExecuteVisitor visitor;
+        /// <summary>
+        /// 行为。
+        /// </summary>
+        public ActionBehavior Behavior => ActionBehavior.Update;
+
+        /// <summary>
+        /// 超时时间。
+        /// </summary>
+        public int? TimeOut { private set; get; }
 
         /// <inheritdoc />
         public UpdateVisitor(ExecuteVisitor visitor) : base(visitor)
         {
-            this.visitor = visitor;
         }
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Update && node.Method.DeclaringType == typeof(Executeable);
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Update && node.Method.DeclaringType == typeof(RepositoryExtentions);
 
         /// <inheritdoc />
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Type.IsExecuteable())
-            {
-                return node;
-            }
-
-            return base.VisitConstant(node);
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitOfExecuteable(MethodCallExpression node)
+        protected override Expression VisitOfSelect(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
-                case MethodCall.Where:
-                    return base.VisitCondition(node);
                 case MethodCall.TimeOut:
-                    return base.Visit(visitor.VisitOfTimeOut(node));
+
+                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
+
+                    base.Visit(node.Arguments[0]);
+
+                    return node;
                 case MethodCall.Update:
 
                     Expression objectExp = node.Arguments[0];
@@ -84,7 +79,7 @@ namespace CodeArts.ORM.Visitors
 
                     return node;
                 default:
-                    return base.VisitOfExecuteable(node);
+                    return base.VisitOfSelect(node);
             }
         }
 

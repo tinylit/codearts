@@ -4,7 +4,7 @@ using UnitTest.Serialize;
 namespace CodeArts.ORM.Domain
 {
     [SqlServerConnection]
-    public class UserDetailsRepository : ReadRepository<FeiUserdetails>
+    public class UserDetailsRepository : Repository<FeiUserdetails>
     {
     }
 }

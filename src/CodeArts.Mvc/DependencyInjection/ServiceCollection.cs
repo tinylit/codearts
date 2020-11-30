@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using System.Collections;
 using System.Collections.Generic;
 

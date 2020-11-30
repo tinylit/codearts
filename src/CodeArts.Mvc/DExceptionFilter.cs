@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NET_CORE
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 #else
@@ -12,17 +12,17 @@ using System.Net;
 
 namespace CodeArts.Mvc
 {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-    /// <summary> 默认的异常处理 </summary>
+#if NET_CORE
+    /// <summary> 默认的异常处理。 </summary>
     public class DExceptionFilter : IExceptionFilter
     {
-        /// <summary> 业务消息过滤 </summary>
+        /// <summary> 业务消息过滤。 </summary>
         public static Action<DResult> ResultFilter;
 
         /// <summary>
-        /// 错误消息处理
+        /// 错误消息处理。
         /// </summary>
-        /// <param name="context">异常上下文</param>
+        /// <param name="context">异常上下文。</param>
         public void OnException(ExceptionContext context)
         {
             var json = Exceptions.ExceptionHandler.Handler(context.Exception);
@@ -44,15 +44,15 @@ namespace CodeArts.Mvc
     }
 #else
     /// <inheritdoc />
-    /// <summary> 默认的异常处理 </summary>
+    /// <summary> 默认的异常处理。 </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = true)]
     public class DExceptionFilterAttribute : ExceptionFilterAttribute
     {
-        /// <summary> 业务消息过滤 </summary>
+        /// <summary> 业务消息过滤。 </summary>
         public static Action<DResult> ResultFilter;
 
-        /// <summary> 异常处理 </summary>
-        /// <param name="context">异常上下文</param>
+        /// <summary> 异常处理。 </summary>
+        /// <param name="context">异常上下文。</param>
         public override void OnException(HttpActionExecutedContext context)
         {
             var json = Exceptions.ExceptionHandler.Handler(context.Exception);

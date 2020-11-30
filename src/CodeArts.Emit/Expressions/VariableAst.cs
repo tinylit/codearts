@@ -15,7 +15,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="returnType">类型</param>
+        /// <param name="returnType">类型。</param>
         public VariableAst(Type returnType) : base(returnType)
         {
         }
@@ -49,7 +49,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 将当前堆载顶部的数据赋值给变量。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Assign(ILGenerator ilg)
         {
             ilg.Emit(OpCodes.Stloc, Value);
@@ -58,8 +58,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 赋值。
         /// </summary>
-        /// <param name="ilg">指令</param>
-        /// <param name="value">值</param>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
         protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
             value.Load(ilg);

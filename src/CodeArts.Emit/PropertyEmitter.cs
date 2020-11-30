@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -61,7 +60,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 设置Get方法。
         /// </summary>
-        /// <param name="getter">数据获取器</param>
+        /// <param name="getter">数据获取器。</param>
         /// <returns></returns>
         public PropertyEmitter SetGetMethod(MethodEmitter getter)
         {
@@ -82,7 +81,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 创建Set方法。
         /// </summary>
-        /// <param name="setter">数据设置器</param>
+        /// <param name="setter">数据设置器。</param>
         /// <returns></returns>
         public PropertyEmitter SetSetMethod(MethodEmitter setter)
         {

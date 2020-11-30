@@ -1,7 +1,7 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.Http.Metadata.Providers;
 
 namespace CodeArts.Mvc.Providers

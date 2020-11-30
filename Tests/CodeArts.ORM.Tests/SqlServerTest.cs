@@ -1,3 +1,5 @@
+using CodeArts;
+using CodeArts.Casting;
 using CodeArts.ORM;
 using CodeArts.ORM.Domain;
 using CodeArts.ORM.Exceptions;
@@ -26,6 +28,10 @@ namespace UnitTest
             var adapter = new SqlServerAdapter();
             DbConnectionManager.RegisterAdapter(adapter);
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+
+            RuntimeServPools.TryAddSingleton<ICastToExpression, CastToExpression>();
+            RuntimeServPools.TryAddSingleton<ICopyToExpression, CopyToExpression>();
+            RuntimeServPools.TryAddSingleton<IMapToExpression, MapToExpression>();
 
             if (isCompleted) return;
 
@@ -73,7 +79,7 @@ namespace UnitTest
 
             var result = user.Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });//.Where(x => x.Id > 0 && x.Id < y);
 
-            var list = result.ToList();
+            var list = result.ToListAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
         }
         [TestMethod]
@@ -595,7 +601,7 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void SkipOrderByTest() //! SqlServer中，必须配合排序函数（OrderBy/OrderByDescending）使用
+        public void SkipOrderByTest()
         {
             var user = new UserRepository();
             var result = user.Skip(124680).OrderBy(x => x.Id);
@@ -855,7 +861,7 @@ namespace UnitTest
                 .Where(x => x.Username ?? x.Mobile)
                 .ExecuteCommand();
 
-            var j = user.AsExecuteable()
+            var j = user
                 .From(x => x.TableName)
                 .Where(x => x.Username == "admin")
                 .Update(x => new FeiUsers
@@ -893,16 +899,7 @@ namespace UnitTest
                 .Where(x => x.Username)
                 .ExecuteCommand();
 
-            var x2 = user.AsExecuteable()
-                .Delete(x => x.Username == "admi");
-        }
-
-        [TestMethod]
-        public void ApplyTest()
-        {
-            var user = new UserRepository();
-
-            var dto = user.GetApply();
+            var x2 = user.Delete(x => x.Username == "admi");
         }
 
         [TestMethod]
@@ -918,7 +915,7 @@ namespace UnitTest
         public void TimeOut2Test()
         {
             var user = new UserRepository();
-            var result = user.AsExecuteable()
+            var result = user
                 .From(x => x.TableName)
                 .Where(x => x.Username == "admin")
                 .TimeOut(10)

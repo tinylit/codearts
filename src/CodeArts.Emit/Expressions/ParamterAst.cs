@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 参数。
     /// </summary>
-    [DebuggerDisplay("arg ({ReturnType})")]
+    [DebuggerDisplay("{ReturnType.Name} ({position})")]
     public class ParamterAst : AssignAstExpression
     {
         /// <summary>

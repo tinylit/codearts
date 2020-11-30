@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using System;
 using System.Diagnostics;
 
@@ -49,7 +49,7 @@ namespace CodeArts.Mvc.DependencyInjection
         public ServiceDescriptor(Type serviceType, Type implementationType, ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
@@ -66,7 +66,7 @@ namespace CodeArts.Mvc.DependencyInjection
         public ServiceDescriptor(Type serviceType, object instance)
             : this(serviceType, ServiceLifetime.Singleton)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
@@ -83,7 +83,7 @@ namespace CodeArts.Mvc.DependencyInjection
         public ServiceDescriptor(Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
@@ -120,11 +120,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Transient(Type service, Type implementationType)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException("service");
             }
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException("implementationType");
             }
@@ -143,7 +143,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Transient<TService, TImplementation>(Func<IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -160,7 +160,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Transient<TService>(Func<IServiceProvider, TService> implementationFactory) where TService : class
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -177,17 +177,17 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Transient(Type service, Func<IServiceProvider, object> implementationFactory)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException("service");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
             return Describe(service, implementationFactory, ServiceLifetime.Transient);
         }
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
         /// <summary>
         /// Creates an instance of <see cref="ServiceDescriptor" /> with the specified
         /// <typeparamref name="TService" />, <typeparamref name="TImplementation" />,
@@ -226,7 +226,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Scoped<TService, TImplementation>(Func<IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -243,7 +243,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Scoped<TService>(Func<IServiceProvider, TService> implementationFactory) where TService : class
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -260,11 +260,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Scoped(Type service, Func<IServiceProvider, object> implementationFactory)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException("service");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -294,11 +294,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Singleton(Type service, Type implementationType)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException("service");
             }
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException("implementationType");
             }
@@ -317,7 +317,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Singleton<TService, TImplementation>(Func<IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -334,7 +334,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Singleton<TService>(Func<IServiceProvider, TService> implementationFactory) where TService : class
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -351,11 +351,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Singleton(Type serviceType, Func<IServiceProvider, object> implementationFactory)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException("implementationFactory");
             }
@@ -372,7 +372,7 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Singleton<TService>(TService implementationInstance) where TService : class
         {
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException("implementationInstance");
             }
@@ -389,11 +389,11 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor" />.</returns>
         public static ServiceDescriptor Singleton(Type serviceType, object implementationInstance)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException("serviceType");
             }
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException("implementationInstance");
             }

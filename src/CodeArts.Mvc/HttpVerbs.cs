@@ -3,37 +3,37 @@
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// 请求方式
+    /// 请求方式。
     /// </summary>
     [Flags]
     public enum HttpVerbs
     {
         /// <summary>
-        /// Get
+        /// Get。
         /// </summary>
         GET = 1,
         /// <summary>
-        /// Post
+        /// Post。
         /// </summary>
         POST = 2,
         /// <summary>
-        /// Put
+        /// Put。
         /// </summary>
         PUT = 4,
         /// <summary>
-        /// Delete
+        /// Delete。
         /// </summary>
         DELETE = 8,
         /// <summary>
-        /// Head
+        /// Head。
         /// </summary>
         HEAD = 16,
         /// <summary>
-        /// Patch
+        /// Patch。
         /// </summary>
         PATCH = 32,
         /// <summary>
-        /// Options
+        /// Options。
         /// </summary>
         OPTIONS = 64
     }

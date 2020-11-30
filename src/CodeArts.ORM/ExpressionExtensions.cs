@@ -4,14 +4,14 @@ using System.Linq.Expressions;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 表达式拓展类
+    /// 表达式拓展类。
     /// </summary>
     internal static class ExpressionExtensions
     {
         /// <summary>
-        /// 是否为boolean表达式
+        /// 是否为boolean表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsBoolean(this UnaryExpression node)
         {
@@ -23,9 +23,9 @@ namespace CodeArts.ORM
             return node.Operand.IsBoolean();
         }
         /// <summary>
-        /// 是否为boolean表达式
+        /// 是否为boolean表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsBoolean(this Expression node)
         {
@@ -38,9 +38,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 是否是HasValue属性
+        /// 是否是HasValue属性。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsHasValue(this MemberExpression node)
         {
@@ -53,9 +53,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 是否是Value属性
+        /// 是否是Value属性。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsValue(this MemberExpression node)
         {
@@ -67,9 +67,9 @@ namespace CodeArts.ORM
             return node.Member.Name == "Value";
         }
         /// <summary>
-        /// 是否是Length属性
+        /// 是否是Length属性。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsLength(this MemberExpression node)
         {
@@ -81,9 +81,9 @@ namespace CodeArts.ORM
             return node.Member.Name == "Length";
         }
         /// <summary>
-        /// 是否为可空类型
+        /// 是否为可空类型。
         /// </summary>
-        /// <param name="member">表达式</param>
+        /// <param name="member">表达式。</param>
         /// <returns></returns>
         internal static bool IsNullable(this MemberExpression member)
         {
@@ -96,9 +96,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 是否为陈述语句
+        /// 是否为陈述语句。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsPredicate(this UnaryExpression node)
         {
@@ -110,14 +110,16 @@ namespace CodeArts.ORM
             return node.Operand.IsPredicate();
         }
         /// <summary>
-        /// 是否为陈述语句
+        /// 是否为陈述语句。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsPredicate(this Expression node)
         {
             if (node is null)
+            {
                 return false;
+            }
 
             switch (node.NodeType)
             {
@@ -140,9 +142,9 @@ namespace CodeArts.ORM
             }
         }
         /// <summary>
-        /// 是否为变量类型
+        /// 是否为变量类型。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsVariable(this MemberExpression node)
         {
@@ -153,10 +155,11 @@ namespace CodeArts.ORM
 
             return node.Expression.IsVariable();
         }
+
         /// <summary>
-        /// 是否为变量类型
+        /// 是否为变量类型。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static bool IsVariable(this Expression node)
         {
@@ -173,9 +176,9 @@ namespace CodeArts.ORM
             return node.NodeType == ExpressionType.Constant;
         }
         /// <summary>
-        /// 获取操作符
+        /// 获取操作符。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static string GetOperator(this UnaryExpression node)
         {
@@ -199,9 +202,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// Where条件（不包含And或Or）
+        /// Where条件（不包含And或Or）。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
+        /// <param name="nodeType">节点类型。</param>
         /// <returns></returns>
         internal static ExpressionType ReverseWhere(this ExpressionType nodeType)
         {
@@ -225,10 +228,10 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 获取操作符
+        /// 获取操作符。
         /// </summary>
-        /// <param name="node">节点</param>
-        /// <param name="nodeType">节点类型</param>
+        /// <param name="node">节点。</param>
+        /// <param name="nodeType">节点类型。</param>
         /// <returns></returns>
         internal static string GetOperator(this BinaryExpression node, ExpressionType? nodeType = null)
         {
@@ -250,9 +253,9 @@ namespace CodeArts.ORM
             }
         }
         /// <summary>
-        /// 获取操作符
+        /// 获取操作符。
         /// </summary>
-        /// <param name="expressionType">表达式类型</param>
+        /// <param name="expressionType">表达式类型。</param>
         /// <returns></returns>
         internal static string GetOperator(ExpressionType expressionType)
         {
@@ -298,9 +301,9 @@ namespace CodeArts.ORM
             }
         }
         /// <summary>
-        /// 获取表达式值
+        /// 获取表达式值。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static object GetValueFromExpression(this Expression node)
         {
@@ -313,9 +316,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 获取表达式成员名称
+        /// 获取表达式成员名称。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static string GetPropertyMemberNameFromExpression(this MemberExpression node)
         {
@@ -327,15 +330,15 @@ namespace CodeArts.ORM
             return node.Member.Name;
         }
         /// <summary>
-        /// 获取表达式成员名称
+        /// 获取表达式成员名称。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static string GetPropertyMemberNameFromExpression(this Expression node) => node.GetMemberExpression().GetPropertyMemberNameFromExpression();
         /// <summary>
-        /// 获取表达式属性名称
+        /// 获取表达式属性名称。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static string GetPropertyNameFromExpression(this Expression node)
         {
@@ -359,9 +362,9 @@ namespace CodeArts.ORM
             }
         }
         /// <summary>
-        /// 获取成员表达式
+        /// 获取成员表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static MemberExpression GetMemberExpression(this ConditionalExpression node)
         {
@@ -375,9 +378,9 @@ namespace CodeArts.ORM
                 node.IfFalse.GetMemberExpression();
         }
         /// <summary>
-        /// 获取成员表达式
+        /// 获取成员表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static MemberExpression GetMemberExpression(this LambdaExpression node)
         {
@@ -389,9 +392,9 @@ namespace CodeArts.ORM
             return node.Body.GetMemberExpression();
         }
         /// <summary>
-        /// 获取成员表达式
+        /// 获取成员表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static MemberExpression GetMemberExpression(this UnaryExpression node)
         {
@@ -403,9 +406,9 @@ namespace CodeArts.ORM
             return node.Operand.GetMemberExpression();
         }
         /// <summary>
-        /// 获取成员表达式
+        /// 获取成员表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static MemberExpression GetMemberExpression(this BinaryExpression node)
         {
@@ -417,9 +420,9 @@ namespace CodeArts.ORM
             return node.Left.GetMemberExpression() ?? node.Right.GetMemberExpression();
         }
         /// <summary>
-        /// 获取成员表达式
+        /// 获取成员表达式。
         /// </summary>
-        /// <param name="node">表达式</param>
+        /// <param name="node">表达式。</param>
         /// <returns></returns>
         internal static MemberExpression GetMemberExpression(this Expression node)
         {
@@ -447,10 +450,10 @@ namespace CodeArts.ORM
             return null;
         }
         /// <summary>
-        /// 是否继承或泛型包含声明类型
+        /// 是否继承或泛型包含声明类型。
         /// </summary>
-        /// <param name="node">表达式</param>
-        /// <param name="declaringType">声明类型</param>
+        /// <param name="node">表达式。</param>
+        /// <param name="declaringType">声明类型。</param>
         /// <returns></returns>
         internal static bool GetDeclaringTypeExpression(this Expression node, Type declaringType)
         {

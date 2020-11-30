@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -12,6 +11,8 @@ namespace CodeArts.Emit.Expressions
     {
         private readonly List<AstExpression> codes = new List<AstExpression>();
         private readonly List<VariableAst> variables = new List<VariableAst>();
+
+        private bool isLastReturn = false;
 
         /// <summary>
         /// 构造函数。
@@ -29,7 +30,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 声明变量。
         /// </summary>
-        /// <param name="variableType">变量类型</param>
+        /// <param name="variableType">变量类型。</param>
         /// <returns></returns>
         public VariableAst DeclareVariable(Type variableType)
         {
@@ -55,6 +56,20 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(code));
             }
 
+            if (code is ReturnAst)
+            {
+                if (ReturnType != code.ReturnType)
+                {
+                    throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
+                }
+
+                isLastReturn = true;
+            }
+            else
+            {
+                isLastReturn = false;
+            }
+
             codes.Add(code);
 
             return this;
@@ -66,36 +81,22 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            Type returnType = ReturnType;
-
             foreach (var variable in variables)
             {
                 variable.Declare(ilg);
             }
 
-            AstExpression astCode = null;
-
             foreach (var code in codes)
             {
-                if (code is ReturnAst returnAst)
-                {
-                    if (returnType != returnAst.ReturnType && returnAst.ReturnType != AssignableVoidType)
-                    {
-                        throw new AstException($"返回类型“{returnAst.ReturnType}”和预期的返回类型“{returnType}”不相同!");
-                    }
-                }
-
-                astCode = code;
-
                 code.Load(ilg);
             }
 
-            if (astCode is ReturnAst)
+            if (isLastReturn)
             {
                 return;
             }
 
-            if (returnType == typeof(void))
+            if (ReturnType == typeof(void))
             {
                 ilg.Emit(OpCodes.Nop);
             }

@@ -4,10 +4,10 @@ using CodeArts.ORM;
 namespace Mvc461.Domain
 {
     /// <summary>
-    /// 用户仓库
+    /// 用户仓库。
     /// </summary>
     [DbConfig]
-    public class UserRepository : ReadWriteRepository<User>
+    public class UserRepository : DbRepository<User>
     {
     }
 }

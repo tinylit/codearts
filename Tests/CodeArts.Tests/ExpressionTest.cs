@@ -1,8 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
+using static System.Linq.Expressions.Expression;
 
 namespace CodeArts.Tests
 {
@@ -12,30 +15,40 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Loop()
         {
-            ParameterExpression localvar_sequence = Expression.Parameter(typeof(int));
-            LabelTarget break_label = Expression.Label(typeof(int));
-            LabelTarget continue_label = Expression.Label(typeof(void));
+            ParameterExpression localvar_sequence = Parameter(typeof(int));
+            LabelTarget break_label = Label(typeof(int));
+            LabelTarget continue_label = Label(typeof(void));
 
-            Func<int> expression = Expression.Lambda<Func<int>>(
-                Expression.Block(new ParameterExpression[]
+            Func<int> expression = Lambda<Func<int>>(
+                Block(new ParameterExpression[]
                 {
                     localvar_sequence,
                 }, new Expression[]
                 {
-                    Expression.Assign(localvar_sequence, Expression.Constant(0)),
+                    Assign(localvar_sequence, Constant(0)),
                     Expression.Loop(
-                        Expression.IfThenElse(
-                            Expression.LessThan(localvar_sequence, Expression.Constant(100)),
-                            Expression.Block(
-                                Expression.AddAssign(localvar_sequence, Expression.Constant(1)),
-                                Expression.Call(typeof(System.Diagnostics.Debug).GetMethod("WriteLine", new Type[]{ typeof(object)}), Expression.Convert(localvar_sequence,typeof(object))),
-                                Expression.Continue(continue_label, typeof(void))
+                        IfThenElse(
+                            LessThan(localvar_sequence, Constant(100)),
+                            Block(
+                                AddAssign(localvar_sequence, Constant(1)),
+                                Call(typeof(System.Diagnostics.Debug).GetMethod("WriteLine", new Type[]{ typeof(object)}), Expression.Convert(localvar_sequence,typeof(object))),
+                                Continue(continue_label, typeof(void))
                             ),
-                            Expression.Break(break_label, localvar_sequence)), // push to eax/rax --> return value
+                            Break(break_label, localvar_sequence)), // push to eax/rax --> return value
                         break_label, continue_label),
                 })).Compile();
 
             var i = expression.Invoke();
+        }
+
+        [TestMethod]
+        public void NullableNew()
+        {
+            var body = New(typeof(Nullable<>).MakeGenericType(typeof(int)).GetConstructors(BindingFlags.Public | BindingFlags.Instance).First(), Default(typeof(int)));
+
+            var lambda = Lambda<Func<int?>>(body);
+
+            var value = lambda.Compile().Invoke();
         }
     }
 }

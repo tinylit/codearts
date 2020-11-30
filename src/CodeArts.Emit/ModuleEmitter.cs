@@ -51,7 +51,7 @@ namespace CodeArts.Emit
         /// 构造函数。
         /// </summary>
         /// <param name="moduleName">程序集名称。</param>
-        /// <param name="assemblyPath">程序集地址</param>
+        /// <param name="assemblyPath">程序集地址。</param>
         public ModuleEmitter(string moduleName, string assemblyPath)
             : this(false, new NamingProvider(), moduleName, assemblyPath)
         {
@@ -62,7 +62,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="naming">命名规则。</param>
         /// <param name="moduleName">程序集名称。</param>
-        /// <param name="assemblyPath">程序集地址</param>
+        /// <param name="assemblyPath">程序集地址。</param>
         public ModuleEmitter(INamingProvider naming, string moduleName, string assemblyPath) : this(false, naming, moduleName, assemblyPath)
         {
         }
@@ -80,7 +80,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="savePhysicalAssembly">是否保存物理文件。</param>
         /// <param name="moduleName">程序集名称。</param>
-        /// <param name="assemblyPath">程序集地址</param>
+        /// <param name="assemblyPath">程序集地址。</param>
         public ModuleEmitter(bool savePhysicalAssembly, string moduleName, string assemblyPath)
             : this(savePhysicalAssembly, new NamingProvider(), moduleName, assemblyPath)
         {
@@ -92,7 +92,7 @@ namespace CodeArts.Emit
         /// <param name="savePhysicalAssembly">是否保存物理文件。</param>
         /// <param name="naming">命名规则。</param>
         /// <param name="moduleName">程序集名称。</param>
-        /// <param name="assemblyPath">程序集地址</param>
+        /// <param name="assemblyPath">程序集地址。</param>
         public ModuleEmitter(bool savePhysicalAssembly, INamingProvider naming,
                            string moduleName, string assemblyPath)
         {
@@ -123,7 +123,7 @@ namespace CodeArts.Emit
         /// 构造函数。
         /// </summary>
         /// <param name="moduleName">程序集名称。</param>
-        /// <param name="assemblyPath">程序集地址</param>
+        /// <param name="assemblyPath">程序集地址。</param>
         public ModuleEmitter(string moduleName, string assemblyPath)
             : this(new NamingProvider(), moduleName, assemblyPath)
         {
@@ -134,7 +134,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="naming">命名规则。</param>
         /// <param name="moduleName">程序集名称。</param>
-        /// <param name="assemblyPath">程序集地址</param>
+        /// <param name="assemblyPath">程序集地址。</param>
         public ModuleEmitter(INamingProvider naming,
                            string moduleName, string assemblyPath)
         {

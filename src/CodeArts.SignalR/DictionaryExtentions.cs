@@ -11,9 +11,9 @@ namespace CodeArts.SignalR
     {
 #if NET40
         /// <summary>
-        /// 作为身份认证
+        /// 作为身份认证。
         /// </summary>
-        /// <param name="userData">用户数据</param>
+        /// <param name="userData">用户数据。</param>
         /// <returns></returns>
         public static IIdentity AsIdentity(this IDictionary<string, object> userData)
         {
@@ -35,9 +35,9 @@ namespace CodeArts.SignalR
         }
 
         /// <summary>
-        /// 作为身份认证
+        /// 作为身份认证。
         /// </summary>
-        /// <param name="userData">用户数据</param>
+        /// <param name="userData">用户数据。</param>
         /// <returns></returns>
         public static GenericPrincipal AsPrincipal(this IDictionary<string, object> userData)
         {
@@ -125,9 +125,9 @@ namespace CodeArts.SignalR
         };
 
         /// <summary>
-        /// 作为身份认证
+        /// 作为身份认证。
         /// </summary>
-        /// <param name="userData">用户数据</param>
+        /// <param name="userData">用户数据。</param>
         /// <returns></returns>
         public static ClaimsIdentity AsIdentity(this IDictionary<string, object> userData)
         {

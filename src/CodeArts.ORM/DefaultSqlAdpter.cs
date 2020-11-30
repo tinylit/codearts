@@ -10,22 +10,22 @@ using System.Text.RegularExpressions;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 默认SQL解析器
+    /// 默认SQL解析器。
     /// </summary>
     public class DefaultSqlAdpter : ISqlAdpter
     {
         /// <summary>
-        /// 暂存数据
+        /// 暂存数据。
         /// </summary>
         private static readonly Regex PatternTemporaryStorage = new Regex("--#(?<index>\\d+)", RegexOptions.Compiled);
 
         /// <summary>
-        /// 注解
+        /// 注解。
         /// </summary>
         private static readonly Regex PatternAnnotate = new Regex(@"--.*|/\*[\s\S]*?\*/", RegexOptions.Compiled);
 
         /// <summary>
-        /// 提取字符串
+        /// 提取字符串。
         /// </summary>
         private static readonly Regex PatternCharacter = new Regex("(['\"])(?:\\\\.|[^\\\\])*?\\1", RegexOptions.Compiled);
 
@@ -95,12 +95,12 @@ namespace CodeArts.ORM
         private static readonly Regex PatternFieldEmbody = new Regex(@"\[\w+\][\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[_a-zA-Z]\w*)(?=[\x20\t\r\n\f]+[^\x20\t\r\n\f\(]|[^\x20\t\r\n\f\w\.\]\}\(]|[\x20\t\r\n\f]*$)", RegexOptions.Compiled);
 
         /// <summary>
-        /// 别名字段
+        /// 别名字段。
         /// </summary>
         private static readonly Regex PatternAliasField = new Regex(@"(?<alias>[\w-]+)\.(?<name>(?!\d+)[\w-]+)(?=[^\w\.\]\}\(]|$)", RegexOptions.Compiled);
 
         /// <summary>
-        /// 独立参数字段
+        /// 独立参数字段。
         /// </summary>
         private static readonly Regex PatternSingleArgField = new Regex(@"(?<!with[\x20\t\r\n\f]*)\([\x20\t\r\n\f]*(?<name>(?!\d+)(?![_A-Z]+)(?!\b(max|min)\b)\w+)[\x20\t\r\n\f]*\)", RegexOptions.Compiled);
 
@@ -115,7 +115,7 @@ namespace CodeArts.ORM
         private static readonly Regex PatternAsField = new Regex(@"\[\w+\][\x20\t\r\n\f]+as[\x20\t\r\n\f]+(?<name>[\p{L}\p{N}@_]+)|\bas[\x20\t\r\n\f]+(?<name>(?!\bselect\b)[\p{L}\p{N}@_]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         /// <summary>
-        /// 声明别量
+        /// 声明别量。
         /// </summary>
         private static readonly Regex PatternDeclare = new Regex(@"\bdeclare[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
@@ -317,10 +317,10 @@ namespace CodeArts.ORM
 
         #region Private
         /// <summary>
-        /// 分析参数
+        /// 分析参数。
         /// </summary>
-        /// <param name="value">内容</param>
-        /// <param name="startIndex">开始位置</param>
+        /// <param name="value">内容。</param>
+        /// <param name="startIndex">开始位置。</param>
         /// <returns></returns>
         private static Tuple<int, string[]> ParameterAnalysis(string value, int startIndex)
         {
@@ -386,7 +386,7 @@ namespace CodeArts.ORM
         /// <summary>
         /// SQL 分析。
         /// </summary>
-        /// <param name="sql">语句</param>
+        /// <param name="sql">语句。</param>
         /// <returns></returns>
         public string Analyze(string sql)
         {
@@ -505,6 +505,7 @@ namespace CodeArts.ORM
 
                 var typeGrp = item.Groups["type"];
                 var nameGrp = item.Groups["name"];
+                var tableGrp = item.Groups["table"];
                 var aliasGrp = item.Groups["alias"];
 
                 var type = typeGrp.Value.ToUpper();
@@ -515,14 +516,14 @@ namespace CodeArts.ORM
                 .Append("[")
                 .Append(aliasGrp.Value)
                 .Append("]")
-                .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, nameGrp.Index - aliasGrp.Index))
+                .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, tableGrp.Index - aliasGrp.Index))
                 .Append("{")
                 .Append(type)
                 .Append("#")
                 .Append(nameGrp.Value)
                 .Append("}");
 
-                value = value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
+                value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
 
                 var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
 
@@ -536,19 +537,20 @@ namespace CodeArts.ORM
 
                 var typeGrp = item.Groups["type"];
                 var nameGrp = item.Groups["name"];
+                var tableGrp = item.Groups["table"];
 
                 var type = typeGrp.Value.ToUpper();
 
                 var sb = new StringBuilder();
 
-                sb.Append(value.Substring(0, nameGrp.Index - item.Index))
+                sb.Append(value.Substring(0, tableGrp.Index - item.Index))
                 .Append("{")
                 .Append(type)
                 .Append("#")
                 .Append(nameGrp.Value)
                 .Append("}");
 
-                value = value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
+                value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
 
                 var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
 
@@ -783,15 +785,15 @@ namespace CodeArts.ORM
         /// <summary>
         /// SQL 格式化。
         /// </summary>
-        /// <param name="sql">语句</param>
+        /// <param name="sql">语句。</param>
         /// <returns></returns>
         public string Format(string sql) => PatternFieldToken.Replace(PatternTableToken.Replace(sql, item => string.Concat("[", item.Groups["name"].Value, "]")), item => string.Concat("[", item.Groups["name"].Value, "]"));
 
         /// <summary>
         /// SQL 格式化。
         /// </summary>
-        /// <param name="sql">语句</param>
-        /// <param name="settings">配置</param>
+        /// <param name="sql">语句。</param>
+        /// <param name="settings">配置。</param>
         /// <returns></returns>
         public string Format(string sql, ISQLCorrectSimSettings settings)
         {

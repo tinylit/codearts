@@ -11,7 +11,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="type">类型</param>
+        /// <param name="type">类型。</param>
         protected AssignAstExpression(Type type) : base(type) { }
 
         /// <summary>

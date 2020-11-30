@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 ||NET461
+﻿#if NET40 || NET_NORMAL
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;
@@ -14,80 +14,79 @@ using System.Web;
 namespace CodeArts.Mvc.Authentication
 {
     /// <summary>
-    /// 结果上下文
+    /// 结果上下文。
     /// </summary>
     public class ResultContext
     {
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="context">上下文</param>
+        /// <param name="context">上下文。</param>
         public ResultContext(HttpContext context)
         {
             Context = context;
         }
 
         /// <summary>
-        /// 上下文
+        /// 上下文。
         /// </summary>
         public HttpContext Context { get; }
 
-
         /// <summary>
-        /// 请求
+        /// 请求。
         /// </summary>
         public HttpRequest Request => Context.Request;
 
         /// <summary>
-        /// 响应
+        /// 响应。
         /// </summary>
         public HttpResponse Response => Context.Response;
     }
 
     /// <summary>
-    /// 消息接收上下文
+    /// 消息接收上下文。
     /// </summary>
     public class MessageReceivedContext : ResultContext
     {
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="context">上下文</param>
+        /// <param name="context">上下文。</param>
         public MessageReceivedContext(HttpContext context) : base(context)
         {
         }
 
         /// <summary>
-        /// 令牌
+        /// 令牌。
         /// </summary>
         public string Token { get; set; }
     }
 
     /// <summary>
-    /// 令牌验证
+    /// 令牌验证。
     /// </summary>
     public class TokenValidateContext : ResultContext
     {
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="context">上下文</param>
+        /// <param name="context">上下文。</param>
         public TokenValidateContext(MessageReceivedContext context) : base(context.Context) => Token = context.Token;
 
         /// <summary>
-        /// 令牌
+        /// 令牌。
         /// </summary>
         public string Token { get; }
 
         /// <summary>
-        /// 令牌过期校验（默认：false）
+        /// 令牌过期校验（默认：false）。
         /// </summary>
         public bool TokenVerify { get; set; }
 
         private IDictionary<string, object> userData;
 
         /// <summary>
-        /// 用户数据
+        /// 用户数据。
         /// </summary>
         public IDictionary<string, object> UserData
         {
@@ -119,18 +118,18 @@ namespace CodeArts.Mvc.Authentication
     }
 
     /// <summary>
-    /// Token 验证通过
+    /// Token 验证通过。
     /// </summary>
     public class TokenValidatedContext : ResultContext
     {
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="context">上下文</param>
+        /// <param name="context">上下文。</param>
         public TokenValidatedContext(TokenValidateContext context) : base(context.Context) => UserData = context.UserData;
 
         /// <summary>
-        /// 用户数据
+        /// 用户数据。
         /// </summary>
         public IDictionary<string, object> UserData { get; }
 
@@ -140,7 +139,7 @@ namespace CodeArts.Mvc.Authentication
         private GenericPrincipal user = null;
 
         /// <summary>
-        /// 用户信息
+        /// 用户信息。
         /// </summary>
         public GenericPrincipal User
         {
@@ -158,7 +157,7 @@ namespace CodeArts.Mvc.Authentication
         private ClaimsPrincipal user = null;
 
         /// <summary>
-        /// 用户信息
+        /// 用户信息。
         /// </summary>
         public ClaimsPrincipal User
         {

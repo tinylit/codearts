@@ -4,7 +4,7 @@ using UnitTest.Serialize;
 namespace CodeArts.ORM.Domain
 {
     [SqlServerConnection]
-    public class UserWeChatRepository : ReadWriteRepository<FeiUserWeChat>
+    public class UserWeChatRepository : DbRepository<FeiUserWeChat>
     {
     }
 }

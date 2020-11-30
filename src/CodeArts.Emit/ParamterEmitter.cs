@@ -10,7 +10,7 @@ namespace CodeArts.Emit
     /// <summary>
     /// 参数成员。
     /// </summary>
-    [DebuggerDisplay("{ParameterName}")]
+    [DebuggerDisplay("{ReturnType.Name} {ParameterName}")]
     public class ParamterEmitter : ParamterAst
     {
         private object defaultValue;
@@ -29,11 +29,11 @@ namespace CodeArts.Emit
         public string ParameterName { get; }
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         /// <param name="parameterType">类型。</param>
         /// <param name="position">位置。</param>
-        /// <param name="attributes">标记</param>
+        /// <param name="attributes">标记。</param>
         /// <param name="parameterName">名称。</param>
         public ParamterEmitter(Type parameterType, int position, ParameterAttributes attributes, string parameterName) : base(parameterType, position)
         {

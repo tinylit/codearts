@@ -5,17 +5,17 @@ using System.ComponentModel.DataAnnotations;
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 验证器
+    /// 验证器。
     /// </summary>
     public static class DbValidator
     {
         private static readonly Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>> ValidationCache = new Dictionary<Type, Func<ValidationAttribute, ValidationContext, object, string>>();
 
         /// <summary>
-        /// 消息验证（校验异常时，返回自定义的错误消息）
+        /// 消息验证（校验异常时，返回自定义的错误消息）。
         /// </summary>
-        /// <typeparam name="T">验证属性</typeparam>
-        /// <param name="validator">验证器</param>
+        /// <typeparam name="T">验证属性。</typeparam>
+        /// <param name="validator">验证器。</param>
         public static void CustomValidate<T>(Func<T, ValidationContext, string> validator) where T : ValidationAttribute
         {
             if (validator is null)
@@ -27,10 +27,10 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 消息验证（校验异常时，返回自定义的错误消息）
+        /// 消息验证（校验异常时，返回自定义的错误消息）。
         /// </summary>
-        /// <typeparam name="T">验证属性</typeparam>
-        /// <param name="validator">验证器</param>
+        /// <typeparam name="T">验证属性。</typeparam>
+        /// <param name="validator">验证器。</param>
         public static void CustomValidate<T>(Func<T, ValidationContext, object, string> validator) where T : ValidationAttribute
         {
             if (validator is null)
@@ -42,11 +42,11 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 数据验证
+        /// 数据验证。
         /// </summary>
-        /// <param name="value">数据</param>
-        /// <param name="validationContext">验证上下文</param>
-        /// <param name="validationAttributes">验证属性</param>
+        /// <param name="value">数据。</param>
+        /// <param name="validationContext">验证上下文。</param>
+        /// <param name="validationAttributes">验证属性。</param>
         public static void ValidateValue(object value, ValidationContext validationContext, IEnumerable<ValidationAttribute> validationAttributes)
         {
             if (validationContext is null)

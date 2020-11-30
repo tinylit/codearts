@@ -4,58 +4,59 @@ using System.Text;
 namespace CodeArts.ORM.MySql
 {
     /// <summary>
-    /// MySQL 矫正配置
+    /// MySQL 矫正配置。
     /// </summary>
     public class MySqlCorrectSettings : ISQLCorrectSettings
     {
         /// <summary>
-        /// 字符串截取。 SUBSTRING
+        /// 字符串截取。 SUBSTRING。
         /// </summary>
         public string Substring => "SUBSTRING";
 
         /// <summary>
-        /// 字符串索引。 LOCATE
+        /// 字符串索引。 LOCATE。
         /// </summary>
         public string IndexOf => "LOCATE";
 
         /// <summary>
-        /// 字符串长度。 LENGTH
+        /// 字符串长度。 LENGTH。
         /// </summary>
         public string Length => "LENGTH";
 
         /// <summary>
-        /// 索引项是否对调。 true
+        /// 索引项是否对调。 true。
         /// </summary>
         public bool IndexOfSwapPlaces => true;
 
         private List<ICustomVisitor> visitters;
 
         /// <summary>
-        /// 访问器
+        /// 访问器。
         /// </summary>
         public IList<ICustomVisitor> Visitors => visitters ?? (visitters = new List<ICustomVisitor>());
 
         /// <summary>
-        /// MySQL
+        /// MySQL。
         /// </summary>
         public DatabaseEngine Engine => DatabaseEngine.MySQL;
 
         private ICollection<IFormatter> formatters;
         /// <summary>
-        /// 格式化集合
+        /// 格式化集合。
         /// </summary>
         public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
 
         /// <summary>
-        /// 字段名称
+        /// 字段名称。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string Name(string name) => string.Concat("`", name, "`");
+
         /// <summary>
-        /// 参数名称
+        /// 参数名称。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("?", name);
 

@@ -28,7 +28,7 @@ namespace CodeArts.ORM.Visitors
 
             writer.And();
 
-            InvertWhere(() =>
+            writer.ReverseCondition(() =>
             {
                 using (var visitor = new AnyVisitor(this))
                 {

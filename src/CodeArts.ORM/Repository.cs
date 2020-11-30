@@ -1,217 +1,219 @@
-﻿using CodeArts.Config;
-using CodeArts.ORM.Exceptions;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// 数据仓库
+    /// 数据仓库。
     /// </summary>
     public abstract class Repository
     {
-        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> mapperCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
-
-        private IDbConnectionAdapter _DbProvider = null;
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+        private readonly IReadOnlyConnectionConfig connectionConfig;
 
         /// <summary>
-        /// 链接配置
+        /// 数据上下文。
         /// </summary>
-        protected IReadOnlyConnectionConfig ConnectionConfig { private set; get; }
+        protected IContext Context { get; }
 
         /// <summary>
-        /// 数据库链接
-        /// </summary>
-        protected IDbConnection Connection => TransactionConnections.GetConnection(ConnectionConfig.ConnectionString, DbAdapter) ?? ThreadConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter);
-
-        /// <summary>
-        /// 数据库适配器
-        /// </summary>
-        protected IDbConnectionAdapter DbAdapter => _DbProvider ?? (_DbProvider = DbConnectionManager.Get(ConnectionConfig.ProviderName));
-
-        /// <summary>
-        /// SQL矫正设置
-        /// </summary>
-        public ISQLCorrectSimSettings Settings => DbAdapter.Settings;
-
-        /// <summary>
-        /// 获取仓储数据库配置属性
+        /// 获取数据库配置。
         /// </summary>
         /// <returns></returns>
-        private DbConfigAttribute GetAttribute() => mapperCache.GetOrAdd(GetType(), type =>
+        protected virtual IReadOnlyConnectionConfig GetDbConfig()
         {
-            return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), false) ?? (DbConfigAttribute)Attribute.GetCustomAttribute(type.BaseType, typeof(DbConfigAttribute), true) ?? throw new NotImplementedException("仓库类未指定数据库链接属性!");
-        });
-
-        /// <summary>
-        /// 获取数据库配置
-        /// </summary>
-        /// <returns></returns>
-        protected virtual ConnectionConfig GetDbConfig()
-        {
-            var attr = GetAttribute();
-
-            ConfigHelper.Instance.OnConfigChanged += _ =>
+            if (connectionConfig is null)
             {
-                ConnectionConfig = attr.GetConfig();
-
-                if (_DbProvider is null || string.Equals(_DbProvider.ProviderName, ConnectionConfig.ProviderName, StringComparison.OrdinalIgnoreCase))
+                var attr = DbConfigCache.GetOrAdd(GetType(), type =>
                 {
-                    return;
+                    return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+                });
+
+                if (attr is null)
+                {
+                    return default;
                 }
 
-                _DbProvider = null;
-            };
+                return attr.GetConfig();
+            }
 
-            return attr.GetConfig();
+            return connectionConfig;
         }
 
         /// <summary>
-        /// 链接
+        /// 链接。
         /// </summary>
-        protected Repository()
-        {
-            ConnectionConfig = GetDbConfig() ?? throw new NoNullAllowedException("未找到数据链接配置信息!");
-        }
+        protected Repository() => Context = Create(GetDbConfig());
+
         /// <summary>
-        /// 链接
+        /// 构造函数。
         /// </summary>
-        /// <param name="connectionConfig">链接配置</param>
+        /// <param name="connectionConfig">链接配置。</param>
         public Repository(IReadOnlyConnectionConfig connectionConfig)
         {
-            ConnectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
+            if (connectionConfig is null)
+            {
+                throw new ArgumentNullException(nameof(connectionConfig));
+            }
+
+            this.connectionConfig = connectionConfig;
+
+            Context = Create(connectionConfig);
         }
 
-        /// <summary> 执行数据库事务 </summary>
-        /// <typeparam name="TResult">结果类型</typeparam>
-        /// <param name="factory">事件工厂</param>
-        /// <param name="level">指定连接的事务锁定行为。</param>
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="context">数据库上下文。</param>
+        public Repository(IContext context) => Context = context ?? throw new ArgumentNullException(nameof(context));
+
+        /// <summary>
+        /// 创建上下文。
+        /// </summary>
+        /// <param name="connectionConfig">链接配置。</param>
         /// <returns></returns>
-        protected TResult Transaction<TResult>(Func<IDbConnection, IDbTransaction, TResult> factory, IsolationLevel? level = null)
-        {
-            using (IDbConnection dbConnection = DispatchConnections.Instance.GetConnection(ConnectionConfig.ConnectionString, DbAdapter, false))
-            {
-                try
-                {
-                    dbConnection.Open();
-                    using (var transaction = level.HasValue ? dbConnection.BeginTransaction(level.Value) : dbConnection.BeginTransaction())
-                    {
-                        try
-                        {
-                            var result = factory.Invoke(dbConnection, transaction);
-                            transaction.Commit();
-                            return result;
-                        }
-                        catch (Exception)
-                        {
-                            transaction.Rollback();
-                            throw;
-                        }
-                    }
-                }
-                finally
-                {
-                    dbConnection.Close();
-                }
-            }
-        }
+        protected virtual IContext Create(IReadOnlyConnectionConfig connectionConfig) => new Context(connectionConfig);
     }
 
     /// <summary>
-    /// 数据仓储
+    /// 数据仓储。
     /// </summary>
-    /// <typeparam name="T">实体类型</typeparam>
-    public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IQueryProvider, IEnumerable
+    /// <typeparam name="T">实体类型。</typeparam>
+#if NET_NORMAL
+    public class Repository<T> : Repository, IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
+#else
+    public class Repository<T> : Repository, IRepository<T>, IQueryable<T>, IEnumerable<T>, IQueryable, IQueryProvider, IEnumerable
+#endif
     {
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+
+        private readonly bool isEmpty = false;
+
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        public Repository()
+        public Repository() => isEmpty = true;
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="connectionConfig">链接配置。</param>
+        public Repository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig) => isEmpty = true;
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="context">链接配置。</param>
+        public Repository(IContext context) : base(context) { }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="context">链接配置。</param>
+        /// <param name="expression">表达式。</param>
+        protected Repository(IContext context, Expression expression) : base(context)
         {
+            this.expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="connectionConfig">数据库链接</param>
-        /// <param name="expression">表达式</param>
-        private Repository(IReadOnlyConnectionConfig connectionConfig, Expression expression) : base(connectionConfig) => _Expression = expression ?? throw new ArgumentNullException(nameof(expression));
-
-        /// <summary>
-        /// 当前元素类型
+        /// 当前元素类型。
         /// </summary>
         public Type ElementType => typeof(T);
 
-        private readonly Expression _Expression = null;
-
+        private readonly Expression expression = null;
         private Expression _ContextExpression = null;
+
         /// <summary>
-        /// 查询供应器
+        /// 查询供应器。
         /// </summary>
         public IQueryProvider Provider => this;
+
         /// <summary>
-        /// 迭代器
+        /// 迭代器。
         /// </summary>
         protected IEnumerable<T> Enumerable { private set; get; }
 
         /// <summary>
-        /// 仓库供应器
+        /// 获取数据库配置。
         /// </summary>
-        protected virtual IDbRepositoryProvider DbProvider => DbConnectionManager.Create(DbAdapter);
+        /// <returns></returns>
+        protected override IReadOnlyConnectionConfig GetDbConfig()
+        {
+            var config = base.GetDbConfig();
+
+            if (config is null)
+            {
+                var attr = DbConfigCache.GetOrAdd(typeof(T), type =>
+                {
+                    return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+                });
+
+                if (attr is null)
+                {
+                    return config;
+                }
+
+                return attr.GetConfig();
+            }
+
+            return config;
+        }
 
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            Type type = expression.Type.FindGenericType(typeof(IRepository<>));
+            Type type = expression.Type.FindGenericType(typeof(IQueryable<>));
 
             if (type is null)
             {
                 throw new ArgumentException("无效表达式!", nameof(expression));
             }
 
-            Type type2 = typeof(ReadRepository<>).MakeGenericType(type.GetGenericArguments());
+            Type type2 = typeof(Repository<>).MakeGenericType(type.GetGenericArguments());
 
             return (IQueryable)Activator.CreateInstance(type2, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[2]
             {
-                ConnectionConfig,
+                Context,
                 expression
             }, null);
         }
 
         /// <summary>
-        /// 创建IQueryable
+        /// 创建IQueryable。
         /// </summary>
-        /// <typeparam name="TElement">泛型类型</typeparam>
-        /// <param name="expression">表达式</param>
+        /// <typeparam name="TElement">泛型类型。</typeparam>
+        /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(ConnectionConfig, expression);
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(Context, expression);
 
         /// <summary>
-        /// 执行表达式
+        /// 执行表达式。
         /// </summary>
-        /// <param name="expression">表达式</param>
+        /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        object IQueryProvider.Execute(Expression expression) => Execute<T>(expression);
+        object IQueryProvider.Execute(Expression expression) => Context.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
 
         /// <summary>
-        /// 执行结果
+        /// 执行结果。
         /// </summary>
-        /// <typeparam name="TResult">结果</typeparam>
-        /// <param name="expression">表达式</param>
+        /// <typeparam name="TResult">结果。</typeparam>
+        /// <param name="expression">表达式。</param>
         /// <returns></returns>
         private TResult Execute<TResult>(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }
@@ -221,32 +223,32 @@ namespace CodeArts.ORM
                 throw new NotImplementedException(nameof(expression));
             }
 
-            return DbProvider.Evaluate<T, TResult>(Connection, expression);
+            if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
+            {
+                throw new NotSupportedException(nameof(expression));
+            }
+
+            return Context.Read<TResult>(expression);
         }
 
         /// <summary>
-        /// 执行表达式
+        /// 执行表达式。
         /// </summary>
-        /// <typeparam name="TResult">返回结果类型</typeparam>
-        /// <param name="expression">表达式</param>
+        /// <typeparam name="TResult">返回结果类型。</typeparam>
+        /// <param name="expression">表达式。</param>
         /// <returns></returns>
         TResult IQueryProvider.Execute<TResult>(Expression expression) => Execute<TResult>(expression);
 
         /// <summary>
-        /// 表达式
+        /// 表达式。
         /// </summary>
-        public Expression Expression => _Expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
+        public Expression Expression => expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
 
         private IEnumerator<T> GetEnumerator()
         {
-            if (_Expression == null)
+            if (isEmpty || Enumerable is null)
             {
-                return Provider.Execute<IEnumerable<T>>(Expression).GetEnumerator();
-            }
-
-            if (Enumerable == null)
-            {
-                Enumerable = Provider.Execute<IEnumerable<T>>(Expression);
+                Enumerable = Context.Query<T>(Expression);
             }
 
             return Enumerable.GetEnumerator();
@@ -255,5 +257,50 @@ namespace CodeArts.ORM
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+
+#if NET_NORMAL
+        /// <summary>
+        /// 异步消息。
+        /// </summary>
+        /// <typeparam name="TResult">结果。</typeparam>
+        /// <param name="expression">表达式。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        Task<TResult> IAsyncQueryProvider.ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
+        {
+            if (expression is null)
+            {
+                throw new ArgumentNullException(nameof(expression));
+            }
+
+            if (!typeof(TResult).IsAssignableFrom(expression.Type))
+            {
+                throw new NotImplementedException(nameof(expression));
+            }
+
+            if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
+            {
+                throw new NotSupportedException(nameof(expression));
+            }
+
+            return Context.ReadAsync<TResult>(expression);
+        }
+
+        private IAsyncEnumerable<T> AsyncEnumerable;
+
+        /// <summary>
+        /// 获取异步迭代器。
+        /// </summary>
+        /// <returns></returns>
+        IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator()
+        {
+            if (isEmpty || Enumerable is null)
+            {
+                AsyncEnumerable = Context.QueryAsync<T>(Expression);
+            }
+
+            return AsyncEnumerable.GetAsyncEnumerator();
+        }
+#endif
     }
 }

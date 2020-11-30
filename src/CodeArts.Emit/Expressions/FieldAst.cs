@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 字段。
     /// </summary>
-    [DebuggerDisplay("{field.Name} ({ReturnType})")]
+    [DebuggerDisplay("{ReturnType.Name} {field.Name}")]
     public class FieldAst : MemberAst
     {
         private readonly FieldInfo field;
@@ -16,7 +16,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="field">字段</param>
+        /// <param name="field">字段。</param>
         public FieldAst(FieldInfo field) : base(field.FieldType, (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static)
         {
             this.field = field;
@@ -26,7 +26,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 发行。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             if (isStatic)

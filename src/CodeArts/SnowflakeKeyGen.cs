@@ -3,7 +3,7 @@
 namespace CodeArts
 {
     /// <summary>
-    /// 雪花算法
+    /// 雪花算法。
     /// </summary>
     public class SnowflakeKeyGen : IKeyGen
     {
@@ -25,15 +25,15 @@ namespace CodeArts
         private /* static */ long sequence = 0L; // 代表当前毫秒内已经生成了多少个主键
 
         /// <summary>
-        /// 构造函数（机房：0，工作机号：0）
+        /// 构造函数（机房：0，工作机号：0）。
         /// </summary>
         public SnowflakeKeyGen() { }
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="workerId">机器ID</param>
-        /// <param name="datacenterId">机房ID</param>
+        /// <param name="workerId">机器ID。</param>
+        /// <param name="datacenterId">机房ID。</param>
         public SnowflakeKeyGen(int workerId, int datacenterId)
         {
             // sanity check for workerId
@@ -69,7 +69,7 @@ namespace CodeArts
         private readonly object _lockObj = new object();
 
         /// <summary>
-        /// 新ID
+        /// 新ID。
         /// </summary>
         /// <returns></returns>
         public long Id()
@@ -110,23 +110,14 @@ namespace CodeArts
         }
 
         /// <summary>
-        /// 生成指定键值的键
+        /// 生成指定键值的键。
         /// </summary>
-        /// <param name="id">键值</param>
+        /// <param name="id">键值。</param>
         /// <returns></returns>
         public Key Create(long id) => new SnowflakeKey(id);
 
-        /// <summary>
-        /// 当前时间戳
-        /// </summary>
-        /// <returns></returns>
         private static long TimeGen() => (long)(DateTime.UtcNow - UtcBase).TotalMilliseconds;
 
-        /// <summary>
-        /// 获取下一毫秒时间戳
-        /// </summary>
-        /// <param name="lastTimestamp"></param>
-        /// <returns></returns>
         private static long NextGen(long lastTimestamp)
         {
             long timestamp;

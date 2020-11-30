@@ -35,10 +35,10 @@ namespace CodeArts.ORM
         /// <summary>
         /// 查询所有结果。
         /// </summary>
-        /// <typeparam name="TResult">结果类型</typeparam>
-        /// <param name="sql">SQL</param>
-        /// <param name="param">参数</param>
-        /// <param name="commandTimeout">超时时间</param>
+        /// <typeparam name="TResult">结果类型。</typeparam>
+        /// <param name="sql">SQL。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
         IEnumerable<TResult> Query<TResult>(SQL sql, object param = null, int? commandTimeout = null);
     }

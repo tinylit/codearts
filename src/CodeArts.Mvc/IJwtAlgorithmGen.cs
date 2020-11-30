@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 #if NET461
 using JWT.Algorithms;
 #else
@@ -8,12 +8,12 @@ using JWT;
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// JWT 算法工厂
+    /// JWT 算法工厂。
     /// </summary>
     public interface IJwtAlgorithmGen
     {
         /// <summary>
-        /// 创建 JWT 算法
+        /// 创建 JWT 算法。
         /// </summary>
         /// <returns></returns>
         IJwtAlgorithm Create();

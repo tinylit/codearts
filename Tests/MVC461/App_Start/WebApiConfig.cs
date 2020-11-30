@@ -1,4 +1,5 @@
 ﻿using CodeArts;
+using CodeArts.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace Mvc461
             // Web API 路由
             config.MapHttpAttributeRoutes();
 
-            var typeStore = RuntimeTypeCache.Instance.GetCache(config.GetType());
+            var typeStore = TypeStoreItem.Get(config.GetType());
 
             var propertyStore = typeStore.PropertyStores.First(x => x.Name == "Services");
 

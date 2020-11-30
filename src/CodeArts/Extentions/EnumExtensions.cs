@@ -1,4 +1,5 @@
 ﻿using CodeArts;
+using CodeArts.Runtime;
 using System.ComponentModel;
 using System.Linq;
 
@@ -12,9 +13,9 @@ namespace System
         /// <summary>
         /// 获取枚举描述。
         /// </summary>
-        /// <typeparam name="TEnum">枚举类型</typeparam>
-        /// <param name="enum">枚举值</param>
-        /// <exception cref="ArgumentException">参数不是枚举类型</exception>
+        /// <typeparam name="TEnum">枚举类型。</typeparam>
+        /// <param name="enum">枚举值。</param>
+        /// <exception cref="ArgumentException">参数不是枚举类型。</exception>
         /// <returns></returns>
         public static string GetText<TEnum>(this TEnum @enum) where TEnum : struct
         {
@@ -25,7 +26,7 @@ namespace System
                 throw new ArgumentException("参数类型不是枚举!");
             }
 
-            var typeStore = RuntimeTypeCache.Instance.GetCache<TEnum>();
+            var typeStore = TypeStoreItem.Get<TEnum>();
 
             string enumStr = @enum.ToString();
 
@@ -35,7 +36,7 @@ namespace System
 
                 if (!values.All(x => typeStore.FieldStores.Any(y => string.Equals(y.Name, x, StringComparison.InvariantCultureIgnoreCase))))
                 {
-                    return "枚举错误";
+                    return "N/A";
                 }
 
                 return string.Join("|", typeStore.FieldStores
@@ -52,7 +53,7 @@ namespace System
 
             if (field is null)
             {
-                return "枚举错误";
+                return "N/A";
             }
 
             var desc = field.GetCustomAttribute<DescriptionAttribute>();
@@ -63,9 +64,9 @@ namespace System
         /// <summary>
         /// 转换为<see cref="int"/>。
         /// </summary>
-        /// <typeparam name="TEnum">枚举类型</typeparam>
-        /// <param name="enum">枚举值</param>
-        /// <exception cref="ArgumentException">参数不是枚举类型</exception>
+        /// <typeparam name="TEnum">枚举类型。</typeparam>
+        /// <param name="enum">枚举值。</param>
+        /// <exception cref="ArgumentException">参数不是枚举类型。</exception>
         /// <exception cref="InvalidCastException">枚举基类型不能隐式转化为<see cref="int"/>。</exception>
         /// <returns></returns>
         public static int ToInt32<TEnum>(this TEnum @enum) where TEnum : struct
@@ -95,9 +96,9 @@ namespace System
         /// <summary>
         /// 转换为<see cref="long"/>。
         /// </summary>
-        /// <typeparam name="TEnum">枚举类型</typeparam>
-        /// <param name="enum">枚举值</param>
-        /// <exception cref="ArgumentException">参数不是枚举类型</exception>
+        /// <typeparam name="TEnum">枚举类型。</typeparam>
+        /// <param name="enum">枚举值。</param>
+        /// <exception cref="ArgumentException">参数不是枚举类型。</exception>
         /// <exception cref="InvalidCastException">枚举基类型不能隐式转化为<see cref="long"/>。</exception>
         /// <returns></returns>
         public static long ToInt64<TEnum>(this TEnum @enum) where TEnum : struct
@@ -129,9 +130,9 @@ namespace System
         /// <summary>
         /// 获取枚举的数据类型字符串。
         /// </summary>
-        /// <typeparam name="TEnum">枚举类型</typeparam>
-        /// <param name="enum">枚举值</param>
-        /// <exception cref="ArgumentException">参数不是枚举类型</exception>
+        /// <typeparam name="TEnum">枚举类型。</typeparam>
+        /// <param name="enum">枚举值。</param>
+        /// <exception cref="ArgumentException">参数不是枚举类型。</exception>
         /// <returns></returns>
         public static string ToValueString<TEnum>(this TEnum @enum) where TEnum : struct
         {

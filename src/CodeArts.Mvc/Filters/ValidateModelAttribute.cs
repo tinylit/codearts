@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -15,14 +15,14 @@ using CodeArts.Serialize.Json;
 
 namespace CodeArts.Mvc.Filters
 {
-    /// <summary> 模型验证过滤器 </summary>
+    /// <summary> 模型验证过滤器。 </summary>
     public class ValidateModelAttribute : ActionFilterAttribute
     {
         /// <summary>
         /// 出错时验证。
         /// </summary>
-        /// <param name="context">异常上下文</param>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+        /// <param name="context">异常上下文。</param>
+#if NET_CORE
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             //? 验证是否通过
@@ -79,7 +79,7 @@ namespace CodeArts.Mvc.Filters
         /// <summary>
         /// 出错时结果验证。
         /// </summary>
-        /// <param name="context">异常上下文</param>
+        /// <param name="context">异常上下文。</param>
         public override void OnResultExecuting(ResultExecutingContext context)
         {
             //? 验证是否通过

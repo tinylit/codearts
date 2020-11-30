@@ -16,9 +16,9 @@ namespace CodeArts.Mvc
     {
 #if NET40
         /// <summary>
-        /// 作为身份认证
+        /// 作为身份认证。
         /// </summary>
-        /// <param name="userData">用户数据</param>
+        /// <param name="userData">用户数据。</param>
         /// <returns></returns>
         public static IIdentity AsIdentity(this IDictionary<string, object> userData)
         {
@@ -40,9 +40,9 @@ namespace CodeArts.Mvc
         }
 
         /// <summary>
-        /// 作为身份认证
+        /// 作为身份认证。
         /// </summary>
-        /// <param name="userData">用户数据</param>
+        /// <param name="userData">用户数据。</param>
         /// <returns></returns>
         public static GenericPrincipal AsPrincipal(this IDictionary<string, object> userData)
         {
@@ -130,15 +130,15 @@ namespace CodeArts.Mvc
         };
 
         /// <summary>
-        /// 作为身份认证
+        /// 作为身份认证。
         /// </summary>
-        /// <param name="userData">用户数据</param>
+        /// <param name="userData">用户数据。</param>
         /// <returns></returns>
         public static ClaimsIdentity AsIdentity(this IDictionary<string, object> userData)
         {
             var identity = new ClaimsIdentity("JwtBearer", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", "http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
 
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
 
             identity.AddClaim(new Claim("aud", "jwt:audience".Config(Consts.JwtAudience)));
             identity.AddClaim(new Claim("iss", "jwt:issuer".Config(Consts.JwtIssuer)));

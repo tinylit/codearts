@@ -24,7 +24,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="body">代码块。</param>
-        /// <param name="exceptionType">异常类型</param>
+        /// <param name="exceptionType">异常类型。</param>
         public CatchAst(AstExpression body, Type exceptionType) : this(body, exceptionType, null)
         {
         }
@@ -33,7 +33,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="body">代码块。</param>
-        /// <param name="variable">变量</param>
+        /// <param name="variable">变量。</param>
         public CatchAst(AstExpression body, VariableAst variable) : this(body, typeof(Exception), variable)
         {
         }
@@ -42,8 +42,8 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="body">代码块。</param>
-        /// <param name="exceptionType">异常类型</param>
-        /// <param name="variable">变量</param>
+        /// <param name="exceptionType">异常类型。</param>
+        /// <param name="variable">变量。</param>
         public CatchAst(AstExpression body, Type exceptionType, VariableAst variable) : base(body.ReturnType)
         {
             this.body = body ?? throw new ArgumentNullException(nameof(body));
@@ -54,7 +54,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             ilg.BeginCatchBlock(exceptionType);

@@ -4,10 +4,10 @@ using CodeArts.ORM;
 namespace Mvc.Core.Domain
 {
     /// <summary>
-    /// 用户仓库
+    /// 用户仓库。
     /// </summary>
     [DbConfig("connectionStrings:default")]
-    public class UserRepository : ReadWriteRepository<User>
+    public class UserRepository : DbRepository<User>
     {
 
     }

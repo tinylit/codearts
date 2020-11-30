@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net451;net45;net40;netstandard2.0;</TargetFrameworks>
+	<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net45;net40;netstandard2.0;</TargetFrameworks>
     <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Tiny Lit</Authors>
-    <Version>4.1.0.0</Version>
+    <Version>5.0.0.0</Version>
 	  <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -20,7 +20,7 @@
     <PackageReference Include="MySql.Data" Version="8.0.18" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net40'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45'">
     <PackageReference Include="MySql.Data" Version="6.9.12" />
   </ItemGroup>
 

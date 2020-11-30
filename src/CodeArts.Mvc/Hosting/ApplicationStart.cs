@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40 || NET_NORMAL
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.DependencyInjection;
 using System;
@@ -22,7 +22,7 @@ using System.Web.Http.Dependencies;
 namespace CodeArts.Mvc.Hosting
 {
     /// <summary>
-    /// 程序启动
+    /// 程序启动。
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class ApplicationStart
@@ -80,7 +80,7 @@ namespace CodeArts.Mvc.Hosting
             private readonly ConcurrentDictionary<ServiceDescriptor, object> singletions = new ConcurrentDictionary<ServiceDescriptor, object>();
             private readonly ConcurrentDictionary<Type, Func<IServiceProvider, object>> implementations = new ConcurrentDictionary<Type, Func<IServiceProvider, object>>();
             private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
             private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
 #endif
             public MultiResolver(IEnumerable<ServiceDescriptor> serviceDescriptors, IDependencyResolver dependencyResolver)
@@ -92,7 +92,7 @@ namespace CodeArts.Mvc.Hosting
             /// <summary>
             /// Gets the service object of the specified type.
             /// </summary>
-            /// <param name="serviceType">服务类型</param>
+            /// <param name="serviceType">服务类型。</param>
             /// <returns></returns>
             public object GetService(Type serviceType)
             {
@@ -146,7 +146,7 @@ namespace CodeArts.Mvc.Hosting
 
                             return service.ImplementationFactory.Invoke(this);
                         });
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
                     case ServiceLifetime.Scoped:
                         return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
                         {
@@ -208,7 +208,7 @@ namespace CodeArts.Mvc.Hosting
         private class Loader
         {
             /// <summary>
-            /// 启动类
+            /// 启动类。
             /// </summary>
             public const string Startup = "Startup";
             public const string Configuration = "Configuration";
@@ -218,16 +218,16 @@ namespace CodeArts.Mvc.Hosting
             private readonly IEnumerable<Assembly> _referencedAssemblies;
 
             /// <summary>
-            /// 构造函数
+            /// 构造函数。
             /// </summary>
             public Loader() : this(null)
             {
             }
 
             /// <summary>
-            /// 构造函数
+            /// 构造函数。
             /// </summary>
-            /// <param name="referencedAssemblies">程序集</param>
+            /// <param name="referencedAssemblies">程序集。</param>
             public Loader(IEnumerable<Assembly> referencedAssemblies)
             {
                 _referencedAssemblies = referencedAssemblies ?? new ReferencedAssembliesWrapper();
@@ -246,7 +246,7 @@ namespace CodeArts.Mvc.Hosting
             }
 
             /// <summary>
-            /// 加载函数
+            /// 加载函数。
             /// </summary>
             /// <returns></returns>
             public Func<HttpConfiguration, ApplicationBuilder> Load()
@@ -324,9 +324,9 @@ namespace CodeArts.Mvc.Hosting
             }
 
             /// <summary>
-            /// 查找类型
+            /// 查找类型。
             /// </summary>
-            /// <param name="typeName">类型名称</param>
+            /// <param name="typeName">类型名称。</param>
             /// <returns></returns>
             private Type Find(string typeName)
             {
@@ -341,7 +341,7 @@ namespace CodeArts.Mvc.Hosting
                     CheckForProgramType(assembly.GetName().Name + "." + typeName, assembly, ref matchedType, ref conflict);
                 }
 
-                if (matchedType == null)
+                if (matchedType is null)
                 {
                     return null;
                 }
@@ -501,7 +501,7 @@ namespace CodeArts.Mvc.Hosting
         }
 
         /// <summary>
-        /// 请求板块
+        /// 请求板块。
         /// </summary>
         private sealed class HttpModule : IHttpModule
         {

@@ -8,7 +8,7 @@ using System.Reflection;
 namespace CodeArts
 {
     /// <summary>
-    /// 程序集缓存
+    /// 程序集缓存。
     /// </summary>
     public class AssemblyFinder
     {
@@ -18,7 +18,7 @@ namespace CodeArts
         private static readonly ConcurrentDictionary<string, IEnumerable<Assembly>> AssemblyCache = new ConcurrentDictionary<string, IEnumerable<Assembly>>();
 
         /// <summary>
-        /// 静态构造函数
+        /// 静态构造函数。
         /// </summary>
         static AssemblyFinder()
         {
@@ -29,15 +29,15 @@ namespace CodeArts
         }
 
         /// <summary>
-        /// 所有程序集
+        /// 所有程序集。
         /// </summary>
         /// <returns></returns>
         public static IEnumerable<Assembly> FindAll() => Find("*.dll");
 
         /// <summary>
-        /// 满足指定条件的程序集
+        /// 满足指定条件的程序集。
         /// </summary>
-        /// <param name="pattern">过滤条件</param>
+        /// <param name="pattern">过滤条件。</param>
         /// <returns></returns>
         public static IEnumerable<Assembly> Find(string pattern)
         {

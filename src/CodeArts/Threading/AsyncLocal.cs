@@ -1,13 +1,13 @@
-﻿using System.Collections.Concurrent;
+﻿#if NET40 || NET45
+using System.Collections.Concurrent;
 using System.Security;
 
 namespace System.Threading
 {
-#if NET40 || NET45 || NET451 || NET452
     /// <summary>
     /// 异步对象（数据在每个线程中唯一。）
     /// </summary>
-    /// <typeparam name="T">对象类型</typeparam>
+    /// <typeparam name="T">对象类型。</typeparam>
     public sealed class AsyncLocal<T>
     {
         [SecurityCritical]
@@ -16,7 +16,7 @@ namespace System.Threading
         private static readonly ConcurrentDictionary<Thread, T> mapperCache = new ConcurrentDictionary<Thread, T>();
 
         /// <summary>
-        /// 数据值
+        /// 数据值。
         /// </summary>
         public T Value
         {
@@ -33,14 +33,15 @@ namespace System.Threading
             });
         }
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public AsyncLocal() { }
+
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="valueChangedHandler">数据改变事件</param>
+        /// <param name="valueChangedHandler">数据改变事件。</param>
         public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) => m_valueChangedHandler = valueChangedHandler;
     }
-#endif
 }
+#endif

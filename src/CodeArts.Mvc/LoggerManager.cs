@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NET_CORE
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// 使用日志管理器。
         /// </summary>
-        /// <param name="app">程序构造器</param>
+        /// <param name="app">程序构造器。</param>
         /// <returns></returns>
         public static IApplicationBuilder UseLoggerManager(this IApplicationBuilder app)
         {
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// 使用日志管理器。
         /// </summary>
-        /// <param name="services">服务集合</param>
+        /// <param name="services">服务集合。</param>
         /// <returns></returns>
         public static IServiceCollection UseLoggerManager(this IServiceCollection services) => _services = services;
 
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// 使用日志管理器。
         /// </summary>
-        /// <param name="builder">日志构造器</param>
+        /// <param name="builder">日志构造器。</param>
         /// <returns></returns>
         public static ILoggingBuilder UseLoggerManager(this ILoggingBuilder builder)
         {
@@ -58,14 +58,14 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// 获取一个日志记录器。
         /// </summary>
-        /// <typeparam name="T">类型</typeparam>
+        /// <typeparam name="T">类型。</typeparam>
         /// <returns></returns>
         public static ILogger<T> GetLogger<T>() => Factory?.CreateLogger<T>() ?? NullLogger<T>.Instance;
 
         /// <summary>
         /// 获取一个日志记录器。
         /// </summary>
-        /// <param name="type">类型</param>
+        /// <param name="type">类型。</param>
         /// <returns></returns>
         public static ILogger GetLogger(Type type) => Factory?.CreateLogger(type) ?? NullLogger.Instance;
     }

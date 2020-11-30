@@ -1,19 +1,17 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Mvc.Core.Domain;
-using System;
-using CodeArts;
+﻿using CodeArts;
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.Net.Http.Headers;
-using Mvc.Core.Dtos;
-using System.ComponentModel.DataAnnotations;
 using CodeArts.ORM;
-using Mvc.Core.Domain.Entities;
-using System.Linq;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Mvc.Core.Domain;
+using Mvc.Core.Domain.Entities;
+using Mvc.Core.Dtos;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace Mvc.Core.Controllers
 {
@@ -39,50 +37,39 @@ namespace Mvc.Core.Controllers
         public bool AopTest() => true;
     }
 
-    /// <inheritdoc />
-    [DbConfig]
-    [TypeGen(typeof(DbTypeGen))]
-    public interface IUserDependency : IDbMapper<User>, IRepository<User>
-    {
-
-    }
 
     /// <summary>
-    /// 默认
+    /// 默认。
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ValuesController : BaseController<UserDto>
     {
-        private readonly IUserDependency userDependency;
         private readonly IDependency dependency;
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="userDependency">用户注入</param>
-        /// <param name="dependency">依赖注入</param>
-        /// <param name="users">用户信息</param>
-        public ValuesController(IUserDependency userDependency, IDependency dependency, UserRepository users)
+        /// <param name="dependency">依赖注入。</param>
+        /// <param name="users">用户信息。</param>
+        public ValuesController(IDependency dependency, UserRepository users)
         {
-            this.userDependency = userDependency;
             this.dependency = dependency;
         }
 
         /// <summary>
-        /// 获取
+        /// 获取。
         /// </summary>
         /// <returns></returns>
         // GET api/values
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            var userDto = userDependency.Where(x => x.Id == 100).FirstOrDefault();
             return new string[] { "value1", "value2" };
         }
 
         /// <summary>
-        /// 获取
+        /// 获取。
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -94,7 +81,7 @@ namespace Mvc.Core.Controllers
         }
 
         /// <summary>
-        /// 添加
+        /// 添加。
         /// </summary>
         /// <param name="value"></param>
         // POST api/values
@@ -104,7 +91,7 @@ namespace Mvc.Core.Controllers
         }
 
         /// <summary>
-        /// 修改
+        /// 修改。
         /// </summary>
         /// <param name="id"></param>
         /// <param name="value"></param>
@@ -115,7 +102,7 @@ namespace Mvc.Core.Controllers
         }
 
         /// <summary>
-        /// 删除
+        /// 删除。
         /// </summary>
         /// <param name="id"></param>
         // DELETE api/values/5
@@ -127,7 +114,7 @@ namespace Mvc.Core.Controllers
         }
 
         /// <summary>
-        /// 登录
+        /// 登录。
         /// </summary>
         /// <param name="account"></param>
         /// <param name="password"></param>
@@ -147,7 +134,7 @@ namespace Mvc.Core.Controllers
 
 
         /// <summary>
-        /// 登录
+        /// 登录。
         /// </summary>
         /// <param name="account"></param>
         /// <param name="password"></param>
@@ -164,7 +151,7 @@ namespace Mvc.Core.Controllers
             });
         }
         /// <summary>
-        /// 测试
+        /// 测试。
         /// </summary>
         /// <param name="weather"></param>
         /// <returns></returns>
@@ -176,10 +163,10 @@ namespace Mvc.Core.Controllers
         }
 
         /// <summary>
-        /// 短信验证码
+        /// 短信验证码。
         /// </summary>
-        /// <param name="mobile">手机号</param>
-        /// <param name="authCode">验证码</param>
+        /// <param name="mobile">手机号。</param>
+        /// <param name="authCode">验证码。</param>
         /// <returns></returns>
         [HttpGet("sms")]
         public DResult AuthCode(string mobile, string authCode)

@@ -1,17 +1,16 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NET_CORE
 using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using CodeArts.Cache;
+using CodeArts.Caching;
 using CodeArts.Config;
 using CodeArts.Serialize.Json;
 using CodeArts.Mvc.Converters;
 using Microsoft.Extensions.Logging;
 using CodeArts.Mvc.Validators.DataAnnotations;
-using System.Linq;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 #if NETCOREAPP3_1
@@ -25,7 +24,7 @@ using Swashbuckle.AspNetCore.Swagger;
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// 启动基类
+    /// 启动基类。
     /// </summary>
     public class DStartup
     {
@@ -37,15 +36,15 @@ namespace CodeArts.Mvc
         /// </summary>
         static DStartup()
         {
-            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
         }
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
         public DStartup(bool useSwaggerUi = true, bool useDependencyInjection = true)
         {
             this.useSwaggerUi = useSwaggerUi;
@@ -53,9 +52,9 @@ namespace CodeArts.Mvc
         }
 
         /// <summary>
-        /// 配置服务（这个方法被运行时调用。使用此方法向容器添加服务。）
+        /// 配置服务（这个方法被运行时调用。使用此方法向容器添加服务）。
         /// </summary>
-        /// <param name="services">服务集合</param>
+        /// <param name="services">服务集合。</param>
         /// <returns></returns>
 
         public virtual void ConfigureServices(IServiceCollection services)
@@ -75,8 +74,7 @@ namespace CodeArts.Mvc
             });
 
             //? 缓存服务
-            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
-            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+            CachingManager.RegisterProvider(new MemoryCachingProvider(), Level.First);
 
             if (useDependencyInjection)
             {
@@ -93,7 +91,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置SwaggerGen。
         /// </summary>
-        /// <param name="options">SwaggerGen配置项</param>
+        /// <param name="options">SwaggerGen配置项。</param>
         protected virtual void ConfigureSwaggerGen(SwaggerGenOptions options)
         {
 #if NETCOREAPP3_1
@@ -119,7 +117,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置SwaggerUI。
         /// </summary>
-        /// <param name="options">SwaggerUI配置项</param>
+        /// <param name="options">SwaggerUI配置项。</param>
         protected virtual void ConfigureSwaggerUI(SwaggerUIOptions options)
         {
             options.SwaggerEndpoint("/swagger/" + "swagger:version".Config(Consts.SwaggerVersion) + "/swagger.json", "swagger:title".Config(Consts.SwaggerTitle));
@@ -128,7 +126,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置MVC【<see cref="MvcServiceCollectionExtensions.AddMvc(IServiceCollection)"/>或<seealso cref="MvcServiceCollectionExtensions.AddMvc(IServiceCollection, Action{MvcOptions})"/>】。
         /// </summary>
-        /// <param name="services">服务集合</param>
+        /// <param name="services">服务集合。</param>
         /// <returns></returns>
 #if NETCOREAPP3_1
         protected virtual IMvcBuilder ConfigureMvc(IServiceCollection services)
@@ -159,7 +157,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 使用端点。
         /// </summary>
-        /// <param name="endpoints">端点路由构造器</param>
+        /// <param name="endpoints">端点路由构造器。</param>
         protected virtual void UseEndpoints(IEndpointRouteBuilder endpoints) => endpoints
                     .MapControllers()
                     .RequireCors("Allow");
@@ -184,18 +182,18 @@ namespace CodeArts.Mvc
 
 #if NETCOREAPP3_1
         /// <summary>
-        /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道。）
+        /// 配置管道（此方法由运行时调用。使用此方法配置HTTP请求管道）。
         /// </summary>
-        /// <param name="app">项目构建器</param>
-        /// <param name="env">环境变量</param>
+        /// <param name="app">项目构建器。</param>
+        /// <param name="env">环境变量。</param>
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
 #else
         /// <summary>
-        /// 配置管道
+        /// 配置管道。
         /// </summary>
-        /// <param name="app">程序构建器</param>
-        /// <param name="env">环境变量</param>
+        /// <param name="app">程序构建器。</param>
+        /// <param name="env">环境变量。</param>
         public virtual void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
 #endif
@@ -234,16 +232,15 @@ namespace CodeArts.Mvc
 }
 #else
 using Newtonsoft.Json.Serialization;
-using CodeArts.Cache;
+using CodeArts.Caching;
 using CodeArts.Config;
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.Converters;
 using CodeArts.Mvc.DependencyInjection;
 using CodeArts.Serialize.Json;
-#if NET45 || NET451 || NET452 || NET461
+#if NET_NORMAL
 using Swashbuckle.Application;
 using System.IO;
-using System.Linq;
 #endif
 using System;
 using System.Web.Http;
@@ -267,9 +264,9 @@ namespace CodeArts.Mvc
 
 #if NET40
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
         public DStartup(bool useDependencyInjection = true)
         {
             this.useDependencyInjection = useDependencyInjection;
@@ -278,10 +275,10 @@ namespace CodeArts.Mvc
         private readonly bool useSwaggerUi;
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/></param>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
         public DStartup(bool useSwaggerUi = true, bool useDependencyInjection = true)
         {
             this.useSwaggerUi = useSwaggerUi;
@@ -294,12 +291,12 @@ namespace CodeArts.Mvc
         /// </summary>
         static DStartup()
         {
-            RuntimeServManager.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
         }
 
         /// <summary>
-        /// 属性名称解析规则
+        /// 属性名称解析规则。
         /// </summary>
         private class ContractResolver : DefaultContractResolver
         {
@@ -312,7 +309,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置默认路由规则，解析器等。
         /// </summary>
-        /// <param name="config">配置</param>
+        /// <param name="config">配置。</param>
         public virtual void Configuration(HttpConfiguration config)
         {
 #if !NET40
@@ -368,15 +365,14 @@ namespace CodeArts.Mvc
             config.Filters.Add(new DExceptionFilterAttribute());
 
             //? 缓存服务
-            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.First);
-            CacheManager.TryAddProvider(new RuntimeCacheProvider(), CacheLevel.Second);
+            CachingManager.RegisterProvider(new MemoryCachingProvider(), Level.First);
         }
 
 #if !NET40
         /// <summary>
         /// 配置Swagger。
         /// </summary>
-        /// <param name="config">Swagger文档配置项</param>
+        /// <param name="config">Swagger文档配置项。</param>
         protected virtual void ConfigureSwagger(SwaggerDocsConfig config)
         {
             config.Schemes(new[] { "http", "https" });
@@ -411,7 +407,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置SwaggerUi。
         /// </summary>
-        /// <param name="config">SwaggerUi配置项</param>
+        /// <param name="config">SwaggerUi配置项。</param>
         protected virtual void ConfigureSwaggerUi(SwaggerUiConfig config) => config.DocExpansion(DocExpansion.List);
 
 #endif
@@ -419,7 +415,7 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 配置依赖注入。
         /// </summary>
-        /// <param name="services">服务集合</param>
+        /// <param name="services">服务集合。</param>
         public virtual void ConfigureServices(IServiceCollection services)
         {
             if (useDependencyInjection)

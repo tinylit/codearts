@@ -1,28 +1,28 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NET_CORE
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
+using System.IO;
+using System.Threading.Tasks;
 #else
 using System.Web;
 #endif
 using CodeArts.Serialize.Json;
-using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// 响应拓展
+    /// 响应拓展。
     /// </summary>
     public static class ResponseExtensions
     {
         /// <summary>
-        /// 返回json
+        /// 返回json。
         /// </summary>
-        /// <param name="httpResponse">响应</param>
-        /// <param name="bytes">媒体内容</param>
+        /// <param name="httpResponse">响应。</param>
+        /// <param name="bytes">媒体内容。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
         public static Task WriteImageAsync(this HttpResponse httpResponse, byte[] bytes)
         {
             var stream = new MemoryStream(bytes);
@@ -39,12 +39,12 @@ namespace CodeArts.Mvc
         }
 #endif
         /// <summary>
-        /// 返回json
+        /// 返回json。
         /// </summary>
-        /// <param name="httpResponse">响应</param>
-        /// <param name="text">返回内容</param>
+        /// <param name="httpResponse">响应。</param>
+        /// <param name="text">返回内容。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
         public static Task WriteJsonAsync(this HttpResponse httpResponse, string text)
         {
             httpResponse.ContentType = "application/json;charset=utf-8";
@@ -59,12 +59,12 @@ namespace CodeArts.Mvc
         }
 #endif
         /// <summary>
-        /// 返回json
+        /// 返回json。
         /// </summary>
-        /// <param name="httpResponse">响应</param>
-        /// <param name="value">返回内容</param>
+        /// <param name="httpResponse">响应。</param>
+        /// <param name="value">返回内容。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
         public static Task WriteJsonAsync<T>(this HttpResponse httpResponse, T value) => httpResponse.WriteJsonAsync(JsonHelper.ToJson(value));
 #else
         public static void WriteJson<T>(this HttpResponse httpResponse, T value) => httpResponse.WriteJson(JsonHelper.ToJson(value));

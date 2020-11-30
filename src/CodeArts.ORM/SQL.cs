@@ -1,5 +1,4 @@
-﻿using CodeArts.ORM.Exceptions;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System;
 #if NET40
@@ -7,7 +6,6 @@ using System.Collections.ObjectModel;
 #endif
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace CodeArts.ORM
 {
@@ -21,38 +19,38 @@ namespace CodeArts.ORM
     /// 说明：会自动去除代码注解和多余的换行符压缩语句。
     /// </summary>
     [DebuggerDisplay("{ToString()}")]
-    public class SQL : ISQL
+    public sealed class SQL
     {
         private readonly StringBuilder sb;
-        private static ISqlAdpter _adpter;
+        private static readonly ISqlAdpter adpter;
 
         private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
 
         /// <summary>
         /// 静态构造函数。
         /// </summary>
-        static SQL() => _adpter = RuntimeServManager.Singleton<ISqlAdpter, DefaultSqlAdpter>(adaper => _adpter = adaper);
+        static SQL() => adpter = RuntimeServPools.Singleton<ISqlAdpter, DefaultSqlAdpter>();
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="sql">原始SQL语句</param>
-        public SQL(string sql) => sb = new StringBuilder(SqlCache.GetOrAdd(sql, _adpter.Analyze));
+        /// <param name="sql">原始SQL语句。</param>
+        public SQL(string sql) => sb = new StringBuilder(SqlCache.GetOrAdd(sql, adpter.Analyze));
 
         /// <summary>
-        /// 添加语句
+        /// 添加语句。
         /// </summary>
-        /// <param name="sql">SQL</param>
+        /// <param name="sql">SQL。</param>
         /// <returns></returns>
-        public SQL Add(string sql) => Add(new SQL(SqlCache.GetOrAdd(sql, _adpter.Analyze)));
+        public SQL Add(string sql) => Add(new SQL(SqlCache.GetOrAdd(sql, adpter.Analyze)));
 
         /// <summary>
-        /// 添加语句
+        /// 添加语句。
         /// </summary>
-        /// <param name="sql">SQL</param>
+        /// <param name="sql">SQL。</param>
         public SQL Add(SQL sql)
         {
-            if (sql == null)
+            if (sql is null)
             {
                 throw new ArgumentNullException(nameof(sql));
             }
@@ -71,46 +69,47 @@ namespace CodeArts.ORM
         private static readonly ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>>();
 
         /// <summary>
-        /// 操作的表
+        /// 操作的表。
         /// </summary>
-        public ReadOnlyCollection<TableToken> Tables => TableCache.GetOrAdd(sb.ToString(), _adpter.AnalyzeTables);
+        public ReadOnlyCollection<TableToken> Tables => TableCache.GetOrAdd(sb.ToString(), adpter.AnalyzeTables);
         /// <summary>
-        /// 参数
+        /// 参数。
         /// </summary>
-        public ReadOnlyCollection<ParameterToken> Parameters => ParameterCache.GetOrAdd(sb.ToString(), _adpter.AnalyzeParameters);
+        public ReadOnlyCollection<ParameterToken> Parameters => ParameterCache.GetOrAdd(sb.ToString(), adpter.AnalyzeParameters);
 #else
         private static readonly ConcurrentDictionary<string, IReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyCollection<TableToken>>();
 
         private static readonly ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>>();
 
         /// <summary>
-        /// 操作的表
+        /// 操作的表。
         /// </summary>
-        public IReadOnlyCollection<TableToken> Tables => TableCache.GetOrAdd(sb.ToString(), _adpter.AnalyzeTables);
+        public IReadOnlyCollection<TableToken> Tables => TableCache.GetOrAdd(sb.ToString(), adpter.AnalyzeTables);
 
         /// <summary>
-        /// 参数
+        /// 参数。
         /// </summary>
-        public IReadOnlyCollection<ParameterToken> Parameters => ParameterCache.GetOrAdd(sb.ToString(), _adpter.AnalyzeParameters);
+        public IReadOnlyCollection<ParameterToken> Parameters => ParameterCache.GetOrAdd(sb.ToString(), adpter.AnalyzeParameters);
 #endif
 
         /// <summary>
-        /// 转为实际数据库的SQL语句
+        /// 转为实际数据库的SQL语句。
         /// </summary>
-        /// <param name="settings">SQL修正配置</param>
+        /// <param name="settings">SQL修正配置。</param>
         /// <returns></returns>
-        public string ToString(ISQLCorrectSimSettings settings) => _adpter.Format(sb.ToString(), settings);
+        public string ToString(ISQLCorrectSimSettings settings) => adpter.Format(sb.ToString(), settings);
 
         /// <summary>
         /// 返回分析的SQL结果。
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => _adpter.Format(sb.ToString());
+        public override string ToString() => adpter.Format(sb.ToString());
+
         /// <summary>
-        /// 追加sql
+        /// 追加sql。
         /// </summary>
-        /// <param name="left">原SQL</param>
-        /// <param name="right">需要追加的SQL</param>
+        /// <param name="left">原SQL。</param>
+        /// <param name="right">需要追加的SQL。</param>
         /// <returns></returns>
         public static SQL operator +(SQL left, SQL right)
         {
@@ -123,9 +122,9 @@ namespace CodeArts.ORM
         }
 
         /// <summary>
-        /// 运算符
+        /// 运算符。
         /// </summary>
-        /// <param name="sql">SQL</param>
+        /// <param name="sql">SQL。</param>
         public static implicit operator SQL(string sql) => new SQL(sql);
     }
 }

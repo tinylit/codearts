@@ -14,7 +14,7 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Get()
         {
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var value = "http://www.baidu.com/asasad/dsdfgf/ssasa?x=1".AsRequestable()
                  .AppendQueryString(new
@@ -42,7 +42,7 @@ namespace CodeArts.Tests
         [TestMethod]
         public void GetJson()
         {
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var entry = new
             {
@@ -70,7 +70,7 @@ namespace CodeArts.Tests
         [TestMethod]
         public async Task GetJsonAsync()
         {
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var entry = new
             {
@@ -150,7 +150,7 @@ namespace CodeArts.Tests
         //[TestMethod]
         public void PostJson()
         {
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             //var token = "http://localhost:56324/login".AsRequestable()
             //    .ToQueryString("?account=ljl&password=liujialin&debug=true")
@@ -196,7 +196,7 @@ namespace CodeArts.Tests
         //[TestMethod]
         public async Task PostForm()
         {
-            RuntimeServManager.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var value = await "http://localhost:49683/weatherforecast".AsRequestable()
              .Form(new

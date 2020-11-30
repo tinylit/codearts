@@ -3,12 +3,12 @@
 namespace CodeArts.ORM
 {
     /// <summary>
-    /// SQL矫正设置
+    /// SQL矫正设置。
     /// </summary>
     public interface ISQLCorrectSettings : ISQLCorrectSimSettings
     {
         /// <summary>
-        /// 访问器
+        /// 访问器。
         /// </summary>
         IList<ICustomVisitor> Visitors { get; }
 

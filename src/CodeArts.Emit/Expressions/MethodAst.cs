@@ -34,7 +34,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 发行。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             if (method.IsStatic)

@@ -3,19 +3,24 @@
 namespace CodeArts
 {
     /// <summary>
-    /// 拷贝配置
+    /// 拷贝配置。
     /// </summary>
     public interface IProfileConfiguration
     {
         /// <summary>
-        /// 类型创建器
+        /// 类型创建器。
         /// </summary>
         Func<Type, object> ServiceCtor { get; }
 
         /// <summary>
-        /// 匹配模式
+        /// 匹配模式。
         /// </summary>
         PatternKind Kind { get; }
+
+        /// <summary>
+        /// 深度映射。
+        /// </summary>
+        bool? IsDepthMapping { get; }
 
         /// <summary>
         /// 允许空目标值。

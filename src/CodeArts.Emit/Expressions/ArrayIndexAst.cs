@@ -17,8 +17,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="array">数组</param>
-        /// <param name="index">索引</param>
+        /// <param name="array">数组。</param>
+        /// <param name="index">索引。</param>
         public ArrayIndexAst(AstExpression array, int index) : base(array.ReturnType.GetElementType())
         {
             if (index < 0)
@@ -40,8 +40,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="array">数组</param>
-        /// <param name="indexExp">索引</param>
+        /// <param name="array">数组。</param>
+        /// <param name="indexExp">索引。</param>
         public ArrayIndexAst(AstExpression array, AstExpression indexExp) : base(array.ReturnType.GetElementType())
         {
             this.array = array ?? throw new ArgumentNullException(nameof(array));
@@ -134,7 +134,7 @@ namespace CodeArts.Emit.Expressions
         /// 赋值。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        /// <param name="value">值</param>
+        /// <param name="value">值。</param>
         protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
             if (index == -1)

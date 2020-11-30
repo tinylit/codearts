@@ -4,16 +4,16 @@ using System.Text.RegularExpressions;
 namespace CodeArts
 {
     /// <summary>
-    /// JSON 属性设置(非数字格式的内容会加双引号)
+    /// JSON 属性设置(非数字格式的内容会加双引号)。
     /// </summary>
     public class JsonSettings : DefaultSettings
     {
         private static readonly Regex NumberPattern = new Regex("^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?$", RegexOptions.Singleline | RegexOptions.Compiled);
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="namingCase">命名规则</param>
+        /// <param name="namingCase">命名规则。</param>
         public JsonSettings(NamingType namingCase) : base(namingCase)
         {
         }
@@ -27,8 +27,8 @@ namespace CodeArts
         /// <summary>
         /// 打包数据。
         /// </summary>
-        /// <param name="value">数据</param>
-        /// <param name="typeToConvert">源数据类型</param>
+        /// <param name="value">数据。</param>
+        /// <param name="typeToConvert">源数据类型。</param>
         /// <returns></returns>
         protected override string ValuePackaging(string value, Type typeToConvert)
         {

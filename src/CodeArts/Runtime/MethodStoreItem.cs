@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 #if NET40
 using System.Collections.ObjectModel;
 #else
@@ -10,40 +11,42 @@ using System.Reflection;
 namespace CodeArts.Runtime
 {
     /// <summary>
-    /// 方法仓库
+    /// 方法仓库。
     /// </summary>
     public class MethodStoreItem : StoreItem<MethodInfo>
     {
+        private static readonly ConcurrentDictionary<MethodInfo, MethodStoreItem> ItemCache = new ConcurrentDictionary<MethodInfo, MethodStoreItem>();
+
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
-        /// <param name="info">方法</param>
-        public MethodStoreItem(MethodInfo info) : base(info)
+        /// <param name="info">方法。</param>
+        private MethodStoreItem(MethodInfo info) : base(info)
         {
         }
 
         /// <summary>
-        /// 放回值类型
+        /// 放回值类型。
         /// </summary>
         public override Type MemberType => Member.ReturnType;
 
         /// <summary>
-        /// 静态方法
+        /// 静态方法。
         /// </summary>
         public override bool IsStatic => Member.IsStatic;
 
         /// <summary>
-        /// 公共方法
+        /// 公共方法。
         /// </summary>
         public override bool IsPublic => Member.IsPublic;
 
         /// <summary>
-        /// 可以调用
+        /// 可以调用。
         /// </summary>
         public override bool CanRead => Member.IsPublic;
 
         /// <summary>
-        /// 可修改
+        /// 可修改。
         /// </summary>
         public override bool CanWrite => false;
 
@@ -53,7 +56,7 @@ namespace CodeArts.Runtime
 
         private ReadOnlyCollection<ParameterStoreItem> parameterStores;
         /// <summary>
-        /// 参数信息
+        /// 参数信息。
         /// </summary>
         public ReadOnlyCollection<ParameterStoreItem> ParameterStores
         {
@@ -66,7 +69,7 @@ namespace CodeArts.Runtime
                         if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
-                                .Select(info => new ParameterStoreItem(info))
+                                .Select(info => ParameterStoreItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -78,7 +81,7 @@ namespace CodeArts.Runtime
 #else
         private IReadOnlyCollection<ParameterStoreItem> parameterStores;
         /// <summary>
-        /// 参数信息
+        /// 参数信息。
         /// </summary>
         public IReadOnlyCollection<ParameterStoreItem> ParameterStores
         {
@@ -91,7 +94,7 @@ namespace CodeArts.Runtime
                         if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
-                                .Select(info => new ParameterStoreItem(info))
+                                .Select(info => ParameterStoreItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -100,5 +103,13 @@ namespace CodeArts.Runtime
             }
         }
 #endif
+
+
+        /// <summary>
+        /// 获取仓储项目。
+        /// </summary>
+        /// <param name="info">信息。</param>
+        /// <returns></returns>
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
     }
 }

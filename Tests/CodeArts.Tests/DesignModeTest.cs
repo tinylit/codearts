@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CodeArts.Tests
 {
-    public class A : DesignMode.Singleton<A>
+    public class A : Singleton<A>
     {
         public int MyProperty { get; } = 8;
     }

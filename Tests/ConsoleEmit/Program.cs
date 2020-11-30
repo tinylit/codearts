@@ -8,15 +8,15 @@ using System.Reflection.Emit;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// 迭代扩展
+    /// 迭代扩展。
     /// </summary>
     public static class IEnumerableExtentions
     {
         /// <summary>
-        /// 对数据中的每个元素执行指定操作
+        /// 对数据中的每个元素执行指定操作。
         /// </summary>
-        /// <typeparam name="T">元素类型</typeparam>
-        /// <param name="source">数据源</param>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="source">数据源。</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
@@ -27,10 +27,10 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// 对数据中的每个元素执行指定操作
+        /// 对数据中的每个元素执行指定操作。
         /// </summary>
-        /// <typeparam name="T">元素类型</typeparam>
-        /// <param name="source">数据源</param>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="source">数据源。</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
         {
@@ -46,58 +46,58 @@ namespace System.Collections.Generic
 namespace ConsoleEmit
 {
     /// <summary>
-    /// 拦截器
+    /// 拦截器。
     /// </summary>
     public interface IInterceptor
     {
         /// <summary>
-        /// 拦截
+        /// 拦截。
         /// </summary>
         void Intercept(IIntercept intercept);
     }
 
     /// <summary>
-    /// 调用者数据信息
+    /// 调用者数据信息。
     /// </summary>
     public interface IIntercept
     {
         /// <summary>
-        /// 调用参数
+        /// 调用参数。
         /// </summary>
         object[] Arguments { get; }
 
         /// <summary>
-        /// 调用函数
+        /// 调用函数。
         /// </summary>
         MethodInfo Method { get; }
 
         /// <summary>
-        /// 拦截的对象
+        /// 拦截的对象。
         /// </summary>
         object Instance { get; }
 
         /// <summary>
-        /// 返回值
+        /// 返回值。
         /// </summary>
         object ReturnValue { get; set; }
 
         /// <summary>
-        /// 执行方法
+        /// 执行方法。
         /// </summary>
         void Proceed();
 
         /// <summary>
-        /// 获取参数值
+        /// 获取参数值。
         /// </summary>
-        /// <param name="index">索引</param>
+        /// <param name="index">索引。</param>
         /// <returns></returns>
         object GetArgumentValue(int index);
 
         /// <summary>
-        /// 重设参数值
+        /// 重设参数值。
         /// </summary>
-        /// <param name="index">索引</param>
-        /// <param name="value">参数值</param>
+        /// <param name="index">索引。</param>
+        /// <param name="value">参数值。</param>
         void SetArgumentValue(int index, object value);
     }
     public interface IEmit

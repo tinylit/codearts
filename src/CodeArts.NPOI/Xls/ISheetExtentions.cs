@@ -6,18 +6,18 @@ using System.Data;
 namespace CodeArts.NPOI.Xls
 {
     /// <summary>
-    /// Sheet 扩展
+    /// Sheet 扩展。
     /// </summary>
     public static class ISheetExtentions
     {
         /// <summary>
-        /// 创建下一行
+        /// 创建下一行。
         /// </summary>
-        /// <param name="row">当前行</param>
+        /// <param name="row">当前行。</param>
         /// <returns></returns>
         public static IRow CreateNextRow(this ISheet sheet)
         {
-            if (sheet == null)
+            if (sheet is null)
             {
                 throw new ArgumentNullException(nameof(sheet));
             }
@@ -26,26 +26,26 @@ namespace CodeArts.NPOI.Xls
         }
 
         /// <summary>
-        /// 创建表头
+        /// 创建表头。
         /// </summary>
-        /// <typeparam name="T">数据类型</typeparam>
-        /// <param name="sheet">表</param>
-        /// <param name="collection">集合</param>
-        /// <param name="factory">工厂</param>
+        /// <typeparam name="T">数据类型。</typeparam>
+        /// <param name="sheet">表。</param>
+        /// <param name="collection">集合。</param>
+        /// <param name="factory">工厂。</param>
         /// <returns></returns>
         public static Dictionary<string, int> CreateHeadRow<T>(this ISheet sheet, IEnumerable<T> collection, Func<T, ICell, string> factory)
         {
-            if (sheet == null)
+            if (sheet is null)
             {
                 throw new ArgumentNullException(nameof(sheet));
             }
 
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -67,7 +67,7 @@ namespace CodeArts.NPOI.Xls
         }
 
         /// <summary>
-        /// 创建列头
+        /// 创建列头。
         /// </summary>
         /// <returns></returns>
         public static Dictionary<string, int> CreateHeadRow(this ISheet sheet, IEnumerable<KeyValuePair<string, string>> keyValues)
@@ -83,7 +83,7 @@ namespace CodeArts.NPOI.Xls
         }
 
         /// <summary>
-        /// 创建列头
+        /// 创建列头。
         /// </summary>
         /// <returns></returns>
         public static Dictionary<string, int> CreateHeadRow<T>(this ISheet sheet, IEnumerable<KeyValuePair<string, T>> keyValues) where T : IHeaderProvider
@@ -102,7 +102,7 @@ namespace CodeArts.NPOI.Xls
 
 
         /// <summary>
-        /// 创建列头
+        /// 创建列头。
         /// </summary>
         /// <returns></returns>
         public static Dictionary<string, ICell> CreateHeadRow(this ISheet sheet, DataColumnCollection keyValues)

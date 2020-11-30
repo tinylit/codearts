@@ -1,7 +1,8 @@
-﻿#if NETSTANDARD2_0 || NETCOREAPP3_1
+﻿#if NET_CORE
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Security.Claims;
 #else
 using JWT;
 using JWT.Serializers;
@@ -12,18 +13,26 @@ using System.Collections.Generic;
 namespace CodeArts.Mvc
 {
     /// <summary>
-    /// JWT令牌生成器
+    /// JWT令牌生成器。
     /// </summary>
     public static class JwtTokenGen
     {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
+#if NET_CORE
         /// <summary>
-        /// 生成令牌
+        /// 生成令牌。
         /// </summary>
-        /// <param name="user">用户信息字典</param>
-        /// <param name="expires">令牌有效期（单位：小时）</param>
+        /// <param name="user">用户信息字典。</param>
+        /// <param name="expires">令牌有效期（单位：小时）。</param>
         /// <returns></returns>
-        public static JwtToken Create(Dictionary<string, object> user, double expires = 12D)
+        public static JwtToken Create(Dictionary<string, object> user, double expires = 12D) => Create(user.AsIdentity(), expires);
+
+        /// <summary>
+        /// 生成令牌。
+        /// </summary>
+        /// <param name="user">用户信息。</param>
+        /// <param name="expires">令牌有效期（单位：小时）。</param>
+        /// <returns></returns>
+        public static JwtToken Create(ClaimsIdentity user, double expires = 12D)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -31,7 +40,7 @@ namespace CodeArts.Mvc
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = user.AsIdentity(),
+                Subject = user,
                 Expires = DateTime.UtcNow.AddHours(expires),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
@@ -45,10 +54,10 @@ namespace CodeArts.Mvc
         }
 #else
         /// <summary>
-        /// 生成令牌
+        /// 生成令牌。
         /// </summary>
-        /// <param name="user">用户信息</param>
-        /// <param name="expires"></param>
+        /// <param name="user">用户信息。</param>
+        /// <param name="expires">过期时间（单位：小时）。</param>
         /// <returns></returns>
         public static string Create(Dictionary<string, object> user, double expires = 12D)
         {

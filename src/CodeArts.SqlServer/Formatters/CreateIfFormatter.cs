@@ -13,19 +13,19 @@ namespace CodeArts.SqlServer.Formatters
         private static readonly Regex PatternCreateIf = new Regex(@"\bcreate[\x20\t\r\n\f]+(?<command>table|view|function|procedure|database)[\x20\t\r\n\f]+(?<if>if[\x20\t\r\n\f]+not[\x20\t\r\n\f]+exists[\x20\t\r\n\f]+)([\w\[\]]+\.)*\[(?<name>\w+)\][\x20\t\r\n\f]*\(((?!\b(select|insert|update|delete|create|drop|alter|truncate|use)\b)(on[\x20\t\r\n\f]+(update|delete)|[^;]))+;?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
-        /// 构造函数
+        /// 构造函数。
         /// </summary>
         public CreateIfFormatter() : base(PatternCreateIf)
         {
         }
 
         /// <summary>
-        /// 条件创建
+        /// 条件创建。
         /// </summary>
-        /// <param name="item">匹配项</param>
-        /// <param name="command">命令</param>
-        /// <param name="if">条件</param>
-        /// <param name="name">名称</param>
+        /// <param name="item">匹配项。</param>
+        /// <param name="command">命令。</param>
+        /// <param name="if">条件。</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public string CreateIf(Match item, string command, Group @if, string name)
         {

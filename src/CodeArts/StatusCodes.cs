@@ -5,18 +5,18 @@ using System.ComponentModel;
 namespace CodeArts
 {
     /// <summary>
-    /// -1 基础异常
-    /// 0 执行成功
-    /// 1-5000 请求状态码
-    /// 5001-10000 系统错误码
-    /// 10001-40000 业务错误码
-    /// 40001-60000 服务异常
-    /// 60001-70000 数据库异常
-    /// --可扩展
+    /// -1 基础异常。
+    /// 0 执行成功。
+    /// 1-5000 请求状态码。
+    /// 5001-10000 系统错误码。
+    /// 10001-40000 业务错误码。
+    /// 40001-60000 服务异常。
+    /// 60001-70000 数据库异常。
+    /// --可扩展。
     /// </summary>
     public abstract class StatusCodes
     {
-        /// <summary> 默认错误码 </summary>
+        /// <summary> 默认错误码。 </summary>
         [Description("基础异常")]
         public const int Error = -1;
 
@@ -250,100 +250,100 @@ namespace CodeArts
         [Description("服务器心情不好，请稍后重试~")]
         public const int SystemError = 5001;
 
-        /// <summary> 参数错误 </summary>
+        /// <summary> 参数错误。 </summary>
         [Description("参数错误")]
         public const int ParamaterError = 5002;
 
-        /// <summary> 空引用异常 </summary>
+        /// <summary> 空引用异常。 </summary>
         [Description("空引用异常")]
         public const int NullError = 5003;
 
-        /// <summary> 语法异常 </summary>
+        /// <summary> 语法异常。 </summary>
         [Description("语法异常")]
         public const int SyntaxError = 5004;
 
-        /// <summary> 除零异常 </summary>
+        /// <summary> 除零异常。 </summary>
         [Description("除零异常")]
         public const int DivideByZeroError = 5006;
 
-        /// <summary> 不支持异常 </summary>
+        /// <summary> 不支持异常。 </summary>
         [Description("不支持异常")]
         public const int NotSupportedError = 5007;
 
-        /// <summary> 未实现异常 </summary>
+        /// <summary> 未实现异常。 </summary>
         [Description("未实现异常")]
         public const int NotImplementedError = 5008;
 
-        /// <summary> 参数异常 </summary>
+        /// <summary> 参数异常。 </summary>
         [Description("参数异常")]
         public const int ArgumentError = 5009;
 
-        /// <summary> 参数空指针异常 </summary>
+        /// <summary> 参数空指针异常。 </summary>
         [Description("参数空指针异常")]
         public const int ArgumentNullError = 5010;
 
-        /// <summary> 参数值越界异常 </summary>
+        /// <summary> 参数值越界异常。 </summary>
         [Description("参数值越界异常")]
         public const int ArgumentOutOfRangeError = 5011;
 
-        /// <summary> 无效枚举参数异常 </summary>
+        /// <summary> 无效枚举参数异常。 </summary>
         [Description("无效枚举参数异常")]
         public const int InvalidEnumArgumentError = 5012;
 
-        /// <summary> 索引越界异常 </summary>
+        /// <summary> 索引越界异常。 </summary>
         [Description("索引越界异常")]
         public const int IndexOutOfRangeError = 5013;
 
-        /// <summary> 索引越界异常 </summary>
+        /// <summary> 索引越界异常。 </summary>
         [Description("索引越界异常")]
         public const int KeyNotFoundError = 5014;
 
-        /// <summary> 类型转换异常 </summary>
+        /// <summary> 类型转换异常。 </summary>
         [Description("类型转换异常")]
         public const int InvalidCastError = 5015;
         #endregion
 
         #region 业务层异常
 
-        /// <summary> 业务异常 </summary>
+        /// <summary> 业务异常。 </summary>
         [Description("业务异常")]
         public const int BusiError = 10001;
 
         #endregion
 
         #region 服务层异常
-        /// <summary> 服务异常 </summary>
+        /// <summary> 服务异常。 </summary>
         [Description("服务异常")]
         public const int ServError = 40001;
 
-        /// <summary> 该请求调用受限 </summary>
+        /// <summary> 该请求调用受限。 </summary>
         [Description("该请求调用受限")]
         public const int ClientError = 40002;
 
-        /// <summary> 请求超时 </summary>
+        /// <summary> 请求超时。 </summary>
         [Description("请求超时")]
         public const int TimeOutError = 40003;
 
-        /// <summary> 服务不标准 </summary>
+        /// <summary> 服务不标准。 </summary>
         [Description("服务不标准")]
         public const int NonstandardServerError = 4004;
 
-        /// <summary> 没有可用的服务</summary>
+        /// <summary> 没有可用的服务。 </summary>
         [Description("没有可用的服务")]
         public const int NoServiceError = 40005;
         #endregion
 
         #region 数据层异常
-        /// <summary> 数据库异常 </summary>
+        /// <summary> 数据库异常。 </summary>
         [Description("数据库异常")]
         public const int DbError = 60001;
-        /// <summary> 执行语句异常</summary>
+        /// <summary> 执行语句异常。 </summary>
         [Description("执行语句异常")]
         public const int SqlError = 60002;
-        /// <summary> 未找到数据异常 </summary>
+        /// <summary> 未找到数据异常。 </summary>
         [Description("未找到数据异常")]
         public const int DbNotFoundError = 60003;
-        /// <summary> 执行语句语法异常</summary>
+        /// <summary> 执行语句语法异常。 </summary>
         [Description("执行语句语法异常")]
         public const int SqlSyntaxError = 60004;
         #endregion

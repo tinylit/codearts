@@ -18,8 +18,7 @@ namespace CodeArts.Emit
         {
             if (names.TryGetValue(displayName, out int counter))
             {
-                counter++;
-                names[displayName] = counter;
+                names[displayName] = ++counter;
 
                 return displayName + "_" + counter.ToString();
             }

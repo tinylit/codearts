@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 是否为指定类型。
     /// </summary>
-    [DebuggerDisplay("{body} is {isType}")]
+    [DebuggerDisplay("{body} is {isType.Name}")]
     public class TypeIsAst : AstExpression
     {
         private enum AnalyzeTypeIsResult
@@ -25,8 +25,8 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="body">成员</param>
-        /// <param name="isType">类型</param>
+        /// <param name="body">成员。</param>
+        /// <param name="isType">类型。</param>
         public TypeIsAst(AstExpression body, Type isType) : base(typeof(bool))
         {
             this.body = body;

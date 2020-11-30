@@ -11,7 +11,7 @@ using static System.Linq.Expressions.Expression;
 namespace System
 {
     /// <summary>
-    /// 字符串扩展
+    /// 字符串扩展。
     /// </summary>
     public static class StringExtentions
     {
@@ -30,10 +30,10 @@ namespace System
         private static readonly ConcurrentDictionary<NamingType, DefaultSettings> SettingsCache = new ConcurrentDictionary<NamingType, DefaultSettings>();
 
         /// <summary>
-        /// 命名
+        /// 命名。
         /// </summary>
-        /// <param name="name">名称</param>
-        /// <param name="namingType">命名规则</param>
+        /// <param name="name">名称。</param>
+        /// <param name="namingType">命名规则。</param>
         /// <returns></returns>
         public static string ToNamingCase(this string name, NamingType namingType)
         {
@@ -55,16 +55,17 @@ namespace System
 
                     if (char.IsUpper(name[0]))
                     {
-                        return name.Substring(0, 1).ToLower() + PatternCamelCase.Replace(name.Substring(1), x =>
-                        {
-                            return x.Groups["letter"].Value.ToUpper();
-                        });
+                        return char.ToLower(name[0]) + PatternCamelCase.Replace(name.Substring(1), x =>
+                       {
+                           return x.Groups["letter"].Value.ToUpper();
+                       });
                     }
 
                     return PatternCamelCase.Replace(name, x =>
-                        {
-                            return x.Groups["letter"].Value.ToUpper();
-                        });
+                    {
+                        return x.Groups["letter"].Value.ToUpper();
+                    });
+
                 case NamingType.UrlCase:
                     return PatternUrlCamelCase.Replace(name, x =>
                     {
@@ -86,48 +87,50 @@ namespace System
             }
         }
 
-        /// <summary> 帕斯卡命名法 </summary>
-        /// <param name="name">名称</param>
+        /// <summary> 
+        /// 帕斯卡命名法。 
+        /// </summary>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public static string ToPascalCase(this string name) => ToNamingCase(name, NamingType.PascalCase);
 
         /// <summary>
-        /// 驼峰命名
+        /// 驼峰命名。
         /// </summary>
-        /// <param name="name">名称</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public static string ToCamelCase(this string name) => ToNamingCase(name, NamingType.CamelCase);
 
-        /// <summary> url命名法 </summary>
-        /// <param name="name">名称</param>
+        /// <summary> url命名法。</summary>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
         public static string ToUrlCase(this string name) => ToNamingCase(name, NamingType.UrlCase);
 
         /// <summary>
         /// 是否为NULL。
         /// </summary>
-        /// <param name="value">字符串</param>
+        /// <param name="value">字符串。</param>
         /// <returns></returns>
         public static bool IsNull(this string value) => value is null;
 
         /// <summary>
         /// 是否不为NULL。
         /// </summary>
-        /// <param name="value">字符串</param>
+        /// <param name="value">字符串。</param>
         /// <returns></returns>
         public static bool IsNotNull(this string value) => !IsNull(value);
 
         /// <summary>
         /// 指示指定的字符串是 null 或是 空字符串 ("")。
         /// </summary>
-        /// <param name="value">字符串</param>
+        /// <param name="value">字符串。</param>
         /// <returns></returns>
         public static bool IsEmpty(this string value) => value is null || value.Length == 0;
 
         /// <summary>
         /// 指示指定的字符串不是 null 且不是 空字符串 ("")。
         /// </summary>
-        /// <param name="value">字符串</param>
+        /// <param name="value">字符串。</param>
         /// <returns></returns>
         public static bool IsNotEmpty(this string value) => !IsEmpty(value);
 
@@ -158,16 +161,25 @@ namespace System
         /// <summary>
         /// 内容是邮箱。
         /// </summary>
-        /// <param name="value">字符串</param>
+        /// <param name="value">字符串。</param>
         /// <returns></returns>
         public static bool IsMail(this string value) => PatternMail.IsMatch(value);
 
         /// <summary>
-        /// 配置文件读取
+        /// 配置文件读取。
         /// </summary>
-        /// <typeparam name="T">读取数据类型</typeparam>
-        /// <param name="configName">健</param>
-        /// <param name="defaultValue">默认值</param>
+        /// <typeparam name="TConfigable">读取数据类型。</typeparam>
+        /// <param name="configName">健。</param>
+        /// <returns></returns>
+        public static TConfigable Config<TConfigable>(this string configName) where TConfigable : class, IConfigable<TConfigable>
+            => ConfigHelper.Instance.Get<TConfigable>(configName);
+
+        /// <summary>
+        /// 配置文件读取。
+        /// </summary>
+        /// <typeparam name="T">读取数据类型。</typeparam>
+        /// <param name="configName">健。</param>
+        /// <param name="defaultValue">默认值。</param>
         /// <returns></returns>
         public static T Config<T>(this string configName, T defaultValue = default) => ConfigHelper.Instance.Get(configName, defaultValue);
 
@@ -179,20 +191,13 @@ namespace System
         private static readonly MethodInfo ResolvePropertyNameMethod = SettingsType.GetMethod("ResolvePropertyName");
         private static readonly MethodInfo ConvertMethod = SettingsType.GetMethod("Convert", new Type[] { typeof(PropertyStoreItem), typeof(object) });
 
-        /// <summary>
-        /// 内嵌的
-        /// </summary>
-        /// <typeparam name="T">类型</typeparam>
         private static class Nested<T>
         {
-            /// <summary>
-            /// 静态构造函数
-            /// </summary>
             static Nested()
             {
                 var type = typeof(T);
 
-                var typeStore = RuntimeTypeCache.Instance.GetCache(type);
+                var typeStore = TypeStoreItem.Get(type);
 
                 var defaultCst = Constant(string.Empty);
 
@@ -278,18 +283,12 @@ namespace System
 
                 var lamda2 = Lambda<Func<T, string, DefaultSettings, object>>(switchExp2, parameterExp, nameExp, settingsExp);
 
-                GetPropertyValue = lamda2.Compile();
+                PropertyValueGetter = lamda2.Compile();
             }
 
-            /// <summary>
-            /// 调用
-            /// </summary>
             public static readonly Func<T, string, DefaultSettings, string> Convert;
 
-            /// <summary>
-            /// 获取属性值。
-            /// </summary>
-            public static readonly Func<T, string, DefaultSettings, object> GetPropertyValue;
+            public static readonly Func<T, string, DefaultSettings, object> PropertyValueGetter;
         }
 
         private static class IgnoreCaseNested<T>
@@ -298,14 +297,12 @@ namespace System
             {
                 return string.Equals(arg1, arg2, StringComparison.OrdinalIgnoreCase);
             }
-            /// <summary>
-            /// 静态构造函数
-            /// </summary>
+
             static IgnoreCaseNested()
             {
                 var type = typeof(T);
 
-                var typeStore = RuntimeTypeCache.Instance.GetCache(type);
+                var typeStore = TypeStoreItem.Get(type);
 
                 var defaultCst = Constant(string.Empty);
 
@@ -393,395 +390,31 @@ namespace System
 
                 var lamda2 = Lambda<Func<T, string, DefaultSettings, object>>(switchExp2, parameterExp, nameExp, settingsExp);
 
-                GetPropertyValue = lamda2.Compile();
+                PropertyValueGetter = lamda2.Compile();
             }
 
-            /// <summary>
-            /// 调用
-            /// </summary>
             public static readonly Func<T, string, DefaultSettings, string> Convert;
 
-            /// <summary>
-            /// 获取属性值。
-            /// </summary>
-            public static readonly Func<T, string, DefaultSettings, object> GetPropertyValue;
-        }
-
-        private static object Add(DefaultSettings settings, object left, object right)
-        {
-            if (left is null || right is null)
-            {
-                return left ?? right;
-            }
-
-            Type leftType = left.GetType();
-            Type rightType = right.GetType();
-
-            if (leftType.IsValueType && rightType.IsValueType)
-            {
-                switch (left)
-                {
-                    case bool b:
-                        switch (right)
-                        {
-                            case bool br:
-                                return b || br;
-                            case byte br2:
-                                return b ? br2 + 1 : br2;
-                            case short sr:
-                                return b ? sr + 1 : sr;
-                            case ushort usr:
-                                return b ? usr + 1 : usr;
-                            case int ir:
-                                return b ? ir + 1 : ir;
-                            case uint uir:
-                                return b ? uir + 1U : uir;
-                            case long lr:
-                                return b ? lr + 1L : lr;
-                            case ulong ulr:
-                                return b ? ulr + 1uL : ulr;
-                            case float fr:
-                                return b ? fr + 1F : fr;
-                            case double dr:
-                                return b ? dr + 1D : dr;
-                            case decimal dr2:
-                                return b ? dr2 + 1M : dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case byte b:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? b + 1 : b;
-                            case byte br2:
-                                return b + br2;
-                            case short sr:
-                                return b + sr;
-                            case ushort usr:
-                                return b + usr;
-                            case int ir:
-                                return b + ir;
-                            case uint uir:
-                                return b + uir;
-                            case long lr:
-                                return b + lr;
-                            case ulong ulr:
-                                return b + ulr;
-                            case float fr:
-                                return b + fr;
-                            case double dr:
-                                return b + dr;
-                            case decimal dr2:
-                                return b + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-
-                    case sbyte sb:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? sb + 1 : sb;
-                            case byte br2:
-                                return sb + br2;
-                            case short sr:
-                                return sb + sr;
-                            case ushort usr:
-                                return sb + usr;
-                            case int ir:
-                                return sb + ir;
-                            case uint uir:
-                                return sb + uir;
-                            case long lr:
-                                return sb + lr;
-                            case ulong ulr:
-                                return (ulong)sb + ulr;
-                            case float fr:
-                                return sb + fr;
-                            case double dr:
-                                return sb + dr;
-                            case decimal dr2:
-                                return sb + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case ushort usb:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? usb + 1 : usb;
-                            case byte br2:
-                                return usb + br2;
-                            case short sr:
-                                return usb + sr;
-                            case ushort usr:
-                                return usb + usr;
-                            case int ir:
-                                return usb + ir;
-                            case uint uir:
-                                return usb + uir;
-                            case long lr:
-                                return usb + lr;
-                            case ulong ulr:
-                                return usb + ulr;
-                            case float fr:
-                                return usb + fr;
-                            case double dr:
-                                return usb + dr;
-                            case decimal dr2:
-                                return usb + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case int i:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? i + 1 : i;
-                            case byte br2:
-                                return i + br2;
-                            case short sr:
-                                return i + sr;
-                            case ushort usr:
-                                return i + usr;
-                            case int ir:
-                                return i + ir;
-                            case uint uir:
-                                return i + uir;
-                            case long lr:
-                                return i + lr;
-                            case ulong ulr:
-                                return (ulong)i + ulr;
-                            case float fr:
-                                return i + fr;
-                            case double dr:
-                                return i + dr;
-                            case decimal dr2:
-                                return i + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case uint ui:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? ui + 1u : ui;
-                            case byte br2:
-                                return ui + br2;
-                            case short sr:
-                                return ui + sr;
-                            case ushort usr:
-                                return ui + usr;
-                            case int ir:
-                                return ui + ir;
-                            case uint uir:
-                                return ui + uir;
-                            case long lr:
-                                return ui + lr;
-                            case ulong ulr:
-                                return ui + ulr;
-                            case float fr:
-                                return ui + fr;
-                            case double dr:
-                                return ui + dr;
-                            case decimal dr2:
-                                return ui + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case long l:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? l + 1L : l;
-                            case byte br2:
-                                return l + br2;
-                            case short sr:
-                                return l + sr;
-                            case ushort usr:
-                                return l + usr;
-                            case int ir:
-                                return l + ir;
-                            case uint uir:
-                                return l + uir;
-                            case long lr:
-                                return l + lr;
-                            case ulong ulr:
-                                return (ulong)l + ulr;
-                            case float fr:
-                                return l + fr;
-                            case double dr:
-                                return l + dr;
-                            case decimal dr2:
-                                return l + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case ulong ul:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? ul + 1uL : ul;
-                            case byte br2:
-                                return ul + br2;
-                            case short sr:
-                                return ul + (ulong)sr;
-                            case ushort usr:
-                                return ul + usr;
-                            case int ir:
-                                return ul + (ulong)ir;
-                            case uint uir:
-                                return ul + uir;
-                            case long lr:
-                                return ul + (ulong)lr;
-                            case ulong ulr:
-                                return ul + ulr;
-                            case float fr:
-                                return ul + fr;
-                            case double dr:
-                                return ul + dr;
-                            case decimal dr2:
-                                return ul + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case float f:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? f + 1F : f;
-                            case byte br2:
-                                return f + br2;
-                            case short sr:
-                                return f + sr;
-                            case ushort usr:
-                                return f + usr;
-                            case int ir:
-                                return f + ir;
-                            case uint uir:
-                                return f + uir;
-                            case long lr:
-                                return f + lr;
-                            case ulong ulr:
-                                return f + ulr;
-                            case float fr:
-                                return f + fr;
-                            case double dr:
-                                return f + dr;
-                            case decimal dr2:
-                                return (decimal)f + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case double d:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? d + 1D : d;
-                            case byte br2:
-                                return d + br2;
-                            case short sr:
-                                return d + sr;
-                            case ushort usr:
-                                return d + usr;
-                            case int ir:
-                                return d + ir;
-                            case uint uir:
-                                return d + uir;
-                            case long lr:
-                                return d + lr;
-                            case ulong ulr:
-                                return d + ulr;
-                            case float fr:
-                                return d + fr;
-                            case double dr:
-                                return d + dr;
-                            case decimal dr2:
-                                return (decimal)d + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                    case decimal d2:
-                        switch (right)
-                        {
-                            case bool br:
-                                return br ? d2 + 1M : d2;
-                            case byte br2:
-                                return d2 + br2;
-                            case short sr:
-                                return d2 + sr;
-                            case ushort usr:
-                                return d2 + usr;
-                            case int ir:
-                                return d2 + ir;
-                            case uint uir:
-                                return d2 + uir;
-                            case long lr:
-                                return d2 + lr;
-                            case ulong ulr:
-                                return d2 + ulr;
-                            case float fr:
-                                return d2 + (decimal)fr;
-                            case double dr:
-                                return d2 + (decimal)dr;
-                            case decimal dr2:
-                                return d2 + dr2;
-                            default:
-                                break;
-                        }
-                        break;
-                }
-            }
-
-            if (leftType.IsEnum)
-            {
-                leftType = Enum.GetUnderlyingType(leftType);
-
-                left = Convert.ChangeType(left, leftType);
-
-                left = string.Concat("[", left.ToString(), "]");
-            }
-
-            if (rightType.IsEnum)
-            {
-                rightType = Enum.GetUnderlyingType(rightType);
-
-                right = Convert.ChangeType(right, rightType);
-
-                right = string.Concat("[", right.ToString(), "]");
-            }
-
-            return settings.Convert(left, false) + settings.Convert(right, false);
+            public static readonly Func<T, string, DefaultSettings, object> PropertyValueGetter;
         }
 
         /// <summary>
         /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为“null”时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非“null”合并【空试探合并符(A?+B)，当属性A为“null”时，返回A内容，否则返回A和B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
-        /// <typeparam name="T">数据类型</typeparam>
-        /// <param name="value">字符串</param>
-        /// <param name="source">资源</param>
-        /// <param name="namingType">比较的命名方式</param>
+        /// <typeparam name="T">数据类型。</typeparam>
+        /// <param name="value">字符串。</param>
+        /// <param name="source">资源。</param>
+        /// <param name="namingType">比较的命名方式。</param>
         /// <returns></returns>
         public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, SettingsCache.GetOrAdd(namingType, namingCase => new DefaultSettings(namingCase)));
 
         /// <summary>
-        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为“null”时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非“null”合并【空试探合并符(A?+B)，当属性A为“null”时，返回A内容，否则返回B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
+        /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为“null”时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非“null”合并【空试探合并符(A?+B)，当属性A为“null”时，返回A内容，否则返回A+B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
         /// </summary>
-        /// <typeparam name="T">数据类型</typeparam>
-        /// <param name="value">字符串</param>
-        /// <param name="source">资源</param>
-        /// <param name="settings">属性配置</param>
+        /// <typeparam name="T">数据类型。</typeparam>
+        /// <param name="value">字符串。</param>
+        /// <param name="source">资源。</param>
+        /// <param name="settings">属性配置。</param>
         /// <returns></returns>
         public static string PropSugar<T>(this string value, T source, DefaultSettings settings) where T : class
         {
@@ -811,38 +444,39 @@ namespace System
                     return Nested<T>.Convert(source, nameGrp.Value, settings);
                 }
 
-                object result = null;
+                var nameCap = nameGrp.Captures.GetEnumerator();
 
                 var tokenCap = tokenGrp.Captures.GetEnumerator();
 
-                foreach (Capture item in nameGrp.Captures)
+                object PropertyValueGetter(string propertyName) => settings.IgnoreCase ? IgnoreCaseNested<T>.PropertyValueGetter(source, propertyName, settings) : Nested<T>.PropertyValueGetter(source, propertyName, settings);
+
+                if (nameCap.MoveNext())
                 {
-                    result = Add(settings, result, settings.IgnoreCase ? IgnoreCaseNested<T>.GetPropertyValue(source, item.Value, settings) : Nested<T>.GetPropertyValue(source, item.Value, settings));
+                    object result = PropertyValueGetter(((Capture)nameCap.Current).Value);
 
-                    if (!tokenCap.MoveNext())
+                    while (tokenCap.MoveNext() && nameCap.MoveNext())
                     {
-                        break;
-                    }
+                        string token = ((Capture)tokenCap.Current).Value;
 
-                    string token = ((Capture)tokenCap.Current).Value;
-
-                    if (result is null)
-                    {
-                        if (token == "?+")
+                        if (result is null)
                         {
-                            return settings.NullValue;
+                            if (token == "?+")
+                            {
+                                break;
+                            }
+                        }
+                        else if (token == "?" || token == "??")
+                        {
+                            break;
                         }
 
-                        continue;
+                        result = settings.Add(result, PropertyValueGetter(((Capture)nameCap.Current).Value));
                     }
 
-                    if (token == "?" || token == "??")
-                    {
-                        return settings.Convert(result);
-                    }
+                    return settings.Convert(result);
                 }
 
-                return settings.Convert(result);
+                return settings.NullValue;
             });
         }
     }

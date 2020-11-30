@@ -5,7 +5,7 @@ using System.Web.Http;
 namespace Mvc461
 {
     /// <summary>
-    /// 启动类
+    /// 启动类。
     /// </summary>
     public class Startup : JwtStartup
     {

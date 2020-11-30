@@ -174,7 +174,7 @@ namespace UnitTest
                 .Where(x => x.Account ?? x.Tel)
                 .ExecuteCommand();
 
-            userSingleton.AsExecuteable()
+            userSingleton
                 .Where(x => x.Account.Contains("admin"))
                 .Update(x => new Domain.Entities.User
                 {
@@ -184,10 +184,9 @@ namespace UnitTest
             userSingleton.AsUpdateable(entry)
                 .Where(x => new { x.Tel, x.Mail })
                 .Limit(x => x.Account)
-                .Except(x => x.Id)
                 .ExecuteCommand();
             
-            userSingleton.AsExecuteable()
+            userSingleton
                 .Where(x => x.Id == 1)
                 .Delete();
 
@@ -195,7 +194,7 @@ namespace UnitTest
                 .Where(x => x.Id)
                 .ExecuteCommand();
 
-            userSingleton.AsExecuteable()
+            userSingleton
                 .Insert(userSingleton.Take(1).Select(x => x));
 
             userSingleton.AsInsertable(entry)
@@ -213,7 +212,9 @@ namespace UnitTest
                 .Where(x => x.Account)
                 .ExecuteCommand();
 
-            var data = userSingleton.Where(x => x.Mail == "tinylit@foxmail.com").FirstOrDefault();
+            var data = userSingleton
+                .Where(x => x.Mail == "tinylit@foxmail.com")
+                .FirstOrDefault();
         }
 
         [TestMethod]

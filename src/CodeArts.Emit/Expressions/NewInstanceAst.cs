@@ -9,24 +9,24 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 创建新实例。
     /// </summary>
-    [DebuggerDisplay("new {ReturnType.Name}()")]
+    [DebuggerDisplay("new {ReturnType.Name}({ParemetersNames})")]
     public class NewInstanceAst : AstExpression
     {
         private readonly ConstructorInfo constructorInfo;
-        private readonly AstExpression[] paramters;
+        private readonly AstExpression[] parameters;
+        private string ParemetersNames => string.Join(",", parameters.Select(x => x.ReturnType.Name));
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="constructorInfo">构造函数</param>
-        /// <param name="paramters">参数</param>
-        public NewInstanceAst(ConstructorInfo constructorInfo, params AstExpression[] paramters) : base(constructorInfo.DeclaringType)
+        /// <param name="constructorInfo">构造函数。</param>
+        /// <param name="parameters">参数。</param>
+        public NewInstanceAst(ConstructorInfo constructorInfo, params AstExpression[] parameters) : base(constructorInfo.DeclaringType)
         {
             this.constructorInfo = constructorInfo ?? throw new ArgumentNullException(nameof(constructorInfo));
-            this.paramters = paramters;
-            var parameters = constructorInfo.GetParameters();
+            this.parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
 
-            if (paramters.Length != parameters.Length)
+            if (parameters.Length != constructorInfo.GetParameters().Length)
             {
                 throw new AstException("指定参数和构造函数参数个数不匹配!");
             }
@@ -36,18 +36,18 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="instanceType">实例类型。</param>
-        /// <param name="paramters">参数</param>
-        public NewInstanceAst(Type instanceType, params AstExpression[] paramters) : this(instanceType.GetConstructor(paramters?.Select(x => x.ReturnType).ToArray() ?? Type.EmptyTypes), paramters) { }
+        /// <param name="parameters">参数。</param>
+        public NewInstanceAst(Type instanceType, params AstExpression[] parameters) : this(instanceType.GetConstructor(parameters?.Select(x => x.ReturnType).ToArray() ?? Type.EmptyTypes), parameters) { }
 
         /// <summary>
         /// 生成。
         /// </summary>
-        /// <param name="ilg">指令</param>
+        /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if (paramters != null)
+            if (parameters != null)
             {
-                foreach (var paramter in paramters)
+                foreach (var paramter in parameters)
                 {
                     paramter.Load(ilg);
                 }

@@ -89,17 +89,6 @@ namespace CodeArts.ORM.Visitors
         public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Join;
 
         /// <inheritdoc />
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Type.IsQueryable())
-            {
-                return node;
-            }
-
-            return base.VisitConstant(node);
-        }
-
-        /// <inheritdoc />
         protected override Expression StartupCore(MethodCallExpression node)
         {
             if (!IsValidExpretion(node.Arguments[0]))
