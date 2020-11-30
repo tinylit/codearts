@@ -36,18 +36,22 @@ namespace CodeArts.Tests
         [TestMethod]
         public void Test2()
         {
-            var list = new List<long>(1000000);
+            var list = new List<long>(100000);
 
-            for (int i = 1; i < 100; i++)
+            var tasks = new List<Task>(100000);
+
+            for (int i = 1; i <= 100000; i++)
             {
                 int index = (i - 1) * 10000;
                 int len = i * 10000;
 
-                Task.Factory.StartNew(() =>
+                tasks.Add(Task.Factory.StartNew(() =>
                 {
                     list.Add(KeyGen.Id());
-                });
+                }));
             }
+
+            Task.WaitAll(tasks.ToArray());
 
             var results = list.Distinct().ToList();
 
