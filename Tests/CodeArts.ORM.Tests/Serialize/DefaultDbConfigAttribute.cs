@@ -19,7 +19,7 @@ namespace UnitTest.Serialize
             {
                 Name = "yep.v3.auth",
                 ProviderName = "MySql",
-                ConnectionString = "server=116.63.175.39;port=3306;user=root;password=Password12!;database=mysql;"//? 数据库链接
+                ConnectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;"//? 数据库链接
             };
         }
     }

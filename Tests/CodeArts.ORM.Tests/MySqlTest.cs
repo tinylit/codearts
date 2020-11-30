@@ -1,4 +1,5 @@
 ﻿using CodeArts;
+using CodeArts.Casting;
 using CodeArts.MySql;
 using CodeArts.ORM;
 using CodeArts.ORM.Tests.Domain;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Transactions;
 using UnitTest.Domain;
 using UnitTest.Dtos;
 using UnitTest.Enums;
@@ -19,7 +21,7 @@ namespace UnitTest
     [TestClass]
     public class MySqlTest
     {
-        private static bool isCompleted;
+        private static bool isCompleted = true;
 
         private readonly MySqlUserRespository userSingleton = Singleton<MySqlUserRespository>.Instance;
         private readonly AuthShipRepository authShipSingleton = Singleton<AuthShipRepository>.Instance;
@@ -35,6 +37,10 @@ namespace UnitTest
 
             DbConnectionManager.RegisterAdapter(adapter);
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+
+            RuntimeServPools.TryAddSingleton<ICastToExpression, CastToExpression>();
+            RuntimeServPools.TryAddSingleton<ICopyToExpression, CopyToExpression>();
+            RuntimeServPools.TryAddSingleton<IMapToExpression, MapToExpression>();
 
             if (isCompleted) return;
 
@@ -185,7 +191,7 @@ namespace UnitTest
                 .Where(x => new { x.Tel, x.Mail })
                 .Limit(x => x.Account)
                 .ExecuteCommand();
-            
+
             userSingleton
                 .Where(x => x.Id == 1)
                 .Delete();
@@ -243,15 +249,20 @@ namespace UnitTest
             {
                 list.Add(new OrmTest
                 {
-                    Id = (i + 1) * 1000000 + (i + 1) * 100000 + i
+                    Id = (i + 1) * 100000 + (i + 1) * 10000 + i
                 });
             }
 
-            var j = ormTest.AsInsertable(list).ExecuteCommand();
+            using (TransactionScope transaction = new TransactionScope())
+            {
+                var j = ormTest.AsInsertable(list).ExecuteCommand();
 
-            var results = ormTest.ToList();
+                var results = ormTest.ToList();
 
-            var k = ormTest.AsDeleteable(list).ExecuteCommand();
+                var k = ormTest.AsDeleteable(list).ExecuteCommand();
+
+                transaction.Complete();
+            }
         }
 
         [TestMethod]
