@@ -448,7 +448,6 @@ namespace CodeArts.Tests
         [TestMethod]
         public void MapToList()
         {
-
             List<CommodityGroupListDto> pList = new List<CommodityGroupListDto>
             {
                 new CommodityGroupListDto
@@ -493,7 +492,6 @@ namespace CodeArts.Tests
                             Icon = "http://api.eye56.com:9008",
                             Name = "包月洗车"
                         } } } };
-
 
             var x = Mapper.Copy(pList);
         }
