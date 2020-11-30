@@ -301,7 +301,15 @@ namespace CodeArts.ORM
                 connection.Close();
             }
 
-            public IDbCommand CreateCommand() => new DbCommand(this, connection.CreateCommand());
+            public IDbCommand CreateCommand()
+            {
+                if (State == ConnectionState.Open)
+                {
+                    return new DbCommand(this, connection.CreateCommand());
+                }
+
+                throw new InvalidOperationException("The DbConnection is closed.");
+            }
 
             public bool IsThreadActive => isActiveThread.IsAlive;
 
@@ -609,7 +617,15 @@ namespace CodeArts.ORM
             public bool IsActive { get; private set; } = true;
 
             protected override System.Data.Common.DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => connection.BeginTransaction(isolationLevel);
-            protected override System.Data.Common.DbCommand CreateDbCommand() => new DbCommand(this, connection.CreateCommand());
+            protected override System.Data.Common.DbCommand CreateDbCommand()
+            {
+                if (State == ConnectionState.Open)
+                {
+                    return new DbCommand(this, connection.CreateCommand());
+                }
+
+                throw new InvalidOperationException("The DbConnection is closed.");
+            }
 
             void IDisposable.Dispose()
             {
