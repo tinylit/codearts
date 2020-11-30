@@ -467,7 +467,7 @@ namespace CodeArts.ORM.Visitors
 
                 if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
                 {
-                    writer.Parameter("%");
+                    writer.Write("'%'");
                     writer.Delimiter();
                 }
             }
@@ -479,7 +479,7 @@ namespace CodeArts.ORM.Visitors
                 if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
                 {
                     writer.Delimiter();
-                    writer.Parameter("%");
+                    writer.Write("'%'");
                 }
 
                 writer.CloseBrace();
