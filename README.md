@@ -12,24 +12,24 @@ CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、�
 ### 如何使用？
 在Object类型上做了扩展函数。使用非常简便，可以不做任何配置就能使用。
 
-* CastTo
+* Mapper.Cast
     + 源类型可以隐式或显式地转换为目标类型,或任何一个公共构造函数的第一个参数的目标类型满足源类型,或者可以将源类型转换,这只有一个参数或其他参数是可选的。
     + 当目标类型为集合时。任何一种转换失败时，目标类型的结果是目标类型的默认值。
         - 尝试将源类型转换为目标类型集合的元素。
         - 当源类型为集合时，将尝试将集合中的元素转换为目标类型的集合。
 
 ```csharp
-    var guid = "0bbd0503-4879-42de-8cf0-666537b642e2".CastTo<Guid?>();// success
+    var guid = Mapper.Cast<Guid?>("0bbd0503-4879-42de-8cf0-666537b642e2"); // success
 
     var list = new List<string> { "11111", "2111", "3111" };
 
-    var stack = list.CastTo<Stack<string>>();// success
+    var stack = Mapper.Cast<Stack<string>>(list); // success
 
-    var listInt = list.CastTo<List<int>>();// success
+    var listInt = Mapper.Cast<List<int>>(list); // success
 
-    var quene = list.CastTo<Queue<int>>();// success
+    var quene = Mapper.Cast<Queue<int>>(list); // success
 
-    var queneGuid = list.CastTo<Queue<Guid>>(); // fail => null
+    var queneGuid = Mapper.Cast<Queue<Guid>>(list); // fail => null
 ```
 
 ```csharp
@@ -55,7 +55,7 @@ CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、�
     }
 ```
 
-* CopyTo
+* Mapper.Copy
     + 源类型和目标类型相同.
     + 源类型是目标类型的后代类型（继承关系）。
 
@@ -67,11 +67,11 @@ CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、�
         Date = DateTime.Now
     };
 
-    var copy1 = value.CopyTo(); // success
-    var copy2 = value.CopyTo<CopyTest>(); // success
+    var copy1 = Mapper.Copy(value); // success
+    var copy2 = Mapper.Copy<CopyTest>(value); // success
 ```
 
-* MapTo
+* Mapper.Map
     + 任意两种类型之间的映射。
 
 ```csharp
@@ -82,15 +82,15 @@ CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、�
         Date = DateTime.Now
     };
 
-    var map1 = value.MapTo<CopyTest>(); // success
+    var map1 = Mapper.Map<CopyTest>(value); // success
 
-    var map2 = value.MapTo<MapToTest>(); // success
+    var map2 = Mapper.Map<MapToTest>(value); // success
 
-    var map3 = value.MapTo<IEnumerable<KeyValuePair<string, object>>>(); // success
+    var map3 = Mapper.Map<IEnumerable<KeyValuePair<string, object>>>(value); // success
 
-    var map4 = value.MapTo<ICollection<KeyValuePair<string, object>>>(); // success
+    var map4 = Mapper.Map<ICollection<KeyValuePair<string, object>>>(value); // success
 
-    var map5 = value.MapTo<Dictionary<string, object>>(); // success
+    var map5 = Mapper.Map<Dictionary<string, object>>(value); // success
 ```
 
 ### 如何自定义数据关系？
@@ -119,13 +119,13 @@ CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、�
         return profile.Create<CopyTest>(type);
     });
 
-    RuntimeServManager.TryAddSingleton<ICopyToExpression>(() => copyTo);
+    RuntimeServPools.TryAddSingleton<ICopyToExpression>(() => copyTo);
 ```
 
 * 为源类型指定到目标类型的代理。
 
 ```csharp
-    var mapTo = RuntimeServManager.Singleton<IMapToExpression, MapToExpression>();
+    var mapTo = RuntimeServPools.Singleton<IMapToExpression, MapToExpression>();
 
     //? Specify an agent of type "CopyToTest" to type "CopyTest".
     mapTo.Absolute<CopyToTest, CopyTest>(source =>
@@ -150,10 +150,11 @@ CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、�
 ```
 
 * 为目标类型定制任何类型的代理。
-```csharp
-    var castTo = RuntimeServManager.Singleton<ICastToExpression, CastToExpression>();
 
-    mapTo.Map<string>(sourceType => sourceType.IsValueType ,source => source.ToString());
+```csharp
+    var castTo = RuntimeServPools.Singleton<ICastToExpression, CastToExpression>();
+
+    castTo.Map<string>(sourceType => sourceType.IsValueType, source => source.ToString());
 ```
 
 ### 如何安装？
@@ -166,6 +167,7 @@ PM> Install-Package CodeArts
 ### 如何使用ORM？
 * 定义实体。
 ``` csharp
+    [DbConfig] // 设置数据库连接。
     [Naming(NamingType.UrlCase, Name = "yep_users")] // 指定整个实体的字段格式，指定当前实体映射表名称。
     public class User : BaseEntity<int> // 必须继承IEntity接口或实现了IEntity接口的类。
     {
@@ -187,28 +189,17 @@ PM> Install-Package CodeArts
     + 只读仓库。
     ``` csharp
     [DbConfig] // 设置数据库连接。
-    public class UserRepository : ReadRepository<User/* 表映射实体 */>
+    public class UserRepository : Repository<User/* 表映射实体 */>
     {
         protected override ConnectionConfig GetDbConfig() => base.GetDbConfig();
     }
     ```
 
-    + 只写仓库。
-    ``` csharp
-    public class UserRepository : WriteRepository<User/* 表映射实体 */>
-    {
-        protected override ConnectionConfig GetDbConfig() => new ConnectionConfig // 设置数据库连接。
-        {
-            Name = "yep.v3.invoice",
-            ProviderName = "MySql",
-            ConnectionString = ""
-        };
-    }
     ```
 	+ 可读写的仓库。
     ``` csharp
     [DbConfig] // （1）设置数据库连接。
-    public class UserRepository : ReadWriteRepository<User/* 表映射实体 */>
+    public class UserRepository : DbRepository<User/* 表映射实体 */>
     {
         protected override ConnectionConfig GetDbConfig() => new ConnectionConfig // （2）设置数据库连接（会忽略（1）的配置）。
         {
