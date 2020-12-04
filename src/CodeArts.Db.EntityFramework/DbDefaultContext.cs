@@ -2,7 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+
 #else
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
@@ -13,14 +15,13 @@ using System.Threading.Tasks;
 #endif
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using Microsoft.EntityFrameworkCore.Internal;
 
 namespace CodeArts.Db.EntityFramework
 {
     /// <summary>
     /// 数据库上下文。
     /// </summary>
-    public class DbDefaultContext<TEntity> : DbContext, IDbSetCache where TEntity : class, IEntiy
+    public class DbDefaultContext<TEntity> : DbContext where TEntity : class, IEntiy
     {
         private readonly IReadOnlyConnectionConfig connectionConfig;
 
@@ -49,32 +50,6 @@ namespace CodeArts.Db.EntityFramework
             };
 
             return new DbContextOptions<DbDefaultContext<TEntity>>(dic);
-        }
-
-        object IDbSetCache.GetOrAddSet(IDbSetSource source, Type type)
-        {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (_sets == null)
-            {
-                _sets = new Dictionary<Type, object>();
-            }
-
-            if (!_sets.TryGetValue(type, out var set))
-            {
-                set = source.Create(this, type);
-                _sets[type] = set;
-            }
-
-            return set;
         }
 #else
         public DbDefaultContext(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig?.ConnectionString)
