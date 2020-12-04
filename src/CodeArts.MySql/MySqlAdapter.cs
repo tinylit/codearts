@@ -1,5 +1,5 @@
-﻿using CodeArts.ORM;
-using CodeArts.ORM.MySql;
+﻿using CodeArts.Db;
+using CodeArts.Db.MySql;
 using MySql.Data.MySqlClient;
 using System.Data;
 

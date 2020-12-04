@@ -1,5 +1,5 @@
 ﻿using Mvc461.Domain.Entities;
-using CodeArts.ORM;
+using CodeArts.Db;
 
 namespace Mvc461.Domain
 {

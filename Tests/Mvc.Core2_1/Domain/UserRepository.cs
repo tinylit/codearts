@@ -1,5 +1,5 @@
 ﻿using Mvc.Core2_1.Domain.Entities;
-using CodeArts.ORM;
+using CodeArts.Db;
 
 namespace Mvc.Core2_1.Domain
 {

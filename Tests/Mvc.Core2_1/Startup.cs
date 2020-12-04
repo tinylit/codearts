@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using CodeArts.Mvc;
-using CodeArts.ORM;
+using CodeArts.Db;
 
 namespace Mvc.Core2_1
 {

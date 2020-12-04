@@ -17,10 +17,10 @@
     <PackageReference Include="Grpc.AspNetCore" Version="2.24.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="3.1.0" />
   </ItemGroup>
-
+  
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.Db.Normal.MySql\CodeArts.Db.Normal.MySql.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj" />
-    <ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj" />
   </ItemGroup>
 
 </Project>

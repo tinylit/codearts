@@ -140,17 +140,21 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.Db.Normal.MySql\CodeArts.Db.Normal.MySql.csproj">
+      <Project>{e49cc361-3352-4f1e-a215-5d0475331c9e}</Project>
+      <Name>CodeArts.Db.Normal.MySql</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.Db.Normal\CodeArts.Db.Normal.csproj">
+      <Project>{37fbf153-04e1-41d1-b82c-0abb4a9c9554}</Project>
+      <Name>CodeArts.Db.Normal</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.Db\CodeArts.Db.csproj">
+      <Project>{949a8d0b-92b3-4ba8-8dd4-8240b45e42d3}</Project>
+      <Name>CodeArts.Db</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj">
       <Project>{9b087ff3-37b9-4477-a2cb-c44f1388758d}</Project>
       <Name>CodeArts.Mvc</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\CodeArts.MySql\CodeArts.MySql.csproj">
-      <Project>{5fa94b22-171d-44bb-8b5c-6ca79f626787}</Project>
-      <Name>CodeArts.MySql</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\CodeArts.ORM\CodeArts.ORM.csproj">
-      <Project>{1ecbbdc3-672c-495f-aed6-60124eb9fb76}</Project>
-      <Name>CodeArts.ORM</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts\CodeArts.csproj">
       <Project>{e12dd9b0-64a0-4bca-9d4c-151f45fd5678}</Project>

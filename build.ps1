@@ -19,7 +19,7 @@ $projectsToBuild =
     'CodeArts.Net',
     'CodeArts.Emit',
     'CodeArts.Mvc',
-    'CodeArts.ORM',
+    'CodeArts.Db',
     'CodeArts.MySql',
     'CodeArts.SqlServer'
 

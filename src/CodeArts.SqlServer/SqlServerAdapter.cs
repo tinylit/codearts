@@ -1,5 +1,5 @@
-﻿using CodeArts.ORM;
-using CodeArts.ORM.SqlServer;
+﻿using CodeArts.Db;
+using CodeArts.Db.SqlServer;
 using System.Data;
 using System.Data.SqlClient;
 

@@ -260,8 +260,8 @@ ORDER BY [x].[uid],[y].[registertime] DESC
 ![UML](https://raw.githubusercontent.com/tinylit/codearts/master/ORM_UML.svg '')
 
 * Unit testing.
-    [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.ORM.Tests/SqlServerTest.cs)
-    [MySQL](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.ORM.Tests/MySqlTest.cs)
+    [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/SqlServerTest.cs)
+    [MySQL](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/MySqlTest.cs)
 
 ### 如何使用Mvc？
 * .NETCore | .NET
