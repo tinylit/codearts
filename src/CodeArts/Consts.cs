@@ -15,7 +15,7 @@
         /// <summary>
         /// 密钥(推荐配置：jwt:secret)
         /// </summary>
-        public const string JwtSecret = "Sky_1024~#$`@%^2048";
+        public const string JwtSecret = "Ai_1024~#$`@%^2048";
 
         /// <summary>
         /// Jwt Audience（推荐配置: jwt:audience）
@@ -25,7 +25,7 @@
         /// <summary>
         /// Jwt Issuer(推荐配置: jwt:issuer）
         /// </summary>
-        public const string JwtIssuer = "yep";
+        public const string JwtIssuer = "ai";
 
         /// <summary>
         /// SwaggerUI 版本 (推荐配置：swagger:version)
@@ -37,6 +37,11 @@
         /// </summary>
         public const string SwaggerTitle = "API接口文档";
 
+        /// <summary>
+        /// Swagger Description（推荐:swagger:description）。
+        /// </summary>
+        public const string SwaggerDescription = "请输入【Bearer {token}】，注意中间有一个空格!";
+
 #else
 
         /// <summary>
@@ -47,7 +52,7 @@
         /// <summary>
         /// 密钥(推荐配置：jwt-secret)。
         /// </summary>
-        public const string JwtSecret = "Sky_1024~#$`@%^2048";
+        public const string JwtSecret = "Ai_1024~#$`@%^2048";
 
         /// <summary>
         /// SwaggerUI 版本 (推荐配置：swagger-version)。
@@ -58,6 +63,11 @@
         /// SwaggerUI 标题 (推荐配置：swagger-title)。
         /// </summary>
         public const string SwaggerTitle = "API接口文档";
+
+        /// <summary>
+        /// Swagger Description（推荐:swagger-description）。
+        /// </summary>
+        public const string SwaggerDescription = "API Key Authentication";
 #endif
 
         /// <summary>

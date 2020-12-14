@@ -7,7 +7,7 @@
 		<Version>5.1.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
-		<Description>A lightweight infrastructure.</Description>
+		<Description>SqlServer database support for an entityframework framework.</Description>
 		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
 		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>

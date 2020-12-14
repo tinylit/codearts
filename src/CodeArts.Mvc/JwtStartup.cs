@@ -101,7 +101,7 @@ namespace CodeArts.Mvc
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
-                Description = "请输入【Bearer {token}】，注意中间有一个空格!",
+                Description = "swagger:description".Config(Consts.SwaggerDescription),
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey
             });
@@ -114,7 +114,7 @@ namespace CodeArts.Mvc
             options.AddSecurityDefinition("Bearer", new ApiKeyScheme
             {
                 Name = "Authorization",
-                Description = "请输入【Bearer {token}】，注意中间有一个空格!",
+                Description = "swagger:description".Config(Consts.SwaggerDescription),
                 In = "header"
             });
 #endif
@@ -143,6 +143,7 @@ using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.DependencyInjection;
 #if !NET40
 using Swashbuckle.Application;
+using System;
 #endif
 
 namespace CodeArts.Mvc
@@ -178,7 +179,7 @@ namespace CodeArts.Mvc
         protected override void ConfigureSwagger(SwaggerDocsConfig config)
         {
             config.ApiKey("Authorization")
-                .Description("API Key Authentication")
+                .Description("swagger-description".Config(Consts.SwaggerDescription))
                 .In("header")
                 .Name("Authorization");
 
