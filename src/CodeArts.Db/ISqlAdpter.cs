@@ -53,6 +53,6 @@ namespace CodeArts.Db
         /// <param name="sql">语句。</param>
         /// <param name="settings">配置。</param>
         /// <returns></returns>
-        string Format(string sql, ISQLCorrectSimSettings settings);
+        string Format(string sql, ISQLCorrectSettings settings);
     }
 }

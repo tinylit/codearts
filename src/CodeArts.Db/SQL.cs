@@ -97,7 +97,7 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="settings">SQL修正配置。</param>
         /// <returns></returns>
-        public string ToString(ISQLCorrectSimSettings settings) => adpter.Format(sb.ToString(), settings);
+        public string ToString(ISQLCorrectSettings settings) => adpter.Format(sb.ToString(), settings);
 
         /// <summary>
         /// 返回分析的SQL结果。

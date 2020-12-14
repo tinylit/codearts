@@ -27,8 +27,6 @@ namespace System
 
         private static readonly Regex PatternMail = new Regex(@"^\w[-\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\.)+[A-Za-z]{2,14}$", RegexOptions.Compiled);
 
-        private static readonly ConcurrentDictionary<NamingType, DefaultSettings> SettingsCache = new ConcurrentDictionary<NamingType, DefaultSettings>();
-
         /// <summary>
         /// 命名。
         /// </summary>
@@ -193,10 +191,14 @@ namespace System
 
         private static class Nested<T>
         {
+            private static bool Compare(string arg1, string arg2) => string.Equals(arg1, arg2, StringComparison.OrdinalIgnoreCase);
+
             static Nested()
             {
                 var type = typeof(T);
 
+                MethodInfo comparison = typeof(Nested<T>).GetMethod(nameof(Compare), BindingFlags.NonPublic | BindingFlags.Static);
+
                 var typeStore = TypeStoreItem.Get(type);
 
                 var defaultCst = Constant(string.Empty);
@@ -217,7 +219,7 @@ namespace System
 
                 var propertyStores = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).ToList();
 
-                var enumerCase = propertyStores
+                var enumerCaseConvert = propertyStores
                     .Where(x => x.CanRead)
                     .Select(info =>
                     {
@@ -251,13 +253,19 @@ namespace System
 
                 var bodyExp = Call(null, ConcatMethod, Constant("{"), nameExp, Constant("}"));
 
-                var switchExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Condition(preserveUnknownExp, bodyExp, defaultCst), null, enumerCase);
+                var switchConvertExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Condition(preserveUnknownExp, bodyExp, defaultCst), null, enumerCaseConvert);
 
-                var lamda = Lambda<Func<T, string, DefaultSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
+                var lamdaConvert = Lambda<Func<T, string, DefaultSettings, string>>(switchConvertExp, parameterExp, nameExp, settingsExp);
 
-                Convert = lamda.Compile();
+                Convert = lamdaConvert.Compile();
 
-                var enumerCase2 = propertyStores
+                var switchIgnoreCaseConvertExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Condition(preserveUnknownExp, bodyExp, defaultCst), comparison, enumerCaseConvert);
+
+                var lamdaIgnoreCaseConvert = Lambda<Func<T, string, DefaultSettings, string>>(switchConvertExp, parameterExp, nameExp, settingsExp);
+
+                IgnoreCaseConvert = lamdaIgnoreCaseConvert.Compile();
+
+                var enumerCasePropertyValueGetter = propertyStores
                     .Where(x => x.CanRead)
                     .Select(info =>
                     {
@@ -279,123 +287,27 @@ namespace System
                         return SwitchCase(valueExp, namingCst);
                     });
 
-                var switchExp2 = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), null, enumerCase2);
+                var switchPropertyValueGetterExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), null, enumerCasePropertyValueGetter);
 
-                var lamda2 = Lambda<Func<T, string, DefaultSettings, object>>(switchExp2, parameterExp, nameExp, settingsExp);
+                var lamdaPropertyValueGetter = Lambda<Func<T, string, DefaultSettings, object>>(switchPropertyValueGetterExp, parameterExp, nameExp, settingsExp);
 
-                PropertyValueGetter = lamda2.Compile();
+                PropertyValueGetter = lamdaPropertyValueGetter.Compile();
+
+                var switchIgnoreCasePropertyValueGetterExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), comparison, enumerCasePropertyValueGetter);
+
+                var lamdaIgnoreCasePropertyValueGetter = Lambda<Func<T, string, DefaultSettings, object>>(switchIgnoreCasePropertyValueGetterExp, parameterExp, nameExp, settingsExp);
+
+                IgnoreCasePropertyValueGetter = lamdaIgnoreCasePropertyValueGetter.Compile();
             }
+
 
             public static readonly Func<T, string, DefaultSettings, string> Convert;
 
             public static readonly Func<T, string, DefaultSettings, object> PropertyValueGetter;
-        }
 
-        private static class IgnoreCaseNested<T>
-        {
-            private static bool Compare(string arg1, string arg2)
-            {
-                return string.Equals(arg1, arg2, StringComparison.OrdinalIgnoreCase);
-            }
+            public static readonly Func<T, string, DefaultSettings, string> IgnoreCaseConvert;
 
-            static IgnoreCaseNested()
-            {
-                var type = typeof(T);
-
-                var typeStore = TypeStoreItem.Get(type);
-
-                var defaultCst = Constant(string.Empty);
-
-                var parameterExp = Parameter(type, "source");
-
-                var nameExp = Parameter(typeof(string), "name");
-
-                var settingsExp = Parameter(SettingsType, "settings");
-
-                var preserveUnknownExp = Property(settingsExp, "PreserveUnknownPropertyToken");
-
-                var nullValueExp = Property(settingsExp, "NullValue");
-
-                var sysConvertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
-
-                var namingMethod = typeof(StringExtentions).GetMethod(nameof(ToNamingCase), BindingFlags.Public | BindingFlags.Static);
-
-                MethodInfo comparison = typeof(IgnoreCaseNested<T>).GetMethod(nameof(Compare), BindingFlags.NonPublic | BindingFlags.Static);
-
-                var propertyStores = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).ToList();
-
-                var enumerCase = propertyStores
-                    .Where(x => x.CanRead)
-                    .Select(info =>
-                    {
-                        Type memberType = info.MemberType;
-
-                        ConstantExpression nameCst = Constant(info.Name);
-
-                        MemberExpression propertyExp = Property(parameterExp, info.Name);
-
-                        var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
-
-                        if (memberType.IsValueType)
-                        {
-                            Expression valueExp = Expression.Convert(propertyExp, typeof(object));
-
-                            if (memberType.IsNullable())
-                            {
-                                return SwitchCase(Condition(Equal(valueExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), valueExp)), namingCst);
-                            }
-
-                            if (memberType.IsEnum)
-                            {
-                                return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType)))), namingCst);
-                            }
-
-                            return SwitchCase(Call(settingsExp, ConvertMethod, Constant(info), valueExp), namingCst);
-                        }
-
-                        return SwitchCase(Condition(Equal(propertyExp, Constant(null, memberType)), nullValueExp, Call(settingsExp, ConvertMethod, Constant(info), propertyExp)), namingCst);
-                    });
-
-                var bodyExp = Call(null, ConcatMethod, Constant("{"), nameExp, Constant("}"));
-
-                var switchExp = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Condition(preserveUnknownExp, bodyExp, defaultCst), comparison, enumerCase);
-
-                var lamda = Lambda<Func<T, string, DefaultSettings, string>>(switchExp, parameterExp, nameExp, settingsExp);
-
-                Convert = lamda.Compile();
-
-                var enumerCase2 = propertyStores
-                    .Where(x => x.CanRead)
-                    .Select(info =>
-                    {
-                        Type memberType = info.MemberType;
-
-                        var nameCst = Constant(info.Name);
-
-                        var propertyExp = Property(parameterExp, info.Name);
-
-                        var namingCst = Call(settingsExp, ResolvePropertyNameMethod, nameCst);
-
-                        var valueExp = Expression.Convert(propertyExp, typeof(object));
-
-                        if (memberType.IsEnum)
-                        {
-                            return SwitchCase(Call(ChangeTypeMethod, valueExp, Constant(Enum.GetUnderlyingType(memberType))), namingCst);
-                        }
-
-                        return SwitchCase(valueExp, namingCst);
-                    });
-
-                var switchExp2 = Switch(Call(settingsExp, ResolvePropertyNameMethod, nameExp), Constant(null, typeof(object)), null, enumerCase2);
-
-                var lamda2 = Lambda<Func<T, string, DefaultSettings, object>>(switchExp2, parameterExp, nameExp, settingsExp);
-
-                PropertyValueGetter = lamda2.Compile();
-            }
-
-            public static readonly Func<T, string, DefaultSettings, string> Convert;
-
-            public static readonly Func<T, string, DefaultSettings, object> PropertyValueGetter;
+            public static readonly Func<T, string, DefaultSettings, object> IgnoreCasePropertyValueGetter;
         }
 
         /// <summary>
@@ -406,7 +318,7 @@ namespace System
         /// <param name="source">资源。</param>
         /// <param name="namingType">比较的命名方式。</param>
         /// <returns></returns>
-        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, SettingsCache.GetOrAdd(namingType, namingCase => new DefaultSettings(namingCase)));
+        public static string PropSugar<T>(this string value, T source, NamingType namingType = NamingType.Normal) where T : class => PropSugar(value, source, new DefaultSettings(namingType));
 
         /// <summary>
         /// 属性格式化语法糖(支持属性空字符串【空字符串运算符（A?B 或 A??B），当属性A为“null”时，返回B内容，否则返回A内容】、属性内容合并(A+B)，属性非“null”合并【空试探合并符(A?+B)，当属性A为“null”时，返回A内容，否则返回A+B的内容】，可以组合使用任意多个。如 {x?y?z} 或 {x+y+z} 或 {x+y?z} 等操作)。从左往右依次计算，不支持小括号。
@@ -438,7 +350,7 @@ namespace System
                 {
                     if (settings.IgnoreCase)
                     {
-                        return IgnoreCaseNested<T>.Convert(source, nameGrp.Value, settings);
+                        return Nested<T>.IgnoreCaseConvert(source, nameGrp.Value, settings);
                     }
 
                     return Nested<T>.Convert(source, nameGrp.Value, settings);
@@ -448,7 +360,7 @@ namespace System
 
                 var tokenCap = tokenGrp.Captures.GetEnumerator();
 
-                object PropertyValueGetter(string propertyName) => settings.IgnoreCase ? IgnoreCaseNested<T>.PropertyValueGetter(source, propertyName, settings) : Nested<T>.PropertyValueGetter(source, propertyName, settings);
+                object PropertyValueGetter(string propertyName) => settings.IgnoreCase ? Nested<T>.IgnoreCasePropertyValueGetter(source, propertyName, settings) : Nested<T>.PropertyValueGetter(source, propertyName, settings);
 
                 if (nameCap.MoveNext())
                 {

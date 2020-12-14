@@ -7,10 +7,12 @@ namespace CodeArts
     /// </summary>
     public static class Mapper
     {
+        private static readonly IMapper mapper;
+
         /// <summary>
-        /// 转换接口。
+        /// inheritdoc
         /// </summary>
-        private static ICastToExpression instanceCast => RuntimeServPools.Singleton<ICastToExpression>();
+        static Mapper() => mapper = RuntimeServPools.Singleton<IMapper>();
 
         /// <summary>
         /// 对象转换。
@@ -19,7 +21,15 @@ namespace CodeArts
         /// <param name="def">默认值。</param>
         /// <typeparam name="T">目标类型。</typeparam>
         /// <returns></returns>
-        public static T Cast<T>(object obj, T def = default) => instanceCast.Cast(obj, def);
+        public static T Cast<T>(object obj, T def = default) => mapper.Cast(obj, def);
+
+        /// <summary>
+        /// 转换（异常上抛）。
+        /// </summary>
+        /// <typeparam name="T">目标类型。</typeparam>
+        /// <param name="source">数据源。</param>
+        /// <returns></returns>
+        public static T ThrowsCast<T>(object source) => mapper.ThrowsCast<T>(source);
 
         /// <summary> 
         /// 对象转换。
@@ -27,12 +37,15 @@ namespace CodeArts
         /// <param name="obj">数据源。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        public static object Cast(object obj, Type conversionType) => instanceCast.Cast(obj, conversionType);
+        public static object Cast(object obj, Type conversionType) => mapper.Cast(obj, conversionType);
 
         /// <summary>
-        /// 复制接口。
+        /// 转换（异常上抛）。
         /// </summary>
-        private static ICopyToExpression instanceCopy => RuntimeServPools.Singleton<ICopyToExpression>();
+        /// <param name="source">源数据。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        public static object ThrowsCast(object source, Type conversionType) => mapper.ThrowsCast(source, conversionType);
 
         /// <summary>
         /// 对象克隆。
@@ -41,12 +54,7 @@ namespace CodeArts
         /// <param name="def">默认值。</param>
         /// <typeparam name="T">目标类型。</typeparam>
         /// <returns></returns>
-        public static T Copy<T>(T obj, T def = default) => instanceCopy.Copy(obj, def);
-
-        /// <summary>
-        /// 映射接口。
-        /// </summary>
-        private static IMapToExpression instanceMap => RuntimeServPools.Singleton<IMapToExpression>();
+        public static T Copy<T>(T obj, T def = default) => mapper.Copy(obj, def);
 
         /// <summary>
         /// 对象映射。
@@ -55,7 +63,15 @@ namespace CodeArts
         /// <param name="def">默认值。</param>
         /// <typeparam name="T">目标类型。</typeparam>
         /// <returns></returns>
-        public static T Map<T>(object obj, T def = default) => instanceMap.Map(obj, def);
+        public static T Map<T>(object obj, T def = default) => mapper.Map(obj, def);
+
+        /// <summary>
+        /// 拷贝（异常上抛）。
+        /// </summary>
+        /// <typeparam name="T">目标类型。</typeparam>
+        /// <param name="source">数据源。</param>
+        /// <returns></returns>
+        public static T ThrowsMap<T>(object source) => mapper.ThrowsMap<T>(source);
 
         /// <summary> 
         /// 对象映射。
@@ -63,6 +79,14 @@ namespace CodeArts
         /// <param name="obj">数据源。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        public static object Map(object obj, Type conversionType) => instanceMap.Map(obj, conversionType);
+        public static object Map(object obj, Type conversionType) => mapper.Map(obj, conversionType);
+
+        /// <summary>
+        /// 拷贝（异常上抛）。
+        /// </summary>
+        /// <param name="source">数据源。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        public static object ThrowsMap(object source, Type conversionType) => mapper.ThrowsMap(source, conversionType);
     }
 }

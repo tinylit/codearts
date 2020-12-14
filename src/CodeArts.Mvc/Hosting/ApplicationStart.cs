@@ -5,15 +5,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+#if NET40
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+#endif
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+#if NET_NORMAL
 using System.Threading.Tasks;
+#endif
 using System.Web;
 using System.Web.Compilation;
-using System.Web.Configuration;
 using System.Web.Http;
 using System.Web.Http.Dependencies;
 
@@ -546,8 +548,6 @@ namespace CodeArts.Mvc.Hosting
         /// <summary>
         /// Registers the OWIN request processing module.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
-            Justification = "Initialize must never throw on server startup path")]
         public static void Initialize()
         {
 #if NET40

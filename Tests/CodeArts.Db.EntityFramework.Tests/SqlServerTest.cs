@@ -3,41 +3,44 @@ using CodeArts.Casting;
 using CodeArts.Db;
 using CodeArts.Db.Domain;
 using CodeArts.Db.EntityFramework;
-using CodeArts.Db.Exceptions;
-using CodeArts.Db.SqlServer;
+using CodeArts.Db.EntityFramework.Tests;
 using CodeArts.Db.Tests;
+#if NET461
+using System.Data.Entity;
+#else
 using Microsoft.EntityFrameworkCore;
+#endif
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using UnitTest.Domain.Entities;
-using UnitTest.Dtos;
 
 namespace UnitTest
 {
     [TestClass]
     public class SqlServerTest
     {
+
+        private static DbContext context;
+
+        static SqlServerTest() => context = new DbTestContext();
+
         private static bool isCompleted;
 
         [TestInitialize]
         public void Initialize()
         {
 #if NET461
-            var adapter = new SqlServerSimAdapter();
+            var adapter = new CodeArts.Db.SqlServerAdapter();
 #else
-            var adapter = new SqlServerAdapter();
+            var adapter = new CodeArts.Db.EntityFramework.SqlServerLinqAdapter();
 #endif
-            DbConnectionManager.RegisterAdapter(adapter);
+            LinqConnectionManager.RegisterAdapter(adapter);
 
-            RuntimeServPools.TryAddSingleton<ICastToExpression, CastToExpression>();
-            RuntimeServPools.TryAddSingleton<ICopyToExpression, CopyToExpression>();
-            RuntimeServPools.TryAddSingleton<IMapToExpression, MapToExpression>();
-
+            RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
 
             if (isCompleted) return;
 
@@ -81,7 +84,7 @@ namespace UnitTest
         public void SelectTest()
         {
             var y = 100;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
 
             var result = user.Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });//.Where(x => x.Id > 0 && x.Id < y);
 
@@ -92,7 +95,7 @@ namespace UnitTest
         public void WhereTest()
         {
             var y = 100;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y);
 
             var list = result.ToList();
@@ -101,19 +104,8 @@ namespace UnitTest
         public void SelectWhereTest()
         {
             var y = 100;
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Username }).Cast<UserSimDto>();
-
-            var list = result.ToList();
-        }
-
-        [TestMethod]
-        public void SelectCastWaistWhereTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-
-            var result = user.Cast<UserSimDto>().Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Username });
+            var user = new UserRepository(context);
+            var result = user.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Username });
 
             var list = result.ToList();
         }
@@ -122,7 +114,7 @@ namespace UnitTest
         public void SingleOrDefaultWithArg()
         {
             var y = 100;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.SingleOrDefault(x => x.Id < y && x.Userstatus > 0);
         }
 
@@ -130,8 +122,8 @@ namespace UnitTest
         public void UnionTest()
         {
             var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
@@ -143,8 +135,8 @@ namespace UnitTest
         public void UnionCountTest()
         {
             var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
@@ -155,120 +147,28 @@ namespace UnitTest
         [TestMethod]
         public void AnyTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var has = user.Any(x => x.Id < 100);
         }
         [TestMethod]
         public void AllTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var has = user.Where(x => x.Id < 100).All(x => x.Id < 100);
         }
 
         [TestMethod]
         public void AvgTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var has = user.Where(x => x.Id < 100).Average(x => x.Id);
-        }
-
-        [TestMethod]
-        public void UnionMaxTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
-
-            var max = result.Union(result2).Max();
-        }
-
-        [TestMethod]
-        public void UnionMaxWithArgTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
-
-            var max = result.Union(result2).Max(x => x.Id);
-        }
-
-        [TestMethod]
-        public void UnionTakeTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Username = x.Realname });
-
-            var list = result.Union(result2).Take(10).ToList();
-        }
-
-        [TestMethod]
-        public void UnionTakeOrderByTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
-
-            var list = result.Union(result2).Take(10).OrderBy(x => x.Id).ToList();
-        }
-
-
-        [TestMethod]
-        public void UnionOrderByTest() //! 必须配合排序函数（OrderBy/OrderByDescending）使用
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
-
-            var list = result.Union(result2).OrderBy(x => x.Id).ToList();
-        }
-
-        [TestMethod]
-        public void UnionTakeSkipOrderByTest() //! 必须配合排序函数（OrderBy/OrderByDescending）使用
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
-
-            var list = result.Union(result2).Take(10).Skip(100).OrderBy(x => x.Id).ToList();
-        }
-
-        [TestMethod]
-        public void UnionSkipOrderByTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, Name = x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
-
-            var list = result.Union(result2).Skip(10).OrderBy(x => x.Id).ToList();
         }
 
         [TestMethod]
         public void LikeTest()
         {
             var y = 100;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("liu")).Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
 
             var list = result.ToList();
@@ -277,7 +177,7 @@ namespace UnitTest
         public void INTest()
         {
             var y = 100;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var arr = new List<string> { "1", "2" };
             var result = user.Where(x => x.Id > 0 && x.Id < y && arr.Contains(x.Username))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
@@ -289,8 +189,8 @@ namespace UnitTest
         public void INSQLTest()
         {
             var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && details.Select(z => z.Nickname).Contains(x.Username))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
 
@@ -301,8 +201,8 @@ namespace UnitTest
         public void INTest2()
         {
             var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var arr = new string[] { "1", "2" };
             var result = user.Where(x => x.Id > 0 && x.Id < y && arr.Any() && details.Any(z => z.Nickname == x.Username))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
@@ -313,7 +213,7 @@ namespace UnitTest
         public void AnyINTest()
         {
             var y = 100;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var arr = new List<int> { 1, 10 };
             var result = user.Where(x => x.Id > 0 && x.Id < y && arr.Any(item => item == x.Id))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
@@ -326,7 +226,7 @@ namespace UnitTest
         {
             var y = 100;
             string cc = null;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
 
             var result = user.Where(x => x.Id > 0 && x.Id < y)
                 .Select(x => new { Id = x.Id > 5000 ? x.Id : x.Id + 5000, OldId = x.Id + 1, OOID = y > 0 ? y : 100, DD = cc ?? string.Empty });
@@ -334,22 +234,11 @@ namespace UnitTest
             var value = result.ToString();
             var list = result.ToList();
         }
-        [TestMethod]
-        public void PropertyTest()
-        {
-            string str = null;
-            var b = true;
-            var c = false;
-            var user = new UserRepository();
-            var result = user.Where(x => b == c && x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now)
-                .Select(x => new { x = b, Id = x.Id > 100 ? x.Id : x.Id + 100, Name = x.Username, Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
 
         [TestMethod]
         public void OrderByTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.OrderBy(x => x.CreatedTime);
             var list = result.ToList();
         }
@@ -357,7 +246,7 @@ namespace UnitTest
         public void WhereOrderByTest()
         {
             var str = "1";
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Where(x => x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.CreatedTime);
             var list = result.ToList();
@@ -368,7 +257,7 @@ namespace UnitTest
         {
             var str = "1";
             int? i = 1;
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Where(x => x.Id < 200 && x.Username.Contains(str) && (i.HasValue && x.Id > i.Value) && x.CreatedTime < DateTime.Now && x.Userstatus.HasValue);
 
             result = result.Where(x => x.Mallagid == 2);
@@ -379,109 +268,39 @@ namespace UnitTest
         public void OrderBySelect()
         {
             var str = "1";
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now);
+            var user = new UserRepository(context);
+            var result = user
+#if NET461
+                .Where(x => x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now);
+#else
+                .Where(x => x.Id < 200 && EF.Functions.Like(x.Username, $"%{str}%") && x.CreatedTime < DateTime.Now);
+#endif
             var list = result.OrderBy(x => x.CreatedTime).ToList();
             var count = result.Count();
         }
         [TestMethod]
-        public void ReverseTest() //! 必须配合排序函数（OrderBy/OrderByDescending）使用
-        {
-            var str = "1";
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now)
-                .OrderBy(x => x.CreatedTime)
-                .Reverse() //! 所有排序都逆转（不论前后）
-                .OrderByDescending(x => x.Bcid);
-            var list = result.ToList();
-        }
-        [TestMethod]
         public void ExistsTest()
         {
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = user.Where(x => x.Id < 200 && details.Distinct().Any(y => y.Id == x.Id && y.Id < 100))
                 .OrderBy(x => x.CreatedTime)
                 .Distinct()
-                .Reverse()
                 .OrderByDescending(x => x.Bcid);
             var list = result.ToList();
         }
 
         [TestMethod]
-        public void ReplaceTest()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
-                .Select(x => new { x.Id, Name = x.Username.Replace("180", "189"), Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
-
-        [TestMethod]
-        public void SubstringTest()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
-                .Select(x => new { x.Id, Name = x.Username.Substring(3), Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
-
-        [TestMethod]
-        public void ToUpperLowerTest()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
-                .Select(x => new { x.Id, Name = x.Username.ToUpper(), Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
-        [TestMethod]
-        public void TrimTest()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
-                .Select(x => new { x.Id, Name = x.Username.ToUpper().Trim(), Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
-        [TestMethod]
-        public void IsNullOrEmpty()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now && !string.IsNullOrEmpty(x.Username))
-                .Select(x => new { x.Id, Name = x.Username, Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
-        [TestMethod]
-        public void IndexOf()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now && x.Username.IndexOf("in") > 1)
-                .Select(x => new { x.Id, Name = x.Username, Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
-        }
-        [TestMethod]
-        public void MaxTest()
-        {
-            var user = new UserRepository();
-            var result = user.Max();
-        }
-        [TestMethod]
         public void MaxWithTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Max(x => x.Id);
-        }
-
-        [TestMethod]
-        public void WhereMaxTest()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now).Max();
         }
 
         [TestMethod]
         public void DistinctTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Distinct();
             var list = result.ToList();
         }
@@ -489,7 +308,7 @@ namespace UnitTest
         [TestMethod]
         public void DistinctSelectTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Distinct().Select(x => x.Id);
             var list = result.ToList();
         }
@@ -497,7 +316,7 @@ namespace UnitTest
         [TestMethod]
         public void DistinctWhereTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now).Distinct();
             var list = result.ToList();
         }
@@ -507,8 +326,8 @@ namespace UnitTest
         {
             var y = 100;
             var str = "1";
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = from x in user
                          join d in details on x.Id equals d.Id
                          where x.Id > 0 && d.Id < y && x.Username.Contains(str)
@@ -523,9 +342,9 @@ namespace UnitTest
         {
             var y1 = 100;
             var str = "1";
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var userWx = new UserWeChatRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
+            var userWx = new UserWeChatRepository(context);
             var result = from x in user
                          join y in details on x.Id equals y.Id
                          join z in userWx on x.Id equals z.Uid
@@ -542,9 +361,9 @@ namespace UnitTest
             var y = 100;
             var str = "1";
             FeiUserWeChatStatusEnum? status = null;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var userWx = new UserWeChatRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
+            var userWx = new UserWeChatRepository(context);
             var result = from x in user
                          join d in details
                          on x.Id equals d.Id
@@ -561,9 +380,9 @@ namespace UnitTest
         {
             var y = 100;
             var str = "1";
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var userWx = new UserWeChatRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
+            var userWx = new UserWeChatRepository(context);
             var result = from x in user
                          join d in details.Where(d => d.Id < y)
                          on x.Id equals d.Id
@@ -581,8 +400,8 @@ namespace UnitTest
         {
             var id = 100;
             var str = "1";
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = from x in user
                          join y in details on x.Id equals y.Id
                          where x.Id > 0 && y.Id < id && x.Username.Contains(str)
@@ -594,145 +413,53 @@ namespace UnitTest
         [TestMethod]
         public void TakeTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Take(10);
             var list = result.ToList();
         }
         [TestMethod]
         public void TakeWhereTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Take(10).Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now);
             var list = result.ToList();
         }
 
         [TestMethod]
-        public void SkipOrderByTest()
-        {
-            var user = new UserRepository();
-            var result = user.Skip(124680).OrderBy(x => x.Id);
-            var list = result.ToList();
-        }
-        [TestMethod]
-        public void TakeSkipOrderByTest()
-        {
-            var user = new UserRepository();
-            var result = user.Take(10).Skip(10000).OrderBy(x => x.Id);
-            var list = result.ToList();
-        }
-        [TestMethod]
         public void FirstOrDefaultTest()
         {
-
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var userEntity = user.FirstOrDefault();
         }
         [TestMethod]
         public void FirstOrDefaultWhereTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
 
             var userEntity = user.Where(x => x.Username.Length > 10 && x.Id < 100 && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.Id)
                 .FirstOrDefault();
         }
 
-#if NETSTANDARD2_1
-
-        [TestMethod]
-        public void TakeLastOrderByTest() //! 必须配合排序函数（OrderBy/OrderByDescending）使用
-        {
-            var user = new UserRepository();
-
-            var results = user.TakeLast(10).OrderBy(x => x.CreatedTime).ToList();
-        }
-
-
-        [TestMethod]
-        public void SkipLastOrderByTest()  //! 必须配合排序函数（OrderBy/OrderByDescending）使用
-        {
-            var user = new UserRepository();
-
-            var results = user.OrderBy(x => x.CreatedTime).SkipLast(124680).ToList();
-        }
-#endif
-        [TestMethod]
-        public void TakeWhileTest()
-        {
-            var str = "1";
-            var user = new UserRepository();
-            var results = user.TakeWhile(x => x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now).Take(10).ToList();
-        }
-
-        [TestMethod]
-        public void SkipWhileTest()
-        {
-            var str = "1";
-            var user = new UserRepository();
-            var results = user.SkipWhile(x => x.Id < 200 && x.Username.Contains(str) && x.CreatedTime < DateTime.Now).Take(10).ToList();
-        }
-        [TestMethod]
-        public void CastTest() //? 在SQL中，只会生成共有的属性(不区分大小写)。
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y).Cast<UserSimDto>();
-
-            var list = result.ToList();
-        }
-        [TestMethod]
-        public void CastCountTest() //? 在SQL中，只会生成共有的属性(不区分大小写)。
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y).Cast<UserSimDto>();
-
-            var list = result.Count();
-        }
-        [TestMethod]
-        public void UnionCastTakeTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Username = x.Realname });
-
-            var list = result.Union(result2).Cast<UserSimDto>().Take(10).ToList();
-        }
-        [TestMethod]
-        public void UnionCastCountTest()
-        {
-            var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
-            var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, x.Username });
-
-            var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Username = x.Realname });
-
-            var Count = result.Union(result2).Count();
-        }
-
         [TestMethod]
         public void IntersectTest()
         {
             var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, x.Username });
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Username = x.Realname });
 
-            var list = result.Intersect(result2).Cast<UserSimDto>().Take(10).ToList();
+            var list = result.Intersect(result2).Take(10).ToList();
 
         }
         [TestMethod]
         public void IntersectCountTest()
         {
             var y = 100;
-            var user = new UserRepository();
-            var details = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var details = new UserDetailsRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && x.Username.Contains("admin")).Select(x => new { x.Id, x.Username });
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Username = x.Realname });
@@ -747,9 +474,9 @@ namespace UnitTest
 
             DateTime? date = null;
 
-            var user = new UserRepository();
+            var user = new UserRepository(context);
             var result = user.Where(x => x.Id > 0 && x.Id < y && x.CreatedTime > date)
-                .Select(x => new { x.Id, Name = x.Username }).Cast<UserSimDto>();
+                .Select(x => new { x.Id, Name = x.Username });
 
             var list = result.ToList();
         }
@@ -757,7 +484,7 @@ namespace UnitTest
         [TestMethod]
         public void BitOperationTest()
         {
-            var user = new UserRepository();
+            var user = new UserRepository(context);
 
             var result = user.Where(x => (x.Userstatus & 1) == 1 && x.Id < 100).Take(10);
             var list = result.ToList();
@@ -766,63 +493,16 @@ namespace UnitTest
         [TestMethod]
         public void CountWithArgumentsTest()
         {
-
-            var user = new UserRepository();
+            var user = new UserRepository(context);
 
             var count = user.Count(x => x.Mallagid == 2);
         }
 
         [TestMethod]
-        public void CustomFirstWithMethodTest()
-        {
-            var user = new UserRepository();
-            var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).Select(y => y.Id).First() && x.CreatedTime < DateTime.Now)
-                .OrderBy(x => x.CreatedTime)
-                .Take(10)
-                .Skip(100)
-                .Select(x => x.Username.Substring(2))
-                .ToList();
-        }
-
-        [TestMethod]
-        public void RequiredTest()
-        {
-            var user = new UserRepository();
-
-            try
-            {
-                user.Where(x => x.Id < 0)
-                .DefaultIfEmpty(new FeiUsers
-                {
-                    Id = 50,
-                    Bcid = 1,
-                    CreatedTime = DateTime.Now
-                })
-                .First();
-            }
-            catch (DRequiredException)
-            {
-                //? 查询结果不加【OrDefault】后缀时，数据库未查询到数据，ORM会抛出【DRequiredException】异常。
-            }
-        }
-
-        [TestMethod]
-        public void AnyWhere()
-        {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
-
-            var results = userdetails
-                .Where(x => x.Id > 100)
-                .Where(x => user.Any(y => x.Id == y.Id))
-                .ToList();
-        }
-
-        [TestMethod]
         public void JoinInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var joinRight = from x in user
                             join y in userdetails
@@ -849,8 +529,8 @@ namespace UnitTest
         [TestMethod]
         public void UnoinInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var unionRight = (from x in user
                               join y in userdetails
@@ -882,8 +562,8 @@ namespace UnitTest
         [TestMethod]
         public void JoinInUnoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var linq = (from x in user
                         join y in userdetails
@@ -910,8 +590,8 @@ namespace UnitTest
         [TestMethod]
         public void UnoinSelectInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var unionRight = (from x in user
                               join y in userdetails
@@ -952,8 +632,8 @@ namespace UnitTest
         [TestMethod]
         public void SelectInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var linq = from x in userdetails
                        join y in user.Where(y => y.Bcid > 0)
@@ -979,8 +659,8 @@ namespace UnitTest
         [TestMethod]
         public void JoinSelectInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var joinRight = from x in user
                             join y in userdetails
@@ -1011,8 +691,8 @@ namespace UnitTest
         [TestMethod]
         public void UnoinWhereInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var unionRight = (from x in user
                               join y in userdetails
@@ -1044,8 +724,8 @@ namespace UnitTest
         [TestMethod]
         public void UnoinSelectWhereInJoinTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var user = new UserRepository(context);
+            var userdetails = new UserDetailsRepository(context);
 
             var unionRight = (from x in user
                               join y in userdetails
@@ -1086,12 +766,11 @@ namespace UnitTest
         [TestMethod]
         public void EqualsTest()
         {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
+            var userdetails = new UserDetailsRepository(context);
 
             var results = userdetails
                 .Where(x => x.Id > 100)
-                .Where(x => user.Any(y => x.Id.Equals(y.Id)))
+                .Where(x => x.Id.Equals(101))
                 .ToList();
         }
     }

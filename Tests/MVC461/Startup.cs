@@ -1,4 +1,5 @@
-﻿using CodeArts.Mvc;
+﻿using CodeArts;
+using CodeArts.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Web.Http;
 
@@ -9,6 +10,13 @@ namespace Mvc461
     /// </summary>
     public class Startup : JwtStartup
     {
+        public Startup()
+        {
+            using (var startup = new XStartup())
+            {
+                startup.DoStartup();
+            }
+        }
         public override void Configuration(HttpConfiguration config)
         {
             base.Configuration(config);

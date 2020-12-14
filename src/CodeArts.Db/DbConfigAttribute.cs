@@ -1,5 +1,4 @@
-﻿using CodeArts.Config;
-using System;
+﻿using System;
 
 namespace CodeArts.Db
 {

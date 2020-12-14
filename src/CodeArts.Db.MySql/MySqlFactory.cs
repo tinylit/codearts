@@ -1,7 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using System.Data;
 
-namespace CodeArts.Db.MySql
+namespace CodeArts.Db
 {
     /// <summary>
     /// MySQL 适配器。

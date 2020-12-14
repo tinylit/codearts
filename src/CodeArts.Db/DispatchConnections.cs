@@ -221,6 +221,7 @@ namespace CodeArts.Db
                     if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.CloseConnection)
                     {
                         isClosedConnection = true;
+
                         behavior &= ~CommandBehavior.CloseConnection;
                     }
 
@@ -307,15 +308,7 @@ namespace CodeArts.Db
                 connection.Close();
             }
 
-            public IDbCommand CreateCommand()
-            {
-                if (State == ConnectionState.Open)
-                {
-                    return new DbCommand(this, connection.CreateCommand());
-                }
-
-                throw new InvalidOperationException("The DbConnection is closed.");
-            }
+            public IDbCommand CreateCommand() => new DbCommand(this, connection.CreateCommand());
 
             public bool IsThreadActive => isActiveThread.IsAlive;
 
@@ -636,15 +629,7 @@ namespace CodeArts.Db
             public bool IsActive { get; private set; } = true;
 
             protected override System.Data.Common.DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => connection.BeginTransaction(isolationLevel);
-            protected override System.Data.Common.DbCommand CreateDbCommand()
-            {
-                if (State == ConnectionState.Open)
-                {
-                    return new DbCommand(this, connection.CreateCommand());
-                }
-
-                throw new InvalidOperationException("The DbConnection is closed.");
-            }
+            protected override System.Data.Common.DbCommand CreateDbCommand() => new DbCommand(this, connection.CreateCommand());
 
             void IDisposable.Dispose()
             {

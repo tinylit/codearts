@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace CodeArts.Db.SqlServer.Formatters
+namespace CodeArts.Db.Formatters
 {
     /// <summary>
     /// 条件创建。

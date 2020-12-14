@@ -74,7 +74,7 @@ namespace CodeArts.Caching
         public static void Clear() => CacheProvider.Clear();
 
         /// <summary>
-        /// 获取服务商的指定缓存服务。
+        /// 获取服务商的指定缓存服务（优先获取指定级别缓存，没有指定级别缓存时，使用更低级别的缓存）。
         /// </summary>
         /// <param name="cacheName">缓存名称。</param>
         /// <param name="level">缓存等级。</param>
@@ -86,14 +86,26 @@ namespace CodeArts.Caching
             switch (level)
             {
                 case Level.First:
-                case Level.Second:
-                case Level.Third:
-                    if (TryGetProvider(level, out provider))
+                    if (TryGetProvider(Level.First, out provider))
                     {
                         return CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
                             .GetOrAdd(cacheName, name => provider.GetCache(name));
                     }
                     break;
+                case Level.Second:
+                    if (TryGetProvider(Level.Second, out provider))
+                    {
+                        return CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
+                            .GetOrAdd(cacheName, name => provider.GetCache(name));
+                    }
+                    goto case Level.First;
+                case Level.Third:
+                    if (TryGetProvider(Level.Second, out provider))
+                    {
+                        return CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
+                            .GetOrAdd(cacheName, name => provider.GetCache(name));
+                    }
+                    goto case Level.Second;
                 default:
                     var list = new List<ICaching>();
 
@@ -117,7 +129,7 @@ namespace CodeArts.Caching
                     break;
             }
 
-            throw new BusiException($"未配置【{level.GetText()}】的缓存供应器!");
+            throw new BusiException($"未配置【{level.GetText()}】或更低级别的的缓存供应器！");
         }
     }
 }

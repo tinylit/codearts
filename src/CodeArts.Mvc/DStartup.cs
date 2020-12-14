@@ -32,15 +32,6 @@ namespace CodeArts.Mvc
         private readonly bool useDependencyInjection;
 
         /// <summary>
-        /// 静态构造函数。
-        /// </summary>
-        static DStartup()
-        {
-            RuntimeServPools.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
-            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
-        }
-
-        /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
@@ -233,11 +224,9 @@ namespace CodeArts.Mvc
 #else
 using Newtonsoft.Json.Serialization;
 using CodeArts.Caching;
-using CodeArts.Config;
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.Converters;
 using CodeArts.Mvc.DependencyInjection;
-using CodeArts.Serialize.Json;
 #if NET_NORMAL
 using Swashbuckle.Application;
 using System.IO;
@@ -285,15 +274,6 @@ namespace CodeArts.Mvc
             this.useDependencyInjection = useDependencyInjection;
         }
 #endif
-
-        /// <summary>
-        /// 静态构造函数。
-        /// </summary>
-        static DStartup()
-        {
-            RuntimeServPools.TryAddSingleton<IConfigHelper, DefaultConfigHelper>();
-            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
-        }
 
         /// <summary>
         /// 属性名称解析规则。

@@ -59,32 +59,11 @@ namespace CodeArts.Mvc.DependencyInjection
 
 #if NET_CORE
             int maxDepth = "di:depth".Config(5);
+            bool isSingleton = "di:singleton".Config(false);
 #else
             int maxDepth = "di-depth".Config(5);
+            bool isSingleton = "di-singleton".Config(false);
 #endif
-
-#if NET_CORE
-            bool isSingleton = "di:singleton".Config(true);
-#else
-            bool isSingleton = "di-singleton".Config(true);
-#endif
-            assemblyTypes
-            .Where(x => x.IsDefined(typeof(TypeGenAttribute), false))
-            .ForEach(x =>
-            {
-                var attr = (TypeGenAttribute)Attribute.GetCustomAttribute(x, typeof(TypeGenAttribute), false);
-
-                var implementationType = attr.TypeGen.Create(x);
-
-                if (isSingleton)
-                {
-                    services.AddSingleton(x, implementationType);
-                }
-                else
-                {
-                    services.AddTransient(x, implementationType);
-                }
-            });
 
             foreach (var controllerType in controllerTypes)
             {

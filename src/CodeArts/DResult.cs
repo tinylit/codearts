@@ -56,7 +56,7 @@ namespace CodeArts
             /// </summary>
             /// <param name="errorMsg">错误消息。</param>
             /// <param name="statusCode">错误编码。</param>
-            public ErrorResult(string errorMsg, int statusCode) : this()
+            public ErrorResult(string errorMsg, int statusCode) : base()
             {
                 Msg = errorMsg;
                 Code = statusCode;
@@ -85,7 +85,7 @@ namespace CodeArts
             /// </summary>
             /// <param name="errorMsg">错误消息。</param>
             /// <param name="statusCode">错误编码。</param>
-            public ErrorResults(string errorMsg, int statusCode) : this()
+            public ErrorResults(string errorMsg, int statusCode) : base()
             {
                 Msg = errorMsg;
                 Code = statusCode;
@@ -248,7 +248,7 @@ namespace CodeArts
         /// <summary>
         /// 用于Xml解析。
         /// </summary>
-        protected DResult() { }
+        protected DResult() : base() { }
 
         /// <summary>
         /// 构造函数。

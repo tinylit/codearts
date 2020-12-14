@@ -52,7 +52,7 @@ namespace UnitTest.Domain.Entities
         /// <summary>
         /// 角色组。
         /// </summary>
-        public int Mallagid { get; set; }
+        public short Mallagid { get; set; }
 
         /// <summary>
         /// 盐。

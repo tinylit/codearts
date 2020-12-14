@@ -69,7 +69,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc.Core2_1", "Tests\Mvc.Co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db", "src\CodeArts.Db\CodeArts.Db.csproj", "{949A8D0B-92B3-4BA8-8DD4-8240B45E42D3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Normal", "src\CodeArts.Db.Normal\CodeArts.Db.Normal.csproj", "{37FBF153-04E1-41D1-B82C-0ABB4A9C9554}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Lts", "src\CodeArts.Db.Lts\CodeArts.Db.Lts.csproj", "{37FBF153-04E1-41D1-B82C-0ABB4A9C9554}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.MySql", "src\CodeArts.Db.MySql\CodeArts.Db.MySql.csproj", "{85CBA90B-5282-43D8-9884-AEDBBACD2D2B}"
 EndProject
@@ -77,15 +77,23 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.SqlServer", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.EntityFramework", "src\CodeArts.Db.EntityFramework\CodeArts.Db.EntityFramework.csproj", "{D933CDEF-46D7-4447-991A-0F09CBE6CFEC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Normal.MySql", "src\CodeArts.Db.Normal.MySql\CodeArts.Db.Normal.MySql.csproj", "{E49CC361-3352-4F1E-A215-5D0475331C9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Lts.MySql", "src\CodeArts.Db.Lts.MySql\CodeArts.Db.Lts.MySql.csproj", "{E49CC361-3352-4F1E-A215-5D0475331C9E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Normal.SqlServer", "src\CodeArts.Db.Normal.SqlServer\CodeArts.Db.Normal.SqlServer.csproj", "{3BAF3A88-914D-4A66-9011-8F289DBA9ABB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Lts.SqlServer", "src\CodeArts.Db.Lts.SqlServer\CodeArts.Db.Lts.SqlServer.csproj", "{3BAF3A88-914D-4A66-9011-8F289DBA9ABB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Normal.Tests", "Tests\CodeArts.Db.Normal.Tests\CodeArts.Db.Normal.Tests.csproj", "{7EE1EA3D-D1AA-47EE-B743-8CC284FCFDAF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Lts.Tests", "Tests\CodeArts.Db.Lts.Tests\CodeArts.Db.Lts.Tests.csproj", "{7EE1EA3D-D1AA-47EE-B743-8CC284FCFDAF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.EntityFramework.Tests", "Tests\CodeArts.Db.EntityFramework.Tests\CodeArts.Db.EntityFramework.Tests.csproj", "{84760CAF-371D-4550-9620-951B95E66DCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.EntityFramework.Tests", "Tests\CodeArts.Db.EntityFramework.Tests\CodeArts.Db.EntityFramework.Tests.csproj", "{84760CAF-371D-4550-9620-951B95E66DCA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.EntityFramework.SqlServer", "src\CodeArts.Db.EntityFramework.SqlServer\CodeArts.Db.EntityFramework.SqlServer.csproj", "{4A500F10-8D44-437A-A30A-661B2F245E63}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.EntityFramework.SqlServer", "src\CodeArts.Db.EntityFramework.SqlServer\CodeArts.Db.EntityFramework.SqlServer.csproj", "{4A500F10-8D44-437A-A30A-661B2F245E63}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Dapper", "src\CodeArts.Db.Dapper\CodeArts.Db.Dapper.csproj", "{9B248220-622B-4603-9856-3F6CC3DEF279}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Dapper.Tests", "Tests\CodeArts.Db.Dapper.Tests\CodeArts.Db.Dapper.Tests.csproj", "{285A80D7-1BCC-4B64-809D-2BDCA7151EA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.Sqlite", "src\CodeArts.Db.Sqlite\CodeArts.Db.Sqlite.csproj", "{8CD14BFC-8D2D-4421-8635-C013F93F80FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.EntityFramework.Sqlite", "src\CodeArts.Db.EntityFramework.Sqlite\CodeArts.Db.EntityFramework.Sqlite.csproj", "{6B39204D-59EA-48C1-B282-1C6B44E3609A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -233,6 +241,22 @@ Global
 		{4A500F10-8D44-437A-A30A-661B2F245E63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A500F10-8D44-437A-A30A-661B2F245E63}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A500F10-8D44-437A-A30A-661B2F245E63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B248220-622B-4603-9856-3F6CC3DEF279}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B248220-622B-4603-9856-3F6CC3DEF279}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B248220-622B-4603-9856-3F6CC3DEF279}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B248220-622B-4603-9856-3F6CC3DEF279}.Release|Any CPU.Build.0 = Release|Any CPU
+		{285A80D7-1BCC-4B64-809D-2BDCA7151EA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{285A80D7-1BCC-4B64-809D-2BDCA7151EA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{285A80D7-1BCC-4B64-809D-2BDCA7151EA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{285A80D7-1BCC-4B64-809D-2BDCA7151EA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CD14BFC-8D2D-4421-8635-C013F93F80FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CD14BFC-8D2D-4421-8635-C013F93F80FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CD14BFC-8D2D-4421-8635-C013F93F80FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CD14BFC-8D2D-4421-8635-C013F93F80FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -273,6 +297,10 @@ Global
 		{7EE1EA3D-D1AA-47EE-B743-8CC284FCFDAF} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
 		{84760CAF-371D-4550-9620-951B95E66DCA} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
 		{4A500F10-8D44-437A-A30A-661B2F245E63} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{9B248220-622B-4603-9856-3F6CC3DEF279} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{285A80D7-1BCC-4B64-809D-2BDCA7151EA6} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
+		{8CD14BFC-8D2D-4421-8635-C013F93F80FD} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{6B39204D-59EA-48C1-B282-1C6B44E3609A} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D69380D7-DEA5-4884-85A8-1049025CE2EA}

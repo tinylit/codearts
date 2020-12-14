@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using System.Data.SqlClient;
 
-namespace CodeArts.Db.SqlServer
+namespace CodeArts.Db
 {
     /// <summary>
     /// SqlServer 适配器。

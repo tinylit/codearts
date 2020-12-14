@@ -36,7 +36,7 @@ namespace CodeArts.Config
             }
 
             var builder = new ConfigurationBuilder()
-                 .SetBasePath(baseDir);
+                    .SetBasePath(baseDir);
 
             var path = Path.Combine(baseDir, "appsettings.json");
 

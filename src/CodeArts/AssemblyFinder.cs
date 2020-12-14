@@ -37,7 +37,7 @@ namespace CodeArts
         /// <summary>
         /// 满足指定条件的程序集。
         /// </summary>
-        /// <param name="pattern">过滤条件。</param>
+        /// <param name="pattern">DLL过滤规则。</param>
         /// <returns></returns>
         public static IEnumerable<Assembly> Find(string pattern)
         {

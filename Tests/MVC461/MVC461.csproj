@@ -140,13 +140,13 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CodeArts.Db.Normal.MySql\CodeArts.Db.Normal.MySql.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.Db.Lts.MySql\CodeArts.Db.Lts.MySql.csproj">
       <Project>{e49cc361-3352-4f1e-a215-5d0475331c9e}</Project>
-      <Name>CodeArts.Db.Normal.MySql</Name>
+      <Name>CodeArts.Db.Lts.MySql</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\CodeArts.Db.Normal\CodeArts.Db.Normal.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.Db.Lts\CodeArts.Db.Lts.csproj">
       <Project>{37fbf153-04e1-41d1-b82c-0abb4a9c9554}</Project>
-      <Name>CodeArts.Db.Normal</Name>
+      <Name>CodeArts.Db.Lts</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Db\CodeArts.Db.csproj">
       <Project>{949a8d0b-92b3-4ba8-8dd4-8240b45e42d3}</Project>

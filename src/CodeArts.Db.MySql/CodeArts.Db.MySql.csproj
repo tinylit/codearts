@@ -14,7 +14,7 @@
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
     <Description>Provide MySQL support for ORM.</Description>
-    <RootNamespace>CodeArts.Db.SqlServer</RootNamespace>
+    <RootNamespace>CodeArts.Db</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net452'">

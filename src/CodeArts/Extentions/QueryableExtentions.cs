@@ -29,6 +29,5 @@ namespace System.Linq
         /// <returns></returns>
         public static PagedList<T> ToList<T>(this IQueryable<T> source, int page, int size)
             => new PagedList<T>(source, page, size);
-
     }
 }

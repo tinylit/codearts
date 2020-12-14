@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net451;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Authors>Tiny Lit</Authors>
+		<Version>5.1.0.0</Version>
+		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
+		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
+		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+		<Description>Provide SqlServer support for ORM.</Description>
+		<RootNamespace>CodeArts.Db.Lts</RootNamespace>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\CodeArts.Db.Lts\CodeArts.Db.Lts.csproj" />
+	  <ProjectReference Include="..\CodeArts.Db.SqlServer\CodeArts.Db.SqlServer.csproj" />
+	</ItemGroup>
+
+</Project>

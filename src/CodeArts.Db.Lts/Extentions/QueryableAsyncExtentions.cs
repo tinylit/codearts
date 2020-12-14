@@ -1,0 +1,49 @@
+﻿#if NET_NORMAL
+using CodeArts;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace System.Linq
+{
+    /// <summary>
+    /// 异步查询扩展。
+    /// </summary>
+    public static class QueryableAsyncExtentions
+    {
+        /// <summary>
+        /// 转为集合。
+        /// </summary>
+        /// <typeparam name="T">源。</typeparam>
+        /// <param name="source">源。</param>
+        /// <param name="predicate">条件。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public static Task<List<T>> ToListAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+            => source.Where(predicate).ToListAsync(cancellationToken);
+
+        /// <summary>
+        /// 转分页数据。
+        /// </summary>
+        /// <typeparam name="T">源。</typeparam>
+        /// <param name="source">源。</param>
+        /// <param name="page">页码（索引从“0”开始）。</param>
+        /// <param name="size">分页条数。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public static async Task<PagedList<T>> ToListAsync<T>(this IQueryable<T> source, int page, int size, CancellationToken cancellationToken = default)
+        {
+            var totalCount = await source
+                .CountAsync(cancellationToken);
+
+            var results = await source
+                .Skip(size * page)
+                .Take(size)
+                .ToListAsync(cancellationToken);
+
+            return new PagedList<T>(results, page, size, totalCount);
+        }
+    }
+}
+#endif

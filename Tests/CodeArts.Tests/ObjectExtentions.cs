@@ -1,4 +1,5 @@
 ﻿using CodeArts.Casting;
+using CodeArts.Casting.Implements;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -298,9 +299,7 @@ namespace CodeArts.Tests
         [TestInitialize]
         public void Init()
         {
-            RuntimeServPools.TryAddSingleton<ICastToExpression, CastToExpression>();
-            RuntimeServPools.TryAddSingleton<ICopyToExpression, CopyToExpression>();
-            RuntimeServPools.TryAddSingleton<IMapToExpression, MapToExpression>();
+            RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
         }
 
         [TestMethod]

@@ -795,14 +795,14 @@ namespace CodeArts.Db
         /// <param name="sql">语句。</param>
         /// <param name="settings">配置。</param>
         /// <returns></returns>
-        public string Format(string sql, ISQLCorrectSimSettings settings)
+        public string Format(string sql, ISQLCorrectSettings settings)
         {
             if (settings is null)
             {
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            //? 检查 IndexOf 函数，参数处理
+            //? 检查 IndexOf 函数，参数处理。
             if (settings.IndexOfSwapPlaces)
             {
                 Match match = PatternIndexOf.Match(sql);

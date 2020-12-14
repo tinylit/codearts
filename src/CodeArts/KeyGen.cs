@@ -34,7 +34,8 @@
     /// <summary>
     /// 主键生成器（默认：雪花算法）。
     /// </summary>
-    public static class KeyGen<TKeyGen>
+    /// <typeparam name="T">指定类型生成唯一键。</typeparam>
+    public static class KeyGen<T>
     {
         private static readonly IKeyGen _keyGen;
 

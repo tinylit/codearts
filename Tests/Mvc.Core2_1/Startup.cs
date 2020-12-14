@@ -4,12 +4,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using CodeArts.Mvc;
 using CodeArts.Db;
+using CodeArts;
 
 namespace Mvc.Core2_1
 {
     /// <inheritdoc />
     public class Startup : JwtStartup
     {
+        /// <inheritdoc />
+        public Startup()
+        {
+            using (var startup = new XStartup())
+            {
+                startup.DoStartup();
+            }
+        }
+
         /// <inheritdoc />
         public override void ConfigureServices(IServiceCollection services)
         {

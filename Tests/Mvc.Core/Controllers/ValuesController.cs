@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using CodeArts.Db.EntityFramework;
 
 namespace Mvc.Core.Controllers
 {
@@ -52,7 +53,7 @@ namespace Mvc.Core.Controllers
         /// </summary>
         /// <param name="dependency">依赖注入。</param>
         /// <param name="users">用户信息。</param>
-        public ValuesController(IDependency dependency, UserRepository users)
+        public ValuesController(IDependency dependency, UserRepository users, ILinqRepository<FeiUsers> linqUsers)
         {
             this.dependency = dependency;
         }
