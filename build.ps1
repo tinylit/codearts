@@ -20,8 +20,16 @@ $projectsToBuild =
     'CodeArts.Emit',
     'CodeArts.Mvc',
     'CodeArts.Db',
-    'CodeArts.MySql',
-    'CodeArts.SqlServer'
+    'CodeArts.Db.Lts',
+    'CodeArts.Db.Dapper',
+    'CodeArts.Db.EntityFramework',
+    'CodeArts.Db.MySql',
+    'CodeArts.Db.SqlServer',
+    'CodeArts.Db.Sqlite',
+    'CodeArts.Db.Lts.MySql',
+    'CodeArts.Db.Lts.SqlServer',
+    'CodeArts.Db.EntityFramework.SqlServer',
+    'CodeArts.Db.EntityFramework.Sqlite'
 
 mkdir -Force $packageOutputFolder | Out-Null
 Write-Host "Clearing existing $packageOutputFolder..." -NoNewline
