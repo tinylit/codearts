@@ -117,9 +117,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\CodeArts.Configuration\CodeArts.Configuration.csproj" />
-		<ProjectReference Include="..\CodeArts.Json\CodeArts.Json.csproj" />
-		<ProjectReference Include="..\CodeArts.MemoryCaching\CodeArts.MemoryCaching.csproj" />
+		<ProjectReference Include="..\CodeArts.Caching\CodeArts.Caching.csproj" />
 		<ProjectReference Include="..\CodeArts.Net\CodeArts.Net.csproj" />
 	</ItemGroup>
 

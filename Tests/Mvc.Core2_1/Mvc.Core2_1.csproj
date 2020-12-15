@@ -19,8 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.Casting\CodeArts.Casting.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Db.Lts.MySql\CodeArts.Db.Lts.MySql.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.Json\CodeArts.Json.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.MemoryCaching\CodeArts.MemoryCaching.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.RedisCaching\CodeArts.RedisCaching.csproj" />
   </ItemGroup>
 
 </Project>

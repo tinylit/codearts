@@ -64,9 +64,6 @@ namespace CodeArts.Mvc
                     });
             });
 
-            //? 缓存服务
-            CachingManager.RegisterProvider(new MemoryCachingProvider(), Level.First);
-
             if (useDependencyInjection)
             {
                 services.UseDependencyInjection();
@@ -343,9 +340,6 @@ namespace CodeArts.Mvc
 
             //?异常捕获
             config.Filters.Add(new DExceptionFilterAttribute());
-
-            //? 缓存服务
-            CachingManager.RegisterProvider(new MemoryCachingProvider(), Level.First);
         }
 
 #if !NET40
