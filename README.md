@@ -211,7 +211,7 @@ PM> Install-Package CodeArts
     ```
 * 设置数据库适配器。
 ``` csharp
-    DbConnectionManager.RegisterAdapter(new SqlServerAdapter());
+    DbConnectionManager.RegisterAdapter(new SqlServerLtsAdapter());
     DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 ```
 
