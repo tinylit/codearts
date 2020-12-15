@@ -75,10 +75,5 @@ namespace Mvc.Core.Domain.Entities
         /// </summary>
         [Column("modified_time")]
         public DateTime ModifiedTime { get; set; }
-
-        /// <summary>
-        /// 动作权限列表。
-        /// </summary>
-        //public string Actionlist { get; set; }
     }
 }

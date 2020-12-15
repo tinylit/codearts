@@ -24,7 +24,7 @@ namespace CodeArts.Db.EntityFramework
         int Commit();
 #endif
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// Asynchronously saves all changes made in this unit of work to the database.
         /// </summary>

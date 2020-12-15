@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Threading;
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading.Tasks;
 #endif
 
@@ -14,7 +14,7 @@ namespace CodeArts.Db.Lts
     {
         private readonly IDbConnection connection; //数据库连接
         private readonly ISQLCorrectSettings settings;
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         private readonly System.Data.Common.DbConnection dbConnection;
 
         /// <inheritdoc />
@@ -79,7 +79,7 @@ namespace CodeArts.Db.Lts
             }
         }
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 
         /// <inheritdoc />
         public Task OpenAsync(CancellationToken cancellationToken = default)
@@ -119,7 +119,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public DbCommand CreateCommand()
         {
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
             if (IsAsynchronousSupport)
             {
                 return new DbCommand(dbConnection.CreateCommand(), settings);

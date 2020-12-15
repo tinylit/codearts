@@ -190,7 +190,7 @@ namespace CodeArts.Db.Lts
             }
         }
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 
         private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
         {

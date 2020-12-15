@@ -218,7 +218,6 @@ namespace CodeArts.Db.Lts
                     return ExpressionType.GreaterThanOrEqual;
                 case ExpressionType.LessThanOrEqual:
                     return ExpressionType.GreaterThan;
-
                 case ExpressionType.Equal:
                     return ExpressionType.NotEqual;
                 case ExpressionType.NotEqual:

@@ -1,5 +1,4 @@
-﻿#if NET_NORMAL
-using System;
+﻿#if NET_NORMAL || NETSTANDARD2_0
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;

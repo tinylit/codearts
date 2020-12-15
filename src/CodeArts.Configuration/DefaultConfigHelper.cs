@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 ||NETSTANDARD2_1
+﻿#if NET_CORE
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;

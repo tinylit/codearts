@@ -53,6 +53,7 @@ namespace Mvc.Core.Controllers
         /// </summary>
         /// <param name="dependency">依赖注入。</param>
         /// <param name="users">用户信息。</param>
+        /// <param name="linqUsers">用户。</param>
         public ValuesController(IDependency dependency, UserRepository users, ILinqRepository<FeiUsers> linqUsers)
         {
             this.dependency = dependency;

@@ -107,21 +107,9 @@ namespace CodeArts.Db.Lts
                     {
                         defaultValue = value;
                     }
-                    else
+                    else if (!(visitor.DefaultValue is null))
                     {
-                        Type conversionType = typeof(T);
-
-                        if (visitor.DefaultValue is null)
-                        {
-                            if (conversionType.IsValueType)
-                            {
-                                throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值(null)无法进行默认转换!");
-                            }
-                        }
-                        else
-                        {
-                            throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({visitor.DefaultValue.GetType()})无法进行默认转换!");
-                        }
+                        throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({visitor.DefaultValue.GetType()})无法进行默认转换!");
                     }
                 }
 
@@ -256,7 +244,7 @@ namespace CodeArts.Db.Lts
             return DbProvider.Query<T>(this, commandSql);
         }
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 
         /// <summary>
         /// 读取数据。
@@ -479,7 +467,7 @@ namespace CodeArts.Db.Lts
             return DbExecuter.Execute(this, commandSql);
         }
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 执行命令。
         /// </summary>

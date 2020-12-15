@@ -17,6 +17,11 @@
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 	</PropertyGroup>
 
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
+		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
 	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
 		<PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
 	</ItemGroup>

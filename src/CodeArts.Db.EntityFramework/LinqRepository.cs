@@ -11,7 +11,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -63,7 +63,7 @@ namespace CodeArts.Db
             return _dbSet.Count(predicate);
         }
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 统计符合条件的总行数。
         /// </summary>
@@ -95,7 +95,7 @@ namespace CodeArts.Db
             return _dbSet.LongCount(predicate);
         }
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 统计符合条件的总行数。
         /// </summary>
@@ -145,7 +145,7 @@ namespace CodeArts.Db
             return _dbSet.Any(predicate);
         }
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 是否包含符合条件的数据。
         /// </summary>
@@ -296,7 +296,7 @@ namespace CodeArts.Db
         /// <returns></returns>
         public TEntity Find(TKey id) => this.FirstOrDefault(x => x.Id.Equals(id));
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 根据主键异步查询指定数据。
         /// </summary>

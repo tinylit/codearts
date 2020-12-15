@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0 || NETSTANDARD2_1
+﻿#if NET_CORE
 using Microsoft.Extensions.Caching.Memory;
 #else
 using System.Runtime.Caching;
@@ -18,7 +18,7 @@ namespace CodeArts.Caching
     {
         private static readonly ConcurrentDictionary<string, object> LockCache = new ConcurrentDictionary<string, object>();
 
-#if NETSTANDARD2_0|| NETSTANDARD2_1
+#if NET_CORE
         private readonly int? _sizeLimit;
         private static IMemoryCache _database;
 #else
@@ -30,7 +30,7 @@ namespace CodeArts.Caching
         /// <summary> 缓存区域。 </summary>
         public override string Region => _region;
 
-#if NETSTANDARD2_0|| NETSTANDARD2_1
+#if NET_CORE
         /// <summary>
         /// 内存缓存服务器。
         /// </summary>
@@ -66,7 +66,7 @@ namespace CodeArts.Caching
         {
             if (MemoryManager.Instance.TryRemoveDataBase(_name))
             {
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NET_CORE
                 _database = MemoryManager.Instance.GetDatabase(_name, _sizeLimit);
 #else
                 _database = MemoryManager.Instance.GetDatabase(_name);
@@ -81,7 +81,7 @@ namespace CodeArts.Caching
         /// <returns></returns>
         public override bool IsExsits(string key)
         {
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NET_CORE
             return _database.TryGetValue(GetKey(key), out _);
 #else
             return _database.Contains(GetKey(key));
@@ -96,11 +96,6 @@ namespace CodeArts.Caching
         /// <returns></returns>
         public override bool Expire(string key, TimeSpan span)
         {
-            if (string.IsNullOrEmpty(key))
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             if (span <= TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(span));
@@ -123,7 +118,7 @@ namespace CodeArts.Caching
         /// <returns></returns>
         public override object Get(string key) => _database.Get(GetKey(key));
 
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NET_CORE
         /// <summary>
         /// 获取键值。
         /// </summary>
@@ -211,7 +206,7 @@ namespace CodeArts.Caching
         /// <param name="key">键。</param>
         public override void Exit(string key) => Monitor.Exit(LockCache.GetOrAdd(GetKey(key), _ => new object()));
 
-#if NETSTANDARD2_0 || NETSTANDARD2_1
+#if NET_CORE
         /// <summary>
         /// 设置缓存。
         /// </summary>

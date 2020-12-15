@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Mvc.Core2_1.Domain;
-using CodeArts;
+﻿using CodeArts;
+using CodeArts.Db;
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
-using CodeArts.Db;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Mvc.Core2_1.Domain.Entities;
+using System.Collections.Generic;
 
 namespace Mvc.Core2_1.Controllers
 {

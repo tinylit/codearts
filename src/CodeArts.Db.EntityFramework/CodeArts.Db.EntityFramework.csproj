@@ -17,6 +17,11 @@
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 	</PropertyGroup>
 
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
+		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.1.10"></PackageReference>
@@ -28,7 +33,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\CodeArts.Db\CodeArts.Db.csproj" />
+		<ProjectReference Include="..\CodeArts.Db\CodeArts.Db.csproj" />
 	</ItemGroup>
 
 </Project>

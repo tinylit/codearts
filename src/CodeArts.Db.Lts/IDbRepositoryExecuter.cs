@@ -1,6 +1,7 @@
-﻿using System.Data;
+﻿#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
+#endif
 
 namespace CodeArts.Db.Lts
 {
@@ -23,7 +24,7 @@ namespace CodeArts.Db.Lts
         /// <returns>执行影响行。</returns>
         int Execute(IDbContext context,  CommandSql commandSql);
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 执行增删改功能。
         /// </summary>

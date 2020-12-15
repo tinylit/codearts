@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.Common;
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -16,7 +16,7 @@ namespace CodeArts.Db.Lts
         private readonly IDbCommand command;
         private readonly ISQLCorrectSettings settings;
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         private readonly System.Data.Common.DbCommand dbCommand;
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public object ExecuteScalar() => command.ExecuteScalar();
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <inheritdoc />
         public Task<int> ExecuteNonQueryAsyc(CancellationToken cancellationToken = default)
         {

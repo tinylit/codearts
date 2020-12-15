@@ -18,7 +18,7 @@
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 	</PropertyGroup>
 
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'  Or '$(TargetFramework)' == 'netstandard2.0' ">
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
 		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>

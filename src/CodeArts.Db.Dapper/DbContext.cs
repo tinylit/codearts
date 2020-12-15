@@ -244,7 +244,7 @@ namespace CodeArts.Db.Dapper
             }
         }
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 
         /// <summary>
         /// 查询第一行第一列结果。

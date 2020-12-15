@@ -52,7 +52,7 @@ namespace CodeArts.Db
         /// <returns></returns>
         int Count(Expression<Func<TEntity, bool>> predicate = null);
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// Gets async the count based on a predicate.
         /// </summary>
@@ -68,7 +68,7 @@ namespace CodeArts.Db
         /// <returns></returns>
         long LongCount(Expression<Func<TEntity, bool>> predicate = null);
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// Gets async the long count based on a predicate.
         /// </summary>
@@ -84,7 +84,7 @@ namespace CodeArts.Db
         /// <returns></returns>
         bool Exists(Expression<Func<TEntity, bool>> selector = null);
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// Gets the Async Exists record based on a predicate.
         /// </summary>
@@ -192,7 +192,7 @@ namespace CodeArts.Db
         /// <returns>The found entity or null.</returns>
         TEntity Find(TKey id);
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// Finds an entity with the given primary key values. If found, is attached to the context and returned. If no entity is found, then null is returned.
         /// </summary>

@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build.ps1 = build.ps1
 		codearts.png = codearts.png
 		LICENSE.txt = LICENSE.txt
+		ORM_UML.svg = ORM_UML.svg
 		project.json = project.json
 		README.md = README.md
 	EndProjectSection
@@ -91,9 +92,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Dapper", "src\C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Dapper.Tests", "Tests\CodeArts.Db.Dapper.Tests\CodeArts.Db.Dapper.Tests.csproj", "{285A80D7-1BCC-4B64-809D-2BDCA7151EA6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.Sqlite", "src\CodeArts.Db.Sqlite\CodeArts.Db.Sqlite.csproj", "{8CD14BFC-8D2D-4421-8635-C013F93F80FD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Sqlite", "src\CodeArts.Db.Sqlite\CodeArts.Db.Sqlite.csproj", "{8CD14BFC-8D2D-4421-8635-C013F93F80FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.EntityFramework.Sqlite", "src\CodeArts.Db.EntityFramework.Sqlite\CodeArts.Db.EntityFramework.Sqlite.csproj", "{6B39204D-59EA-48C1-B282-1C6B44E3609A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.EntityFramework.Sqlite", "src\CodeArts.Db.EntityFramework.Sqlite\CodeArts.Db.EntityFramework.Sqlite.csproj", "{6B39204D-59EA-48C1-B282-1C6B44E3609A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

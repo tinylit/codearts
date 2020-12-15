@@ -1302,7 +1302,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             ignoreNullable = true;
 
-            Visit(node.Right);
+            VisitCheckIfSubconnection(node.Right);
 
             ignoreNullable = false;
 
@@ -1332,7 +1332,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             ignoreNullable = true;
 
-            Visit(node.Left);
+            VisitCheckIfSubconnection(node.Left);
 
             ignoreNullable = false;
 
@@ -1439,6 +1439,11 @@ namespace CodeArts.Db.Lts.Visitors
             if (nodeType == ExpressionType.Add || nodeType == ExpressionType.AddChecked)
             {
                 return VisitBinaryIsAdd(node);
+            }
+
+            if (nodeType == ExpressionType.And || nodeType == ExpressionType.Or)
+            {
+                return VisitBinaryIsBoolean(node);
             }
 
             if (node.Type.IsBoolean())

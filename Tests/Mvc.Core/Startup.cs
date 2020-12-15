@@ -31,12 +31,7 @@ namespace Mvc.Core
 
             LinqConnectionManager.RegisterAdapter(new SqlServerLinqAdapter());
 
-            services.AddDbContext<EfContext>();
-
-            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            services.AddScoped(typeof(IDbRepository<>), typeof(DbRepository<>));
-            services.AddScoped(typeof(ILinqRepository<>), typeof(LinqRepository<>));
-            services.AddScoped(typeof(ILinqRepository<,>), typeof(LinqRepository<,>));
+            services.RegisterDbRepository<EfContext>();
 
             //services.AddGrpc();
 

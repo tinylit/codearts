@@ -66,7 +66,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IEnumerable<T> Query<T>(SQL sql, object param = null, int? commandTimeout = null);
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 
         /// <summary>
         /// 读取数据。
@@ -124,7 +124,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         int Execute(Expression expression);
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 执行命令。
         /// </summary>
@@ -143,7 +143,7 @@ namespace CodeArts.Db.Lts
         /// <returns>执行影响行。</returns>
         int Execute(SQL sql, object param = null, int? commandTimeout = null);
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 执行增删改功能。
         /// </summary>

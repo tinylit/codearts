@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using CodeArts.Mvc;
 using CodeArts.Db;
 using CodeArts;
+using CodeArts.Db.Lts;
 
 namespace Mvc.Core2_1
 {
@@ -23,6 +24,9 @@ namespace Mvc.Core2_1
         /// <inheritdoc />
         public override void ConfigureServices(IServiceCollection services)
         {
+            DbConnectionManager.RegisterAdapter(new MySqlLtsAdapter());
+            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             services.AddTransient(typeof(IDbRepository<>), typeof(DbRepository<>));
 

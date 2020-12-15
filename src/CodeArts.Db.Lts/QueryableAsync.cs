@@ -1,5 +1,6 @@
-﻿#if NET_NORMAL
+﻿#if NET_NORMAL || NETSTANDARD2_0
 using CodeArts.Db.Lts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,7 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Linq
+namespace CodeArts.Db.Lts
 {
     /// <summary>
     /// 异步查询。

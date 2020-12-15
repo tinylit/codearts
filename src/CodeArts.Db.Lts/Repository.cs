@@ -15,7 +15,7 @@ namespace CodeArts.Db
     /// 数据仓储。
     /// </summary>
     /// <typeparam name="T">实体类型。</typeparam>
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
     public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
 #else
     public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IQueryable, IQueryProvider, IEnumerable
@@ -207,7 +207,7 @@ namespace CodeArts.Db
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 异步消息。
         /// </summary>

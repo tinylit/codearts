@@ -7,7 +7,7 @@ using System;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 #endif
-#if NETSTANDARD2_0 || !NET40
+#if NETSTANDARD2_0 || NET_NORMAL
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -172,7 +172,7 @@ namespace CodeArts.Db.EntityFramework
             => Database.ExecuteSqlCommand(sql.ToString(Settings), parameters);
 #endif
 
-#if NETSTANDARD2_0 || !NET40
+#if NETSTANDARD2_0 || NET_NORMAL
 
         /// <summary>
         /// 执行语句。

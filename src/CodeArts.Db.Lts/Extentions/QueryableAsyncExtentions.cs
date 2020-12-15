@@ -1,11 +1,12 @@
-﻿#if NET_NORMAL
-using CodeArts;
+﻿#if NET_NORMAL || NETSTANDARD2_0
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Linq
+namespace CodeArts.Db.Lts
 {
     /// <summary>
     /// 异步查询扩展。
@@ -34,15 +35,15 @@ namespace System.Linq
         /// <returns></returns>
         public static async Task<PagedList<T>> ToListAsync<T>(this IQueryable<T> source, int page, int size, CancellationToken cancellationToken = default)
         {
-            var totalCount = await source
+            var count_task = source
                 .CountAsync(cancellationToken);
 
-            var results = await source
+            var result_task = source
                 .Skip(size * page)
                 .Take(size)
                 .ToListAsync(cancellationToken);
 
-            return new PagedList<T>(results, page, size, totalCount);
+            return new PagedList<T>(await result_task, page, size, await count_task);
         }
     }
 }

@@ -433,7 +433,7 @@ namespace CodeArts.Db.Lts
             /// <returns></returns>
             public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
             public Task<int> ExecuteCommandAsync(int? commandTimeout = null, CancellationToken cancellationToken = default)
             {
                 if (Entries.Count == 0)

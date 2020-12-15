@@ -1,4 +1,4 @@
-﻿#if NET_NORMAL
+﻿#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
 

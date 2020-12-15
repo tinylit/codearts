@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -16,7 +16,7 @@ namespace CodeArts.Db
     /// 数据仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
     public class DbRepository<TEntity> : Repository<TEntity>, IDbRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #else
     public class DbRepository<TEntity> : Repository<TEntity>, IDbRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
@@ -148,7 +148,7 @@ namespace CodeArts.Db
             return DbContext.Execute(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }));
         }
 
-#if NET_NORMAL
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// 更新数据。
         /// </summary>

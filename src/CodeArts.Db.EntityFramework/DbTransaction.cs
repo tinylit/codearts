@@ -7,8 +7,10 @@ using System.Data.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
+#endif
 
 namespace CodeArts.Db.EntityFramework
 {
@@ -162,7 +164,7 @@ namespace CodeArts.Db.EntityFramework
         }
 #endif
 
-#if !NET40
+#if NET_NORMAL || NETSTANDARD2_0
         /// <summary>
         /// Saves all changes made in this context to the database with distributed transaction.
         /// </summary>
