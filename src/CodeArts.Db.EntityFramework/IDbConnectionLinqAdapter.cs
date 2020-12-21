@@ -10,11 +10,6 @@ namespace CodeArts.Db.EntityFramework
     public interface IDbConnectionLinqAdapter : IDbConnectionAdapter
     {
         /// <summary>
-        /// 关系配置扩展类型。
-        /// </summary>
-        Type RelationalOptionsExtensionType { get; }
-
-        /// <summary>
         /// 连接配置。
         /// </summary>
         /// <param name="optionsBuilder">构造器。</param>
