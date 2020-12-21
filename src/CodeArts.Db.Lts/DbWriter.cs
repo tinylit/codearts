@@ -335,7 +335,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                if (transactionScopeOption.HasValue || results.Count > 0)
+                if (transactionScopeOption.HasValue || results.Count > 1)
                 {
                     return UseTransactionExecute(results, commandTimeout);
                 }
@@ -448,7 +448,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                if (transactionScopeOption.HasValue || results.Count > 0)
+                if (transactionScopeOption.HasValue || results.Count > 1)
                 {
                     return UseTransactionAsync(results, commandTimeout, cancellationToken);
                 }

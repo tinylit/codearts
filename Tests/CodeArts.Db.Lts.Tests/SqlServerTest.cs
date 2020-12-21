@@ -845,7 +845,6 @@ namespace UnitTest
             var entry = new FeiUsers
             {
                 Bcid = 0,
-                //Username = "admin",
                 Userstatus = 1,
                 Mobile = "18980861011",
                 Email = "tinylit@foxmail.com",
@@ -861,12 +860,14 @@ namespace UnitTest
                 .ExecuteCommand();
 
             var j = user
-                .From(x => x.TableName)
-                .Where(x => x.Username == "admin")
-                .Update(x => new FeiUsers
-                {
-                    Username = x.Username.Substring(0, 4)
-                });
+                    .From(x => x.TableName)
+                    .Where(x => x.Username == "admin")
+                    .Update(x => new FeiUsers
+                    {
+                        Mallagid = 2,
+                        Username = x.Username.Substring(0, 4)
+                    });
+
         }
 
         [TestMethod]

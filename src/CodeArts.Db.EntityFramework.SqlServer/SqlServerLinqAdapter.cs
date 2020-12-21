@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace CodeArts.Db.EntityFramework
 {
@@ -7,6 +8,11 @@ namespace CodeArts.Db.EntityFramework
     /// </summary>
     public class SqlServerLinqAdapter : SqlServerAdapter, IDbConnectionLinqAdapter, IDbConnectionAdapter, IDbConnectionFactory
     {
+        /// <summary>
+        /// <see cref="SqlServerTaskOptionsExtension"/>
+        /// </summary>
+        public Type RelationalOptionsExtensionType => typeof(SqlServerTaskOptionsExtension);
+
         /// <summary>
         /// 配置SqlServer支持。
         /// </summary>

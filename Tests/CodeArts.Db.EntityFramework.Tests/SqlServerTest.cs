@@ -24,7 +24,7 @@ namespace UnitTest
     public class SqlServerTest
     {
 
-        private static DbContext context;
+        private static readonly DbContext context;
 
         static SqlServerTest() => context = new DbTestContext();
 

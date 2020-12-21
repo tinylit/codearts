@@ -575,14 +575,13 @@ namespace CodeArts.Db.Lts.Visitors
                 case MemberExpression member when member.IsNullable():
                     if (node.IsValue())
                     {
-                        return VisitMember(member);
+                        VisitMember(member);
                     }
-
-                    if (node.IsHasValue())
+                    else if (node.IsHasValue())
                     {
                         try
                         {
-                            return VisitMember(member);
+                            VisitMember(member);
                         }
                         finally
                         {

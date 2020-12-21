@@ -1,10 +1,10 @@
-﻿using System;
+﻿using CodeArts.Db;
+using CodeArts.Db.Lts;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace CodeArts.Db.Lts
+namespace System.Linq
 {
     /// <summary>
     ///     A class that provides reflection metadata for translatable LINQ methods.

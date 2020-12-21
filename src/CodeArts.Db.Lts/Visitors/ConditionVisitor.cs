@@ -857,12 +857,53 @@ namespace CodeArts.Db.Lts.Visitors
                 throw new DSyntaxErrorException("不支持多个参数!");
             }
 
-            if (isInTheCondition && node.Body.NodeType == ExpressionType.Constant && node.Body.Type == typeof(bool) && node.Body is ConstantExpression constant)
+            if (isInTheCondition && node.Body.Type == typeof(bool))
             {
-                if (Equals(constant.Value, false))
+                void Done(Expression expression)
                 {
-                    BooleanFalse(false);
+                    switch (expression)
+                    {
+                        case ConstantExpression constant:
+                            if (Equals(constant.Value, false))
+                            {
+                                BooleanFalse(false);
+                            }
+                            break;
+                        case MemberExpression member:
+                            if (member.IsHasValue())
+                            {
+                                VisitMember(member);
+
+                                break;
+                            }
+
+                            isConditionBalance = true;
+
+                            VisitMember(member);
+
+                            isConditionBalance = false;
+
+                            break;
+                        case UnaryExpression unary:
+
+                            if (unary.NodeType == ExpressionType.Not)
+                            {
+                                writer.ReverseCondition(() => Done(unary.Operand));
+
+                                break;
+                            }
+
+                            Done(unary.Operand);
+
+                            break;
+                        default:
+                            base.Visit(expression);
+
+                            break;
+                    }
                 }
+
+                Done(node.Body);
 
                 return node;
             }
@@ -1370,13 +1411,39 @@ namespace CodeArts.Db.Lts.Visitors
                 return VisitCheckIfSubconnection(node);
             }
 
-            if (node.NodeType == ExpressionType.MemberAccess || IsPlainVariable(node))
+            if (node.NodeType == ExpressionType.Not && node is UnaryExpression unary)
             {
+                writer.ReverseCondition(() => VisitBinaryIsConditionToVisit(unary.Operand));
+
+                return node;
+            }
+
+            if (node.NodeType == ExpressionType.MemberAccess && node is MemberExpression member)
+            {
+                if (member.IsHasValue())
+                {
+                    return base.Visit(node);
+                }
+
                 try
                 {
                     isConditionBalance = true;
 
                     return VisitCheckIfSubconnection(node);
+                }
+                finally
+                {
+                    isConditionBalance = false;
+                }
+            }
+
+            if (IsPlainVariable(node))
+            {
+                try
+                {
+                    isConditionBalance = true;
+
+                    return base.Visit(node);
                 }
                 finally
                 {

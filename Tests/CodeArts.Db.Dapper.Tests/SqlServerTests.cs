@@ -12,7 +12,7 @@ namespace CodeArts.Db.Dapper.Tests
     {
         private static bool isCompleted;
 
-        private static DbContext context;
+        private static readonly DbContext context;
 
         static Tests() => context = new DbTestContext();
 

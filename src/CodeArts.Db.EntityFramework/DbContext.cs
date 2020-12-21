@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 #else
 using System;
 using System.Data.Entity;
@@ -23,8 +25,53 @@ namespace CodeArts.Db.EntityFramework
         private readonly IReadOnlyConnectionConfig connectionConfig;
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
-
 #if NETSTANDARD2_0
+        private class DbContextNestedOptions : DbContextOptions
+        {
+            private readonly IReadOnlyDictionary<Type, IDbContextOptionsExtension> extensions;
+
+            public DbContextNestedOptions(IReadOnlyDictionary<Type, IDbContextOptionsExtension> extensions) : base(extensions)
+            {
+                this.extensions = extensions;
+            }
+
+            public override Type ContextType => typeof(TDbContext);
+
+            public override DbContextOptions WithExtension<TExtension>(TExtension extension)
+            {
+                if (extension is null)
+                {
+                    throw new ArgumentNullException(nameof(extension));
+                }
+
+                bool flag = true;
+
+                var type = typeof(TExtension);
+                
+                var dic = new Dictionary<Type, IDbContextOptionsExtension>();
+
+                foreach (var kv in this.extensions)
+                {
+                    if (type == kv.Key)
+                    {
+                        flag = false;
+
+                        dic.Add(kv.Key, extension);
+                    }
+                    else
+                    {
+                        dic.Add(kv.Key, kv.Value);
+                    }
+                }
+
+                if (flag)
+                {
+                    dic.Add(type, extension);
+                }
+
+                return new DbContextNestedOptions(dic);
+            }
+        }
         /// <summary>
         /// inheritdoc
         /// </summary>

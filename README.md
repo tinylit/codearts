@@ -209,6 +209,7 @@ PM> Install-Package CodeArts
         };
     }
     ```
+
 * 设置数据库适配器。
 ``` csharp
     DbConnectionManager.RegisterAdapter(new SqlServerLtsAdapter());
@@ -216,6 +217,7 @@ PM> Install-Package CodeArts
 ```
 
 * 使用方式如下：
+	+ 查询：
 ``` csharp
     var y1 = 100;
     var str = "1";
@@ -223,16 +225,16 @@ PM> Install-Package CodeArts
     var user = new UserRepository();
     var details = new UserDetailsRepository();
     var userWx = new UserWeChatRepository();
-    var result = from x in user.From(x => x.TableName) // 指定查询表（数据分表）。
+    var results = from x in user.From(x => x.TableName) // 指定查询表（数据分表）。
                     join y in details on x.Id equals y.Id
                     join z in userWx on x.Id equals z.Uid
                     where x.Id > 0 && y.Id < y1 && x.Username.Contains(str)
                     orderby x.Id, y.Registertime descending
                     select new { x.Id, OldId = x.Id + 1, z.Openid };
 
-    var list = result.ToList();
+    var list = results.ToList();
 ```
-##### 生成的SQL语句：
+##### SQL：
 ``` SQL
 SELECT 
     [x].[uid] AS [Id],
@@ -245,6 +247,57 @@ WHERE ((([x].[uid] > @__variable_1)
     AND ([y].[uid] < @y1)) 
     AND [x].[username] LIKE @str) 
 ORDER BY [x].[uid],[y].[registertime] DESC
+```
+	+更新(方式一)：
+``` csharp
+	var user = new UserRepository();
+	var lines = user
+		.From(x => x.TableName)
+		.Where(x => x.Username == "admin")
+		.Update(x => new FeiUsers
+		{
+			Mallagid = 2,
+			Username = x.Username.Substring(0, 4) // 指定需要更新的字段。
+		});
+```
+##### SQL：
+``` SQL
+UPDATE [x] 
+	SET [mallagid]=@__variable_2,
+	[username]=CASE 
+		WHEN [x].[username] IS NULL OR (LEN([x].[username]) - @__variable_3) < 1 
+		THEN @__variable_4 
+		ELSE SUBSTRING([x].[username],@__variable_5,@__variable_6) 
+		END,
+	[modified_time]=@__variable_7 
+FROM [fei_users] [x] 
+WHERE ([x].[username] = @__variable_1)
+```
+	+更新（方式二）
+``` csharp
+	var user = new UserRepository();	
+	var entry = new FeiUsers
+	{
+		Bcid = 0,
+		Userstatus = 1,
+		Mobile = "18980861011",
+		Email = "tinylit@foxmail.com",
+		Password = "123456",
+		Salt = string.Empty,
+		CreatedTime = DateTime.Now,
+		ModifiedTime = DateTime.Now
+	};
+	var lines = user.AsUpdateable(entry)
+			.Limit(x => x.Password) // 指定更新字段，可以有多个。
+			.Where(x => x.Username ?? x.Mobile) // 指定更新条件，用户名称为空时，使用手机号作为条件，否则使用用户名称作为条件。
+			.ExecuteCommand();
+```
+##### SQL：
+``` SQL
+UPDATE [fei_users] 
+	SET [password]=@password,
+	[modified_time]=@__token_modified_time 
+WHERE [mobile]=@mobile AND [modified_time]=@modified_time
 ```
 
 * 介绍：

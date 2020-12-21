@@ -1,10 +1,9 @@
 ﻿#if NET_NORMAL || NETSTANDARD2_0
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CodeArts.Db.Lts
+namespace System.Linq
 {
 
     /// <summary>
