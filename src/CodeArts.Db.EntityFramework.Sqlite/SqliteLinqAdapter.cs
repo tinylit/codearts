@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Sqlite.Infrastructure.Internal;
 
 namespace CodeArts.Db.EntityFramework
 {

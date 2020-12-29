@@ -172,8 +172,27 @@ namespace CodeArts.Db.Lts.Visitors
         {
             switch (node.Method.Name)
             {
+                case MethodCall.Any when node.Object is null ? node.Arguments.Count > 1 : node.Arguments.Count > 0:
+
+                    if (node.Object is null)
+                    {
+                        VisitOfEnumerableAny((IEnumerable)node.Arguments[0].GetValueFromExpression(), (LambdaExpression)node.Arguments[1]);
+                    }
+                    else
+                    {
+                        VisitOfEnumerableAny((IEnumerable)node.Object.GetValueFromExpression(), (LambdaExpression)node.Arguments[0]);
+                    }
+                    return node;
                 case MethodCall.Any:
-                    return VisitOfEnumerableAny(node);
+                    if (node.Object is null)
+                    {
+                        VisitOfEnumerableAny((IEnumerable)node.Arguments[0].GetValueFromExpression());
+                    }
+                    else
+                    {
+                        VisitOfEnumerableAny((IEnumerable)node.Object.GetValueFromExpression());
+                    }
+                    return node;
                 case MethodCall.All:
                     goto default;
                 case MethodCall.Contains:
@@ -242,40 +261,23 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.Linq.Enumerable 的Any函数。
+        /// System.Linq.Enumerable 的Any(x=>x.PropName)函数。
         /// </summary>
+        /// <param name="enumerable">迭代能力。</param>
         /// <param name="node">节点。</param>
         /// <returns></returns>
-        protected virtual Expression VisitOfEnumerableAny(MethodCallExpression node)
+        protected virtual void VisitOfEnumerableAny(IEnumerable enumerable, LambdaExpression node)
         {
-            var enumerable = (IEnumerable)(node.Object ?? node.Arguments[0]).GetValueFromExpression();
-
             var enumerator = enumerable.GetEnumerator();
 
-            int index = node.Object is null ? 1 : 0;
-
-            if (node.Arguments.Count == index)
-            {
-                if (enumerator.MoveNext() ^ writer.IsReverseCondition)
-                {
-                    return node;
-                }
-
-                BooleanFalse(true);
-
-                return node;
-            }
-
-            var lambda = node.Arguments[index] as LambdaExpression;
-
-            var parameterExp = lambda.Parameters[0];
+            var parameterExp = node.Parameters[0];
 
             void VisitObject(object value)
             {
                 var constantExp = Expression.Constant(value, parameterExp.Type);
 
                 base.Visit(new ReplaceExpressionVisitor(parameterExp, constantExp)
-                    .Visit(lambda.Body));
+                    .Visit(node.Body));
             }
 
             if (enumerator.MoveNext())
@@ -302,13 +304,26 @@ namespace CodeArts.Db.Lts.Visitors
                 }
 
                 writer.CloseBrace();
-
-                return node;
             }
+            else
+            {
+                BooleanFalse(false);
+            }
+        }
 
-            BooleanFalse(false);
+        /// <summary>
+        /// System.Linq.Enumerable 的Any()函数。
+        /// </summary>
+        /// <param name="enumerable">迭代能力。</param>
+        /// <returns></returns>
+        protected virtual void VisitOfEnumerableAny(IEnumerable enumerable)
+        {
+            var enumerator = enumerable.GetEnumerator();
 
-            return node;
+            if (!(enumerator.MoveNext() ^ writer.IsReverseCondition))
+            {
+                BooleanFalse(true);
+            }
         }
 
         /// <summary>
@@ -320,11 +335,13 @@ namespace CodeArts.Db.Lts.Visitors
         {
             int index = node.Object is null ? 1 : 0;
 
+            Expression expression = node.Arguments[index];
+
             Workflow(whereIsNotEmpty =>
             {
                 if (whereIsNotEmpty)
                 {
-                    Visit(node.Arguments[index]);
+                    Visit(expression);
                 }
                 else
                 {
@@ -344,9 +361,35 @@ namespace CodeArts.Db.Lts.Visitors
                       writer.OpenBrace();
                       writer.Parameter(enumerator.Current);
 
+                      int maxParamterCount;
+
+                      switch (settings.Engine)
+                      {
+                          case DatabaseEngine.Oracle:
+                              maxParamterCount = 256;
+                              break;
+                          case DatabaseEngine.Normal:
+                          case DatabaseEngine.SQLite:
+                              maxParamterCount = 1000;
+                              break;
+                          case DatabaseEngine.SqlServer:
+                              maxParamterCount = 10000;
+                              break;
+                          case DatabaseEngine.MySQL:
+                              maxParamterCount = 20000;
+                              break;
+                          case DatabaseEngine.PostgreSQL:
+                          case DatabaseEngine.DB2:
+                          case DatabaseEngine.Sybase:
+                          case DatabaseEngine.Access:
+                          default:
+                              maxParamterCount = 128;
+                              break;
+                      }
+
                       while (enumerator.MoveNext())
                       {
-                          if (parameterCount < 256)
+                          if (parameterCount < maxParamterCount)
                           {
                               writer.Delimiter();
                           }
@@ -359,7 +402,7 @@ namespace CodeArts.Db.Lts.Visitors
                               writer.Write("OR");
                               writer.WhiteSpace();
 
-                              base.Visit(node.Arguments[index]);
+                              Visit(expression);
 
                               writer.Contains();
                               writer.OpenBrace();
@@ -420,7 +463,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             if (text.Length == 0)
             {
-                writer.ReverseCondition(writer.IsNull);
+                writer.IsNotNull();
             }
             else
             {
@@ -460,29 +503,37 @@ namespace CodeArts.Db.Lts.Visitors
 
             writer.Like();
 
-            if (settings.Engine == DatabaseEngine.MySQL)
+            if (settings.Engine == DatabaseEngine.MySQL || settings.Engine == DatabaseEngine.Oracle)
             {
                 writer.Write("CONCAT");
                 writer.OpenBrace();
 
-                if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
+                if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
                 {
                     writer.Write("'%'");
                     writer.Delimiter();
                 }
             }
+            else if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
+            {
+                writer.Write("'%' + ");
+            }
 
             base.Visit(node.Arguments[0]);
 
-            if (settings.Engine == DatabaseEngine.MySQL)
+            if (settings.Engine == DatabaseEngine.MySQL || settings.Engine == DatabaseEngine.Oracle)
             {
-                if (node.Method.Name == MethodCall.EndsWith || node.Method.Name == MethodCall.Contains)
+                if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
                 {
                     writer.Delimiter();
                     writer.Write("'%'");
                 }
 
                 writer.CloseBrace();
+            }
+            else if (node.Method.Name == MethodCall.StartsWith || node.Method.Name == MethodCall.Contains)
+            {
+                writer.Write(" + '%'");
             }
 
             return node;
@@ -621,7 +672,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected virtual Expression VisitToCaseConversion(MethodCallExpression node)
         {
+            #if NETSTANDARD2_1
+            writer.Write(node.Method.Name[2..]);
+#else
             writer.Write(node.Method.Name.Substring(2));
+#endif
             writer.OpenBrace();
 
             base.Visit(node.Object);
@@ -1085,7 +1140,7 @@ namespace CodeArts.Db.Lts.Visitors
             return base.VisitCombination(node);
         }
 
-        #region 运算
+#region 运算
 
         /// <summary>
         /// 是条件(condition1 And condition2)。
@@ -1602,7 +1657,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             return Visit(node);
         }
-        #endregion
+#endregion
 
         private void BooleanFalse(bool allwaysFalse)
         {

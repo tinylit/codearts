@@ -13,15 +13,15 @@ namespace CodeArts.Runtime
     /// <summary>
     /// 方法仓库。
     /// </summary>
-    public class MethodStoreItem : StoreItem<MethodInfo>
+    public class MethodItem : StoreItem<MethodInfo>
     {
-        private static readonly ConcurrentDictionary<MethodInfo, MethodStoreItem> ItemCache = new ConcurrentDictionary<MethodInfo, MethodStoreItem>();
+        private static readonly ConcurrentDictionary<MethodInfo, MethodItem> ItemCache = new ConcurrentDictionary<MethodInfo, MethodItem>();
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="info">方法。</param>
-        private MethodStoreItem(MethodInfo info) : base(info)
+        private MethodItem(MethodInfo info) : base(info)
         {
         }
 
@@ -54,11 +54,11 @@ namespace CodeArts.Runtime
 
 #if NET40
 
-        private ReadOnlyCollection<ParameterStoreItem> parameterStores;
+        private ReadOnlyCollection<ParameterItem> parameterStores;
         /// <summary>
         /// 参数信息。
         /// </summary>
-        public ReadOnlyCollection<ParameterStoreItem> ParameterStores
+        public ReadOnlyCollection<ParameterItem> ParameterStores
         {
             get
             {
@@ -69,7 +69,7 @@ namespace CodeArts.Runtime
                         if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
-                                .Select(info => ParameterStoreItem.Get(info))
+                                .Select(info => ParameterItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -79,11 +79,11 @@ namespace CodeArts.Runtime
             }
         }
 #else
-        private IReadOnlyCollection<ParameterStoreItem> parameterStores;
+        private IReadOnlyCollection<ParameterItem> parameterStores;
         /// <summary>
         /// 参数信息。
         /// </summary>
-        public IReadOnlyCollection<ParameterStoreItem> ParameterStores
+        public IReadOnlyCollection<ParameterItem> ParameterStores
         {
             get
             {
@@ -94,7 +94,7 @@ namespace CodeArts.Runtime
                         if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
-                                .Select(info => ParameterStoreItem.Get(info))
+                                .Select(info => ParameterItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -110,6 +110,34 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
+
+/* 项目“CodeArts (net45)”的未合并的更改
+在此之前:
         public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
+在此之后:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
+*/
+
+/* 项目“CodeArts (net40)”的未合并的更改
+在此之前:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
+在此之后:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
+*/
+
+/* 项目“CodeArts (netstandard2.0)”的未合并的更改
+在此之前:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
+在此之后:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
+*/
+
+/* 项目“CodeArts (netstandard2.1)”的未合并的更改
+在此之前:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
+在此之后:
+        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
+*/
+        public static MethodItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, (Func<MethodInfo, MethodItem>)(methodInfo => (MethodItem)new MethodItem(methodInfo)));
     }
 }

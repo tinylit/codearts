@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -64,7 +64,7 @@ namespace CodeArts.Db
         /// <returns></returns>
         int Insert(IQueryable<TEntity> querable);
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// 更新数据。
         /// </summary>

@@ -187,7 +187,7 @@ namespace System
         private static readonly MethodInfo ConcatMethod = GetMethodInfo(string.Concat);
         private static readonly Type SettingsType = typeof(DefaultSettings);
         private static readonly MethodInfo ResolvePropertyNameMethod = SettingsType.GetMethod("ResolvePropertyName");
-        private static readonly MethodInfo ConvertMethod = SettingsType.GetMethod("Convert", new Type[] { typeof(PropertyStoreItem), typeof(object) });
+        private static readonly MethodInfo ConvertMethod = SettingsType.GetMethod("Convert", new Type[] { typeof(PropertyItem), typeof(object) });
 
         private static class Nested<T>
         {
@@ -199,7 +199,7 @@ namespace System
 
                 MethodInfo comparison = typeof(Nested<T>).GetMethod(nameof(Compare), BindingFlags.NonPublic | BindingFlags.Static);
 
-                var typeStore = TypeStoreItem.Get(type);
+                var typeStore = TypeItem.Get(type);
 
                 var defaultCst = Constant(string.Empty);
 

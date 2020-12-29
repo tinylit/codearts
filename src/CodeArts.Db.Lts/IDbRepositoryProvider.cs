@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+#if NET_NORMAL || NET_CORE
 using System.Data;
-#if NET_NORMAL || NETSTANDARD2_0
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -36,7 +36,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IEnumerable<T> Query<T>(IDbContext context, CommandSql commandSql);
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// 查询第一个结果。
         /// </summary>

@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0
+﻿#if NET_CORE
 using CodeArts.Db;
 using Microsoft.EntityFrameworkCore;
 using System;

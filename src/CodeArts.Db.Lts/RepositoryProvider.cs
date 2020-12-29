@@ -87,7 +87,7 @@ namespace CodeArts.Db.Lts
         /// <returns>执行影响行。</returns>
         public abstract int Execute(IDbContext context, CommandSql commandSql);
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 
         /// <summary>
         /// 执行增删改功能。

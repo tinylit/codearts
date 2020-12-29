@@ -139,7 +139,7 @@ namespace CodeArts.Db.Lts
                         throw new NotSupportedException();
                     }
 
-                    var storeItem = TypeStoreItem.Get(paramType);
+                    var storeItem = TypeItem.Get(paramType);
 
                     storeItem.PropertyStores
                         .Where(x => x.CanRead && tokens.Contains(x.Name))
@@ -294,13 +294,13 @@ namespace CodeArts.Db.Lts
 
             static DbRouteExecuter()
             {
-                typeStore = TypeStoreItem.Get<TEntity>();
+                typeStore = TypeItem.Get<TEntity>();
                 typeRegions = TableRegions.Resolve<TEntity>();
                 defaultLimit = typeRegions.ReadWrites.Keys.ToArray();
                 defaultWhere = typeRegions.Keys.ToArray();
             }
 
-            protected static readonly TypeStoreItem typeStore;
+            protected static readonly TypeItem typeStore;
             protected static readonly ITableInfo typeRegions;
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
@@ -359,8 +359,10 @@ namespace CodeArts.Db.Lts
 
                             SqlCapture.Current?.Capture(commandSql);
 
-                            using (IDbCommand command = connection.CreateCommand())
+                            using (var command = connection.CreateCommand())
                             {
+                                command.AllowSkippingFormattingSql = true;
+
                                 command.CommandText = commandSql.Sql;
 
                                 foreach (var kv in x.Item2)
@@ -390,8 +392,10 @@ namespace CodeArts.Db.Lts
 
                         SqlCapture.Current?.Capture(commandSql);
 
-                        using (IDbCommand command = connection.CreateCommand())
+                        using (var command = connection.CreateCommand())
                         {
+                            command.AllowSkippingFormattingSql = true;
+
                             command.CommandText = commandSql.Sql;
 
                             command.CommandTimeout = remainingTime;
@@ -433,7 +437,7 @@ namespace CodeArts.Db.Lts
             /// <returns></returns>
             public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
             public Task<int> ExecuteCommandAsync(int? commandTimeout = null, CancellationToken cancellationToken = default)
             {
                 if (Entries.Count == 0)
@@ -474,7 +478,9 @@ namespace CodeArts.Db.Lts
 
                             using (var command = connection.CreateCommand())
                             {
-                                ((IDbCommand)command).CommandText = commandSql.Sql;
+                                command.AllowSkippingFormattingSql = true;
+
+                                command.CommandText = commandSql.Sql;
 
                                 foreach (var kv in x.Item2)
                                 {
@@ -505,7 +511,9 @@ namespace CodeArts.Db.Lts
 
                         using (var command = connection.CreateCommand())
                         {
-                            ((IDbCommand)command).CommandText = commandSql.Sql;
+                            command.AllowSkippingFormattingSql = true;
+
+                            command.CommandText = commandSql.Sql;
 
                             command.CommandTimeout = remainingTime;
 

@@ -194,11 +194,15 @@ namespace CodeArts.Runtime
         }
 
         private IEnumerable<Attribute> attributes;
-
         /// <summary>
         /// 属性标记集合。
         /// </summary>
+
+#if NETSTANDARD2_1
+        public IEnumerable<Attribute> Attributes => attributes ??= invokeAttr.Invoke();
+#else
         public IEnumerable<Attribute> Attributes => attributes ?? (attributes = invokeAttr.Invoke());
+#endif
 
         /// <summary>
         /// 自定义属性数据。

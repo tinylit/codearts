@@ -15,7 +15,7 @@ namespace CodeArts.Db
     /// 数据仓储。
     /// </summary>
     /// <typeparam name="T">实体类型。</typeparam>
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
     public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
 #else
     public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IQueryable, IQueryProvider, IEnumerable
@@ -207,7 +207,7 @@ namespace CodeArts.Db
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// 异步消息。
         /// </summary>
@@ -240,15 +240,16 @@ namespace CodeArts.Db
         /// <summary>
         /// 获取异步迭代器。
         /// </summary>
+        /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator()
+        IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator(CancellationToken cancellationToken)
         {
             if (isEmpty || Enumerable is null)
             {
                 AsyncEnumerable = Context.QueryAsync<T>(Expression);
             }
 
-            return AsyncEnumerable.GetAsyncEnumerator();
+            return AsyncEnumerable.GetAsyncEnumerator(cancellationToken);
         }
 #endif
     }

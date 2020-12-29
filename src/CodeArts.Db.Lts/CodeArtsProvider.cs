@@ -47,8 +47,10 @@ namespace CodeArts.Db.Lts
 
                 try
                 {
-                    using (IDbCommand command = connection.CreateCommand())
+                    using (var command = connection.CreateCommand())
                     {
+                        command.AllowSkippingFormattingSql = true;
+
                         command.CommandText = commandSql.Sql;
 
                         if (commandSql.CommandTimeout.HasValue)
@@ -113,8 +115,10 @@ namespace CodeArts.Db.Lts
 
                 try
                 {
-                    using (IDbCommand command = connection.CreateCommand())
+                    using (var command = connection.CreateCommand())
                     {
+                        command.AllowSkippingFormattingSql = true;
+
                         command.CommandText = commandSql.Sql;
 
                         if (commandSql.CommandTimeout.HasValue)
@@ -166,8 +170,10 @@ namespace CodeArts.Db.Lts
 
                 try
                 {
-                    using (IDbCommand command = connection.CreateCommand())
+                    using (var command = connection.CreateCommand())
                     {
+                        command.AllowSkippingFormattingSql = true;
+
                         command.CommandText = commandSql.Sql;
 
                         if (commandSql.CommandTimeout.HasValue)
@@ -190,8 +196,7 @@ namespace CodeArts.Db.Lts
             }
         }
 
-#if NET_NORMAL || NETSTANDARD2_0
-
+#if NET_NORMAL || NET_CORE
         private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
         {
             private readonly IDbContext context;
@@ -207,7 +212,7 @@ namespace CodeArts.Db.Lts
                 this.commandSql = commandSql;
             }
 
-            public IAsyncEnumerator<T> GetAsyncEnumerator() => enumerator ?? (enumerator = new AsyncEnumerator<T>(context, readyParam, commandSql));
+            public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default) => enumerator ?? (enumerator = new AsyncEnumerator<T>(context, readyParam, commandSql, cancellationToken));
         }
 
         private sealed class AsyncEnumerator<T> : IAsyncEnumerator<T>
@@ -224,40 +229,23 @@ namespace CodeArts.Db.Lts
             private DbCommand dbCommand;
             private System.Data.Common.DbDataReader dbDataReader;
 
-            public AsyncEnumerator(IDbContext context, Action<DbCommand, object> readyParam, CommandSql commandSql)
+            private readonly CancellationToken cancellationToken;
+
+            public AsyncEnumerator(IDbContext context, Action<DbCommand, object> readyParam, CommandSql commandSql, CancellationToken cancellationToken)
             {
                 this.context = context;
                 this.readyParam = readyParam;
                 this.commandSql = commandSql;
+                this.cancellationToken = cancellationToken;
             }
 
             public T Current => Mapper.Map<T>(dbDataReader);
 
-            public void Dispose()
-            {
-                if (isReadyDataReader)
-                {
-                    dbDataReader.Close();
-                    dbDataReader.Dispose();
-                }
-
-                if (isReadyCommand)
-                {
-                    dbCommand.Dispose();
-                }
-
-                if (isClosedConnection)
-                {
-                    dbConnection.Close();
-                }
-
-                if (isReadyConnection)
-                {
-                    dbConnection.Dispose();
-                }
-            }
-
-            public async Task<bool> MoveNext(CancellationToken cancellationToken)
+#if NETSTANDARD2_1
+            public async ValueTask<bool> MoveNextAsync()
+#else
+            public async Task<bool> MoveNextAsync()
+#endif
             {
                 if (isReadyDataReader)
                 {
@@ -281,7 +269,9 @@ namespace CodeArts.Db.Lts
 
                 dbCommand = dbConnection.CreateCommand();
 
-                ((IDbCommand)dbCommand).CommandText = commandSql.Sql;
+                dbCommand.AllowSkippingFormattingSql = true;
+
+                dbCommand.CommandText = commandSql.Sql;
 
                 if (commandSql.CommandTimeout.HasValue)
                 {
@@ -299,6 +289,102 @@ namespace CodeArts.Db.Lts
                 isClosedConnection = false;
 
                 return await dbDataReader.ReadAsync(cancellationToken);
+            }
+
+#if NETSTANDARD2_1
+            public async ValueTask DisposeAsync()
+            {
+                if (isReadyDataReader)
+                {
+                    await dbDataReader.CloseAsync();
+                    await dbDataReader.DisposeAsync();
+                }
+
+                if (isReadyCommand)
+                {
+                    await dbCommand.DisposeAsync();
+                }
+
+                if (isClosedConnection)
+                {
+                    await dbConnection.CloseAsync();
+                }
+
+                if (isReadyConnection)
+                {
+                    await dbConnection.DisposeAsync();
+                }
+            }
+#endif
+
+            public async Task<bool> MoveNextAsync(CancellationToken cancellationToken)
+            {
+                if (isReadyDataReader)
+                {
+                    return await dbDataReader.ReadAsync(cancellationToken);
+                }
+
+                CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
+
+                dbConnection = context.CreateDb();
+
+                isReadyConnection = true;
+
+                isClosedConnection = dbConnection.State == ConnectionState.Closed;
+
+                if (isClosedConnection)
+                {
+                    await dbConnection.OpenAsync(cancellationToken);
+
+                    behavior |= CommandBehavior.CloseConnection;
+                }
+
+                dbCommand = dbConnection.CreateCommand();
+
+                dbCommand.AllowSkippingFormattingSql = true;
+
+                dbCommand.CommandText = commandSql.Sql;
+
+                if (commandSql.CommandTimeout.HasValue)
+                {
+                    dbCommand.CommandTimeout = commandSql.CommandTimeout.Value;
+                }
+
+                isReadyCommand = true;
+
+                readyParam.Invoke(dbCommand, commandSql.Parameters);
+
+                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken);
+
+                isReadyDataReader = true;
+
+                isClosedConnection = false;
+
+                return await dbDataReader.ReadAsync(cancellationToken);
+            }
+
+            public void Dispose()
+            {
+                if (isReadyDataReader)
+                {
+                    dbDataReader.Close();
+                    dbDataReader.Dispose();
+                }
+
+                if (isReadyCommand)
+                {
+                    dbCommand.Dispose();
+                }
+
+                if (isClosedConnection)
+                {
+                    dbConnection.Close();
+                }
+
+                if (isReadyConnection)
+                {
+                    dbConnection.Dispose();
+                }
             }
         }
 
@@ -331,7 +417,9 @@ namespace CodeArts.Db.Lts
                 {
                     using (var command = connection.CreateCommand())
                     {
-                        ((IDbCommand)command).CommandText = commandSql.Sql;
+                        command.AllowSkippingFormattingSql = true;
+
+                        command.CommandText = commandSql.Sql;
 
                         if (commandSql.CommandTimeout.HasValue)
                         {
@@ -402,7 +490,9 @@ namespace CodeArts.Db.Lts
                 {
                     using (var command = connection.CreateCommand())
                     {
-                        ((IDbCommand)command).CommandText = commandSql.Sql;
+                        command.AllowSkippingFormattingSql = true;
+
+                        command.CommandText = commandSql.Sql;
 
                         if (commandSql.CommandTimeout.HasValue)
                         {

@@ -77,7 +77,11 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 参数集合。
         /// </summary>
+#if NETSTANDARD2_1
+        public Dictionary<string, object> Parameters => parameters ??= new Dictionary<string, object>();
+#else
         public Dictionary<string, object> Parameters => parameters ?? (parameters = new Dictionary<string, object>());
+#endif
 
         /// <summary>
         /// 构造函数。

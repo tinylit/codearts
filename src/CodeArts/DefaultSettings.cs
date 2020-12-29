@@ -50,7 +50,11 @@ namespace CodeArts
         /// <summary>
         /// 设置 【PropConverter】 将在内容替换期间使用到它。
         /// </summary>
+#if NETSTANDARD2_1
+        public ICollection<PropConverter> Converters => converters ??= new List<PropConverter>();
+#else
         public ICollection<PropConverter> Converters => converters ?? (converters = new List<PropConverter>());
+#endif
 
         /// <summary>
         /// 属性名解析。
@@ -140,7 +144,7 @@ namespace CodeArts
         /// <param name="propertyItem">属性。</param>
         /// <param name="value">属性值。</param>
         /// <returns></returns>
-        public string Convert(PropertyStoreItem propertyItem, object value)
+        public string Convert(PropertyItem propertyItem, object value)
         {
             foreach (PropConverter converter in Converters)
             {

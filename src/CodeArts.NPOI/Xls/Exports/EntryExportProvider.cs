@@ -18,7 +18,7 @@ namespace CodeArts.NPOI.Xls.Exports
         /// <param name="value">实体。</param>
         public override void Export(Func<string, ICell> findCellByName, T value)
         {
-            var entry = TypeStoreItem.Get<T>();
+            var entry = TypeItem.Get<T>();
 
             entry.PropertyStores.ForEach(item =>
             {

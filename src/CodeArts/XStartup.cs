@@ -15,16 +15,16 @@ namespace CodeArts
         private static readonly Type StartupType = typeof(IStartup);
 
         /// <summary>
-        /// 启动（获取所有程序集类型启动）。
+        /// 启动（获取所有DLL的类型启动）<see cref="AssemblyFinder.FindAll()"/>。
         /// </summary>
-        public XStartup() : this("*")
+        public XStartup() : this(AssemblyFinder.FindAll())
         {
         }
 
         /// <summary>
         /// 启动（获取满足规则DLL的类型启动）。
         /// </summary>
-        /// <param name="pattern">DLL文件过滤规则。</param>
+        /// <param name="pattern">DLL文件过滤规则。<see cref="AssemblyFinder.Find(string)"/></param>
         public XStartup(string pattern) : this(AssemblyFinder.Find(pattern))
         {
         }
@@ -57,9 +57,15 @@ namespace CodeArts
         /// </summary>
         public void DoStartup()
         {
+#if NETSTANDARD2_1
+            startups ??= types
+                .Select(x => (IStartup)Activator.CreateInstance(x, true))
+                .ToList();
+#else
             startups = startups ?? types
                 .Select(x => (IStartup)Activator.CreateInstance(x, true))
                 .ToList();
+#endif
 
             startups
                 .GroupBy(x => x.Code)

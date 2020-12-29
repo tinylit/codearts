@@ -69,7 +69,7 @@ namespace CodeArts.Db.Lts
                 case ExpressionType.New when body is NewExpression newExpression:
                     return newExpression.Members.Select(x => x.Name).ToArray();
                 case ExpressionType.Parameter:
-                    var storeItem = TypeStoreItem.Get(parameter.Type);
+                    var storeItem = TypeItem.Get(parameter.Type);
                     return storeItem.PropertyStores
                         .Where(x => x.CanRead && x.CanWrite)
                         .Select(x => x.Name)
@@ -122,7 +122,7 @@ namespace CodeArts.Db.Lts
                 case ExpressionType.New when body is NewExpression newExpression:
                     return Make(newExpression.Members.Select(x => x.Name).ToArray());
                 case ExpressionType.Parameter:
-                    var storeItem = TypeStoreItem.Get(parameter.Type);
+                    var storeItem = TypeItem.Get(parameter.Type);
                     return Make(storeItem.PropertyStores
                         .Where(x => x.CanRead)
                         .Select(x => x.Name)

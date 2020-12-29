@@ -202,6 +202,68 @@ namespace CodeArts.Casting.Implements
         #endregion
 
         /// <summary>
+        /// 创建工厂。
+        /// </summary>
+        /// <typeparam name="TResult">返回数据类型。</typeparam>
+        /// <returns></returns>
+        public override Func<object, TResult> Create<TResult>(Type sourceType)
+        {
+            if (sourceType is null)
+            {
+                throw new ArgumentNullException(nameof(sourceType));
+            }
+
+            if (sourceType == typeof(TResult) && typeof(ICloneable).IsAssignableFrom(sourceType))
+            {
+                return source =>
+                {
+                    if (source is ICloneable cloneable)
+                    {
+                        return (TResult)cloneable.Clone();
+                    }
+
+                    return default;
+                };
+            }
+
+            return base.Create<TResult>(sourceType);
+        }
+
+        /// <summary>
+        /// 构建器。
+        /// </summary>
+        /// <param name="sourceType">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        protected override Func<object, object> Create(Type sourceType, Type conversionType)
+        {
+            if (sourceType is null)
+            {
+                throw new ArgumentNullException(nameof(sourceType));
+            }
+
+            if (conversionType is null)
+            {
+                throw new ArgumentNullException(nameof(conversionType));
+            }
+
+            if (sourceType == conversionType && typeof(ICloneable).IsAssignableFrom(sourceType))
+            {
+                return source =>
+                {
+                    if (source is ICloneable cloneable)
+                    {
+                        return cloneable.Clone();
+                    }
+
+                    return null;
+                };
+            }
+
+            return base.Create(sourceType, conversionType);
+        }
+
+        /// <summary>
         /// 解决 相似对象的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型。</typeparam>
@@ -210,7 +272,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByLikeObject<TResult>(Type sourceType, Type conversionType)
         {
-            var typeStore = TypeStoreItem.Get(conversionType);
+            var typeStore = TypeItem.Get(conversionType);
 
             var parameterExp = Parameter(typeof(object), "source");
 
@@ -250,7 +312,7 @@ namespace CodeArts.Casting.Implements
             }
             else
             {
-                var typeCache = TypeStoreItem.Get(sourceType);
+                var typeCache = TypeItem.Get(sourceType);
 
                 CreateInstance(typeCache);
 
@@ -305,7 +367,7 @@ namespace CodeArts.Casting.Implements
 
             return lamdaExp.Compile();
 
-            void CreateInstance(TypeStoreItem storeItem)
+            void CreateInstance(TypeItem storeItem)
             {
                 var commonCtor = typeStore.ConstructorStores
                     .Where(x => x.CanRead)
@@ -450,7 +512,7 @@ namespace CodeArts.Casting.Implements
                 }
             }
 
-            void ParameterConfig(ParameterStoreItem info, Expression node)
+            void ParameterConfig(ParameterItem info, Expression node)
             {
                 var parameterType = info.ParameterType;
 

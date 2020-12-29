@@ -18,9 +18,8 @@ namespace System.Collections.Generic
         /// <summary>
         /// 下一份数据。
         /// </summary>
-        /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        Task<bool> MoveNext(CancellationToken cancellationToken);
+        Task<bool> MoveNextAsync();
     }
 }
 #endif

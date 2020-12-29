@@ -1,6 +1,5 @@
-﻿#if NETSTANDARD2_0
+﻿#if NET_CORE
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace CodeArts.Db.EntityFramework
 {

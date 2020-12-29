@@ -54,6 +54,10 @@ namespace CodeArts.Db.Lts
         /// </summary>
         public const string Cast = nameof(Queryable.Cast); //? 在SQL中，只会生成共有的属性(不区分大小写)。
         /// <summary>
+        /// 筛选类型属性。
+        /// </summary>
+        public const string OfType = nameof(Queryable.OfType); //? 在SQL中，只会生成共有的属性(不区分大小写)。
+        /// <summary>
         /// 合并。
         /// </summary>
         public const string Join = nameof(Queryable.Join); //? LEFT JOIN
@@ -178,14 +182,14 @@ namespace CodeArts.Db.Lts
         public const string TrimEnd = nameof(string.TrimEnd);
 
         /// <summary>
-        /// 以...结束。Like '{AnyString}%'。
+        /// 以...结束。Like '%{AnyString}'。
         /// </summary>
-        public const string EndsWith = nameof(string.EndsWith); //? Like '{AnyString}%'
+        public const string EndsWith = nameof(string.EndsWith); //? Like '%{AnyString}'
 
         /// <summary>
-        /// 以...开始。Like '%{AnyString}'。
+        /// 以...开始。Like '{AnyString}%'。
         /// </summary>
-        public const string StartsWith = nameof(string.StartsWith); //? Like '%{AnyString}'
+        public const string StartsWith = nameof(string.StartsWith); //? Like '{AnyString}%'
 
         /// <summary>
         /// 包含。 Like '%{AnyString}%'。

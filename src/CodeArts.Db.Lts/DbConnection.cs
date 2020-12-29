@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Threading;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading.Tasks;
 #endif
 
@@ -14,7 +14,7 @@ namespace CodeArts.Db.Lts
     {
         private readonly IDbConnection connection; //数据库连接
         private readonly ISQLCorrectSettings settings;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         private readonly System.Data.Common.DbConnection dbConnection;
 
         /// <inheritdoc />
@@ -79,8 +79,7 @@ namespace CodeArts.Db.Lts
             }
         }
 
-#if NET_NORMAL || NETSTANDARD2_0
-
+#if NET_NORMAL || NET_CORE
         /// <inheritdoc />
         public Task OpenAsync(CancellationToken cancellationToken = default)
         {
@@ -116,10 +115,33 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public void Close() => connection.Close();
 
+#if NETSTANDARD2_1
+        /// <inheritdoc />
+        public Task CloseAsync()
+        {
+            if (IsAsynchronousSupport)
+            {
+                return dbConnection.CloseAsync();
+            }
+
+            throw new InvalidOperationException("Async operations require use of a DbConnection.");
+        }
+        /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            if (IsAsynchronousSupport)
+            {
+                return dbConnection.DisposeAsync();
+            }
+
+            throw new InvalidOperationException("Async operations require use of a DbConnection.");
+        }
+#endif
+
         /// <inheritdoc />
         public DbCommand CreateCommand()
         {
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
             if (IsAsynchronousSupport)
             {
                 return new DbCommand(dbConnection.CreateCommand(), settings);

@@ -185,7 +185,7 @@ namespace CodeArts.Casting.Implements
             {
                 var parameterExp = Parameter(typeof(object), "source");
 
-                var typeStore = TypeStoreItem.Get(conversionType);
+                var typeStore = TypeItem.Get(conversionType);
 
                 var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
 
@@ -201,7 +201,7 @@ namespace CodeArts.Casting.Implements
 
                 var parameterExp = Parameter(typeof(object), "source");
 
-                var typeStore = TypeStoreItem.Get(conversionType);
+                var typeStore = TypeItem.Get(conversionType);
 
                 var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
 
@@ -434,7 +434,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType)
         {
-            var typeStore = TypeStoreItem.Get(conversionType);
+            var typeStore = TypeItem.Get(conversionType);
 
             //! 绝对匹配
             foreach (var item in typeStore.ConstructorStores)
@@ -465,7 +465,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByLikeCtor<TResult>(ConstructorStoreItem storeItem, Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByLikeCtor<TResult>(ConstructorItem storeItem, Type sourceType, Type conversionType)
         {
             var parameterExp = Parameter(typeof(object));
 
@@ -504,7 +504,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(IEnumerable<ConstructorStoreItem> storeItem, Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(IEnumerable<ConstructorItem> storeItem, Type sourceType, Type conversionType)
         {
             Expression bodyExp = null;
 

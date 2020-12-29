@@ -109,11 +109,11 @@ namespace CodeArts.Casting
             if (conversionType.IsValueType)
                 return ToValueType<TResult>(sourceType, conversionType);
 
-            if (sourceType == typeof(string))
-                return ByString<TResult>(sourceType, conversionType);
-
             if (conversionType == typeof(string))
                 return ToString<TResult>(sourceType, conversionType);
+
+            if (sourceType == typeof(string))
+                return ByString<TResult>(sourceType, conversionType);
 
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
                 return sourceType.IsInterface ? ByIEnumarableLike<TResult>(sourceType, conversionType) : ByEnumarableLike<TResult>(sourceType, conversionType);
@@ -139,10 +139,12 @@ namespace CodeArts.Casting
         /// <returns></returns>
         protected virtual Func<object, TResult> ToString<TResult>(Type sourceType, Type conversionType)
         {
-            var toString = sourceType.GetMethod("ToString", new Type[0] { });
+            var toString = sourceType.GetMethod("ToString", Type.EmptyTypes);
 
             if (toString.DeclaringType == typeof(object))
+            {
                 throw new InvalidCastException();
+            }
 
             var parameterExp = Parameter(sourceType, "source");
 

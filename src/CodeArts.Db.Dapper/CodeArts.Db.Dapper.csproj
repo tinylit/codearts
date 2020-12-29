@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net451;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net451;net45;net40;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>5.1.0.0</Version>
+		<Version>5.2.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>An ORM Library Based on dapper.</Description>
@@ -25,7 +25,7 @@
 		<PackageReference Include="Dapper" Version="1.60.6" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0'">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
 		<PackageReference Include="Dapper" Version="2.0.78" />
 	</ItemGroup>
 
@@ -33,7 +33,12 @@
 		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
-	
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
+		<DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\CodeArts.Db\CodeArts.Db.csproj" />
 	</ItemGroup>

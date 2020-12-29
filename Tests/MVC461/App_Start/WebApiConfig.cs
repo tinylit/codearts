@@ -16,7 +16,7 @@ namespace Mvc461
             // Web API 路由
             config.MapHttpAttributeRoutes();
 
-            var typeStore = TypeStoreItem.Get(config.GetType());
+            var typeStore = TypeItem.Get(config.GetType());
 
             var propertyStore = typeStore.PropertyStores.First(x => x.Name == "Services");
 

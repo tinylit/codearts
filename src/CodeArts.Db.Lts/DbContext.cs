@@ -67,7 +67,11 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 数据供应器。
         /// </summary>
+#if NETSTANDARD2_1
+        protected IDbRepositoryProvider DbProvider => repositoryProvider ??= CreateDbProvider();
+#else
         protected IDbRepositoryProvider DbProvider => repositoryProvider ?? (repositoryProvider = CreateDbProvider());
+#endif
 
         /// <summary>
         /// 创建查询器。
@@ -244,7 +248,7 @@ namespace CodeArts.Db.Lts
             return DbProvider.Query<T>(this, commandSql);
         }
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 
         /// <summary>
         /// 读取数据。
@@ -348,7 +352,11 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 执行器。
         /// </summary>
+#if NETSTANDARD2_1
+        protected IDbRepositoryExecuter DbExecuter => repositoryExecuter ??= CreateDbExecuter();
+#else
         protected IDbRepositoryExecuter DbExecuter => repositoryExecuter ?? (repositoryExecuter = CreateDbExecuter());
+#endif
 
         /// <summary>
         /// 创建适配器。
@@ -467,7 +475,7 @@ namespace CodeArts.Db.Lts
             return DbExecuter.Execute(this, commandSql);
         }
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// 执行命令。
         /// </summary>

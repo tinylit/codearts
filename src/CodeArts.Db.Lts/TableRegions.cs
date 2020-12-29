@@ -69,7 +69,7 @@ namespace CodeArts.Db.Lts
              var readWrites = new Dictionary<string, string>();
              var readOrWrites = new Dictionary<string, string>();
 
-             var typeStore = TypeStoreItem.Get(tableType);
+             var typeStore = TypeItem.Get(tableType);
 
              foreach (var item in typeStore.PropertyStores)
              {

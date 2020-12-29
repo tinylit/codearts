@@ -104,7 +104,6 @@ namespace CodeArts.Db
 
             public void Destroy() => Dispose(true);
         }
-
         private class TransactionConnection : System.Data.Common.DbConnection, ITransactionConnection
         {
             private int refCount = 0;
@@ -218,7 +217,6 @@ namespace CodeArts.Db
 
             lock (dictionary)
             {
-
                 if (!dictionary.TryGetValue(connectionString, out ITransactionConnection info))
                 {
                     var conn = DispatchConnections.Instance.GetConnection(connectionString, factory, false);

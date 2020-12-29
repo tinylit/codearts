@@ -4,7 +4,9 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if NET40
 using System.Collections.ObjectModel;
+#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -38,6 +40,7 @@ namespace CodeArts.Db.Lts.Visitors
             switch (node.Method.Name)
             {
                 case MethodCall.Cast:
+                case MethodCall.OfType:
 
                     Type type = node.Type
                         .GetGenericArguments()
@@ -61,7 +64,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                     CastCache.GetOrAdd(type, _ => TypeToEntryType(originalType));
 
-                    var entry = TypeStoreItem.Get(type);
+                    var entry = TypeItem.Get(type);
 
                     if (MemberFilters is null)
                     {
@@ -74,8 +77,8 @@ namespace CodeArts.Db.Lts.Visitors
                     {
                         MemberFilters = MemberFilters
                            .Intersect(entry.PropertyStores
-                            .Where(x => x.CanRead && x.CanWrite)
-                            .Select(x => x.Name.ToLower()))
+                           .Where(x => x.CanRead && x.CanWrite)
+                           .Select(x => x.Name.ToLower()))
                            .ToList();
                     }
 
@@ -213,7 +216,7 @@ namespace CodeArts.Db.Lts.Visitors
         {
             var vbindings = base.FilterMemberBindings(bindings);
 
-            if (MemberFilters is null)
+            if (!useCast)
             {
                 return vbindings;
             }

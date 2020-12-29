@@ -1978,7 +1978,7 @@ namespace System
 
                 __form = __form ?? new NameValueCollection();
 
-                var typeStore = TypeStoreItem.Get(param.GetType());
+                var typeStore = TypeItem.Get(param.GetType());
 
                 foreach (var storeItem in typeStore.PropertyStores)
                 {
@@ -2012,7 +2012,7 @@ namespace System
 
                 __form = __form ?? new NameValueCollection();
 
-                var typeStore = TypeStoreItem.Get(param.GetType());
+                var typeStore = TypeItem.Get(param.GetType());
 
                 foreach (var storeItem in typeStore.PropertyStores)
                 {
@@ -2143,7 +2143,7 @@ namespace System
                     return this;
                 }
 
-                var typeStore = TypeStoreItem.Get(param.GetType());
+                var typeStore = TypeItem.Get(param.GetType());
 
                 var sb = new StringBuilder();
 

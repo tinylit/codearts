@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0
+﻿#if NET_CORE
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 #else
@@ -7,7 +7,7 @@ using System.Data.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -45,7 +45,7 @@ namespace CodeArts.Db.EntityFramework
             this.dbContexts = dbContexts ?? throw new ArgumentNullException(nameof(dbContexts));
         }
 
-#if NETSTANDARD2_0
+#if NET_CORE
         /// <summary>
         /// Saves all changes made in this context to the database.
         /// </summary>
@@ -61,7 +61,7 @@ namespace CodeArts.Db.EntityFramework
 #endif
         {
             int count = 0;
-#if NETSTANDARD2_0
+#if NET_CORE
             var list = new List<IDbContextTransaction>();
 #else
             var list = new List<DbContextTransaction>();
@@ -72,7 +72,7 @@ namespace CodeArts.Db.EntityFramework
                 {
                     list.Add(context.Database.BeginTransaction());
 
-#if NETSTANDARD2_0
+#if NET_CORE
                     count += context.SaveChanges(acceptAllChangesOnSuccess);
 #else
                     count += context.SaveChanges();
@@ -103,7 +103,7 @@ namespace CodeArts.Db.EntityFramework
             return count;
         }
 
-#if NETSTANDARD2_0
+#if NET_CORE
         /// <summary>
         /// Saves all changes made in this context to the database with distributed transaction.
         /// </summary>
@@ -113,42 +113,26 @@ namespace CodeArts.Db.EntityFramework
         public async Task<int> CommitAsync(bool acceptAllChangesOnSuccess = false, CancellationToken cancellationToken = default)
         {
             int count = 0;
-#if NETSTANDARD2_0
             var list = new List<IDbContextTransaction>();
-#else
-            var list = new List<DbContextTransaction>();
-#endif
             try
             {
                 foreach (var context in dbContexts)
                 {
-#if NETSTANDARD2_0
                     list.Add(await context.Database.BeginTransactionAsync(cancellationToken));
-#else
-                    list.Add(context.Database.BeginTransaction());
-#endif
 
                     count += await context.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
                 }
 
                 foreach (var item in list)
                 {
-#if NETSTANDARD2_0
                     await item.CommitAsync(cancellationToken);
-#else
-                    item.Commit();
-#endif
                 }
             }
             catch
             {
                 foreach (var item in list)
                 {
-#if NETSTANDARD2_0
                     await item.RollbackAsync(cancellationToken);
-#else
-                    item.Rollback();
-#endif
                 }
 
                 throw;
@@ -157,14 +141,14 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var item in list)
                 {
-                    item.Dispose();
+                    await item.DisposeAsync();
                 }
             }
             return count;
         }
 #endif
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// Saves all changes made in this context to the database with distributed transaction.
         /// </summary>
@@ -173,7 +157,7 @@ namespace CodeArts.Db.EntityFramework
         public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
         {
             int count = 0;
-#if NETSTANDARD2_0
+#if NET_CORE
             var list = new List<IDbContextTransaction>();
 #else
             var list = new List<DbContextTransaction>();
@@ -182,21 +166,33 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var context in dbContexts)
                 {
+#if NET_CORE
+                    list.Add(await context.Database.BeginTransactionAsync(cancellationToken));
+#else
                     list.Add(context.Database.BeginTransaction());
+#endif
 
                     count += await context.SaveChangesAsync(cancellationToken);
                 }
 
                 foreach (var item in list)
                 {
+#if NET_CORE
+                    await item.CommitAsync();
+#else
                     item.Commit();
+#endif
                 }
             }
             catch
             {
                 foreach (var item in list)
                 {
+#if NET_CORE
+                    await item.RollbackAsync();
+#else
                     item.Rollback();
+#endif
                 }
 
                 throw;
@@ -205,12 +201,17 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var item in list)
                 {
+#if NET_CORE
+                    await item.DisposeAsync();
+#else
                     item.Dispose();
+#endif
                 }
             }
             return count;
         }
 #endif
+
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>

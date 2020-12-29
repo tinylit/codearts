@@ -12,15 +12,15 @@ namespace CodeArts.Runtime
     /// <summary>
     /// 类型项目。
     /// </summary>
-    public class TypeStoreItem : StoreItem
+    public class TypeItem : StoreItem
     {
-        private static readonly ConcurrentDictionary<Type, TypeStoreItem> ItemCache = new ConcurrentDictionary<Type, TypeStoreItem>();
+        private static readonly ConcurrentDictionary<Type, TypeItem> ItemCache = new ConcurrentDictionary<Type, TypeItem>();
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="type">类型。</param>
-        private TypeStoreItem(Type type) : base(type)
+        private TypeItem(Type type) : base(type)
         {
             Type = type ?? throw new ArgumentNullException(nameof(type));
         }
@@ -58,12 +58,12 @@ namespace CodeArts.Runtime
 #if NET40
 
 
-        private ReadOnlyCollection<PropertyStoreItem> propertyStores;
+        private ReadOnlyCollection<PropertyItem> propertyStores;
 
         /// <summary>
         /// 属性。
         /// </summary>
-        public ReadOnlyCollection<PropertyStoreItem> PropertyStores
+        public ReadOnlyCollection<PropertyItem> PropertyStores
         {
             get
             {
@@ -74,7 +74,7 @@ namespace CodeArts.Runtime
                         if (propertyStores is null)
                         {
                             propertyStores = Type.GetProperties()
-                                .Select(info => PropertyStoreItem.Get(info))
+                                .Select(info => PropertyItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -85,11 +85,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private ReadOnlyCollection<FieldStoreItem> fieldStores;
+        private ReadOnlyCollection<FieldItem> fieldStores;
         /// <summary>
         /// 字段。
         /// </summary>
-        public ReadOnlyCollection<FieldStoreItem> FieldStores
+        public ReadOnlyCollection<FieldItem> FieldStores
         {
             get
             {
@@ -100,7 +100,7 @@ namespace CodeArts.Runtime
                         if (fieldStores is null)
                         {
                             fieldStores = Type.GetFields()
-                                .Select(info => FieldStoreItem.Get(info))
+                                .Select(info => FieldItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -110,11 +110,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private ReadOnlyCollection<MethodStoreItem> methodStores;
+        private ReadOnlyCollection<MethodItem> methodStores;
         /// <summary>
         /// 方法。
         /// </summary>
-        public ReadOnlyCollection<MethodStoreItem> MethodStores
+        public ReadOnlyCollection<MethodItem> MethodStores
         {
             get
             {
@@ -125,7 +125,7 @@ namespace CodeArts.Runtime
                         if (methodStores is null)
                         {
                             methodStores = Type.GetMethods()
-                                .Select(info => MethodStoreItem.Get(info))
+                                .Select(info => MethodItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -135,11 +135,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private ReadOnlyCollection<ConstructorStoreItem> constructorStores;
+        private ReadOnlyCollection<ConstructorItem> constructorStores;
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public ReadOnlyCollection<ConstructorStoreItem> ConstructorStores
+        public ReadOnlyCollection<ConstructorItem> ConstructorStores
         {
             get
             {
@@ -150,7 +150,7 @@ namespace CodeArts.Runtime
                         if (constructorStores is null)
                         {
                             constructorStores = Type.GetConstructors()
-                                .Select(info => ConstructorStoreItem.Get(info))
+                                .Select(info => ConstructorItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -161,12 +161,12 @@ namespace CodeArts.Runtime
         }
 #else
 
-        private IReadOnlyCollection<PropertyStoreItem> propertyStores;
+        private IReadOnlyCollection<PropertyItem> propertyStores;
 
         /// <summary>
         /// 属性。
         /// </summary>
-        public IReadOnlyCollection<PropertyStoreItem> PropertyStores
+        public IReadOnlyCollection<PropertyItem> PropertyStores
         {
             get
             {
@@ -177,7 +177,7 @@ namespace CodeArts.Runtime
                         if (propertyStores is null)
                         {
                             propertyStores = Type.GetProperties()
-                                .Select(info => PropertyStoreItem.Get(info))
+                                .Select(info => PropertyItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -187,11 +187,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private IReadOnlyCollection<FieldStoreItem> fieldStores;
+        private IReadOnlyCollection<FieldItem> fieldStores;
         /// <summary>
         /// 字段。
         /// </summary>
-        public IReadOnlyCollection<FieldStoreItem> FieldStores
+        public IReadOnlyCollection<FieldItem> FieldStores
         {
             get
             {
@@ -202,7 +202,7 @@ namespace CodeArts.Runtime
                         if (fieldStores is null)
                         {
                             fieldStores = Type.GetFields()
-                                .Select(info => FieldStoreItem.Get(info))
+                                .Select(info => FieldItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -211,11 +211,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private IReadOnlyCollection<MethodStoreItem> methodStores;
+        private IReadOnlyCollection<MethodItem> methodStores;
         /// <summary>
         /// 方法。
         /// </summary>
-        public IReadOnlyCollection<MethodStoreItem> MethodStores
+        public IReadOnlyCollection<MethodItem> MethodStores
         {
             get
             {
@@ -226,7 +226,7 @@ namespace CodeArts.Runtime
                         if (methodStores is null)
                         {
                             methodStores = Type.GetMethods()
-                                .Select(info => MethodStoreItem.Get(info))
+                                .Select(info => MethodItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -235,11 +235,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private IReadOnlyCollection<ConstructorStoreItem> constructorStores;
+        private IReadOnlyCollection<ConstructorItem> constructorStores;
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public IReadOnlyCollection<ConstructorStoreItem> ConstructorStores
+        public IReadOnlyCollection<ConstructorItem> ConstructorStores
         {
             get
             {
@@ -250,7 +250,7 @@ namespace CodeArts.Runtime
                         if (constructorStores is null)
                         {
                             constructorStores = Type.GetConstructors()
-                                .Select(info => ConstructorStoreItem.Get(info))
+                                .Select(info => ConstructorItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -265,13 +265,69 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <typeparam name="T">类型。</typeparam>
         /// <returns></returns>
+
+/* 项目“CodeArts (net45)”的未合并的更改
+在此之前:
         public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+
+/* 项目“CodeArts (net40)”的未合并的更改
+在此之前:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+
+/* 项目“CodeArts (netstandard2.0)”的未合并的更改
+在此之前:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+
+/* 项目“CodeArts (netstandard2.1)”的未合并的更改
+在此之前:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+        public static TypeItem Get<T>() => ItemCache.GetOrAdd(typeof(T), (Func<Type, TypeItem>)(conversionType => (TypeItem)new TypeItem(conversionType)));
 
         /// <summary>
         /// 获取仓储项目。
         /// </summary>
         /// <param name="type">类型。</param>
         /// <returns></returns>
+
+/* 项目“CodeArts (net45)”的未合并的更改
+在此之前:
         public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+
+/* 项目“CodeArts (net40)”的未合并的更改
+在此之前:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+
+/* 项目“CodeArts (netstandard2.0)”的未合并的更改
+在此之前:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+
+/* 项目“CodeArts (netstandard2.1)”的未合并的更改
+在此之前:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
+在此之后:
+        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
+*/
+        public static TypeItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), (Func<Type, TypeItem>)(conversionType => (TypeItem)new TypeItem(conversionType)));
     }
 }

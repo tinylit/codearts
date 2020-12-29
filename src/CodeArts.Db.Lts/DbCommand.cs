@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.Common;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -16,7 +16,7 @@ namespace CodeArts.Db.Lts
         private readonly IDbCommand command;
         private readonly ISQLCorrectSettings settings;
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         private readonly System.Data.Common.DbCommand dbCommand;
 
         /// <summary>
@@ -83,14 +83,26 @@ namespace CodeArts.Db.Lts
             }
         }
 
-        /// <inheritdoc />
-        string IDbCommand.CommandText { get => command.CommandText; set => command.CommandText = value; }
+        /// <summary>
+        /// 允许跳过SQL格式化。
+        /// </summary>
+        public bool AllowSkippingFormattingSql { get; set; }
 
         /// <inheritdoc />
         public string CommandText
         {
             get => command.CommandText;
-            set => command.CommandText = new SQL(value).ToString(settings);
+            set
+            {
+                if (AllowSkippingFormattingSql)
+                {
+                    command.CommandText = value;
+                }
+                else
+                {
+                    command.CommandText = new SQL(value).ToString(settings);
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -151,7 +163,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public object ExecuteScalar() => command.ExecuteScalar();
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <inheritdoc />
         public Task<int> ExecuteNonQueryAsyc(CancellationToken cancellationToken = default)
         {
@@ -211,6 +223,19 @@ namespace CodeArts.Db.Lts
             }
 
             return await dbCommand.ExecuteReaderAsync(behavior, cancellationToken);
+        }
+#endif
+
+#if NETSTANDARD2_1
+        /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            if (IsAsynchronousSupport)
+            {
+                return dbCommand.DisposeAsync();
+            }
+
+            throw new InvalidOperationException("Async operations require use of a DbConnection or an IDbConnection where .CreateCommand() returns a DbCommand.");
         }
 #endif
 

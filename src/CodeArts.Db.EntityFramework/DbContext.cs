@@ -1,15 +1,18 @@
-﻿#if NETSTANDARD2_0
+﻿#if NET_CORE
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Reflection;
+using static System.Linq.Expressions.Expression;
+using Microsoft.EntityFrameworkCore.Storage;
 #else
 using System;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 #endif
-#if NETSTANDARD2_0 || NET_NORMAL
+#if NET_CORE || NET_NORMAL
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -20,58 +23,12 @@ namespace CodeArts.Db.EntityFramework
     /// <summary>
     /// 数据库上下文。
     /// </summary>
-    public class DbContext<TDbContext> : DbContext where TDbContext : DbContext<TDbContext>
+    public class DbContext<TDbContext> : DbContext, ICloneable where TDbContext : DbContext<TDbContext>
     {
         private readonly IReadOnlyConnectionConfig connectionConfig;
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
-#if NETSTANDARD2_0
-        private class DbContextNestedOptions : DbContextOptions
-        {
-            private readonly IReadOnlyDictionary<Type, IDbContextOptionsExtension> extensions;
-
-            public DbContextNestedOptions(IReadOnlyDictionary<Type, IDbContextOptionsExtension> extensions) : base(extensions)
-            {
-                this.extensions = extensions;
-            }
-
-            public override Type ContextType => typeof(TDbContext);
-
-            public override DbContextOptions WithExtension<TExtension>(TExtension extension)
-            {
-                if (extension is null)
-                {
-                    throw new ArgumentNullException(nameof(extension));
-                }
-
-                bool flag = true;
-
-                var type = typeof(TExtension);
-                
-                var dic = new Dictionary<Type, IDbContextOptionsExtension>();
-
-                foreach (var kv in this.extensions)
-                {
-                    if (type == kv.Key)
-                    {
-                        flag = false;
-
-                        dic.Add(kv.Key, extension);
-                    }
-                    else
-                    {
-                        dic.Add(kv.Key, kv.Value);
-                    }
-                }
-
-                if (flag)
-                {
-                    dic.Add(type, extension);
-                }
-
-                return new DbContextNestedOptions(dic);
-            }
-        }
+#if NET_CORE
         /// <summary>
         /// inheritdoc
         /// </summary>
@@ -81,7 +38,7 @@ namespace CodeArts.Db.EntityFramework
         /// <summary>
         /// inheritdoc
         /// </summary>
-        public DbContext(IReadOnlyConnectionConfig connectionConfig) : base(new DbContextOptions<DbContext<TDbContext>>())
+        public DbContext(IReadOnlyConnectionConfig connectionConfig) : base(new DbContextOptions<TDbContext>())
         {
             this.connectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
         }
@@ -127,7 +84,7 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         public ISQLCorrectSettings Settings => DbAdapter.Settings;
 
-#if NETSTANDARD2_0
+#if NET_CORE
         private IDbConnectionLinqAdapter connectionAdapter;
 
         /// <summary>
@@ -179,13 +136,16 @@ namespace CodeArts.Db.EntityFramework
         protected virtual IDbConnectionAdapter CreateDbAdapter(string providerName) => LinqConnectionManager.Get(providerName);
 #endif
 
-#if NETSTANDARD2_0
+#if NET_CORE
         /// <summary>
         /// inheritdoc
         /// </summary>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             DbAdapter.OnConfiguring(optionsBuilder, connectionConfig);
+
+            optionsBuilder.ReplaceService<IConcurrencyDetector,DbConcurrencyDetector>()
+                .ReplaceService<IRelationalCommandBuilderFactory, DbRelationalCommandBuilderFactory>();
 
             base.OnConfiguring(optionsBuilder);
         }
@@ -197,7 +157,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="sql">SQL。</param>
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0
+#if NET_CORE
         public virtual IQueryable<TEntity> FromSql<TEntity>(SQL sql, params object[] parameters) where TEntity : class
             => Set<TEntity>().FromSqlRaw(sql.ToString(Settings), parameters);
 
@@ -213,13 +173,13 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public virtual int ExecuteCommand(SQL sql, params object[] parameters)
-#if NETSTANDARD2_0
+#if NET_CORE
             => Database.ExecuteSqlRaw(sql.ToString(Settings), parameters);
 #else
             => Database.ExecuteSqlCommand(sql.ToString(Settings), parameters);
 #endif
 
-#if NETSTANDARD2_0 || NET_NORMAL
+#if NET_CORE || NET_NORMAL
 
         /// <summary>
         /// 执行语句。
@@ -228,7 +188,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public virtual Task<int> ExecuteCommandAsync(SQL sql, params object[] parameters)
-#if NETSTANDARD2_0
+#if NET_CORE
             => Database.ExecuteSqlRawAsync(sql.ToString(Settings), parameters);
 #else
             => Database.ExecuteSqlCommandAsync(sql.ToString(Settings), parameters);
@@ -242,11 +202,82 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public virtual Task<int> ExecuteCommandAsync(SQL sql, CancellationToken cancellationToken = default, params object[] parameters)
-#if NETSTANDARD2_0
+#if NET_CORE
             => Database.ExecuteSqlRawAsync(sql.ToString(Settings), cancellationToken, parameters);
 #else
             => Database.ExecuteSqlCommandAsync(sql.ToString(Settings), cancellationToken, parameters);
 #endif
 #endif
+
+#if NET_CORE
+        private volatile bool _initializing = false;
+        private volatile bool _initialized = false;
+
+        /// <summary>
+        /// inheritdoc
+        /// </summary>
+        /// <returns></returns>
+        public override DbSet<TEntity> Set<TEntity>()
+        {
+            if (_initialized)
+            {
+                return base.Set<TEntity>();
+            }
+
+            if (_initializing)
+            {
+                while (!_initialized)
+                {
+                    Thread.Sleep(0);
+                }
+            }
+
+            _initializing = true;
+
+            try
+            {
+                return base.Set<TEntity>();
+            }
+            finally
+            {
+                _initialized = true;
+            }
+        }
+
+#if NETSTANDARD2_1
+        /// <summary>
+        /// inheritdoc
+        /// </summary>
+        /// <returns></returns>
+        public override DbSet<TEntity> Set<TEntity>(string name)
+        {
+            if (_initialized)
+            {
+                return base.Set<TEntity>(name);
+            }
+
+            if (_initializing)
+            {
+                while (!_initialized)
+                {
+                    Thread.Sleep(0);
+                }
+            }
+
+            _initializing = true;
+
+            try
+            {
+                return base.Set<TEntity>(name);
+            }
+            finally
+            {
+                _initialized = true;
+            }
+        }
+#endif
+#endif
+
+        object ICloneable.Clone() => new DbContext<TDbContext>(connectionConfig);
     }
 }

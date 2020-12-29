@@ -58,7 +58,7 @@ namespace CodeArts.Db
         {
             var contextType = typeof(T);
 
-            var typeStore = TypeStoreItem.Get(contextType);
+            var typeStore = TypeItem.Get(contextType);
 
             var matchType = typeof(Match);
             var groupType = typeof(Group);

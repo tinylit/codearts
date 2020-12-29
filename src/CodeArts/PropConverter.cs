@@ -21,7 +21,7 @@ namespace CodeArts
         /// <param name="propertyItem">属性。</param>
         /// <param name="value">属性值。</param>
         /// <returns></returns>
-        public abstract string Convert(PropertyStoreItem propertyItem, object value);
+        public abstract string Convert(PropertyItem propertyItem, object value);
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ namespace CodeArts
         /// <param name="propertyItem">属性。</param>
         /// <param name="value">属性值。</param>
         /// <returns></returns>
-        public sealed override string Convert(PropertyStoreItem propertyItem, object value)
+        public sealed override string Convert(PropertyItem propertyItem, object value)
         {
             if (value is T typeValue)
             {
@@ -59,6 +59,6 @@ namespace CodeArts
         /// <param name="propertyItem">属性。</param>
         /// <param name="value">属性值。</param>
         /// <returns></returns>
-        protected abstract string Convert(PropertyStoreItem propertyItem, T value);
+        protected abstract string Convert(PropertyItem propertyItem, T value);
     }
 }

@@ -1,4 +1,4 @@
-﻿#if NET_NORMAL || NETSTANDARD2_0
+﻿#if NET_NORMAL || NET_CORE
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;

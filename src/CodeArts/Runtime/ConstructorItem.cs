@@ -13,15 +13,15 @@ namespace CodeArts.Runtime
     /// <summary>
     /// 构造函数。
     /// </summary>
-    public class ConstructorStoreItem : StoreItem<ConstructorInfo>
+    public class ConstructorItem : StoreItem<ConstructorInfo>
     {
-        private static readonly ConcurrentDictionary<ConstructorInfo, ConstructorStoreItem> ItemCache = new ConcurrentDictionary<ConstructorInfo, ConstructorStoreItem>();
+        private static readonly ConcurrentDictionary<ConstructorInfo, ConstructorItem> ItemCache = new ConcurrentDictionary<ConstructorInfo, ConstructorItem>();
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="info">构造函数信息。</param>
-        private ConstructorStoreItem(ConstructorInfo info) : base(info)
+        private ConstructorItem(ConstructorInfo info) : base(info)
         {
         }
 
@@ -55,11 +55,11 @@ namespace CodeArts.Runtime
 
 #if NET40
 
-        private ReadOnlyCollection<ParameterStoreItem> parameterStores;
+        private ReadOnlyCollection<ParameterItem> parameterStores;
         /// <summary>
         /// 参数信息。
         /// </summary>
-        public ReadOnlyCollection<ParameterStoreItem> ParameterStores
+        public ReadOnlyCollection<ParameterItem> ParameterStores
         {
             get
             {
@@ -70,7 +70,7 @@ namespace CodeArts.Runtime
                         if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
-                                .Select(info => ParameterStoreItem.Get(info))
+                                .Select(info => ParameterItem.Get(info))
                                 .ToList()
                                 .AsReadOnly();
                         }
@@ -80,11 +80,11 @@ namespace CodeArts.Runtime
             }
         }
 #else
-        private IReadOnlyCollection<ParameterStoreItem> parameterStores;
+        private IReadOnlyCollection<ParameterItem> parameterStores;
         /// <summary>
         /// 参数信息。
         /// </summary>
-        public IReadOnlyCollection<ParameterStoreItem> ParameterStores
+        public IReadOnlyCollection<ParameterItem> ParameterStores
         {
             get
             {
@@ -95,7 +95,7 @@ namespace CodeArts.Runtime
                         if (parameterStores is null)
                         {
                             parameterStores = Member.GetParameters()
-                                .Select(info => ParameterStoreItem.Get(info))
+                                .Select(info => ParameterItem.Get(info))
                                 .ToList();
                         }
                     }
@@ -109,6 +109,34 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
+
+/* 项目“CodeArts (net45)”的未合并的更改
+在此之前:
         public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
+在此之后:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
+*/
+
+/* 项目“CodeArts (net40)”的未合并的更改
+在此之前:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
+在此之后:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
+*/
+
+/* 项目“CodeArts (netstandard2.0)”的未合并的更改
+在此之前:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
+在此之后:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
+*/
+
+/* 项目“CodeArts (netstandard2.1)”的未合并的更改
+在此之前:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
+在此之后:
+        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
+*/
+        public static ConstructorItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, (Func<ConstructorInfo, ConstructorItem>)(constructorInfo => (ConstructorItem)new ConstructorItem(constructorInfo)));
     }
 }

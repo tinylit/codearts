@@ -27,6 +27,7 @@ namespace CodeArts.Db.Lts
                     this.capture = capture;
                 }
             }
+
             threadSqlProfilers[thread] = this;
         }
 
@@ -83,6 +84,8 @@ namespace CodeArts.Db.Lts
             {
                 threadSqlProfilers[thread] = capture;
             }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

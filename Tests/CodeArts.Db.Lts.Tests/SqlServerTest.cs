@@ -308,8 +308,8 @@ namespace UnitTest
             var y = 100;
             var user = new UserRepository();
             var arr = new List<int> { 1, 10 };
-            var result = user.Where(x => x.Id > 0 && x.Id < y && arr.Any(item => item == x.Id))
-                .Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });
+            var result = user.Where(x => x.Id > 0 && x.Id < ~y && arr.Any(item => item == x.Id))
+                .Select(x => new { x.Id, OldId = x.Id + 1, OOID = -y });
 
             var list = result.ToList();
         }

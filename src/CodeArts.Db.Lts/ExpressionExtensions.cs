@@ -222,8 +222,9 @@ namespace CodeArts.Db.Lts
                     return ExpressionType.NotEqual;
                 case ExpressionType.NotEqual:
                     return ExpressionType.Equal;
+                default:
+                    return nodeType;
             }
-            return nodeType;
         }
 
         /// <summary>
@@ -295,6 +296,14 @@ namespace CodeArts.Db.Lts
                     return " << ";
                 case ExpressionType.RightShift:
                     return " >> ";
+                case ExpressionType.Not:
+                case ExpressionType.OnesComplement:
+                    return " ~";
+                case ExpressionType.UnaryPlus:
+                    return " +";
+                case ExpressionType.Negate:
+                case ExpressionType.NegateChecked:
+                    return " -";
                 default:
                     throw new NotSupportedException();
             }
@@ -456,8 +465,9 @@ namespace CodeArts.Db.Lts
                     return unary.GetMemberExpression();
                 case BinaryExpression binary:
                     return binary.GetMemberExpression();
+                default:
+                    return null;
             }
-            return null;
         }
         /// <summary>
         /// 是否继承或泛型包含声明类型。

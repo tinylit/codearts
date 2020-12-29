@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading.Tasks;
 #endif
 
@@ -126,7 +126,7 @@ namespace CodeArts.Caching
         /// <param name="key">键。</param>
         public abstract void Exit(string key);
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// 设置缓存（无失效时间）。
         /// </summary>

@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using UnitTest.Domain.Entities;
 
 namespace UnitTest
@@ -100,6 +101,7 @@ namespace UnitTest
 
             var list = result.ToList();
         }
+
         [TestMethod]
         public void SelectWhereTest()
         {
@@ -772,6 +774,44 @@ namespace UnitTest
                 .Where(x => x.Id > 100)
                 .Where(x => x.Id.Equals(101))
                 .ToList();
+        }
+
+        private class IE
+        {
+            public int Id { get; set; }
+
+            [Naming("Username")]
+            public string Name { get; set; }
+        }
+
+        [TestMethod]
+        public void MapTest()
+        {
+            var y = 100;
+            var user = new UserRepository(context);
+            var result = user.Where(x => x.Id > 0 && x.Id < y).Map<IE>();
+
+            var list = result.ToList();
+        }
+
+        [TestMethod]
+        public void SingleContextWithMultiTaskTest()
+        {
+            var user = new UserRepository(context);
+
+            var tasks = new Task[100];
+
+            for (int i = 0; i < 100; i++)
+            {
+                tasks[i] = TaskTest(user);
+            }
+
+            Task.WaitAll(tasks);
+        }
+
+        private Task TaskTest(UserRepository users)
+        {
+            return users.ToListAsync();
         }
     }
 }

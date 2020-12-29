@@ -9,7 +9,7 @@ namespace CodeArts.Db.EntityFramework
     /// </summary>
     public interface IDbTransaction : IDisposable
     {
-#if NETSTANDARD2_0
+#if NET_CORE
         /// <summary>
         /// Saves all changes made in this context to the database.
         /// </summary>        
@@ -24,7 +24,7 @@ namespace CodeArts.Db.EntityFramework
         int Commit();
 #endif
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// Asynchronously saves all changes made in this unit of work to the database.
         /// </summary>
@@ -33,7 +33,7 @@ namespace CodeArts.Db.EntityFramework
         Task<int> CommitAsync(CancellationToken cancellationToken = default);
 #endif
 
-#if NETSTANDARD2_0
+#if NET_CORE
         /// <summary>
         /// Asynchronously saves all changes made in this unit of work to the database.
         /// </summary>

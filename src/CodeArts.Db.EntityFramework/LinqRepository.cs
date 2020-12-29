@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0
+﻿#if NET_CORE
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 #else
@@ -7,11 +7,10 @@ using System.Data.Entity.Infrastructure;
 #endif
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -22,7 +21,11 @@ namespace CodeArts.Db
     /// 仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
+#if NETSTANDARD2_1
+    public class LinqRepository<TEntity> : ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IAsyncEnumerable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable where TEntity : class, IEntiy
+#else
     public class LinqRepository<TEntity> : ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable where TEntity : class, IEntiy
+#endif
     {
         private readonly DbContext _dbContext;
         private readonly DbSet<TEntity> _dbSet;
@@ -43,163 +46,68 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="entity">实体。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0
-        public EntityEntry<TEntity> Entry(TEntity entity) => _dbContext.Entry(entity);
+#if NET_CORE
+        public virtual EntityEntry<TEntity> Entry(TEntity entity) => _dbContext.Entry(entity);
 #else
-        public DbEntityEntry<TEntity> Entry(TEntity entity) => _dbContext.Entry(entity);
-#endif
-
-        /// <summary>
-        /// 统计符合条件的总行数。
-        /// </summary>
-        /// <param name="predicate">条件。</param>
-        /// <returns></returns>
-        public int Count(Expression<Func<TEntity, bool>> predicate = null)
-        {
-            if (predicate is null)
-            {
-                return _dbSet.Count();
-            }
-            return _dbSet.Count(predicate);
-        }
-
-#if NET_NORMAL || NETSTANDARD2_0
-        /// <summary>
-        /// 统计符合条件的总行数。
-        /// </summary>
-        /// <param name="predicate">条件。</param>
-        /// <returns></returns>
-        public Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate = null)
-        {
-            if (predicate is null)
-            {
-                return _dbSet.CountAsync();
-            }
-
-            return _dbSet.CountAsync(predicate);
-        }
-#endif
-
-        /// <summary>
-        /// 统计符合条件的总行数。
-        /// </summary>
-        /// <param name="predicate">条件。</param>
-        /// <returns></returns>
-        public long LongCount(Expression<Func<TEntity, bool>> predicate = null)
-        {
-            if (predicate is null)
-            {
-                return _dbSet.LongCount();
-            }
-
-            return _dbSet.LongCount(predicate);
-        }
-
-#if NET_NORMAL || NETSTANDARD2_0
-        /// <summary>
-        /// 统计符合条件的总行数。
-        /// </summary>
-        /// <param name="predicate">条件。</param>
-        /// <returns></returns>
-        public Task<long> LongCountAsync(Expression<Func<TEntity, bool>> predicate = null)
-        {
-            if (predicate is null)
-            {
-                return _dbSet.LongCountAsync();
-            }
-
-            return _dbSet.LongCountAsync(predicate);
-        }
+        public virtual DbEntityEntry<TEntity> Entry(TEntity entity) => _dbContext.Entry(entity);
 #endif
 
         /// <summary>
         /// 删除数据。
         /// </summary>
         /// <param name="entity">实体。</param>
-        public void Delete(TEntity entity) => _dbSet.Remove(entity);
+        public virtual void Delete(TEntity entity) => _dbSet.Remove(entity);
 
         /// <summary>
         /// 批量删除。
         /// </summary>
         /// <param name="entities">实体集合。</param>
-        public void Delete(params TEntity[] entities) => _dbSet.RemoveRange(entities);
+        public virtual void Delete(params TEntity[] entities) => _dbSet.RemoveRange(entities);
 
         /// <summary>
         /// 批量删除。
         /// </summary>
         /// <param name="entities">实体集合。</param>
-        public void Delete(IEnumerable<TEntity> entities) => _dbSet.RemoveRange(entities);
-
-        /// <summary>
-        /// 是否包含符合条件的数据。
-        /// </summary>
-        /// <param name="predicate">条件。</param>
-        /// <returns></returns>
-        public bool Exists(Expression<Func<TEntity, bool>> predicate = null)
-        {
-            if (predicate is null)
-            {
-                return _dbSet.Any();
-            }
-
-            return _dbSet.Any(predicate);
-        }
-
-#if NET_NORMAL || NETSTANDARD2_0
-        /// <summary>
-        /// 是否包含符合条件的数据。
-        /// </summary>
-        /// <param name="predicate">条件。</param>
-        /// <returns></returns>
-        public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate = null)
-        {
-            if (predicate is null)
-            {
-                return _dbSet.AnyAsync();
-            }
-
-            return _dbSet.AnyAsync(predicate);
-        }
-#endif
+        public virtual void Delete(IEnumerable<TEntity> entities) => _dbSet.RemoveRange(entities);
 
         /// <summary>
         /// 插入数据。
         /// </summary>
         /// <param name="entity">实体。</param>
         /// <returns></returns>
-#if NETSTANDARD2_0
-        public EntityEntry<TEntity> Insert(TEntity entity) => _dbSet.Add(entity);
+#if NET_CORE
+        public virtual EntityEntry<TEntity> Insert(TEntity entity) => _dbSet.Add(entity);
 #else
-        public TEntity Insert(TEntity entity) => _dbSet.Add(entity);
+        public virtual TEntity Insert(TEntity entity) => _dbSet.Add(entity);
 #endif
 
         /// <summary>
         /// 批量插入。
         /// </summary>
         /// <param name="entities">实体集合。</param>
-        public void Insert(params TEntity[] entities) => _dbSet.AddRange(entities);
+        public virtual void Insert(params TEntity[] entities) => _dbSet.AddRange(entities);
 
         /// <summary>
         /// 批量插入。
         /// </summary>
         /// <param name="entities">实体集合。</param>
-        public void Insert(IEnumerable<TEntity> entities) => _dbSet.AddRange(entities);
+        public virtual void Insert(IEnumerable<TEntity> entities) => _dbSet.AddRange(entities);
 
-#if NETSTANDARD2_0
+#if NET_CORE
         /// <summary>
         /// 插入数据。
         /// </summary>
         /// <param name="entity">实体。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public ValueTask<EntityEntry<TEntity>> InsertAsync(TEntity entity, CancellationToken cancellationToken = default) => _dbSet.AddAsync(entity, cancellationToken);
+        public virtual ValueTask<EntityEntry<TEntity>> InsertAsync(TEntity entity, CancellationToken cancellationToken = default) => _dbSet.AddAsync(entity, cancellationToken);
 
         /// <summary>
         /// 批量插入。
         /// </summary>
         /// <param name="entities">实体集合。</param>
         /// <returns></returns>
-        public Task InsertAsync(params TEntity[] entities) => _dbSet.AddRangeAsync(entities);
+        public virtual Task InsertAsync(params TEntity[] entities) => _dbSet.AddRangeAsync(entities);
 
         /// <summary>
         /// 批量插入。
@@ -207,25 +115,25 @@ namespace CodeArts.Db
         /// <param name="entities">实体集合。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public Task InsertAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default) => _dbSet.AddRangeAsync(entities, cancellationToken);
+        public virtual Task InsertAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default) => _dbSet.AddRangeAsync(entities, cancellationToken);
 
         /// <summary>
         /// 更新实体。
         /// </summary>
         /// <param name="entity">实体。</param>
-        public EntityEntry<TEntity> Update(TEntity entity) => _dbSet.Update(entity);
+        public virtual EntityEntry<TEntity> Update(TEntity entity) => _dbSet.Update(entity);
 
         /// <summary>
         /// 批量更新。
         /// </summary>
         /// <param name="entities">实体集合。</param>
-        public void Update(params TEntity[] entities) => _dbSet.UpdateRange(entities);
+        public virtual void Update(params TEntity[] entities) => _dbSet.UpdateRange(entities);
 
         /// <summary>
         /// 批量更新。
         /// </summary>
         /// <param name="entities">实体集合。</param>
-        public void Update(IEnumerable<TEntity> entities) => _dbSet.UpdateRange(entities);
+        public virtual void Update(IEnumerable<TEntity> entities) => _dbSet.UpdateRange(entities);
 #endif
 
         /// <summary>
@@ -248,6 +156,16 @@ namespace CodeArts.Db
         /// </summary>
         IQueryProvider IQueryable.Provider => _dbQueryable.Provider;
 
+#if NETSTANDARD2_1
+        /// <summary>
+        /// inheritdoc
+        /// </summary>
+        IAsyncEnumerator<TEntity> IAsyncEnumerable<TEntity>.GetAsyncEnumerator(CancellationToken cancellationToken) 
+            => _dbSet
+            .AsAsyncEnumerable()
+            .GetAsyncEnumerator(cancellationToken);
+#endif
+
         /// <summary>
         /// inheritdoc
         /// </summary>
@@ -257,6 +175,87 @@ namespace CodeArts.Db
         /// inheritdoc
         /// </summary>
         IEnumerator IEnumerable.GetEnumerator() => _dbQueryable.GetEnumerator();
+
+#if NETSTANDARD2_0
+        #region ForEach
+        #region ToList/Array
+
+        /// <summary>
+        ///     Asynchronously creates a <see cref="List{T}" /> from an <see cref="IQueryable{T}" /> by enumerating it
+        ///     asynchronously.
+        /// </summary>
+        /// <remarks>
+        ///     Multiple active operations on the same context instance are not supported.  Use <see langword="await" /> to ensure
+        ///     that any asynchronous operations have completed before calling another method on this context.
+        /// </remarks>
+        /// <param name="cancellationToken"> A <see cref="CancellationToken" /> to observe while waiting for the task to complete. </param>
+        /// <returns>
+        ///     A task that represents the asynchronous operation.
+        ///     The task result contains a <see cref="List{T}" /> that contains elements from the input sequence.
+        /// </returns>
+        /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
+        public async Task<List<TEntity>> ToListAsync(CancellationToken cancellationToken = default)
+        {
+            var list = new List<TEntity>();
+
+            var enumerator = _dbSet.AsAsyncEnumerable()
+                .GetAsyncEnumerator(cancellationToken);
+
+            while (await enumerator.MoveNextAsync())
+            {
+                list.Add(enumerator.Current);
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        ///     Asynchronously creates an array from an <see cref="IQueryable{T}" /> by enumerating it asynchronously.
+        /// </summary>
+        /// <remarks>
+        ///     Multiple active operations on the same context instance are not supported.  Use <see langword="await" /> to ensure
+        ///     that any asynchronous operations have completed before calling another method on this context.
+        /// </remarks>
+        /// <param name="cancellationToken"> A <see cref="CancellationToken" /> to observe while waiting for the task to complete. </param>
+        /// <returns>
+        ///     A task that represents the asynchronous operation.
+        ///     The task result contains an array that contains elements from the input sequence.
+        /// </returns>
+        /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
+        public async Task<TEntity[]> ToArrayAsync(CancellationToken cancellationToken = default)
+            => (await ToListAsync(cancellationToken).ConfigureAwait(false)).ToArray();
+
+        #endregion
+
+        /// <summary>
+        ///     Asynchronously enumerates the query results and performs the specified action on each element.
+        /// </summary>
+        /// <remarks>
+        ///     Multiple active operations on the same context instance are not supported.  Use <see langword="await" /> to ensure
+        ///     that any asynchronous operations have completed before calling another method on this context.
+        /// </remarks>
+        /// <param name="action"> The action to perform on each element. </param>
+        /// <param name="cancellationToken"> A <see cref="CancellationToken" /> to observe while waiting for the task to complete. </param>
+        /// <returns> A task that represents the asynchronous operation. </returns>
+        /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
+        public async Task ForEachAsync(Action<TEntity> action, CancellationToken cancellationToken = default)
+        {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            var enumerator = _dbSet.AsAsyncEnumerable()
+                .GetAsyncEnumerator(cancellationToken);
+
+            while (await enumerator.MoveNextAsync())
+            {
+                action.Invoke(enumerator.Current);
+            }
+        }
+
+        #endregion
+#endif
     }
 
     /// <summary>
@@ -279,7 +278,7 @@ namespace CodeArts.Db
         /// 根据主键删除数据。
         /// </summary>
         /// <param name="id">主键。</param>
-        public void Delete(TKey id)
+        public virtual void Delete(TKey id)
         {
             var entry = new TEntity
             {
@@ -290,20 +289,49 @@ namespace CodeArts.Db
         }
 
         /// <summary>
+        /// 是否存在数据。
+        /// </summary>
+        /// <param name="id">主键。</param>
+        /// <returns></returns>
+        public virtual bool IsExists(TKey id) => this.Any(x => x.Id.Equals(id));
+
+        /// <summary>
         /// 根据主键查找指定数据。
         /// </summary>
         /// <param name="id">主键。</param>
         /// <returns></returns>
-        public TEntity Find(TKey id) => this.FirstOrDefault(x => x.Id.Equals(id));
+        public virtual TEntity First(TKey id) => this.First(x => x.Id.Equals(id));
 
-#if NET_NORMAL || NETSTANDARD2_0
+        /// <summary>
+        /// 根据主键查找指定数据。
+        /// </summary>
+        /// <param name="id">主键。</param>
+        /// <returns></returns>
+        public virtual TEntity FirstOrDefault(TKey id) => this.FirstOrDefault(x => x.Id.Equals(id));
+
+#if NET_NORMAL || NET_CORE
+        /// <summary>
+        /// 是否存在数据。
+        /// </summary>
+        /// <param name="id">主键。</param>
+        /// <returns></returns>
+        public virtual Task<bool> IsExistsAsync(TKey id) => this.AnyAsync(x => x.Id.Equals(id));
+
         /// <summary>
         /// 根据主键异步查询指定数据。
         /// </summary>
         /// <param name="id">主键。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public Task<TEntity> FindAsync(TKey id, CancellationToken cancellationToken = default) => this.FirstOrDefaultAsync(x => x.Id.Equals(id), cancellationToken);
+        public virtual Task<TEntity> FirstAsync(TKey id, CancellationToken cancellationToken = default) => this.FirstAsync(x => x.Id.Equals(id), cancellationToken);
+
+        /// <summary>
+        /// 根据主键异步查询指定数据。
+        /// </summary>
+        /// <param name="id">主键。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public virtual Task<TEntity> FirstOrDefaultAsync(TKey id, CancellationToken cancellationToken = default) => this.FirstOrDefaultAsync(x => x.Id.Equals(id), cancellationToken);
 #endif
     }
 }

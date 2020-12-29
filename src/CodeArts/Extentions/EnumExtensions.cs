@@ -26,7 +26,7 @@ namespace System
                 throw new ArgumentException("参数类型不是枚举!");
             }
 
-            var typeStore = TypeStoreItem.Get<TEnum>();
+            var typeStore = TypeItem.Get<TEnum>();
 
             string enumStr = @enum.ToString();
 

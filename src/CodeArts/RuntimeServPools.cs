@@ -129,7 +129,7 @@ namespace CodeArts
 
                 var conversionType = typeof(TImplementation);
 
-                var typeStore = TypeStoreItem.Get(conversionType);
+                var typeStore = TypeItem.Get(conversionType);
 
                 var invoke = MakeImplement(typeStore.ConstructorStores
                     .Where(x => x.ParameterStores.All(y => y.IsOptional || ServiceCache.ContainsKey(y.ParameterType)))
@@ -141,7 +141,7 @@ namespace CodeArts
                 DefaultCache[typeof(TService)] = typeof(Nested<TService, TImplementation>);
             }
 
-            private static Func<TImplementation> MakeImplement(ConstructorStoreItem storeItem)
+            private static Func<TImplementation> MakeImplement(ConstructorItem storeItem)
             {
                 var bodyEx = New(storeItem.Member, storeItem.ParameterStores.Select(item =>
                 {

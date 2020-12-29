@@ -1,4 +1,6 @@
 ﻿#if NET_NORMAL || NETSTANDARD2_0
+using System.Threading;
+
 namespace System.Collections.Generic
 {
     /// <summary>
@@ -10,8 +12,9 @@ namespace System.Collections.Generic
         /// <summary>
         /// 获取迭代器。
         /// </summary>
+        /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        IAsyncEnumerator<T> GetAsyncEnumerator();
+        IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken);
     }
 }
 #endif

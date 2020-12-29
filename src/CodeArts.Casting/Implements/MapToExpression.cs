@@ -882,7 +882,7 @@ namespace CodeArts.Casting.Implements
 
             var valueExp = Parameter(typeof(object), "value");
 
-            var typeStore = TypeStoreItem.Get(conversionType);
+            var typeStore = TypeItem.Get(conversionType);
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
@@ -1280,7 +1280,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIDataRecordToComplex<TResult>(TypeStoreItem typeStore, Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByIDataRecordToComplex<TResult>(TypeItem typeStore, Type sourceType, Type conversionType)
         {
             var commonCtor = typeStore.ConstructorStores
                  .Where(x => x.CanRead)
@@ -1389,7 +1389,7 @@ namespace CodeArts.Casting.Implements
                 }
             }
 
-            void ConfigParameter(ParameterStoreItem info)
+            void ConfigParameter(ParameterItem info)
             {
                 var memberType = info.ParameterType;
 
@@ -1457,7 +1457,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIDataRecordToCommon<TResult>(TypeStoreItem typeStore, Type sourceType, Type conversionType)
+        protected virtual Func<object, TResult> ByIDataRecordToCommon<TResult>(TypeItem typeStore, Type sourceType, Type conversionType)
         {
             var method = ServiceCtor.Method;
 
@@ -1618,7 +1618,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByIDataRecordToObject<TResult>(Type sourceType, Type conversionType)
         {
-            var typeStore = TypeStoreItem.Get(conversionType);
+            var typeStore = TypeItem.Get(conversionType);
 
             if (typeStore.ConstructorStores.Any(x => x.ParameterStores.Count == 0))
                 return ByIDataRecordToCommon<TResult>(typeStore, sourceType, conversionType);
@@ -1741,7 +1741,7 @@ namespace CodeArts.Casting.Implements
                 Assign(resultExp, bodyExp)
             };
 
-            var typeStore = TypeStoreItem.Get(conversionType);
+            var typeStore = TypeItem.Get(conversionType);
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
@@ -1855,7 +1855,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToICollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments)
         {
-            var typeStore = TypeStoreItem.Get(sourceType);
+            var typeStore = TypeItem.Get(sourceType);
 
             var list = new List<Expression>();
 
@@ -1879,7 +1879,7 @@ namespace CodeArts.Casting.Implements
 
             list.Add(Assign(resultExp, Convert(bodyExp, listKvType)));
 
-            var typeStore2 = TypeStoreItem.Get(typeArgument);
+            var typeStore2 = TypeItem.Get(typeArgument);
 
             var ctorSotre = typeStore2.ConstructorStores.Where(x => x.ParameterStores.Count == 2).First();
 
@@ -1928,7 +1928,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToCollectionKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments)
         {
-            var typeStore = TypeStoreItem.Get(sourceType);
+            var typeStore = TypeItem.Get(sourceType);
 
             var list = new List<Expression>();
 
@@ -1950,7 +1950,7 @@ namespace CodeArts.Casting.Implements
 
             list.Add(Assign(resultExp, Convert(bodyExp, conversionType)));
 
-            var typeStore2 = TypeStoreItem.Get(typeArgument);
+            var typeStore2 = TypeItem.Get(typeArgument);
 
             var ctorSotre = typeStore2.ConstructorStores.Where(x => x.ParameterStores.Count == 2).First();
 
@@ -1998,7 +1998,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
         {
-            var typeStore = TypeStoreItem.Get(sourceType);
+            var typeStore = TypeItem.Get(sourceType);
 
             var list = new List<Expression>();
 
@@ -2066,7 +2066,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
         {
-            var typeStore = TypeStoreItem.Get(sourceType);
+            var typeStore = TypeItem.Get(sourceType);
 
             var list = new List<Expression>();
 

@@ -1,5 +1,4 @@
 using CodeArts;
-using CodeArts.Db;
 using CodeArts.Db.EntityFramework;
 using CodeArts.Db.Lts;
 using CodeArts.Mvc;

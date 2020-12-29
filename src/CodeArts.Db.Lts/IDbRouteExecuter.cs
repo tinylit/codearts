@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq.Expressions;
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
 using System.Threading;
-#endif
 using System.Threading.Tasks;
+#endif
 using System.Transactions;
 
 namespace CodeArts.Db.Lts
@@ -33,7 +33,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         int ExecuteCommand(int? commandTimeout = null);
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
         /// <summary>
         /// 执行指令。
         /// </summary>

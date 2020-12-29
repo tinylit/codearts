@@ -388,7 +388,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             if (value is IQueryable queryable)
             {
-                base.Visit(queryable.Expression);
+                Visit(queryable.Expression);
 
                 return node;
             }
@@ -866,7 +866,10 @@ namespace CodeArts.Db.Lts.Visitors
 
             foreach (var visitor in visitors ?? Empty)
             {
-                if (visitor.CanResolve(node)) return visitor.Visit(this, writer, node);
+                if (visitor.CanResolve(node))
+                {
+                    return visitor.Visit(this, writer, node);
+                }
             }
 
             var declaringType = node.Method.DeclaringType;
@@ -890,12 +893,85 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override Expression VisitUnary(UnaryExpression node)
         {
-            if (node.NodeType == ExpressionType.Not)
+            switch (node.NodeType)
             {
-                return writer.ReverseCondition(() => base.VisitUnary(node));
+                case ExpressionType.Quote:
+
+                    Visit(node.Operand);
+
+                    break;
+                case ExpressionType.Not when node.Operand is BinaryExpression binary:
+
+                    writer.ReverseCondition(() => base.VisitBinary(binary));
+
+                    break;
+
+                case ExpressionType.Not:
+                case ExpressionType.OnesComplement:
+                case ExpressionType.UnaryPlus:
+                case ExpressionType.Negate:
+                case ExpressionType.NegateChecked:
+
+                    writer.Write(node.NodeType);
+
+                    Visit(node.Operand);
+
+                    break;
+
+                case ExpressionType.Increment:
+                case ExpressionType.PreIncrementAssign:
+                case ExpressionType.PostIncrementAssign:
+
+                    Visit(node.Operand);
+
+                    writer.Write(ExpressionType.AddChecked);
+
+                    writer.Write("1");
+
+                    break;
+                case ExpressionType.Decrement:
+                case ExpressionType.PreDecrementAssign:
+                case ExpressionType.PostDecrementAssign:
+
+                    Visit(node.Operand);
+
+                    writer.Write(ExpressionType.SubtractChecked);
+
+                    writer.Write("1");
+
+                    break;
+
+                case ExpressionType.IsTrue:
+
+                    Visit(node.Operand);
+
+                    break;
+                case ExpressionType.IsFalse when node.Operand is BinaryExpression binary:
+
+                    writer.ReverseCondition(() => base.VisitBinary(binary));
+
+                    break;
+                case ExpressionType.IsFalse:
+
+                    writer.Write(ExpressionType.Not);
+
+                    Visit(node.Operand);
+
+                    break;
+                case ExpressionType.Throw:
+                case ExpressionType.TypeAs:
+                case ExpressionType.TypeIs:
+                case ExpressionType.Convert:
+                case ExpressionType.ArrayLength:
+                default:
+
+                    base.VisitUnary(node);
+
+                    break;
             }
 
-            return base.VisitUnary(node);
+
+            return node;
         }
 
         /// <inheritdoc />
