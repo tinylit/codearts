@@ -23,7 +23,7 @@ namespace CodeArts.Db.EntityFramework
     /// <summary>
     /// 数据库上下文。
     /// </summary>
-    public class DbContext<TDbContext> : DbContext, ICloneable where TDbContext : DbContext<TDbContext>
+    public class DbContext<TDbContext> : DbContext where TDbContext : DbContext<TDbContext>
     {
         private readonly IReadOnlyConnectionConfig connectionConfig;
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
@@ -144,7 +144,7 @@ namespace CodeArts.Db.EntityFramework
         {
             DbAdapter.OnConfiguring(optionsBuilder, connectionConfig);
 
-            optionsBuilder.ReplaceService<IConcurrencyDetector,DbConcurrencyDetector>()
+            optionsBuilder.ReplaceService<IConcurrencyDetector, DbConcurrencyDetector>()
                 .ReplaceService<IRelationalCommandBuilderFactory, DbRelationalCommandBuilderFactory>();
 
             base.OnConfiguring(optionsBuilder);
@@ -277,7 +277,5 @@ namespace CodeArts.Db.EntityFramework
         }
 #endif
 #endif
-
-        object ICloneable.Clone() => new DbContext<TDbContext>(connectionConfig);
     }
 }

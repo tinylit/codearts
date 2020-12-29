@@ -213,7 +213,7 @@ namespace CodeArts.Casting.Implements
                 throw new ArgumentNullException(nameof(sourceType));
             }
 
-            if (sourceType == typeof(TResult) && typeof(ICloneable).IsAssignableFrom(sourceType))
+            if ((sourceType == typeof(TResult) || typeof(TResult).IsAssignableFrom(sourceType)) && typeof(ICloneable).IsAssignableFrom(sourceType))
             {
                 return source =>
                 {
@@ -247,7 +247,7 @@ namespace CodeArts.Casting.Implements
                 throw new ArgumentNullException(nameof(conversionType));
             }
 
-            if (sourceType == conversionType && typeof(ICloneable).IsAssignableFrom(sourceType))
+            if ((sourceType == conversionType || conversionType.IsAssignableFrom(sourceType)) && typeof(ICloneable).IsAssignableFrom(sourceType))
             {
                 return source =>
                 {
