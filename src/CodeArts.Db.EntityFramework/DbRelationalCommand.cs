@@ -1,5 +1,4 @@
 ﻿#if NET_CORE
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Collections.Generic;
@@ -75,12 +74,14 @@ namespace CodeArts.Db.EntityFramework
         /// <summary>
         /// inheritdoc.
         /// </summary>
-        public override object ExecuteScalar(RelationalCommandParameterObject parameterObject) => base.ExecuteScalar(GetOrClone(parameterObject));
+        public override object ExecuteScalar(RelationalCommandParameterObject parameterObject)
+            => base.ExecuteScalar(GetOrClone(parameterObject));
 
         /// <summary>
         /// inheritdoc.
         /// </summary>
-        public override Task<object> ExecuteScalarAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken = default) => base.ExecuteScalarAsync(GetOrClone(parameterObject), cancellationToken);
+        public override Task<object> ExecuteScalarAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken = default)
+            => base.ExecuteScalarAsync(GetOrClone(parameterObject), cancellationToken);
 
         /// <summary>
         /// inheritdoc.

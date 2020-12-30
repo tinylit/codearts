@@ -21,11 +21,7 @@ namespace CodeArts.Db
     /// 仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-#if NETSTANDARD2_1
-    public class LinqRepository<TEntity> : ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IAsyncEnumerable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable where TEntity : class, IEntiy
-#else
     public class LinqRepository<TEntity> : ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable where TEntity : class, IEntiy
-#endif
     {
         private readonly DbContext _dbContext;
         private readonly DbSet<TEntity> _dbSet;
@@ -156,16 +152,6 @@ namespace CodeArts.Db
         /// </summary>
         IQueryProvider IQueryable.Provider => _dbQueryable.Provider;
 
-#if NETSTANDARD2_1
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        IAsyncEnumerator<TEntity> IAsyncEnumerable<TEntity>.GetAsyncEnumerator(CancellationToken cancellationToken) 
-            => _dbSet
-            .AsAsyncEnumerable()
-            .GetAsyncEnumerator(cancellationToken);
-#endif
-
         /// <summary>
         /// inheritdoc
         /// </summary>
@@ -176,7 +162,7 @@ namespace CodeArts.Db
         /// </summary>
         IEnumerator IEnumerable.GetEnumerator() => _dbQueryable.GetEnumerator();
 
-#if NETSTANDARD2_0
+#if NET_CORE
         #region ForEach
         #region ToList/Array
 

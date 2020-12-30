@@ -30,7 +30,7 @@ namespace Mvc.Core
 
             LinqConnectionManager.RegisterAdapter(new SqlServerLinqAdapter());
 
-            services.RegisterDbRepository<EfContext>();
+            services.AddDefaultRepositories<EfContext>();
 
             //services.AddGrpc();
 

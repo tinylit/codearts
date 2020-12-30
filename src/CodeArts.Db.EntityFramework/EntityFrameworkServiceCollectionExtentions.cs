@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">服务集合。</param>
         /// <param name="lifetime">声明周期。</param>
         /// <returns></returns>
-        public static IServiceCollection RegisterDbRepository<TContext>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped) where TContext : DbContext
+        public static IServiceCollection AddDefaultRepositories<TContext>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped) where TContext : DbContext
         {
             var contextType = typeof(TContext);
 
@@ -69,7 +69,6 @@ namespace Microsoft.Extensions.DependencyInjection
                         }
 
                     } while (true);
-
 
                     if (flag)
                     {

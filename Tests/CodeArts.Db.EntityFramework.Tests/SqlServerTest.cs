@@ -811,7 +811,7 @@ namespace UnitTest
 
         private Task TaskTest(UserRepository users)
         {
-            return users.ToListAsync();
+            return users.FirstOrDefaultAsync();
         }
     }
 }
