@@ -17,7 +17,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net452'">
-		<PackageReference Include="MySql.Data" Version="8.0.18" />
+		<PackageReference Include="MySql.Data" Version="8.0.22" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45'">
