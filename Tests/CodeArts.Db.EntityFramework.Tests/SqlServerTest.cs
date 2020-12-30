@@ -794,6 +794,8 @@ namespace UnitTest
             var list = result.ToList();
         }
 
+#if NETCOREAPP2_1
+
         [TestMethod]
         public void SingleContextWithMultiTaskTest()
         {
@@ -813,5 +815,6 @@ namespace UnitTest
         {
             return users.FirstOrDefaultAsync();
         }
+#endif
     }
 }
