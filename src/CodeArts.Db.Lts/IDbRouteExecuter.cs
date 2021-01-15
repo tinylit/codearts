@@ -37,6 +37,13 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 执行指令。
         /// </summary>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        Task<int> ExecuteCommandAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// 执行指令。
+        /// </summary>
         /// <param name="commandTimeout">超时时间。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>

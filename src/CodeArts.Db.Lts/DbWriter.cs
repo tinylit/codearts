@@ -460,6 +460,8 @@ namespace CodeArts.Db.Lts
                 return ExecutedAsync(results, commandTimeout, cancellationToken);
             }
 
+            public Task<int> ExecuteCommandAsync(CancellationToken cancellationToken = default) => ExecuteCommandAsync(null, cancellationToken);
+
             private async Task<int> ExecutedAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
             {
                 int influenceLine = 0;
