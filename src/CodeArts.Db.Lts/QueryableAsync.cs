@@ -2274,7 +2274,7 @@ namespace System.Linq
             IQueryable<TSource> source,
             CancellationToken cancellationToken = default)
             => ExecuteAsync<TSource, TResult>(
-                operatorMethodInfo, source, null, cancellationToken);
+                operatorMethodInfo, source, (Expression)null, cancellationToken);
 
         #endregion
     }
