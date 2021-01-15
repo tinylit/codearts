@@ -54,12 +54,12 @@ namespace CodeArts.Db.Lts
         public ISQLCorrectSettings Settings { get; }
 
 
-        private CusomVisitorCollect visitters;
+        private CustomVisitorList visitters;
 
         /// <summary>
         /// 格式化。
         /// </summary>
-        public ICusomVisitorCollect Visitors => visitters ?? (visitters = new CusomVisitorCollect());
+        public ICustomVisitorList Visitors => visitters ?? (visitters = new CustomVisitorList());
 
         /// <summary>
         /// 创建数据库连接。

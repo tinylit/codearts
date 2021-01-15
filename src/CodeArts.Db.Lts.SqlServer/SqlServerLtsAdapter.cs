@@ -5,11 +5,11 @@
     /// </summary>
     public class SqlServerLtsAdapter : SqlServerAdapter, IDbConnectionLtsAdapter, IDbConnectionAdapter, IDbConnectionFactory
     {
-        private CusomVisitorCollect visitters;
+        private CustomVisitorList visitters;
 
         /// <summary>
         /// 格式化。
         /// </summary>
-        public ICusomVisitorCollect Visitors => visitters ?? (visitters = new CusomVisitorCollect());
+        public ICustomVisitorList Visitors => visitters ?? (visitters = new CustomVisitorList());
     }
 }

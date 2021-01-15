@@ -17,7 +17,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="settings">SQL矫正配置。</param>
         /// <param name="visitors">自定义访问器集合。</param>
-        public CodeArtsProvider(ISQLCorrectSettings settings, ICusomVisitorCollect visitors) : base(settings, visitors)
+        public CodeArtsProvider(ISQLCorrectSettings settings, ICustomVisitorList visitors) : base(settings, visitors)
         {
         }
 

@@ -26,10 +26,10 @@ namespace CodeArts.Db.Lts.Visitors
         /// 类型关系。
         /// </summary>
         private readonly ConcurrentDictionary<Type, Type> CastCache = new ConcurrentDictionary<Type, Type>();
-        private readonly ICusomVisitorCollect visitors;
+        private readonly ICustomVisitorList visitors;
 
         /// <inheritdoc />
-        public QueryVisitor(ISQLCorrectSettings settings, ICusomVisitorCollect visitors) : base(settings)
+        public QueryVisitor(ISQLCorrectSettings settings, ICustomVisitorList visitors) : base(settings)
         {
             this.visitors = visitors;
         }

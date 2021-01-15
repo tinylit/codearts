@@ -99,7 +99,7 @@ namespace CodeArts.Db.Lts
                 {
                     list.Add(adapter => adapter.Settings);
                 }
-                else if (typeof(ICusomVisitorCollect).IsAssignableFrom(item.ParameterType))
+                else if (typeof(ICustomVisitorList).IsAssignableFrom(item.ParameterType))
                 {
                     list.Add(adapter => adapter.Visitors);
                 }

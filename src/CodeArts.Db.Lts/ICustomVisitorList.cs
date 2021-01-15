@@ -5,7 +5,7 @@ namespace CodeArts.Db.Lts
     /// <summary>
     /// 自定义表达式集合。
     /// </summary>
-    public interface ICusomVisitorCollect : IList<ICustomVisitor>
+    public interface ICustomVisitorList : IList<ICustomVisitor>
     {
     }
 }

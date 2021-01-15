@@ -8,6 +8,6 @@
         /// <summary>
         /// 访问器。
         /// </summary>
-        ICusomVisitorCollect Visitors { get; }
+        ICustomVisitorList Visitors { get; }
     }
 }

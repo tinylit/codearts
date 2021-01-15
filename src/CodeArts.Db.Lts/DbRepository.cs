@@ -17,9 +17,9 @@ namespace CodeArts.Db
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
 #if NET_NORMAL || NET_CORE
-    public class DbRepository<TEntity> : Repository<TEntity>, IDbRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
+    public class DbRepository<TEntity> : Repository<TEntity>, IDbRepository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #else
-    public class DbRepository<TEntity> : Repository<TEntity>, IDbRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
+    public class DbRepository<TEntity> : Repository<TEntity>, IDbRepository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #endif
     {
         private static readonly Type TypeSelfEntity = typeof(TEntity);
@@ -84,7 +84,7 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="table">表。</param>
         /// <returns></returns>
-        public IDbRepository<TEntity> From(Func<ITableInfo, string> table)
+        public IDRepository<TEntity> From(Func<ITableInfo, string> table)
         {
             return new DbRepository<TEntity>(DbContext, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table ?? throw new ArgumentNullException(nameof(table))) }));
         }
@@ -94,7 +94,7 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        public IDbRepository<TEntity> Where(Expression<Func<TEntity, bool>> expression)
+        public IDRepository<TEntity> Where(Expression<Func<TEntity, bool>> expression)
         {
             return new DbRepository<TEntity>(DbContext, Expression.Call(null, WhereMethod, new Expression[2] { Expression, Expression.Quote(expression) }));
         }
@@ -104,7 +104,7 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
-        public IDbRepository<TEntity> TimeOut(int commandTimeout)
+        public IDRepository<TEntity> TimeOut(int commandTimeout)
         {
             return new DbRepository<TEntity>(DbContext, Expression.Call(null, TimeOutMethod, new Expression[2] { Expression, Expression.Constant(commandTimeout) }));
         }

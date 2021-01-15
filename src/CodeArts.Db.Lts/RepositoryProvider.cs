@@ -13,14 +13,14 @@ namespace CodeArts.Db.Lts
     public abstract class RepositoryProvider : IDbRepositoryProvider, IDbRepositoryExecuter
     {
         private readonly ISQLCorrectSettings settings;
-        private readonly ICusomVisitorCollect visitors;
+        private readonly ICustomVisitorList visitors;
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="settings">SQL语句矫正设置。</param>
         /// <param name="visitors">自定义访问器。</param>
-        public RepositoryProvider(ISQLCorrectSettings settings, ICusomVisitorCollect visitors)
+        public RepositoryProvider(ISQLCorrectSettings settings, ICustomVisitorList visitors)
         {
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.visitors = visitors ?? throw new ArgumentNullException(nameof(visitors));

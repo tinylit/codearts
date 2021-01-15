@@ -10,10 +10,10 @@ namespace CodeArts.Db.Lts.Visitors
     /// </summary>
     public class ExecuteVisitor : BaseVisitor, IExecuteVisitor
     {
-        private readonly ICusomVisitorCollect visitors;
+        private readonly ICustomVisitorList visitors;
 
         /// <inheritdoc />
-        public ExecuteVisitor(ISQLCorrectSettings settings, ICusomVisitorCollect visitors) : base(settings)
+        public ExecuteVisitor(ISQLCorrectSettings settings, ICustomVisitorList visitors) : base(settings)
         {
             this.visitors = visitors;
         }
