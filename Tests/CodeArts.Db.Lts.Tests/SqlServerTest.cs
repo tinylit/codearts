@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.LinqAsync;
 using System.Linq.Expressions;
 using System.Text;
 using UnitTest.Domain.Entities;

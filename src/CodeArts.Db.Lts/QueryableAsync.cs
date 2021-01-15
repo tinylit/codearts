@@ -1906,9 +1906,9 @@ namespace System.LinqAsync
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static async Task<List<TSource>> ToListAsync<TSource>(
+        public static Task<List<TSource>> ToListAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default) => await source.AsAsyncEnumerable().ToListAsync(cancellationToken);
+            CancellationToken cancellationToken = default) => source.AsAsyncEnumerable().ToListAsync(cancellationToken);
 
         /// <summary>
         ///     Asynchronously creates an array from an <see cref="IQueryable{T}" /> by enumerating it asynchronously.
@@ -1933,10 +1933,10 @@ namespace System.LinqAsync
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static async Task<TSource[]> ToArrayAsync<TSource>(
+        public static Task<TSource[]> ToArrayAsync<TSource>(
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default)
-            => await source.AsAsyncEnumerable().ToArrayAsync(cancellationToken);
+            => source.AsAsyncEnumerable().ToArrayAsync(cancellationToken);
 
         /// <summary>
         /// Asynchronously enumerates the query results and performs the specified action on each element.
@@ -2015,7 +2015,7 @@ namespace System.LinqAsync
             MethodInfo operatorMethodInfo,
             IQueryable<TSource> source,
             Expression expression,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
         {
             if (source.Provider is IAsyncQueryProvider provider)
             {
@@ -2044,14 +2044,14 @@ namespace System.LinqAsync
             MethodInfo operatorMethodInfo,
             IQueryable<TSource> source,
             LambdaExpression expression,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
             => ExecuteAsync<TSource, TResult>(
                 operatorMethodInfo, source, Expression.Quote(expression), cancellationToken);
 
         private static Task<TResult> ExecuteAsync<TSource, TResult>(
             MethodInfo operatorMethodInfo,
             IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
             => ExecuteAsync<TSource, TResult>(
                 operatorMethodInfo, source, (Expression)null, cancellationToken);
 
