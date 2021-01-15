@@ -1,11 +1,12 @@
 ﻿#if NET_NORMAL || NET_CORE
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Linq
+namespace System.LinqAsync
 {
     /// <summary>
     /// 异步查询。
@@ -39,10 +40,7 @@ namespace System.Linq
         /// </exception>
         public static Task<bool> AnyAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, bool>(QueryableMethods.Any, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, bool>(QueryableMethods.Any, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously determines whether any element of a sequence satisfies a condition.
@@ -72,10 +70,7 @@ namespace System.Linq
         public static Task<bool> AnyAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, bool>(QueryableMethods.AnyWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, bool>(QueryableMethods.AnyWithPredicate, source, predicate, cancellationToken);
 
         /// <summary>
         ///     Asynchronously determines whether all the elements of a sequence satisfy a condition.
@@ -105,10 +100,7 @@ namespace System.Linq
         public static Task<bool> AllAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, bool>(QueryableMethods.All, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, bool>(QueryableMethods.All, source, predicate, cancellationToken);
 
         #endregion
 
@@ -139,10 +131,7 @@ namespace System.Linq
         /// </exception>
         public static Task<int> CountAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, int>(QueryableMethods.Count, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, int>(QueryableMethods.Count, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the number of elements in a sequence that satisfy a condition.
@@ -172,10 +161,7 @@ namespace System.Linq
         public static Task<int> CountAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, int>(QueryableMethods.CountWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, int>(QueryableMethods.CountWithPredicate, source, predicate, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns an <see cref="long" /> that represents the total number of elements in a sequence.
@@ -202,10 +188,7 @@ namespace System.Linq
         /// </exception>
         public static Task<long> LongCountAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, long>(QueryableMethods.LongCount, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, long>(QueryableMethods.LongCount, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns an <see cref="long" /> that represents the number of elements in a sequence
@@ -236,10 +219,7 @@ namespace System.Linq
         public static Task<long> LongCountAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, long>(QueryableMethods.LongCountWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, long>(QueryableMethods.LongCountWithPredicate, source, predicate, cancellationToken);
 
         #endregion
 
@@ -273,10 +253,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> FirstAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.First, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.First, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the first element of a sequence that satisfies a specified condition.
@@ -317,10 +294,7 @@ namespace System.Linq
         public static Task<TSource> FirstAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.FirstWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.FirstWithPredicate, source, predicate, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the first element of a sequence, or a default value if the sequence contains no elements.
@@ -348,10 +322,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> FirstOrDefaultAsync<TSource>(
            this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.FirstOrDefault, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.FirstOrDefault, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the first element of a sequence that satisfies a specified condition
@@ -383,10 +354,7 @@ namespace System.Linq
         public static Task<TSource> FirstOrDefaultAsync<TSource>(
            this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.FirstOrDefaultWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.FirstOrDefaultWithPredicate, source, predicate, cancellationToken);
 
         #endregion
 
@@ -420,10 +388,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> LastAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.Last, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.Last, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the last element of a sequence that satisfies a specified condition.
@@ -464,10 +429,7 @@ namespace System.Linq
         public static Task<TSource> LastAsync<TSource>(
              this IQueryable<TSource> source,
              Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.LastWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.LastWithPredicate, source, predicate, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the last element of a sequence, or a default value if the sequence contains no elements.
@@ -495,10 +457,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> LastOrDefaultAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.LastOrDefault, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.LastOrDefault, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the last element of a sequence that satisfies a specified condition
@@ -530,10 +489,7 @@ namespace System.Linq
         public static Task<TSource> LastOrDefaultAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.LastOrDefaultWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.LastOrDefaultWithPredicate, source, predicate, cancellationToken);
 
         #endregion
 
@@ -576,10 +532,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> SingleAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.Single, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.Single, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the only element of a sequence that satisfies a specified condition,
@@ -627,10 +580,7 @@ namespace System.Linq
         public static Task<TSource> SingleAsync<TSource>(
              this IQueryable<TSource> source,
              Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.SingleWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.SingleWithPredicate, source, predicate, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the only element of a sequence, or a default value if the sequence is empty;
@@ -663,10 +613,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> SingleOrDefaultAsync<TSource>(
              this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.SingleOrDefault, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.SingleOrDefault, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously returns the only element of a sequence that satisfies a specified condition or
@@ -701,11 +648,7 @@ namespace System.Linq
         public static Task<TSource> SingleOrDefaultAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, bool>> predicate,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(
-                QueryableMethods.SingleOrDefaultWithPredicate, source, predicate, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.SingleOrDefaultWithPredicate, source, predicate, cancellationToken);
 
         #endregion
 
@@ -736,10 +679,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> MinAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.MinWithoutSelector, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.MinWithoutSelector, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously invokes a projection function on each element of a sequence and returns the minimum resulting value.
@@ -771,10 +711,7 @@ namespace System.Linq
         public static Task<TResult> MinAsync<TSource, TResult>(
              this IQueryable<TSource> source,
              Expression<Func<TSource, TResult>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TResult>(QueryableMethods.MinWithSelector, source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TResult>(QueryableMethods.MinWithSelector, source, selector, cancellationToken);
 
         #endregion
 
@@ -805,10 +742,7 @@ namespace System.Linq
         /// </exception>
         public static Task<TSource> MaxAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TSource>(QueryableMethods.MaxWithoutSelector, source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TSource>(QueryableMethods.MaxWithoutSelector, source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously invokes a projection function on each element of a sequence and returns the maximum resulting value.
@@ -840,10 +774,7 @@ namespace System.Linq
         public static Task<TResult> MaxAsync<TSource, TResult>(
              this IQueryable<TSource> source,
              Expression<Func<TSource, TResult>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, TResult>(QueryableMethods.MaxWithSelector, source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, TResult>(QueryableMethods.MaxWithSelector, source, selector, cancellationToken);
 
         #endregion
 
@@ -871,10 +802,7 @@ namespace System.Linq
         /// </exception>
         public static Task<decimal> SumAsync(
             this IQueryable<decimal> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<decimal, decimal>(QueryableMethods.GetSumWithoutSelector(typeof(decimal)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<decimal, decimal>(QueryableMethods.GetSumWithoutSelector(typeof(decimal)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -898,11 +826,7 @@ namespace System.Linq
         /// </exception>
         public static Task<decimal?> SumAsync(
              this IQueryable<decimal?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<decimal?, decimal?>(
-                QueryableMethods.GetSumWithoutSelector(typeof(decimal?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<decimal?, decimal?>(QueryableMethods.GetSumWithoutSelector(typeof(decimal?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -929,11 +853,7 @@ namespace System.Linq
         public static Task<decimal> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, decimal>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, decimal>(
-                QueryableMethods.GetSumWithSelector(typeof(decimal)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, decimal>(QueryableMethods.GetSumWithSelector(typeof(decimal)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -960,11 +880,7 @@ namespace System.Linq
         public static Task<decimal?> SumAsync<TSource>(
             this IQueryable<TSource> source,
              Expression<Func<TSource, decimal?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, decimal?>(
-                QueryableMethods.GetSumWithSelector(typeof(decimal?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, decimal?>(QueryableMethods.GetSumWithSelector(typeof(decimal?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -988,10 +904,7 @@ namespace System.Linq
         /// </exception>
         public static Task<int> SumAsync(
             this IQueryable<int> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<int, int>(QueryableMethods.GetSumWithoutSelector(typeof(int)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<int, int>(QueryableMethods.GetSumWithoutSelector(typeof(int)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1015,10 +928,7 @@ namespace System.Linq
         /// </exception>
         public static Task<int?> SumAsync(
             this IQueryable<int?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<int?, int?>(QueryableMethods.GetSumWithoutSelector(typeof(int?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<int?, int?>(QueryableMethods.GetSumWithoutSelector(typeof(int?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1045,10 +955,7 @@ namespace System.Linq
         public static Task<int> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, int>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, int>(QueryableMethods.GetSumWithSelector(typeof(int)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, int>(QueryableMethods.GetSumWithSelector(typeof(int)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1075,11 +982,7 @@ namespace System.Linq
         public static Task<int?> SumAsync<TSource>(
              this IQueryable<TSource> source,
              Expression<Func<TSource, int?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, int?>(
-                QueryableMethods.GetSumWithSelector(typeof(int?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, int?>(QueryableMethods.GetSumWithSelector(typeof(int?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1103,10 +1006,7 @@ namespace System.Linq
         /// </exception>
         public static Task<long> SumAsync(
             this IQueryable<long> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<long, long>(QueryableMethods.GetSumWithoutSelector(typeof(long)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<long, long>(QueryableMethods.GetSumWithoutSelector(typeof(long)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1130,10 +1030,7 @@ namespace System.Linq
         /// </exception>
         public static Task<long?> SumAsync(
             this IQueryable<long?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<long?, long?>(QueryableMethods.GetSumWithoutSelector(typeof(long?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<long?, long?>(QueryableMethods.GetSumWithoutSelector(typeof(long?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1160,11 +1057,7 @@ namespace System.Linq
         public static Task<long> SumAsync<TSource>(
              this IQueryable<TSource> source,
              Expression<Func<TSource, long>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, long>(
-                QueryableMethods.GetSumWithSelector(typeof(long)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, long>(QueryableMethods.GetSumWithSelector(typeof(long)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1191,11 +1084,7 @@ namespace System.Linq
         public static Task<long?> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, long?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, long?>(
-                QueryableMethods.GetSumWithSelector(typeof(long?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, long?>(QueryableMethods.GetSumWithSelector(typeof(long?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1219,10 +1108,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double> SumAsync(
             this IQueryable<double> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<double, double>(QueryableMethods.GetSumWithoutSelector(typeof(double)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<double, double>(QueryableMethods.GetSumWithoutSelector(typeof(double)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1246,10 +1132,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double?> SumAsync(
             this IQueryable<double?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<double?, double?>(QueryableMethods.GetSumWithoutSelector(typeof(double?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<double?, double?>(QueryableMethods.GetSumWithoutSelector(typeof(double?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1276,11 +1159,7 @@ namespace System.Linq
         public static Task<double> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, double>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double>(
-                QueryableMethods.GetSumWithSelector(typeof(double)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double>(QueryableMethods.GetSumWithSelector(typeof(double)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1307,11 +1186,7 @@ namespace System.Linq
         public static Task<double?> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, double?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double?>(
-                QueryableMethods.GetSumWithSelector(typeof(double?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double?>(QueryableMethods.GetSumWithSelector(typeof(double?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1335,10 +1210,7 @@ namespace System.Linq
         /// </exception>
         public static Task<float> SumAsync(
             this IQueryable<float> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<float, float>(QueryableMethods.GetSumWithoutSelector(typeof(float)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<float, float>(QueryableMethods.GetSumWithoutSelector(typeof(float)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of a sequence of values.
@@ -1362,10 +1234,7 @@ namespace System.Linq
         /// </exception>
         public static Task<float?> SumAsync(
             this IQueryable<float?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<float?, float?>(QueryableMethods.GetSumWithoutSelector(typeof(float?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<float?, float?>(QueryableMethods.GetSumWithoutSelector(typeof(float?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1392,11 +1261,7 @@ namespace System.Linq
         public static Task<float> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, float>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, float>(
-                QueryableMethods.GetSumWithSelector(typeof(float)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, float>(QueryableMethods.GetSumWithSelector(typeof(float)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the sum of the sequence of values that is obtained by invoking a projection function on
@@ -1423,11 +1288,7 @@ namespace System.Linq
         public static Task<float?> SumAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, float?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, float?>(
-                QueryableMethods.GetSumWithSelector(typeof(float?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, float?>(QueryableMethods.GetSumWithSelector(typeof(float?)), source, selector, cancellationToken);
 
         #endregion
 
@@ -1458,11 +1319,7 @@ namespace System.Linq
         /// </exception>
         public static Task<decimal> AverageAsync(
             this IQueryable<decimal> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<decimal, decimal>(
-                QueryableMethods.GetAverageWithoutSelector(typeof(decimal)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<decimal, decimal>(QueryableMethods.GetAverageWithoutSelector(typeof(decimal)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1486,11 +1343,7 @@ namespace System.Linq
         /// </exception>
         public static Task<decimal?> AverageAsync(
             this IQueryable<decimal?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<decimal?, decimal?>(
-                QueryableMethods.GetAverageWithoutSelector(typeof(decimal?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<decimal?, decimal?>(QueryableMethods.GetAverageWithoutSelector(typeof(decimal?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1521,11 +1374,7 @@ namespace System.Linq
         public static Task<decimal> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, decimal>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, decimal>(
-                QueryableMethods.GetAverageWithSelector(typeof(decimal)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, decimal>(QueryableMethods.GetAverageWithSelector(typeof(decimal)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1553,11 +1402,7 @@ namespace System.Linq
         public static Task<decimal?> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, decimal?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, decimal?>(
-                QueryableMethods.GetAverageWithSelector(typeof(decimal?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, decimal?>(QueryableMethods.GetAverageWithSelector(typeof(decimal?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1584,10 +1429,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double> AverageAsync(
             this IQueryable<int> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<int, double>(QueryableMethods.GetAverageWithoutSelector(typeof(int)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<int, double>(QueryableMethods.GetAverageWithoutSelector(typeof(int)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1611,10 +1453,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double?> AverageAsync(
             this IQueryable<int?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<int?, double?>(QueryableMethods.GetAverageWithoutSelector(typeof(int?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<int?, double?>(QueryableMethods.GetAverageWithoutSelector(typeof(int?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1645,11 +1484,7 @@ namespace System.Linq
         public static Task<double> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, int>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double>(
-                QueryableMethods.GetAverageWithSelector(typeof(int)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double>(QueryableMethods.GetAverageWithSelector(typeof(int)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1677,11 +1512,7 @@ namespace System.Linq
         public static Task<double?> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, int?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double?>(
-                QueryableMethods.GetAverageWithSelector(typeof(int?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double?>(QueryableMethods.GetAverageWithSelector(typeof(int?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1708,10 +1539,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double> AverageAsync(
             this IQueryable<long> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<long, double>(QueryableMethods.GetAverageWithoutSelector(typeof(long)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<long, double>(QueryableMethods.GetAverageWithoutSelector(typeof(long)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1735,10 +1563,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double?> AverageAsync(
             this IQueryable<long?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<long?, double?>(QueryableMethods.GetAverageWithoutSelector(typeof(long?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<long?, double?>(QueryableMethods.GetAverageWithoutSelector(typeof(long?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1769,11 +1594,7 @@ namespace System.Linq
         public static Task<double> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, long>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double>(
-                QueryableMethods.GetAverageWithSelector(typeof(long)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double>(QueryableMethods.GetAverageWithSelector(typeof(long)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1801,11 +1622,7 @@ namespace System.Linq
         public static Task<double?> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, long?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double?>(
-                QueryableMethods.GetAverageWithSelector(typeof(long?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double?>(QueryableMethods.GetAverageWithSelector(typeof(long?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1832,11 +1649,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double> AverageAsync(
             this IQueryable<double> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<double, double>(
-                QueryableMethods.GetAverageWithoutSelector(typeof(double)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<double, double>(QueryableMethods.GetAverageWithoutSelector(typeof(double)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1860,11 +1673,7 @@ namespace System.Linq
         /// </exception>
         public static Task<double?> AverageAsync(
             this IQueryable<double?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<double?, double?>(
-                QueryableMethods.GetAverageWithoutSelector(typeof(double?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<double?, double?>(QueryableMethods.GetAverageWithoutSelector(typeof(double?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1895,11 +1704,7 @@ namespace System.Linq
         public static Task<double> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, double>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double>(
-                QueryableMethods.GetAverageWithSelector(typeof(double)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double>(QueryableMethods.GetAverageWithSelector(typeof(double)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -1927,11 +1732,7 @@ namespace System.Linq
         public static Task<double?> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, double?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, double?>(
-                QueryableMethods.GetAverageWithSelector(typeof(double?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, double?>(QueryableMethods.GetAverageWithSelector(typeof(double?)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1958,10 +1759,7 @@ namespace System.Linq
         /// </exception>
         public static Task<float> AverageAsync(
             this IQueryable<float> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<float, float>(QueryableMethods.GetAverageWithoutSelector(typeof(float)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<float, float>(QueryableMethods.GetAverageWithoutSelector(typeof(float)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values.
@@ -1985,11 +1783,7 @@ namespace System.Linq
         /// </exception>
         public static Task<float?> AverageAsync(
             this IQueryable<float?> source,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<float?, float?>(
-                QueryableMethods.GetAverageWithoutSelector(typeof(float?)), source, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<float?, float?>(QueryableMethods.GetAverageWithoutSelector(typeof(float?)), source, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -2020,11 +1814,7 @@ namespace System.Linq
         public static Task<float> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, float>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, float>(
-                QueryableMethods.GetAverageWithSelector(typeof(float)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, float>(QueryableMethods.GetAverageWithSelector(typeof(float)), source, selector, cancellationToken);
 
         /// <summary>
         ///     Asynchronously computes the average of a sequence of values that is obtained
@@ -2052,11 +1842,7 @@ namespace System.Linq
         public static Task<float?> AverageAsync<TSource>(
             this IQueryable<TSource> source,
             Expression<Func<TSource, float?>> selector,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, float?>(
-                QueryableMethods.GetAverageWithSelector(typeof(float?)), source, selector, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, float?>(QueryableMethods.GetAverageWithSelector(typeof(float?)), source, selector, cancellationToken);
 
         #endregion
 
@@ -2090,14 +1876,7 @@ namespace System.Linq
         public static Task<bool> ContainsAsync<TSource>(
             this IQueryable<TSource> source,
             TSource item,
-            CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync<TSource, bool>(
-                QueryableMethods.Contains,
-                source,
-                Expression.Constant(item, typeof(TSource)),
-                cancellationToken);
-        }
+            CancellationToken cancellationToken = default) => ExecuteAsync<TSource, bool>(QueryableMethods.Contains, source, Expression.Constant(item, typeof(TSource)), cancellationToken);
 
         #endregion
 

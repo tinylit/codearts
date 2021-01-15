@@ -44,11 +44,11 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 任意一个。
         /// </summary>
-        public const string Any = "Any"; //? IN 或 Exists
+        public const string Any = nameof(Queryable.Any); //? IN 或 Exists
         /// <summary>
         /// 所有。
         /// </summary>
-        public const string All = "All"; //? Exists And Not Exists
+        public const string All = nameof(Queryable.All); //? Exists And Not Exists
         /// <summary>
         /// 转换。
         /// </summary>
@@ -208,16 +208,16 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 更新。
         /// </summary>
-        public const string Update = "Update"; //"Update";
+        public const string Update = nameof(RepositoryExtentions.Update); //"Update";
 
         /// <summary>
         /// 删除。
         /// </summary>
-        public const string Delete = "Delete"; // "Delete";
+        public const string Delete = nameof(RepositoryExtentions.Delete); // "Delete";
 
         /// <summary>
         /// 插入。
         /// </summary>
-        public const string Insert = "Insert"; // "Insert";
+        public const string Insert = nameof(RepositoryExtentions.Insert); // "Insert";
     }
 }
