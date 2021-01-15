@@ -2159,6 +2159,36 @@ namespace System.Linq
             CancellationToken cancellationToken = default)
             => await source.AsAsyncEnumerable().ToArrayAsync(cancellationToken);
 
+        /// <summary>
+        /// Asynchronously enumerates the query results and performs the specified action on each element.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <param name="source">An System.Linq.IQueryable`1 to enumerate.</param>
+        /// <param name="action">The action to perform on each element.</param>
+        /// <param name="cancellationToken">A System.Threading.CancellationToken to observe while waiting for the task to complete.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        public static async Task ForEachAsync<TSource>(this IQueryable<TSource> source, Action<TSource> action, CancellationToken cancellationToken = default)
+        {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            var enumerator = source
+                .AsAsyncEnumerable()
+                .GetAsyncEnumerator(cancellationToken);
+
+            while (await enumerator.MoveNextAsync())
+            {
+                action.Invoke(enumerator.Current);
+            }
+        }
+
         #endregion
 
         #region AsAsyncEnumerable
@@ -2183,7 +2213,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="source" /> is not a <see cref="IAsyncEnumerable{T}" />.
         /// </exception>
-        private static IAsyncEnumerable<TSource> AsAsyncEnumerable<TSource>(this IQueryable<TSource> source)
+        public static IAsyncEnumerable<TSource> AsAsyncEnumerable<TSource>(this IQueryable<TSource> source)
         {
             if (source is null)
             {
