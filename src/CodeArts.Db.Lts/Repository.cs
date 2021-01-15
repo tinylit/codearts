@@ -61,6 +61,7 @@ namespace CodeArts.Db
         protected Repository(IDbContext context, Expression expression) : this(context)
         {
             isEmpty = false;
+
             this.expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
@@ -244,7 +245,7 @@ namespace CodeArts.Db
         /// <returns></returns>
         IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator(CancellationToken cancellationToken)
         {
-            if (isEmpty || Enumerable is null)
+            if (isEmpty || AsyncEnumerable is null)
             {
                 AsyncEnumerable = Context.QueryAsync<T>(Expression);
             }
