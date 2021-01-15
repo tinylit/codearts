@@ -1,10 +1,11 @@
 ﻿using CodeArts.Db.Exceptions;
-using CodeArts.Runtime;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using static System.Linq.Expressions.Expression;
 
 namespace CodeArts.Db.Lts
 {
@@ -18,6 +19,15 @@ namespace CodeArts.Db.Lts
         private static readonly ConcurrentDictionary<string, IDbConnectionLtsAdapter> Adapters;
 
         private static readonly ConcurrentDictionary<IDbConnectionLtsAdapter, RepositoryProvider> Providers;
+
+
+        private static readonly MethodInfo ProviderNameMethodInfo = typeof(DbConnectionManager).GetMethod(nameof(GetProviderName), BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo SettingsMethodInfo = typeof(DbConnectionManager).GetMethod(nameof(GetSettings), BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo VisitorsMethodInfo = typeof(DbConnectionManager).GetMethod(nameof(GetVisitors), BindingFlags.NonPublic | BindingFlags.Static);
+
+        private static string GetProviderName(IDbConnectionLtsAdapter adapter) => adapter.ProviderName;
+        private static ISQLCorrectSettings GetSettings(IDbConnectionLtsAdapter adapter) => adapter.Settings;
+        private static ICustomVisitorList GetVisitors(IDbConnectionLtsAdapter adapter) => adapter.Visitors;
 
         /// <summary>
         /// 静态构造函数。
@@ -91,37 +101,54 @@ namespace CodeArts.Db.Lts
 
             var parameters = constructor.GetParameters();
 
-            var list = new List<Func<IDbConnectionLtsAdapter, object>>();
+            var adapterEx = Parameter(typeof(IDbConnectionLtsAdapter), "adapter");
 
-            parameters.ForEach(item =>
+            if (parameters.Length == 0)
             {
-                if (typeof(ISQLCorrectSettings).IsAssignableFrom(item.ParameterType))
-                {
-                    list.Add(adapter => adapter.Settings);
-                }
-                else if (typeof(ICustomVisitorList).IsAssignableFrom(item.ParameterType))
-                {
-                    list.Add(adapter => adapter.Visitors);
-                }
-                else if (typeof(IDbConnectionLtsAdapter).IsAssignableFrom(item.ParameterType))
-                {
-                    list.Add(adapter => adapter);
-                }
-                else if (item.ParameterType == typeof(string))
-                {
-                    list.Add(adapter => adapter.ProviderName);
-                }
-                else if (item.IsOptional)
-                {
-                    list.Add(adapter => item.DefaultValue);
-                }
-                else
-                {
-                    throw new NotSupportedException($"数据仓库公共构造函数参数类型（{item.ParameterType.FullName}）不被支持(仅支持【string】、【ISQLCorrectSettings】、【IDbConnectionAdapter】或可选参数)!");
-                }
-            });
+                var bodyEx = New(constructor);
 
-            FactoryProviders[key] = adapter => (RepositoryProvider)constructor.Invoke(list.ConvertAll(factoty => factoty(adapter)).ToArray());
+                var lambdaEx = Lambda<Func<IDbConnectionLtsAdapter, RepositoryProvider>>(Convert(bodyEx, typeof(RepositoryProvider)), adapterEx);
+
+                FactoryProviders[key] = lambdaEx.Compile();
+            }
+            else
+            {
+                var argumentsEx = new List<Expression>(parameters.Length);
+
+                parameters.ForEach(item =>
+                {
+                    if (typeof(ISQLCorrectSettings).IsAssignableFrom(item.ParameterType))
+                    {
+                        argumentsEx.Add(Call(null, SettingsMethodInfo, adapterEx));
+                    }
+                    else if (typeof(ICustomVisitorList).IsAssignableFrom(item.ParameterType))
+                    {
+                        argumentsEx.Add(Call(VisitorsMethodInfo, adapterEx));
+                    }
+                    else if (typeof(IDbConnectionLtsAdapter).IsAssignableFrom(item.ParameterType))
+                    {
+                        argumentsEx.Add(adapterEx);
+                    }
+                    else if (item.ParameterType == typeof(string))
+                    {
+                        argumentsEx.Add(Call(ProviderNameMethodInfo, adapterEx));
+                    }
+                    else if (item.IsOptional)
+                    {
+                        argumentsEx.Add(Constant(item.DefaultValue));
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"数据仓库公共构造函数参数类型（{item.ParameterType.FullName}）不被支持(仅支持【string】、【ISQLCorrectSettings】、【IDbConnectionAdapter】或可选参数)!");
+                    }
+                });
+
+                var bodyEx = New(constructor, argumentsEx);
+
+                var lambdaEx = Lambda<Func<IDbConnectionLtsAdapter, RepositoryProvider>>(Convert(bodyEx, typeof(RepositoryProvider)), adapterEx);
+
+                FactoryProviders[key] = lambdaEx.Compile();
+            }
         }
 
         /// <summary> 创建数据库适配器。</summary>
