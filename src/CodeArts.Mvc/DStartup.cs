@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using CodeArts.Caching;
 using CodeArts.Config;
 using CodeArts.Serialize.Json;
 using CodeArts.Mvc.Converters;
@@ -220,7 +219,6 @@ namespace CodeArts.Mvc
 }
 #else
 using Newtonsoft.Json.Serialization;
-using CodeArts.Caching;
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.Converters;
 using CodeArts.Mvc.DependencyInjection;
