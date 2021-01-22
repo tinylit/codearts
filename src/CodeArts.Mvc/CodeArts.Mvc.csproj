@@ -113,7 +113,8 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<ItemGroup>		<ProjectReference Include="..\CodeArts.Logging\CodeArts.Logging.csproj" />
+	<ItemGroup>
+		<ProjectReference Include="..\CodeArts.Logging\CodeArts.Logging.csproj" />
 		<ProjectReference Include="..\CodeArts.Net\CodeArts.Net.csproj" />
 	</ItemGroup>
 
