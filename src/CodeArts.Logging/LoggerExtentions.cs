@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Serialize.Json;
+using System;
 #if NET40 || NET_NORMAL
 namespace log4net.Core
 #else
@@ -10,9 +11,99 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class LoggerExtentions
     {
-        #if NET40 || NET_NORMAL
+#if NET40 || NET_NORMAL
         private static readonly Type ExtentionsType = typeof(LoggerExtentions);
 #endif
+
+        /// <summary>
+        /// Debug。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="exception">异常。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Debug(this ILogger logger, Exception exception, object message) => logger.Debug(exception, JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Debug。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Debug(this ILogger logger, object message) => logger.Debug(JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Trace。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="exception">异常。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Trace(this ILogger logger, Exception exception, object message) => logger.Trace(exception, JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Trace。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Trace(this ILogger logger, object message) => logger.Trace(JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Info。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="exception">异常。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Info(this ILogger logger, Exception exception, object message) => logger.Info(exception, JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Info。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Info(this ILogger logger, object message) => logger.Info(JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Warn。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="exception">异常。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Warn(this ILogger logger, Exception exception, object message) => logger.Warn(exception, JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Warn。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Warn(this ILogger logger, object message) => logger.Warn(JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Error。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="exception">异常。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Error(this ILogger logger, Exception exception, object message) => logger.Error(exception, JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Error。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Error(this ILogger logger, object message) => logger.Error(JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Critical。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="exception">异常。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Critical(this ILogger logger, Exception exception, object message) => logger.Critical(exception, JsonHelper.ToJson(message));
+
+        /// <summary>
+        /// Critical。
+        /// </summary>
+        /// <param name="logger">日志记录器。</param>
+        /// <param name="message">记录消息。</param>
+        public static void Critical(this ILogger logger, object message) => logger.Critical(JsonHelper.ToJson(message));
 
         /// <summary>
         /// Debug。

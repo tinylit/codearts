@@ -1,29 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;</TargetFrameworks>
-    <TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Authors>Tiny Lit</Authors>
-    <Company>Tiny Lit</Company>
-    <Description>A network communications assistant.</Description>
-    <PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
-    <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
-    <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-    <Version>5.2.0.0</Version>
-    <RootNamespace>CodeArts</RootNamespace>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;netstandard2.1;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Authors>Tiny Lit</Authors>
+		<Company>Tiny Lit</Company>
+		<Description>A network communications assistant.</Description>
+		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
+		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
+		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+		<Version>5.2.1</Version>
+		<RootNamespace>CodeArts</RootNamespace>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
+		<DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CodeArts\CodeArts.csproj" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'">
+		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'">
-    <Reference Include="System.Web" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\CodeArts\CodeArts.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'">
+		<Reference Include="System.Web" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
+		<PackageReference Include="System.Net.Http">
+			<Version>4.3.4</Version>
+		</PackageReference>
+	</ItemGroup>
 
 </Project>

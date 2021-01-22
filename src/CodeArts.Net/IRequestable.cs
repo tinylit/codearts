@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -377,6 +378,12 @@ namespace CodeArts.Net
     /// </summary>
     public interface IRequestable : IRequestableExtend<string>, IRequestableBase, IFileRequestable, ICastRequestable
     {
+        /// <summary>
+        /// 使用编码，默认:UTF-8。
+        /// </summary>
+        /// <param name="encoding">编码。</param>
+        IRequestable UseEncoding(Encoding encoding);
+
         /// <summary>
         /// body中传输。
         /// </summary>

@@ -33,9 +33,24 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 构造函数。
         /// </summary>
+        public DStartup() : this(true)
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        public DStartup(bool useSwaggerUi) : this(useSwaggerUi, true)
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
         /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public DStartup(bool useSwaggerUi = true, bool useDependencyInjection = true)
+        public DStartup(bool useSwaggerUi, bool useDependencyInjection)
         {
             this.useSwaggerUi = useSwaggerUi;
             this.useDependencyInjection = useDependencyInjection;
@@ -140,7 +155,7 @@ namespace CodeArts.Mvc
                    })
                    .SetCompatibilityVersion(CompatibilityVersion.Latest);
         }
-        
+
         /// <summary>
         /// 使用端点。
         /// </summary>
@@ -194,8 +209,8 @@ namespace CodeArts.Mvc
             app.UseCors("Allow")
                 .UseRouting()
                 .UseMvc()
-                .UseLoggerManager()
-                .UseEndpoints(UseEndpoints);
+                .UseEndpoints(UseEndpoints)
+                .UseLoggerManager();
 
             if (useSwaggerUi)
             {
@@ -243,15 +258,21 @@ namespace CodeArts.Mvc
     /// </summary>
     public class DStartup
     {
-
         private readonly bool useDependencyInjection;
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        public DStartup() : this(true)
+        {
+        }
 
 #if NET40
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public DStartup(bool useDependencyInjection = true)
+        public DStartup(bool useDependencyInjection)
         {
             this.useDependencyInjection = useDependencyInjection;
         }
@@ -262,8 +283,17 @@ namespace CodeArts.Mvc
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        public DStartup(bool useSwaggerUi) : this(useSwaggerUi, true)
+        {
+
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
         /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public DStartup(bool useSwaggerUi = true, bool useDependencyInjection = true)
+        public DStartup(bool useSwaggerUi, bool useDependencyInjection)
         {
             this.useSwaggerUi = useSwaggerUi;
             this.useDependencyInjection = useDependencyInjection;

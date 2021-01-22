@@ -29,7 +29,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 执行指令。
         /// </summary>
-        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="commandTimeout">超时时间，单位：秒。<see cref="System.Data.IDbCommand.CommandTimeout"/></param>
         /// <returns></returns>
         int ExecuteCommand(int? commandTimeout = null);
 
@@ -44,10 +44,10 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 执行指令。
         /// </summary>
-        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="commandTimeout">超时时间，单位：秒。<see cref="System.Data.IDbCommand.CommandTimeout"/></param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        Task<int> ExecuteCommandAsync(int? commandTimeout = null, CancellationToken cancellationToken = default);
+        Task<int> ExecuteCommandAsync(int? commandTimeout, CancellationToken cancellationToken = default);
 #endif
 
         /// <summary>

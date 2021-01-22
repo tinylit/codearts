@@ -97,6 +97,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Sqlite", "src\C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.EntityFramework.Sqlite", "src\CodeArts.Db.EntityFramework.Sqlite\CodeArts.Db.EntityFramework.Sqlite.csproj", "{6B39204D-59EA-48C1-B282-1C6B44E3609A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Logging", "src\CodeArts.Logging\CodeArts.Logging.csproj", "{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -259,6 +261,10 @@ Global
 		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B39204D-59EA-48C1-B282-1C6B44E3609A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -303,6 +309,7 @@ Global
 		{285A80D7-1BCC-4B64-809D-2BDCA7151EA6} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
 		{8CD14BFC-8D2D-4421-8635-C013F93F80FD} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 		{6B39204D-59EA-48C1-B282-1C6B44E3609A} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D69380D7-DEA5-4884-85A8-1049025CE2EA}

@@ -201,9 +201,9 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="cancellationToken">取消。</param>
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
-        public virtual Task<int> ExecuteCommandAsync(SQL sql, CancellationToken cancellationToken = default, params object[] parameters)
+        public virtual Task<int> ExecuteCommandAsync(SQL sql, CancellationToken cancellationToken, params object[] parameters)
 #if NET_CORE
-            => Database.ExecuteSqlRawAsync(sql.ToString(Settings), cancellationToken, parameters);
+            => Database.ExecuteSqlRawAsync(sql.ToString(Settings), parameters ?? Enumerable.Empty<object>(), cancellationToken);
 #else
             => Database.ExecuteSqlCommandAsync(sql.ToString(Settings), cancellationToken, parameters);
 #endif

@@ -1,4 +1,5 @@
-﻿#if NET_CORE
+﻿using CodeArts.Exceptions;
+#if NET_CORE
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 #else
@@ -9,6 +10,8 @@ using System.Web.Http.Filters;
 #endif
 using System;
 using System.Net;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace CodeArts.Mvc
 {
@@ -25,7 +28,7 @@ namespace CodeArts.Mvc
         /// <param name="context">异常上下文。</param>
         public void OnException(ExceptionContext context)
         {
-            var json = Exceptions.ExceptionHandler.Handler(context.Exception);
+            var json = ExceptionHandler.Handler(context.Exception);
             if (json is null)
             {
                 return;
@@ -55,7 +58,7 @@ namespace CodeArts.Mvc
         /// <param name="context">异常上下文。</param>
         public override void OnException(HttpActionExecutedContext context)
         {
-            var json = Exceptions.ExceptionHandler.Handler(context.Exception);
+            var json = ExceptionHandler.Handler(context.Exception);
             if (json is null)
             {
                 return;

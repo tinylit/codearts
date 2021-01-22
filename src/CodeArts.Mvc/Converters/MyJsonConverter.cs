@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 namespace CodeArts.Mvc.Converters
 {
     /// <summary>
-    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）。
+    /// 天空之城JSON转换器（修复大数字前端数据丢失的问题）。
     /// </summary>
     public class MyJsonConverterFactory : JsonConverterFactory
     {
@@ -272,7 +272,7 @@ namespace CodeArts.Mvc.Converters
     }
 
     /// <summary>
-    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）。
+    /// 天空之城JSON转换器（修复大数字前端数据丢失的问题）。
     /// </summary>
     public class MyJsonConverter : JsonConverter<object>
     {
@@ -465,7 +465,7 @@ using System;
 namespace CodeArts.Mvc.Converters
 {
     /// <summary>
-    /// 天空之城JSON转换器（修复长整型前端数据丢失的问题）。
+    /// 天空之城JSON转换器（修复大数字前端数据丢失的问题）。
     /// </summary>
     public class MyJsonConverter : JsonConverter
     {
