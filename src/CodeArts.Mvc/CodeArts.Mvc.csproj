@@ -13,7 +13,7 @@
 		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
 		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-		<Version>5.2.1</Version>
+		<Version>5.2.1.1</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1' Or '$(TargetFramework)' == 'netcoreapp3.1'">
@@ -113,8 +113,7 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\CodeArts.Logging\CodeArts.Logging.csproj" />
+	<ItemGroup>		<ProjectReference Include="..\CodeArts.Logging\CodeArts.Logging.csproj" />
 		<ProjectReference Include="..\CodeArts.Net\CodeArts.Net.csproj" />
 	</ItemGroup>
 
