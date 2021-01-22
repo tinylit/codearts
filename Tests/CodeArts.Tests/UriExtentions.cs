@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CodeArts.Tests
@@ -145,6 +146,17 @@ namespace CodeArts.Tests
                     .DownloadFileAsync(fileName);
             }
             catch (WebException) { }
+        }
+
+        [TestMethod]
+        public async Task EncodingTest()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            var html = await "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2020/13/1301.html"
+                .AsRequestable()
+                .UseEncoding(Encoding.GetEncoding("gb2312"))
+                .GetAsync();
         }
 
         //[TestMethod]

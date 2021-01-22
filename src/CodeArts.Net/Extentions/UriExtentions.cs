@@ -102,11 +102,11 @@ namespace System
         }
 
         private interface IDisposableFileRequestable : IDisposable
-        {            
+        {
             byte[] UploadFile(string fileName, int timeout = 5000);
-                        
+
             byte[] UploadFile(string method, string fileName, int timeout = 5000);
-                        
+
             void DownloadFile(string fileName, int timeout = 5000);
 
 #if !NET40
@@ -1895,6 +1895,7 @@ namespace System
             private string __data;
             private bool isFormSubmit = false;
             private NameValueCollection __form;
+            private Encoding __encoding;
             private Dictionary<string, string> __headers;
 
             public bool IsNotQueryFix = true;
@@ -1905,6 +1906,14 @@ namespace System
                 __uri = uri ?? throw new ArgumentNullException(nameof(uri));
                 __headers = new Dictionary<string, string>();
             }
+
+            public IRequestable UseEncoding(Encoding encoding)
+            {
+                __encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
+
+                return this;
+            }
+
             public IRequestable AssignHeader(string header, string value)
             {
                 if (header is null)
@@ -1927,14 +1936,9 @@ namespace System
             }
             public IRequestable Body(string body, string contentType)
             {
-                if (contentType is null)
-                {
-                    throw new ArgumentNullException(nameof(contentType));
-                }
-
                 __data = body ?? throw new ArgumentNullException(nameof(body));
 
-                return AssignHeader("Content-Type", contentType);
+                return AssignHeader("Content-Type", contentType ?? throw new ArgumentNullException(nameof(contentType)));
             }
             public IRequestable Xml(string param) => Body(param, "application/xml");
             public IRequestable Xml<T>(T param) where T : class => Xml(XmlHelper.XmlSerialize(param));
@@ -2177,7 +2181,7 @@ namespace System
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = Encoding.UTF8
+                    Encoding = __encoding ?? Encoding.UTF8
                 })
                 {
                     foreach (var kv in __headers)
@@ -2197,7 +2201,7 @@ namespace System
                             throw new NotSupportedException("使用表单提交，但未指定表单数据!");
                         }
 
-                        return Encoding.UTF8.GetString(client.UploadValues(__uri, method.ToUpper(), __form));
+                        return (__encoding ?? Encoding.UTF8).GetString(client.UploadValues(__uri, method.ToUpper(), __form));
                     }
 
                     return client.UploadString(__uri, method.ToUpper(), __data ?? string.Empty);
@@ -2226,7 +2230,7 @@ namespace System
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = Encoding.UTF8
+                    Encoding = __encoding ?? Encoding.UTF8
                 })
                 {
                     foreach (var kv in __headers)
@@ -2243,7 +2247,7 @@ namespace System
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = Encoding.UTF8
+                    Encoding = __encoding ?? Encoding.UTF8
                 })
                 {
                     foreach (var kv in __headers)
@@ -2297,7 +2301,7 @@ namespace System
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = Encoding.UTF8
+                    Encoding = __encoding ?? Encoding.UTF8
                 })
                 {
                     foreach (var kv in __headers)
@@ -2317,7 +2321,7 @@ namespace System
                             throw new NotSupportedException("使用表单提交，但未指定表单数据!");
                         }
 
-                        return Encoding.UTF8.GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form));
+                        return (__encoding ?? Encoding.UTF8).GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form));
                     }
 
                     return await client.UploadStringTaskAsync(__uri, method.ToUpper(), __data ?? string.Empty);
@@ -2331,7 +2335,7 @@ namespace System
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = Encoding.UTF8
+                    Encoding = __encoding ?? Encoding.UTF8
                 })
                 {
                     foreach (var kv in __headers)
@@ -2348,7 +2352,7 @@ namespace System
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = Encoding.UTF8
+                    Encoding = __encoding ?? Encoding.UTF8
                 })
                 {
                     foreach (var kv in __headers)
@@ -2406,6 +2410,7 @@ namespace System
                     __data = null;
                     __form = null;
                     __headers = null;
+                    __encoding = null;
                 }
 
                 base.Dispose(disposing);

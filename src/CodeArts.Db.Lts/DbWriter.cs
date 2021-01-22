@@ -438,7 +438,9 @@ namespace CodeArts.Db.Lts
             public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
 
 #if NET_NORMAL || NET_CORE
-            public Task<int> ExecuteCommandAsync(int? commandTimeout = null, CancellationToken cancellationToken = default)
+            public Task<int> ExecuteCommandAsync(CancellationToken cancellationToken = default) => ExecuteCommandAsync(null, cancellationToken);
+
+            public Task<int> ExecuteCommandAsync(int? commandTimeout, CancellationToken cancellationToken = default)
             {
                 if (Entries.Count == 0)
                 {
@@ -459,8 +461,6 @@ namespace CodeArts.Db.Lts
 
                 return ExecutedAsync(results, commandTimeout, cancellationToken);
             }
-
-            public Task<int> ExecuteCommandAsync(CancellationToken cancellationToken = default) => ExecuteCommandAsync(null, cancellationToken);
 
             private async Task<int> ExecutedAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
             {

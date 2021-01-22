@@ -1,4 +1,5 @@
 ﻿#if NET_CORE
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -22,6 +23,13 @@ namespace CodeArts.Mvc
     /// </summary>
     public class JwtStartup : DStartup
     {
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        public JwtStartup() : base()
+        {
+        }
+
 #if NETCOREAPP3_1
         /// <summary>
         /// 构造函数。
@@ -46,34 +54,42 @@ namespace CodeArts.Mvc
         /// <param name="services">服务集合。</param>
         public override void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-
-            }).AddJwtBearer(options =>
-            {
-                options.Authority = "jwt:authority".Config<string>();
-                options.Audience = "jwt:audience".Config(Consts.JwtAudience);
-
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    NameClaimType = ClaimTypes.Name,
-                    RoleClaimType = ClaimTypes.Role,
-                    LifetimeValidator = (before, expires, token, param) =>
-                    {
-                        return token.ValidTo > DateTime.UtcNow;
-                    },
-                    // 用于适配本地模拟Token
-                    ValidIssuer = "jwt:issuer".Config(Consts.JwtIssuer),
-                    ValidateIssuer = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.JwtSecret)))
-                };
-            });
+            ConfigureAuthentication(services);
 
             base.ConfigureServices(services);
         }
+
+        /// <summary>
+        /// 配置认证（配置JWT认证）。
+        /// </summary>
+        /// <param name="services">服务集合。</param>
+        /// <returns></returns>
+        protected virtual AuthenticationBuilder ConfigureAuthentication(IServiceCollection services)
+        => services.AddAuthentication(options =>
+             {
+                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+
+             }).AddJwtBearer(options =>
+             {
+                 options.Authority = "jwt:authority".Config<string>();
+                 options.Audience = "jwt:audience".Config(Consts.JwtAudience);
+
+                 options.TokenValidationParameters = new TokenValidationParameters
+                 {
+                     NameClaimType = ClaimTypes.Name,
+                     RoleClaimType = ClaimTypes.Role,
+                     LifetimeValidator = (before, expires, token, param) =>
+                     {
+                         return token.ValidTo > DateTime.UtcNow;
+                     },
+                     // 用于适配本地模拟Token
+                     ValidIssuer = "jwt:issuer".Config(Consts.JwtIssuer),
+                     ValidateIssuer = true,
+                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("jwt:secret".Config(Consts.JwtSecret)))
+                 };
+             });
 
         /// <summary>
         /// 配置SwaggerGen。
@@ -153,12 +169,19 @@ namespace CodeArts.Mvc
     /// </summary>
     public class JwtStartup : DStartup
     {
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        public JwtStartup() : base()
+        {
+        }
+
 #if NET40
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public JwtStartup(bool useDependencyInjection = true) : base(useDependencyInjection)
+        public JwtStartup(bool useDependencyInjection) : base(useDependencyInjection)
         {
         }
 #else
@@ -167,8 +190,16 @@ namespace CodeArts.Mvc
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
+        public JwtStartup(bool useSwaggerUi) : base(useSwaggerUi)
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
         /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
+        public JwtStartup(bool useSwaggerUi, bool useDependencyInjection) : base(useSwaggerUi, useDependencyInjection)
         {
         }
 
@@ -202,10 +233,7 @@ namespace CodeArts.Mvc
         /// 配置中间件。
         /// </summary>
         /// <param name="builder">方案构造器。</param>
-        public virtual void Configure(IApplicationBuilder builder)
-        {
-            builder.UseJwtBearer(JwtBearerEvents.Authorization);
-        }
+        public virtual void Configure(IApplicationBuilder builder) => builder.UseJwtBearer(JwtBearerEvents.Authorization);
     }
 }
 #endif

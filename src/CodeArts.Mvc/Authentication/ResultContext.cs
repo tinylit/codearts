@@ -79,9 +79,9 @@ namespace CodeArts.Mvc.Authentication
         public string Token { get; }
 
         /// <summary>
-        /// 令牌过期校验（默认：false）。
+        /// 令牌过期校验（默认：true）。
         /// </summary>
-        public bool TokenVerify { get; set; }
+        public bool TokenVerify { get; set; } = true;
 
         private IDictionary<string, object> userData;
 
@@ -104,11 +104,7 @@ namespace CodeArts.Mvc.Authentication
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
 #endif
 
-                    try
-                    {
-                        userData = decoder.DecodeToObject(Token, "jwt-secret".Config(Consts.JwtSecret), TokenVerify);
-                    }
-                    catch { }
+                    userData = decoder.DecodeToObject(Token, "jwt-secret".Config(Consts.JwtSecret), TokenVerify);
                 }
 
                 return userData;
