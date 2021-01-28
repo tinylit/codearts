@@ -265,69 +265,13 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <typeparam name="T">类型。</typeparam>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-        public static TypeItem Get<T>() => ItemCache.GetOrAdd(typeof(T), (Func<Type, TypeItem>)(conversionType => (TypeItem)new TypeItem(conversionType)));
+        public static TypeItem Get<T>() => ItemCache.GetOrAdd(typeof(T), conversionType => new TypeItem(conversionType));
 
         /// <summary>
         /// 获取仓储项目。
         /// </summary>
         /// <param name="type">类型。</param>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeStoreItem(conversionType));
-在此之后:
-        public static TypeStoreItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new Runtime.TypeStoreItem(conversionType));
-*/
-        public static TypeItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), (Func<Type, TypeItem>)(conversionType => (TypeItem)new TypeItem(conversionType)));
+        public static TypeItem Get(Type type) => ItemCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), conversionType => new TypeItem(conversionType));
     }
 }

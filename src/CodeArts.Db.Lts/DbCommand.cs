@@ -209,20 +209,20 @@ namespace CodeArts.Db.Lts
             {
                 try
                 {
-                    return await dbCommand.ExecuteReaderAsync(GetBehavior(behavior), cancellationToken);
+                    return await dbCommand.ExecuteReaderAsync(GetBehavior(behavior), cancellationToken).ConfigureAwait(false);
                 }
                 catch (ArgumentException ex)
                 {
                     if (DisableCommandBehaviorOptimizations(behavior, ex))
                     {
-                        return await dbCommand.ExecuteReaderAsync(GetBehavior(behavior), cancellationToken);
+                        return await dbCommand.ExecuteReaderAsync(GetBehavior(behavior), cancellationToken).ConfigureAwait(false);
                     }
 
                     throw;
                 }
             }
 
-            return await dbCommand.ExecuteReaderAsync(behavior, cancellationToken);
+            return await dbCommand.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
         }
 #endif
 

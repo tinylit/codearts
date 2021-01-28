@@ -158,6 +158,7 @@ namespace CodeArts.Mvc
                 if (!Enum.TryParse(method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
                 {
                     context.Response.StatusCode = 404;
+                    
                     return;
                 }
 
@@ -174,7 +175,8 @@ namespace CodeArts.Mvc
 
                 if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
                 {
-                    await context.Response.WriteJsonAsync(DResult.Error($"不规范的接口({path.Value}=>{destinationUrl})!", StatusCodes.NonstandardServerError));
+                    await context.Response.WriteJsonAsync(DResult.Error($"不规范的接口({path.Value}=>{destinationUrl})!", StatusCodes.NonstandardServerError)).ConfigureAwait(false);
+                    
                     return;
                 }
 #else
@@ -207,7 +209,7 @@ namespace CodeArts.Mvc
                     {
                         var length = context.Request.ContentLength.Value;
                         var buffer = new byte[length];
-                        await context.Request.Body.ReadAsync(buffer, 0, buffer.Length);
+                        await context.Request.Body.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
 
                         var body = Encoding.UTF8.GetString(buffer);
 
@@ -227,11 +229,11 @@ namespace CodeArts.Mvc
 #if NET_CORE
                 try
                 {
-                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)));
+                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)).ConfigureAwait(false));
                 }
                 catch (WebException e)
                 {
-                    await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e));
+                    await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e)).ConfigureAwait(false);
                 }
             }));
 #else
@@ -240,7 +242,7 @@ namespace CodeArts.Mvc
 #if NET40
                     context.Response.Write(request.Request(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
 #else
-                    context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)));
+                    context.Response.Write(await request.RequestAsync(method ?? "GET", "map-timeout".Config(Consts.MapTimeout)).ConfigureAwait(false));
 #endif
                 }
                 catch (WebException e)

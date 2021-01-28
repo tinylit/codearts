@@ -58,34 +58,6 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new ParameterStoreItem(parameterInfo));
-在此之后:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new Runtime.ParameterStoreItem(parameterInfo));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new ParameterStoreItem(parameterInfo));
-在此之后:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new Runtime.ParameterStoreItem(parameterInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new ParameterStoreItem(parameterInfo));
-在此之后:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new Runtime.ParameterStoreItem(parameterInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new ParameterStoreItem(parameterInfo));
-在此之后:
-        public static ParameterStoreItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new Runtime.ParameterStoreItem(parameterInfo));
-*/
-        public static ParameterItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, (Func<ParameterInfo, ParameterItem>)(parameterInfo => (ParameterItem)new ParameterItem(parameterInfo)));
+        public static ParameterItem Get(ParameterInfo info) => ItemCache.GetOrAdd(info, parameterInfo => new ParameterItem(parameterInfo));
     }
 }

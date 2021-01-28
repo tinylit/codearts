@@ -61,34 +61,6 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new PropertyStoreItem(propertyInfo));
-在此之后:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new Runtime.PropertyStoreItem(propertyInfo));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new PropertyStoreItem(propertyInfo));
-在此之后:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new Runtime.PropertyStoreItem(propertyInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new PropertyStoreItem(propertyInfo));
-在此之后:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new Runtime.PropertyStoreItem(propertyInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new PropertyStoreItem(propertyInfo));
-在此之后:
-        public static PropertyStoreItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new Runtime.PropertyStoreItem(propertyInfo));
-*/
-        public static PropertyItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, (Func<PropertyInfo, PropertyItem>)(propertyInfo => (PropertyItem)new PropertyItem(propertyInfo)));
+        public static PropertyItem Get(PropertyInfo info) => ItemCache.GetOrAdd(info, propertyInfo => new PropertyItem(propertyInfo));
     }
 }

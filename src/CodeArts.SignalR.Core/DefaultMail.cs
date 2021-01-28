@@ -73,7 +73,7 @@ namespace CodeArts.SignalR
 
             list.ForEach(async message =>
             {
-                await connect.Invoke(message);
+                await connect.Invoke(message).ConfigureAwait(false);
             });
         }
 

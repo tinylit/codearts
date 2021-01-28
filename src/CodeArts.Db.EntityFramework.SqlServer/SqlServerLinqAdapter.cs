@@ -12,9 +12,6 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         /// <param name="optionsBuilder">配置器。</param>
         /// <param name="connectionConfig">链接配置。</param>
-        public void OnConfiguring(DbContextOptionsBuilder optionsBuilder, IReadOnlyConnectionConfig connectionConfig)
-        {
-            optionsBuilder.UseSqlServer(connectionConfig.ConnectionString);
-        }
+        public virtual void OnConfiguring(DbContextOptionsBuilder optionsBuilder, IReadOnlyConnectionConfig connectionConfig) => optionsBuilder.UseSqlServer(connectionConfig.ConnectionString);
     }
 }

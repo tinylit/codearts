@@ -481,7 +481,7 @@ namespace CodeArts.Mvc.Hosting
 
                 var appliction = (HttpApplication)sender;
 
-                await request.Invoke(appliction.Context);
+                await request.Invoke(appliction.Context).ConfigureAwait(false);
 
                 if (!result.IsCompleted)
                 {

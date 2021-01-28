@@ -49,34 +49,6 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new FieldStoreItem(fieldInfo));
-在此之后:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new Runtime.FieldStoreItem(fieldInfo));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new FieldStoreItem(fieldInfo));
-在此之后:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new Runtime.FieldStoreItem(fieldInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new FieldStoreItem(fieldInfo));
-在此之后:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new Runtime.FieldStoreItem(fieldInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new FieldStoreItem(fieldInfo));
-在此之后:
-        public static FieldStoreItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new Runtime.FieldStoreItem(fieldInfo));
-*/
-        public static FieldItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, (Func<FieldInfo, FieldItem>)(fieldInfo => (FieldItem)new FieldItem(fieldInfo)));
+        public static FieldItem Get(FieldInfo info) => ItemCache.GetOrAdd(info, fieldInfo => new FieldItem(fieldInfo));
     }
 }

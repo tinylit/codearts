@@ -258,7 +258,7 @@ namespace CodeArts.Db.Dapper
         {
             using (IDbConnection connection = CreateDb())
             {
-                return await connection.ExecuteScalarAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout);
+                return await connection.ExecuteScalarAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout).ConfigureAwait(false);
             }
         }
 
@@ -274,7 +274,7 @@ namespace CodeArts.Db.Dapper
         {
             using (IDbConnection connection = CreateDb())
             {
-                return await connection.QueryFirstAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout);
+                return await connection.QueryFirstAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout).ConfigureAwait(false);
             }
         }
 
@@ -290,7 +290,7 @@ namespace CodeArts.Db.Dapper
         {
             using (IDbConnection connection = CreateDb())
             {
-                return await connection.QueryFirstOrDefaultAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout);
+                return await connection.QueryFirstOrDefaultAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout).ConfigureAwait(false);
             }
         }
 
@@ -306,7 +306,7 @@ namespace CodeArts.Db.Dapper
         {
             using (IDbConnection connection = CreateDb())
             {
-                return await connection.QueryAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout);
+                return await connection.QueryAsync<T>(sql.ToString(Settings), param, commandTimeout: commandTimeout).ConfigureAwait(false);
             }
         }
 
@@ -326,11 +326,11 @@ namespace CodeArts.Db.Dapper
 
             using (IDbConnection connection = CreateDb())
             {
-                using (var reader = await connection.QueryMultipleAsync(sqlStr, param, commandTimeout: commandTimeout))
+                using (var reader = await connection.QueryMultipleAsync(sqlStr, param, commandTimeout: commandTimeout).ConfigureAwait(false))
                 {
-                    int count = await reader.ReadFirstAsync<int>();
+                    int count = await reader.ReadFirstAsync<int>().ConfigureAwait(false);
 
-                    var results = await reader.ReadAsync<T>();
+                    var results = await reader.ReadAsync<T>().ConfigureAwait(false);
 
                     return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
                 }
@@ -348,7 +348,7 @@ namespace CodeArts.Db.Dapper
         {
             using (IDbConnection connection = CreateDb())
             {
-                return await connection.ExecuteAsync(sql.ToString(Settings), param, commandTimeout: commandTimeout);
+                return await connection.ExecuteAsync(sql.ToString(Settings), param, commandTimeout: commandTimeout).ConfigureAwait(false);
             }
         }
 #endif

@@ -100,6 +100,7 @@ namespace CodeArts
             if (!disposedValue)
             {
                 types.Clear();
+
                 startups?.Clear();
 
                 if (disposing)

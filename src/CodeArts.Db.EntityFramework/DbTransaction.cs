@@ -26,23 +26,113 @@ namespace CodeArts.Db.EntityFramework
         /// Initializes a new instance of the <see cref="DbTransaction"/> class.
         /// </summary>
         /// <param name="repositories">The contexts.</param>
+        /// <exception cref="ArgumentNullException">The parameter <paramref name="repositories"/> is null</exception>
+        /// <exception cref="ArgumentException">The parameter <paramref name="repositories"/> contains the duplicate value</exception>
         public DbTransaction(params ILinqRepository[] repositories)
         {
-            if (repositories is null)
+            if (IsRepeat(repositories ?? throw new ArgumentNullException(nameof(repositories))))
             {
-                throw new ArgumentNullException(nameof(repositories));
+                throw new ArgumentException(nameof(repositories));
             }
 
-            this.dbContexts = repositories.Select(x => x.DBContext).ToArray();
+            if (repositories.Length > 1)
+            {
+                this.dbContexts = Distinct(repositories.Select(x => x.DBContext), repositories.Length);
+            }
+            else
+            {
+                this.dbContexts = repositories.Select(x => x.DBContext).ToArray();
+            }
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbTransaction"/> class.
         /// </summary>
         /// <param name="dbContexts">The contexts.</param>
+        /// <exception cref="ArgumentNullException">The parameter <paramref name="dbContexts"/> is null</exception>
+        /// <exception cref="ArgumentException">The parameter <paramref name="dbContexts"/> contains the duplicate value</exception>
         public DbTransaction(params DbContext[] dbContexts)
         {
-            this.dbContexts = dbContexts ?? throw new ArgumentNullException(nameof(dbContexts));
+            if (IsRepeat(dbContexts ?? throw new ArgumentNullException(nameof(dbContexts))))
+            {
+                throw new ArgumentException(nameof(dbContexts));
+            }
+
+            this.dbContexts = dbContexts;
+        }
+
+        private static bool IsRepeat(ILinqRepository[] repositories)
+        {
+            if (repositories.Length == 1)
+            {
+                return false;
+            }
+
+            var list = new List<ILinqRepository>(repositories.Length);
+
+            foreach (var item in repositories)
+            {
+                if (list.Contains(item))
+                {
+                    list.Clear();
+
+                    return true;
+                }
+
+                list.Add(item);
+            }
+
+            list.Clear();
+
+            return false;
+        }
+
+        private static bool IsRepeat(DbContext[] dbContexts)
+        {
+            if (dbContexts.Length == 1)
+            {
+                return false;
+            }
+
+            var list = new List<DbContext>(dbContexts.Length);
+
+            foreach (var item in dbContexts)
+            {
+                if (list.Contains(item))
+                {
+                    list.Clear();
+
+                    return true;
+                }
+
+                list.Add(item);
+            }
+
+            list.Clear();
+
+            return false;
+        }
+
+        private static DbContext[] Distinct(IEnumerable<DbContext> dbContexts, int capacity)
+        {
+            var contexts = new List<DbContext>(capacity);
+
+            foreach (var context in dbContexts)
+            {
+                if (context is null)
+                {
+                    throw new ArgumentException();
+                }
+
+                if (contexts.Contains(context))
+                {
+                    continue;
+                }
+
+                contexts.Add(context);
+            }
+
+            return contexts.ToArray();
         }
 
 #if NET_CORE
@@ -118,21 +208,21 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var context in dbContexts)
                 {
-                    list.Add(await context.Database.BeginTransactionAsync(cancellationToken));
+                    list.Add(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false));
 
-                    count += await context.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                    count += await context.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
                 }
 
                 foreach (var item in list)
                 {
-                    await item.CommitAsync(cancellationToken);
+                    await item.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch
             {
                 foreach (var item in list)
                 {
-                    await item.RollbackAsync(cancellationToken);
+                    await item.RollbackAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 throw;
@@ -141,7 +231,7 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var item in list)
                 {
-                    await item.DisposeAsync();
+                    await item.DisposeAsync().ConfigureAwait(false);
                 }
             }
             return count;
@@ -167,18 +257,18 @@ namespace CodeArts.Db.EntityFramework
                 foreach (var context in dbContexts)
                 {
 #if NET_CORE
-                    list.Add(await context.Database.BeginTransactionAsync(cancellationToken));
+                    list.Add(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false));
 #else
                     list.Add(context.Database.BeginTransaction());
 #endif
 
-                    count += await context.SaveChangesAsync(cancellationToken);
+                    count += await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 foreach (var item in list)
                 {
 #if NET_CORE
-                    await item.CommitAsync();
+                    await item.CommitAsync().ConfigureAwait(false);
 #else
                     item.Commit();
 #endif
@@ -189,7 +279,7 @@ namespace CodeArts.Db.EntityFramework
                 foreach (var item in list)
                 {
 #if NET_CORE
-                    await item.RollbackAsync();
+                    await item.RollbackAsync().ConfigureAwait(false);
 #else
                     item.Rollback();
 #endif
@@ -202,7 +292,7 @@ namespace CodeArts.Db.EntityFramework
                 foreach (var item in list)
                 {
 #if NET_CORE
-                    await item.DisposeAsync();
+                    await item.DisposeAsync().ConfigureAwait(false);
 #else
                     item.Dispose();
 #endif

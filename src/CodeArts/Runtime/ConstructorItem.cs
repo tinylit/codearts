@@ -109,34 +109,6 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
-在此之后:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
-在此之后:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
-在此之后:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorStoreItem(constructorInfo));
-在此之后:
-        public static ConstructorStoreItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new Runtime.ConstructorStoreItem(constructorInfo));
-*/
-        public static ConstructorItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, (Func<ConstructorInfo, ConstructorItem>)(constructorInfo => (ConstructorItem)new ConstructorItem(constructorInfo)));
+        public static ConstructorItem Get(ConstructorInfo info) => ItemCache.GetOrAdd(info, constructorInfo => new ConstructorItem(constructorInfo));
     }
 }

@@ -187,7 +187,7 @@ namespace CodeArts.Db
             var enumerator = _dbSet.AsAsyncEnumerable()
                 .GetAsyncEnumerator(cancellationToken);
 
-            while (await enumerator.MoveNextAsync())
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
             {
                 list.Add(enumerator.Current);
             }

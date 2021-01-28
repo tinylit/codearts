@@ -612,7 +612,7 @@ namespace CodeArts.Db
 #if NET_NORMAL || NETSTANDARD2_0
             public override async Task OpenAsync(CancellationToken cancellationToken)
             {
-                await connection.OpenAsync(cancellationToken);
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                 connectionState = connection.State;
             }

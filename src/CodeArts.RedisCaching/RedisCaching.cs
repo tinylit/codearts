@@ -261,7 +261,7 @@ namespace CodeArts.Caching
         /// <returns></returns>
         public override async Task<object> GetAsync(string key)
         {
-            var value = await _database.StringGetAsync(GetKey(key));
+            var value = await _database.StringGetAsync(GetKey(key)).ConfigureAwait(false);
 
             if (value.HasValue)
             {
@@ -279,7 +279,7 @@ namespace CodeArts.Caching
         /// <returns></returns>
         public override async Task<T> GetAsync<T>(string key)
         {
-            var value = await _database.StringGetAsync(GetKey(key));
+            var value = await _database.StringGetAsync(GetKey(key)).ConfigureAwait(false);
 
             if (value.IsNullOrEmpty)
             {
@@ -337,11 +337,11 @@ namespace CodeArts.Caching
         {
             var script = LuaScript.Prepare("return redis.call('KEYS', @keypattern)");
 
-            var results = await _database.ScriptEvaluateAsync(script, new { @keypattern = GetKey("*") });
+            var results = await _database.ScriptEvaluateAsync(script, new { @keypattern = GetKey("*") }).ConfigureAwait(false);
 
             if (!results.IsNull)
             {
-                await _database.KeyDeleteAsync((RedisKey[])results);
+                await _database.KeyDeleteAsync((RedisKey[])results).ConfigureAwait(false);
             }
         }
 

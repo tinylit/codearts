@@ -249,7 +249,7 @@ namespace CodeArts.Db.Lts
             {
                 if (isReadyDataReader)
                 {
-                    return await dbDataReader.ReadAsync(cancellationToken);
+                    return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
@@ -262,7 +262,7 @@ namespace CodeArts.Db.Lts
 
                 if (isClosedConnection)
                 {
-                    await dbConnection.OpenAsync(cancellationToken);
+                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                     behavior |= CommandBehavior.CloseConnection;
                 }
@@ -282,13 +282,13 @@ namespace CodeArts.Db.Lts
 
                 readyParam.Invoke(dbCommand, commandSql.Parameters);
 
-                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken);
+                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
 
                 isReadyDataReader = true;
 
                 isClosedConnection = false;
 
-                return await dbDataReader.ReadAsync(cancellationToken);
+                return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
             }
 
 #if NETSTANDARD2_1
@@ -296,23 +296,23 @@ namespace CodeArts.Db.Lts
             {
                 if (isReadyDataReader)
                 {
-                    await dbDataReader.CloseAsync();
-                    await dbDataReader.DisposeAsync();
+                    await dbDataReader.CloseAsync().ConfigureAwait(false);
+                    await dbDataReader.DisposeAsync().ConfigureAwait(false);
                 }
 
                 if (isReadyCommand)
                 {
-                    await dbCommand.DisposeAsync();
+                    await dbCommand.DisposeAsync().ConfigureAwait(false);
                 }
 
                 if (isClosedConnection)
                 {
-                    await dbConnection.CloseAsync();
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
                 }
 
                 if (isReadyConnection)
                 {
-                    await dbConnection.DisposeAsync();
+                    await dbConnection.DisposeAsync().ConfigureAwait(false);
                 }
             }
 #endif
@@ -321,7 +321,7 @@ namespace CodeArts.Db.Lts
             {
                 if (isReadyDataReader)
                 {
-                    return await dbDataReader.ReadAsync(cancellationToken);
+                    return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
@@ -334,7 +334,7 @@ namespace CodeArts.Db.Lts
 
                 if (isClosedConnection)
                 {
-                    await dbConnection.OpenAsync(cancellationToken);
+                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                     behavior |= CommandBehavior.CloseConnection;
                 }
@@ -354,13 +354,13 @@ namespace CodeArts.Db.Lts
 
                 readyParam.Invoke(dbCommand, commandSql.Parameters);
 
-                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken);
+                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
 
                 isReadyDataReader = true;
 
                 isClosedConnection = false;
 
-                return await dbDataReader.ReadAsync(cancellationToken);
+                return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
             }
 
             public void Dispose()
@@ -406,7 +406,7 @@ namespace CodeArts.Db.Lts
 
                 if (isClosedConnection)
                 {
-                    await connection.OpenAsync(cancellationToken);
+                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                     behavior |= CommandBehavior.CloseConnection;
                 }
@@ -428,22 +428,22 @@ namespace CodeArts.Db.Lts
 
                         AddParameterAuto(command, commandSql.Parameters);
 
-                        using (var dr = await command.ExecuteReaderAsync(behavior, cancellationToken))
+                        using (var dr = await command.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false))
                         {
                             isClosedConnection = false;
 
-                            if (await dr.ReadAsync(cancellationToken))
+                            if (await dr.ReadAsync(cancellationToken).ConfigureAwait(false))
                             {
                                 defaultValue = Mapper.Map<T>(dr);
 
-                                while (await dr.ReadAsync(cancellationToken)) { /* ignore subsequent rows */ }
+                                while (await dr.ReadAsync(cancellationToken).ConfigureAwait(false)) { /* ignore subsequent rows */ }
                             }
                             else if (!commandSql.HasDefaultValue)
                             {
                                 throw new DRequiredException(commandSql.MissingMsg);
                             }
 
-                            while (await dr.NextResultAsync(cancellationToken)) { /* ignore subsequent result sets */ }
+                            while (await dr.NextResultAsync(cancellationToken).ConfigureAwait(false)) { /* ignore subsequent result sets */ }
                         }
                     }
                 }
@@ -483,7 +483,7 @@ namespace CodeArts.Db.Lts
 
                 if (isClosedConnection)
                 {
-                    await connection.OpenAsync(cancellationToken);
+                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 try
@@ -501,7 +501,7 @@ namespace CodeArts.Db.Lts
 
                         AddParameterAuto(command, commandSql.Parameters);
 
-                        return await command.ExecuteNonQueryAsyc(cancellationToken);
+                        return await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
                     }
                 }
                 finally

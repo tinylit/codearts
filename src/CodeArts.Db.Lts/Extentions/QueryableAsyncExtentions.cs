@@ -36,12 +36,14 @@ namespace System.LinqAsync
         public static async Task<PagedList<T>> ToListAsync<T>(this IQueryable<T> source, int page, int size, CancellationToken cancellationToken = default)
         {
             var count_task = source
-                .CountAsync(cancellationToken);
+                .CountAsync(cancellationToken)
+                .ConfigureAwait(false);
 
             var result_task = source
                 .Skip(size * page)
                 .Take(size)
-                .ToListAsync(cancellationToken);
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
 
             return new PagedList<T>(await result_task, page, size, await count_task);
         }

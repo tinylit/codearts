@@ -1906,9 +1906,22 @@ namespace System.LinqAsync
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static Task<List<TSource>> ToListAsync<TSource>(
+        public static async Task<List<TSource>> ToListAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default) => source.AsAsyncEnumerable().ToListAsync(cancellationToken);
+            CancellationToken cancellationToken = default)
+        {
+            var list = new List<TSource>();
+
+            var enumerator = source.AsAsyncEnumerable()
+                .GetAsyncEnumerator(cancellationToken);
+
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                list.Add(enumerator.Current);
+            }
+
+            return list;
+        }
 
         /// <summary>
         ///     Asynchronously creates an array from an <see cref="IQueryable{T}" /> by enumerating it asynchronously.
@@ -1933,10 +1946,10 @@ namespace System.LinqAsync
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static Task<TSource[]> ToArrayAsync<TSource>(
+        public static async Task<TSource[]> ToArrayAsync<TSource>(
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default)
-            => source.AsAsyncEnumerable().ToArrayAsync(cancellationToken);
+            => (await source.ToListAsync(cancellationToken)).ToArray();
 
         /// <summary>
         /// Asynchronously enumerates the query results and performs the specified action on each element.
@@ -1962,7 +1975,7 @@ namespace System.LinqAsync
                 .AsAsyncEnumerable()
                 .GetAsyncEnumerator(cancellationToken);
 
-            while (await enumerator.MoveNextAsync())
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
             {
                 action.Invoke(enumerator.Current);
             }

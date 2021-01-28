@@ -110,34 +110,6 @@ namespace CodeArts.Runtime
         /// </summary>
         /// <param name="info">信息。</param>
         /// <returns></returns>
-
-/* 项目“CodeArts (net45)”的未合并的更改
-在此之前:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
-在此之后:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
-*/
-
-/* 项目“CodeArts (net40)”的未合并的更改
-在此之前:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
-在此之后:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.0)”的未合并的更改
-在此之前:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
-在此之后:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
-*/
-
-/* 项目“CodeArts (netstandard2.1)”的未合并的更改
-在此之前:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodStoreItem(methodInfo));
-在此之后:
-        public static MethodStoreItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new Runtime.MethodStoreItem(methodInfo));
-*/
-        public static MethodItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, (Func<MethodInfo, MethodItem>)(methodInfo => (MethodItem)new MethodItem(methodInfo)));
+        public static MethodItem Get(MethodInfo info) => ItemCache.GetOrAdd(info, methodInfo => new MethodItem(methodInfo));
     }
 }

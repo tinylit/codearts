@@ -66,7 +66,7 @@ namespace System
             {
                 try
                 {
-                    return await RequestImplementAsync(method, timeout);
+                    return await RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -189,7 +189,7 @@ namespace System
 
                 do
                 {
-                    T result = await requestable.RequestImplementAsync(method, timeout);
+                    T result = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
 
                     if (predicates.All(x => x.Invoke(result)))
                     {
@@ -205,7 +205,7 @@ namespace System
 
                         if (millisecondsTimeout > -1)
                         {
-                            await Task.Delay(millisecondsTimeout);
+                            await Task.Delay(millisecondsTimeout).ConfigureAwait(false);
                         }
 
                         continue;
@@ -400,7 +400,7 @@ namespace System
             {
                 try
                 {
-                    return await requestable.RequestImplementAsync(method, timeout);
+                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -410,13 +410,13 @@ namespace System
                 }
             }
 
-            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout);
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
                 try
                 {
-                    return await file.UploadFileAsync(method, fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -430,7 +430,7 @@ namespace System
             {
                 try
                 {
-                    await file.DownloadFileAsync(fileName, timeout);
+                    await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -444,7 +444,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(fileName, timeout);
+                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -456,7 +456,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(method, fileName, timeout);
+                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -468,7 +468,7 @@ namespace System
             {
                 try
                 {
-                    await DownloadFileAsync(fileName, timeout);
+                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -489,7 +489,9 @@ namespace System
                 {
                     requestable?.Dispose();
                     file?.Dispose();
+
                     log = null;
+
                     file = null;
                     requestable = null;
                 }
@@ -594,7 +596,7 @@ namespace System
             {
                 try
                 {
-                    return await requestable.RequestImplementAsync(method, timeout);
+                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -602,13 +604,13 @@ namespace System
                 }
             }
 
-            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout);
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
                 try
                 {
-                    return await file.UploadFileAsync(method, fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -620,7 +622,7 @@ namespace System
             {
                 try
                 {
-                    await file.DownloadFileAsync(fileName, timeout);
+                    await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -632,7 +634,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(fileName, timeout);
+                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -644,7 +646,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(method, fileName, timeout);
+                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -656,7 +658,7 @@ namespace System
             {
                 try
                 {
-                    await DownloadFileAsync(fileName, timeout);
+                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -902,7 +904,7 @@ namespace System
                 {
                     try
                     {
-                        return await requestable.RequestImplementAsync(method, timeout);
+                        return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                     }
                     catch (WebException e)
                     {
@@ -915,7 +917,7 @@ namespace System
 
                             if (millisecondsTimeout > -1)
                             {
-                                await Task.Delay(millisecondsTimeout);
+                                await Task.Delay(millisecondsTimeout).ConfigureAwait(false);
                             }
 
                             continue;
@@ -927,7 +929,7 @@ namespace System
                 } while (true);
             }
 
-            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout);
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
@@ -937,7 +939,7 @@ namespace System
                 {
                     try
                     {
-                        return await file.UploadFileAsync(method, fileName, timeout);
+                        return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                     }
                     catch (WebException e)
                     {
@@ -950,7 +952,7 @@ namespace System
 
                             if (millisecondsTimeout > -1)
                             {
-                                await Task.Delay(millisecondsTimeout);
+                                await Task.Delay(millisecondsTimeout).ConfigureAwait(false);
                             }
 
                             continue;
@@ -970,7 +972,7 @@ namespace System
                 {
                     try
                     {
-                        await file.DownloadFileAsync(fileName, timeout);
+                        await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
 
                         break;
                     }
@@ -985,7 +987,7 @@ namespace System
 
                             if (millisecondsTimeout > -1)
                             {
-                                await Task.Delay(millisecondsTimeout);
+                                await Task.Delay(millisecondsTimeout).ConfigureAwait(false);
                             }
 
                             continue;
@@ -1001,7 +1003,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(fileName, timeout);
+                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1013,7 +1015,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(method, fileName, timeout);
+                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1025,7 +1027,7 @@ namespace System
             {
                 try
                 {
-                    await DownloadFileAsync(fileName, timeout);
+                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1260,12 +1262,12 @@ namespace System
             {
                 if (isAllocated)
                 {
-                    return await request.RequestImplementAsync(method, timeout);
+                    return await request.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
 
                 try
                 {
-                    return await request.RequestImplementAsync(method, timeout);
+                    return await request.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -1275,25 +1277,25 @@ namespace System
 
                         Then(then, requestable, e);
 
-                        return await request.RequestImplementAsync(method, timeout);
+                        return await request.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                     }
 
                     throw e;
                 }
             }
 
-            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout);
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
                 if (isAllocated)
                 {
-                    return await file.UploadFileAsync(method, fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
 
                 try
                 {
-                    return await file.UploadFileAsync(method, fileName, timeout);
+                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -1303,7 +1305,7 @@ namespace System
 
                         Then(then, requestable, e);
 
-                        return await file.UploadFileAsync(method, fileName, timeout);
+                        return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                     }
 
                     throw e;
@@ -1314,13 +1316,13 @@ namespace System
             {
                 if (isAllocated)
                 {
-                    await file.DownloadFileAsync(fileName, timeout);
+                    await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 else
                 {
                     try
                     {
-                        await file.DownloadFileAsync(fileName, timeout);
+                        await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                     }
                     catch (WebException e)
                     {
@@ -1330,7 +1332,7 @@ namespace System
 
                             Then(then, requestable, e);
 
-                            await file.DownloadFileAsync(fileName, timeout);
+                            await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                         }
 
                         throw e;
@@ -1342,7 +1344,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(fileName, timeout);
+                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1354,7 +1356,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(method, fileName, timeout);
+                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1366,7 +1368,7 @@ namespace System
             {
                 try
                 {
-                    await DownloadFileAsync(fileName, timeout);
+                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1423,7 +1425,7 @@ namespace System
             {
                 try
                 {
-                    return await requestable.RequestImplementAsync(method, timeout);
+                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -1525,7 +1527,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                string value = await requestable.RequestImplementAsync(method, timeout);
+                string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
 
                 try
                 {
@@ -1607,7 +1609,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                string value = await requestable.RequestImplementAsync(method, timeout);
+                string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
 
                 try
                 {
@@ -1697,7 +1699,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                string value = await requestable.RequestImplementAsync(method, timeout);
+                string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
 
                 try
                 {
@@ -1764,7 +1766,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                string value = await requestable.RequestImplementAsync(method, timeout);
+                string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
 
                 try
                 {
@@ -1817,7 +1819,7 @@ namespace System
             {
                 try
                 {
-                    return await requestable.RequestImplementAsync(method, timeout);
+                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -1866,7 +1868,7 @@ namespace System
             {
                 try
                 {
-                    return await requestable.RequestImplementAsync(method, timeout);
+                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -2311,7 +2313,7 @@ namespace System
 
                     if (method.ToUpper() == "GET")
                     {
-                        return await client.DownloadStringTaskAsync(__uri);
+                        return await client.DownloadStringTaskAsync(__uri).ConfigureAwait(false);
                     }
 
                     if (isFormSubmit)
@@ -2321,10 +2323,10 @@ namespace System
                             throw new NotSupportedException("使用表单提交，但未指定表单数据!");
                         }
 
-                        return (__encoding ?? Encoding.UTF8).GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form));
+                        return (__encoding ?? Encoding.UTF8).GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form).ConfigureAwait(false));
                     }
 
-                    return await client.UploadStringTaskAsync(__uri, method.ToUpper(), __data ?? string.Empty);
+                    return await client.UploadStringTaskAsync(__uri, method.ToUpper(), __data ?? string.Empty).ConfigureAwait(false);
                 }
             }
 
@@ -2368,7 +2370,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(fileName, timeout);
+                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -2380,7 +2382,7 @@ namespace System
             {
                 try
                 {
-                    return await UploadFileAsync(method, fileName, timeout);
+                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -2392,7 +2394,7 @@ namespace System
             {
                 try
                 {
-                    await DownloadFileAsync(fileName, timeout);
+                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -2447,7 +2449,7 @@ namespace System
             {
                 try
                 {
-                    return await requestable.RequestImplementAsync(method, timeout);
+                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
                 }
                 catch (WebException e)
                 {
@@ -2490,7 +2492,7 @@ namespace System
 
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                return JsonHelper.Json<T>(await requestable.RequestImplementAsync(method, timeout), NamingType);
+                return JsonHelper.Json<T>(await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false), NamingType);
             }
 #endif
             public IJsonCatchRequestable<T> JsonCatch(Action<string, Exception> log) => new JsonCatchRequestable<T>(requestable, log, NamingType);
@@ -2531,7 +2533,7 @@ namespace System
 #if !NET40
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
-                return XmlHelper.XmlDeserialize<T>(await requestable.RequestImplementAsync(method, timeout));
+                return XmlHelper.XmlDeserialize<T>(await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false));
             }
 #endif
 

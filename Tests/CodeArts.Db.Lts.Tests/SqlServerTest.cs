@@ -16,6 +16,8 @@ using System.Linq.Expressions;
 using System.Text;
 using UnitTest.Domain.Entities;
 using UnitTest.Dtos;
+using System.Transactions;
+using System.Threading.Tasks;
 
 namespace UnitTest
 {
@@ -1395,6 +1397,25 @@ namespace UnitTest
             var result = user.Where(x => x.Id > 0 && x.Id < y).Where(expression);
 
             var list = result.ToList();
+        }
+
+        /// <summary>
+        ///  ¬ŒÒ“Ï≤Ω≤‚ ‘°£
+        /// </summary>
+        [TestMethod]
+        public void TransactionAsyncTest()
+        {
+            Task.WaitAll(Aw_TransactionAsyncTest());
+        }
+
+        private async Task Aw_TransactionAsyncTest()
+        {
+            var user = new UserRepository();
+
+            using (var transaction = new TransactionScope())
+            {
+                var results = await user.ToListAsync().ConfigureAwait(false);
+            }
         }
     }
 }

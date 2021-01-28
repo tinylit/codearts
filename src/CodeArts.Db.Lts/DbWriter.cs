@@ -470,7 +470,7 @@ namespace CodeArts.Db.Lts
                 {
                     using (var connection = context.CreateDb())
                     {
-                        await connection.OpenAsync(cancellationToken);
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                         foreach (var x in results)
                         {
@@ -489,7 +489,7 @@ namespace CodeArts.Db.Lts
                                     DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
                                 }
 
-                                influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken);
+                                influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
                             }
                         }
                     }
@@ -503,7 +503,7 @@ namespace CodeArts.Db.Lts
 
                 using (var connection = context.CreateDb())
                 {
-                    await connection.OpenAsync(cancellationToken);
+                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                     foreach (var x in results)
                     {
@@ -526,7 +526,7 @@ namespace CodeArts.Db.Lts
 
                             stopwatch.Restart();
 
-                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken);
+                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
 
                             stopwatch.Stop();
 
@@ -542,7 +542,7 @@ namespace CodeArts.Db.Lts
             {
                 using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required))
                 {
-                    int influenceLine = await ExecutedAsync(results, commandTimeout, cancellationToken);
+                    int influenceLine = await ExecutedAsync(results, commandTimeout, cancellationToken).ConfigureAwait(false);
 
                     transaction.Complete();
 
