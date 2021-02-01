@@ -14,7 +14,7 @@
     <Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
     <PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-    <Version>5.2.0.1</Version>
+    <Version>6.0.0.0</Version>
     <RootNamespace>CodeArts</RootNamespace>
   </PropertyGroup>
 

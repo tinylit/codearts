@@ -8,6 +8,7 @@ using System.Data.Entity.Infrastructure;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Linq.Expressions;
 #if NET_NORMAL || NET_CORE
@@ -118,6 +119,90 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="entity">实体。</param>
         public virtual EntityEntry<TEntity> Update(TEntity entity) => _dbSet.Update(entity);
+
+        private static string[] ExtractFields<TColumn>(Expression<Func<TEntity, TColumn>> lambda)
+        {
+            if (lambda is null)
+            {
+                throw new ArgumentNullException(nameof(lambda));
+            }
+
+            var parameter = lambda.Parameters[0];
+
+            var body = lambda.Body;
+
+            switch (body.NodeType)
+            {
+                case ExpressionType.Constant when body is ConstantExpression constant:
+                    switch (constant.Value)
+                    {
+                        case string text:
+                            return text.Split(',', ' ');
+                        case string[] arr:
+                            return arr;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                case ExpressionType.MemberAccess when body is MemberExpression member:
+                    return new string[] { member.Member.Name };
+                case ExpressionType.MemberInit when body is MemberInitExpression memberInit:
+                    return memberInit.Bindings.Select(x => x.Member.Name).ToArray();
+                case ExpressionType.New when body is NewExpression newExpression:
+                    return newExpression.Members.Select(x => x.Name).ToArray();
+                case ExpressionType.Parameter:
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Updates the specified entity.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <param name="updateFields">update fields.</param>
+        public virtual void UpdateLimit<TColumn>(TEntity entity, Expression<Func<TEntity, TColumn>> updateFields)
+        {
+            var updates = ExtractFields(updateFields);
+
+            var entry = _dbContext.Entry(entity);
+
+            entry.OriginalValues.SetValues(entity);
+
+            entry.State = EntityState.Unchanged;
+
+            entry.Properties
+                .Where(x => updates.Any(y => string.Equals(x.Metadata.Name, y, StringComparison.OrdinalIgnoreCase)))
+                .ForEach(x =>
+                {
+                    x.IsModified = true;
+                });
+        }
+
+        /// <summary>
+        /// Updates the specified entity.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <param name="excludeFields">exclude update fields.</param>
+        public virtual void UpdateExclude<TColumn>(TEntity entity, Expression<Func<TEntity, TColumn>> excludeFields)
+        {
+            var updates = ExtractFields(excludeFields);
+
+            var entry = _dbContext.Entry(entity);
+
+            entry.OriginalValues.SetValues(entity);
+
+            entry.State = EntityState.Unchanged;
+
+            foreach (var item in entry.Properties)
+            {
+                if (updates.Any(y => string.Equals(item.Metadata.Name, y, StringComparison.OrdinalIgnoreCase)) || item.Metadata.PropertyInfo.IsDefined(typeof(KeyAttribute), true))
+                {
+                    continue;
+                }
+
+                item.IsModified = true;
+            }
+        }
 
         /// <summary>
         /// 批量更新。

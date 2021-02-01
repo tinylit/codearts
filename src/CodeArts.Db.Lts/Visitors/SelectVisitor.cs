@@ -61,9 +61,9 @@ namespace CodeArts.Db.Lts.Visitors
         }
         #endregion
 
-        private int take = 0;
+        private int take = -1;
 
-        private int skip = 0;
+        private int skip = -1;
 
         private int selectDepth = 0;
 

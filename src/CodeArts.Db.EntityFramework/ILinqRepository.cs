@@ -99,6 +99,20 @@ namespace CodeArts.Db
         EntityEntry<TEntity> Update(TEntity entity);
 
         /// <summary>
+        /// Updates the specified entity.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <param name="updateFields">update fields.</param>
+        void UpdateLimit<TColumn>(TEntity entity, Expression<Func<TEntity, TColumn>> updateFields);
+
+        /// <summary>
+        /// Updates the specified entity.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <param name="excludeFields">exclude update fields.</param>
+        void UpdateExclude<TColumn>(TEntity entity, Expression<Func<TEntity, TColumn>> excludeFields);
+
+        /// <summary>
         /// Updates the specified entities.
         /// </summary>
         /// <param name="entities">The entities.</param>

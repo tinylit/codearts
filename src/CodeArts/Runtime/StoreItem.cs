@@ -228,15 +228,19 @@ namespace CodeArts.Runtime
         {
             get
             {
-                if (_Naming.Length > 0) return _Naming;
+                if (_Naming.Length > 0)
+                {
+                    return _Naming;
+                }
 
                 var namingAttr = NamingAttribute;
 
-                string name = namingAttr?.Name ?? Name;
+                if (namingAttr is null)
+                {
+                    return _Naming = Name;
+                }
 
-                if (namingAttr is null) return _Naming = name;
-
-                return _Naming = name.ToNamingCase(namingAttr.NamingType);
+                return _Naming = namingAttr.Name ?? Name.ToNamingCase(namingAttr.NamingType);
             }
         }
 
@@ -307,17 +311,7 @@ namespace CodeArts.Runtime
 
                     if (namingAttr is null)
                     {
-                        var declaringType = Member.DeclaringType;
-                        var reflectedType = Member.ReflectedType;
-
-                        if (declaringType == reflectedType)
-                        {
-                            namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute));
-                        }
-                        else
-                        {
-                            namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute), false) ?? (NamingAttribute)Attribute.GetCustomAttribute(reflectedType, typeof(NamingAttribute));
-                        }
+                        namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(Member.DeclaringType, typeof(NamingAttribute));
 
                         if (namingAttr is null)
                         {
@@ -330,7 +324,7 @@ namespace CodeArts.Runtime
                     }
                     else
                     {
-                        _Naming = namingAttr.Name.ToNamingCase(namingAttr.NamingType);
+                        _Naming = namingAttr.Name ?? Name.ToNamingCase(namingAttr.NamingType);
                     }
                 }
 
