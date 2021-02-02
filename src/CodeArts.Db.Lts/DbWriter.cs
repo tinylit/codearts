@@ -1173,6 +1173,19 @@ namespace CodeArts.Db.Lts
             }
         }
 
+        private class KeyValueStringComparer : IEqualityComparer<KeyValuePair<string, string>>
+        {
+            public bool Equals(KeyValuePair<string, string> x, KeyValuePair<string, string> y)
+            {
+                return x.Key == y.Key && x.Value == y.Value;
+            }
+
+            public int GetHashCode(KeyValuePair<string, string> obj)
+            {
+                return obj.Key.GetHashCode() + obj.Value.GetHashCode();
+            }
+        }
+
         private class Updateable : DbRouteExecuter, IUpdateable<TEntity>
         {
             public Updateable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
@@ -1183,6 +1196,21 @@ namespace CodeArts.Db.Lts
             private string[] excepts;
             private Func<TEntity, string[]> where;
             private Func<ITableInfo, TEntity, string> from;
+
+            private static readonly Dictionary<string, string> defalutUpdateFields = new Dictionary<string, string>();
+
+            static Updateable()
+            {
+                foreach (var kv in typeRegions.ReadWrites)
+                {
+                    if (typeRegions.Keys.Contains(kv.Key))
+                    {
+                        continue;
+                    }
+
+                    defalutUpdateFields.Add(kv.Key, kv.Value);
+                }
+            }
 
             public IUpdateable<TEntity> Except(string[] columns)
             {
@@ -1337,7 +1365,7 @@ namespace CodeArts.Db.Lts
                 var sb = new StringBuilder();
                 var paramters = new Dictionary<string, object>();
 
-                IEnumerable<KeyValuePair<string, string>> columns = typeRegions.ReadWrites;
+                IEnumerable<KeyValuePair<string, string>> columns = defalutUpdateFields;
 
                 if (!(limits is null))
                 {
@@ -1351,10 +1379,6 @@ namespace CodeArts.Db.Lts
 
                 if (!columns.Any())
                     throw new DException("未指定更新字段!");
-
-                columns = columns.Union(typeRegions.ReadWrites
-                        .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
-                    );
 
                 int parameterCount = 0;
 
@@ -1381,7 +1405,7 @@ namespace CodeArts.Db.Lts
                         .Concat(typeRegions.ReadOrWrites
                             .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
                             .Select(x => x.Value))
-                        .Distinct()
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
                         .ToArray();
                     }
 
@@ -1393,7 +1417,7 @@ namespace CodeArts.Db.Lts
                 var updateColumns = columns
                     .Union(typeRegions.ReadWrites
                         .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
-                    )
+                        , Singleton<KeyValueStringComparer>.Instance)
                     .ToList();
 
                 var results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
