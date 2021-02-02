@@ -32,6 +32,14 @@ namespace CodeArts.Db.Lts
         }
 
         /// <summary>
+        /// 捕获器。
+        /// </summary>
+        public SqlCapture(Action<CommandSql> captured) : this()
+        {
+            Captured = captured;
+        }
+
+        /// <summary>
         /// 当前捕获器。
         /// </summary>
         public static SqlCapture Current
@@ -72,17 +80,14 @@ namespace CodeArts.Db.Lts
 
             lock (threadSqlProfilers)
             {
-                threadSqlProfilers.Remove(thread);
-            }
-
-            if (capture is null)
-            {
-                return;
-            }
-
-            lock (threadSqlProfilers)
-            {
-                threadSqlProfilers[thread] = capture;
+                if (capture is null)
+                {
+                    threadSqlProfilers.Remove(thread);
+                }
+                else
+                {
+                    threadSqlProfilers[thread] = capture;
+                }
             }
 
             GC.SuppressFinalize(this);
