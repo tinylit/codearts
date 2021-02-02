@@ -261,8 +261,6 @@ namespace CodeArts.Db.Lts
         {
             var commandSql = CreateReadCommandSql<T>(expression);
 
-            SqlCapture.Current?.Capture(commandSql);
-
             return DbProvider.ReadAsync(this, commandSql, cancellationToken);
         }
 
@@ -275,8 +273,6 @@ namespace CodeArts.Db.Lts
         public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
         {
             var commandSql = CreateReadCommandSql<T>(expression);
-
-            SqlCapture.Current?.Capture(commandSql);
 
             return DbProvider.QueryAsync<T>(this, commandSql);
         }
@@ -302,8 +298,6 @@ namespace CodeArts.Db.Lts
 
             var commandSql = new CommandSql<T>(sql.ToString(Settings), PreparationParameters(sql, param), commandTimeout, hasDefaultValue, defaultValue, missingMsg);
 
-            SqlCapture.Current?.Capture(commandSql);
-
             return DbProvider.ReadAsync(this, commandSql, cancellationToken);
         }
 
@@ -323,8 +317,6 @@ namespace CodeArts.Db.Lts
             }
 
             var commandSql = new CommandSql(sql.ToString(Settings), PreparationParameters(sql, param), commandTimeout);
-
-            SqlCapture.Current?.Capture(commandSql);
 
             return DbProvider.QueryAsync<T>(this, commandSql);
         }
@@ -486,8 +478,6 @@ namespace CodeArts.Db.Lts
         {
             var commandSql = CreateWriteCommandSql(expression);
 
-            SqlCapture.Current?.Capture(commandSql);
-
             return DbExecuter.ExecuteAsync(this, commandSql, cancellationToken);
         }
 
@@ -507,8 +497,6 @@ namespace CodeArts.Db.Lts
             }
 
             var commandSql = new CommandSql(sql.ToString(Settings), PreparationParameters(sql, param), commandTimeout);
-
-            SqlCapture.Current?.Capture(commandSql);
 
             return DbExecuter.ExecuteAsync(this, commandSql, cancellationToken);
         }

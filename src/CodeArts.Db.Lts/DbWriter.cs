@@ -476,8 +476,6 @@ namespace CodeArts.Db.Lts
                         {
                             var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
 
-                            SqlCapture.Current?.Capture(commandSql);
-
                             using (var command = connection.CreateCommand())
                             {
                                 command.AllowSkippingFormattingSql = true;
@@ -508,8 +506,6 @@ namespace CodeArts.Db.Lts
                     foreach (var x in results)
                     {
                         var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
-
-                        SqlCapture.Current?.Capture(commandSql);
 
                         using (var command = connection.CreateCommand())
                         {

@@ -1409,6 +1409,35 @@ namespace UnitTest
         /// 事务异步测试。
         /// </summary>
         [TestMethod]
+        public void UpdateAsyncTest()
+        {
+            Task.WaitAll(Aw_UpdateAsyncTest());
+        }
+
+        private async Task Aw_UpdateAsyncTest()
+        {
+            var user = new UserRepository();
+
+            var entry = new FeiUsers
+            {
+                Bcid = 0,
+                Userstatus = 1,
+                Mobile = "18980861011",
+                Email = "tinylit@foxmail.com",
+                Password = "123456",
+                Salt = string.Empty,
+                CreatedTime = DateTime.Now,
+                ModifiedTime = DateTime.Now
+            };
+
+            var i = await user.AsUpdateable(entry)
+                .ExecuteCommandAsync();
+        }
+
+        /// <summary>
+        /// 事务异步测试。
+        /// </summary>
+        [TestMethod]
         public void TransactionAsyncTest()
         {
             Task.WaitAll(Aw_TransactionAsyncTest());
