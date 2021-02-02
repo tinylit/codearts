@@ -32,7 +32,7 @@ namespace CodeArts.Db
 
             sb.Append(sql)
                .Append(orderBy)
-               .Append("OFFSET ")
+               .Append(" OFFSET ")
                .Append(skip)
                .Append(" ROWS");
 
