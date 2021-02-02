@@ -551,6 +551,40 @@ namespace CodeArts.Db.Lts
             }
 #endif
         }
+
+        private class StringArrayComparer : IEqualityComparer<string[]>
+        {
+            public bool Equals(string[] x, string[] y)
+            {
+                if (x.Length != y.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    if (x[i] != y[i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            public int GetHashCode(string[] obj)
+            {
+                int hashCode = 0;
+
+                foreach (var item in obj)
+                {
+                    hashCode += item.GetHashCode();
+                }
+
+                return hashCode;
+            }
+        }
+
         private class Deleteable : DbRouteExecuter, IDeleteable<TEntity>
         {
             public Deleteable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
@@ -567,12 +601,14 @@ namespace CodeArts.Db.Lts
                 string value = wheres[0];
                 KeyValuePair<string, string> column = default;
 
-                foreach (var kv in typeRegions.ReadWrites)
+                foreach (var kv in typeRegions.ReadOrWrites)
                 {
                     if (kv.Key == value || kv.Value == value)
                     {
                         flag = false;
+
                         column = kv;
+
                         break;
                     }
                 }
@@ -603,7 +639,7 @@ namespace CodeArts.Db.Lts
             {
                 List<Tuple<string, Dictionary<string, ParameterValue>>> results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
 
-                var columns = typeRegions.ReadWrites
+                var columns = typeRegions.ReadOrWrites
                         .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
                         .ToList();
 
@@ -926,7 +962,8 @@ namespace CodeArts.Db.Lts
 
                     return columns;
 
-                }).ToList();
+                }, Singleton<StringArrayComparer>.Instance)
+                .ToList();
 
                 var parameters = new Dictionary<string, ParameterValue>();
 
@@ -1173,7 +1210,7 @@ namespace CodeArts.Db.Lts
 
                     var context = new ValidationContext(entry, null, null);
 
-                    string whereStr = string.Join(" AND ", typeRegions.ReadWrites
+                    string whereStr = string.Join(" AND ", typeRegions.ReadOrWrites
                     .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
                     .Select(kv =>
                     {
@@ -1334,7 +1371,7 @@ namespace CodeArts.Db.Lts
                     if (wheres.Length == 0)
                         throw new DException("未指定更新条件");
 
-                    var whereColumns = typeRegions.ReadWrites
+                    var whereColumns = typeRegions.ReadOrWrites
                             .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
                             .Select(x => x.Value)
                             .ToArray();

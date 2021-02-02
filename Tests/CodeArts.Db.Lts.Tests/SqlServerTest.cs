@@ -24,7 +24,7 @@ namespace UnitTest
     [TestClass]
     public class SqlServerTest
     {
-        private static bool isCompleted;
+        private static bool isCompleted = true;
 
         [TestInitialize]
         public void Initialize()
@@ -858,11 +858,14 @@ namespace UnitTest
             };
 
             var i = user.AsUpdateable(entry)
+                .ExecuteCommand();
+
+            var j = user.AsUpdateable(entry)
                 .Limit(x => x.Password)
                 .Where(x => x.Username ?? x.Mobile)
                 .ExecuteCommand();
 
-            var j = user
+            var k = user
                     .From(x => x.TableName)
                     .Where(x => x.Username == "admin")
                     .Update(x => new FeiUsers
@@ -891,6 +894,9 @@ namespace UnitTest
                 ModifiedTime = DateTime.Now
             };
 
+            var x0 = user.AsDeleteable(entry)
+                .ExecuteCommand();
+
             var list = new List<FeiUsers>();
 
             for (int i = 0; i < 1000; i++)
@@ -900,7 +906,7 @@ namespace UnitTest
 
             var x1 = user.AsDeleteable(list)
                 .Where(x => x.Username)
-                .ExecuteCommand();
+                .ExecuteCommand(120);
 
             var x2 = user.Delete(x => x.Username == "admi");
         }
