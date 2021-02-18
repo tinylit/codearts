@@ -24,12 +24,16 @@ namespace UnitTest
     [TestClass]
     public class SqlServerTest
     {
-        private static bool isCompleted = true;
+        private static bool isCompleted;
 
         [TestInitialize]
         public void Initialize()
         {
-            var adapter = new CodeArts.Db.Lts.SqlServerLtsAdapter();
+            var adapter = new SqlServerLtsAdapter
+            {
+                MaxPoolSize = 120
+            };
+
             DbConnectionManager.RegisterAdapter(adapter);
             DbConnectionManager.RegisterProvider<CodeArtsProvider>();
 
