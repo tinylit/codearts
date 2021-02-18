@@ -64,175 +64,6 @@ namespace CodeArts.Db
 
         private class DbConnection : IDispatchConnection
         {
-            private class DbReader : IDataReader
-            {
-                private bool disposed = false;
-                private readonly DbConnection connection;
-                private readonly IDataReader reader;
-                private readonly bool isClosedConnection;
-
-                public DbReader(DbConnection connection, IDataReader reader, bool isClosedConnection)
-                {
-                    this.connection = connection;
-                    this.reader = reader;
-                    this.isClosedConnection = isClosedConnection;
-                }
-                public object this[int i] => reader[i];
-
-                public object this[string name] => reader[name];
-
-                public int Depth => reader.Depth;
-
-                public bool IsClosed => reader.IsClosed;
-
-                public int RecordsAffected => reader.RecordsAffected;
-
-                public int FieldCount => reader.FieldCount;
-
-                public void Close()
-                {
-                    reader.Close();
-
-                    if (isClosedConnection)
-                    {
-                        connection.Close();
-                    }
-                }
-
-                public void Dispose()
-                {
-                    if (disposed)
-                    {
-                        return;
-                    }
-
-                    disposed = true;
-
-                    reader.Dispose();
-
-                    if (isClosedConnection)
-                    {
-                        connection.Close();
-                    }
-                }
-
-                public bool GetBoolean(int i) => reader.GetBoolean(i);
-
-                public byte GetByte(int i) => reader.GetByte(i);
-
-                public long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length) => reader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
-                public char GetChar(int i) => reader.GetChar(i);
-
-                public long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length) => reader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
-
-                public IDataReader GetData(int i) => reader.GetData(i);
-
-                public string GetDataTypeName(int i) => reader.GetDataTypeName(i);
-
-                public DateTime GetDateTime(int i) => reader.GetDateTime(i);
-
-                public decimal GetDecimal(int i) => reader.GetDecimal(i);
-
-                public double GetDouble(int i) => reader.GetDouble(i);
-
-                public Type GetFieldType(int i) => reader.GetFieldType(i);
-
-                public float GetFloat(int i) => reader.GetFloat(i);
-
-                public Guid GetGuid(int i) => reader.GetGuid(i);
-
-                public short GetInt16(int i) => reader.GetInt16(i);
-
-                public int GetInt32(int i) => reader.GetInt32(i);
-
-                public long GetInt64(int i) => reader.GetInt64(i);
-
-                public string GetName(int i) => reader.GetName(i);
-
-                public int GetOrdinal(string name) => reader.GetOrdinal(name);
-
-                public DataTable GetSchemaTable() => reader.GetSchemaTable();
-
-                public string GetString(int i) => reader.GetString(i);
-
-                public object GetValue(int i) => reader.GetValue(i);
-
-                public int GetValues(object[] values) => reader.GetValues(values);
-
-                public bool IsDBNull(int i) => reader.IsDBNull(i);
-
-                public bool NextResult() => reader.NextResult();
-
-                public bool Read() => reader.Read();
-            }
-
-            private class DbCommand : IDbCommand
-            {
-                private readonly IDbCommand command;
-                private readonly DbConnection connection;
-
-                public DbCommand(DbConnection connection, IDbCommand command)
-                {
-                    this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-                    this.command = command ?? throw new ArgumentNullException(nameof(command));
-                }
-
-                public IDbConnection Connection
-                {
-                    get => command.Connection;
-                    set
-                    {
-                        if (value is DbConnection db)
-                        {
-                            command.Connection = db.connection;
-                        }
-                        else
-                        {
-                            command.Connection = value;
-                        }
-                    }
-                }
-
-                public IDbTransaction Transaction { get => command.Transaction; set => command.Transaction = value; }
-
-                public string CommandText { get => command.CommandText; set => command.CommandText = value; }
-
-                public int CommandTimeout { get => command.CommandTimeout; set => command.CommandTimeout = value; }
-
-                public CommandType CommandType { get => command.CommandType; set => command.CommandType = value; }
-
-                public IDataParameterCollection Parameters => command.Parameters;
-                public UpdateRowSource UpdatedRowSource { get => command.UpdatedRowSource; set => command.UpdatedRowSource = value; }
-
-                public void Cancel() => command.Cancel();
-
-                public IDbDataParameter CreateParameter() => command.CreateParameter();
-
-                public void Dispose() => command.Dispose();
-
-                public int ExecuteNonQuery() => command.ExecuteNonQuery();
-
-                public IDataReader ExecuteReader() => command.ExecuteReader();
-
-                public IDataReader ExecuteReader(CommandBehavior behavior)
-                {
-                    bool isClosedConnection = false;
-
-                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.CloseConnection)
-                    {
-                        isClosedConnection = true;
-
-                        behavior &= ~CommandBehavior.CloseConnection;
-                    }
-
-                    return new DbReader(connection, command.ExecuteReader(behavior), isClosedConnection);
-                }
-
-                public object ExecuteScalar() => command.ExecuteScalar();
-
-                public void Prepare() => command.Prepare();
-            }
-
             private readonly IDbConnection connection; //数据库连接
             private readonly double? connectionHeartbeat; //心跳
             private readonly bool useCache;
@@ -286,8 +117,6 @@ namespace CodeArts.Db
                         break;
                 }
 
-                ActiveTime = DateTime.Now;
-
                 connectionState = connection.State;
             }
 
@@ -308,7 +137,7 @@ namespace CodeArts.Db
                 connection.Close();
             }
 
-            public IDbCommand CreateCommand() => new DbCommand(this, connection.CreateCommand());
+            public IDbCommand CreateCommand() => connection.CreateCommand();
 
             public bool IsThreadActive => isActiveThread.IsAlive;
 
@@ -371,172 +200,6 @@ namespace CodeArts.Db
         private class DispatchConnection : System.Data.Common.DbConnection, IDispatchConnection
         {
             private readonly System.Data.Common.DbConnection connection;
-
-            private class DbReader : System.Data.Common.DbDataReader
-            {
-                private bool disposed = false;
-                private readonly DispatchConnection connection;
-                private readonly System.Data.Common.DbDataReader reader;
-
-                public DbReader(DispatchConnection connection, System.Data.Common.DbDataReader reader)
-                {
-                    this.connection = connection;
-                    this.reader = reader;
-                }
-
-                public override int Depth => reader.Depth;
-
-                public override int FieldCount => reader.FieldCount;
-
-                public override bool HasRows => reader.HasRows;
-
-                public override bool IsClosed => reader.IsClosed;
-
-                public override int RecordsAffected => reader.RecordsAffected;
-
-                public override object this[string name] => reader[name];
-
-                public override object this[int ordinal] => reader[ordinal];
-
-                public override void Close()
-                {
-                    reader.Close();
-
-                    connection.Close();
-                }
-
-                protected override void Dispose(bool disposing)
-                {
-                    if (disposing)
-                    {
-                        if (disposed)
-                        {
-                            return;
-                        }
-
-                        reader.Dispose();
-
-                        connection.Close();
-
-                        disposed = true;
-                    }
-                }
-
-                public override bool GetBoolean(int i) => reader.GetBoolean(i);
-
-                public override byte GetByte(int i) => reader.GetByte(i);
-
-                public override long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length) => reader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
-
-                public override char GetChar(int i) => reader.GetChar(i);
-
-                public override long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length) => reader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
-
-                public override string GetDataTypeName(int i) => reader.GetDataTypeName(i);
-
-                public override DateTime GetDateTime(int i) => reader.GetDateTime(i);
-
-                public override decimal GetDecimal(int i) => reader.GetDecimal(i);
-
-                public override double GetDouble(int i) => reader.GetDouble(i);
-
-                public override Type GetFieldType(int i) => reader.GetFieldType(i);
-
-                public override float GetFloat(int i) => reader.GetFloat(i);
-
-                public override Guid GetGuid(int i) => reader.GetGuid(i);
-
-                public override short GetInt16(int i) => reader.GetInt16(i);
-
-                public override int GetInt32(int i) => reader.GetInt32(i);
-
-                public override long GetInt64(int i) => reader.GetInt64(i);
-
-                public override string GetName(int i) => reader.GetName(i);
-
-                public override int GetOrdinal(string name) => reader.GetOrdinal(name);
-
-                public override DataTable GetSchemaTable() => reader.GetSchemaTable();
-
-                public override string GetString(int i) => reader.GetString(i);
-
-                public override object GetValue(int i) => reader.GetValue(i);
-
-                public override int GetValues(object[] values) => reader.GetValues(values);
-
-                public override bool IsDBNull(int i) => reader.IsDBNull(i);
-
-                public override bool NextResult() => reader.NextResult();
-
-                public override bool Read() => reader.Read();
-
-                public override IEnumerator GetEnumerator() => reader.GetEnumerator();
-            }
-
-            private class DbCommand : System.Data.Common.DbCommand
-            {
-                private readonly System.Data.Common.DbCommand command;
-                private readonly DispatchConnection connection;
-
-                public DbCommand(DispatchConnection connection, System.Data.Common.DbCommand command)
-                {
-                    this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-                    this.command = command ?? throw new ArgumentNullException(nameof(command));
-                }
-
-                public override string CommandText { get => command.CommandText; set => command.CommandText = value; }
-                public override int CommandTimeout { get => command.CommandTimeout; set => command.CommandTimeout = value; }
-                public override CommandType CommandType { get => command.CommandType; set => command.CommandType = value; }
-                protected override System.Data.Common.DbConnection DbConnection
-                {
-                    get => command.Connection;
-                    set
-                    {
-                        if (value is DispatchConnection db)
-                        {
-                            command.Connection = db.connection;
-                        }
-                        else
-                        {
-                            command.Connection = value;
-                        }
-                    }
-                }
-                protected override System.Data.Common.DbParameterCollection DbParameterCollection => command.Parameters;
-                protected override System.Data.Common.DbTransaction DbTransaction { get => command.Transaction; set => command.Transaction = value; }
-                public override bool DesignTimeVisible { get => command.DesignTimeVisible; set => command.DesignTimeVisible = value; }
-                public override UpdateRowSource UpdatedRowSource { get => command.UpdatedRowSource; set => command.UpdatedRowSource = value; }
-
-                public override object ExecuteScalar() => command.ExecuteScalar();
-
-                public override void Prepare() => command.Prepare();
-
-                public override void Cancel() => command.Cancel();
-
-                protected override System.Data.Common.DbParameter CreateDbParameter() => command.CreateParameter();
-
-                protected override System.Data.Common.DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
-                {
-                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.CloseConnection)
-                    {
-                        return new DbReader(connection, command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection));
-                    }
-
-                    return command.ExecuteReader(behavior);
-                }
-
-                public override int ExecuteNonQuery() => command.ExecuteNonQuery();
-
-                protected override void Dispose(bool disposing)
-                {
-                    if (disposing)
-                    {
-                        command.Dispose();
-                    }
-
-                    base.Dispose(disposing);
-                }
-            }
 
             private readonly double? connectionHeartbeat; //心跳
             private readonly bool useCache;
@@ -609,13 +272,66 @@ namespace CodeArts.Db
                 connectionState = connection.State;
             }
 
-#if NET_NORMAL || NETSTANDARD2_0
+#if NET_NORMAL || NET_CORE
             public override async Task OpenAsync(CancellationToken cancellationToken)
             {
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                switch (connection.State)
+                {
+                    case ConnectionState.Closed:
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        break;
+                    case ConnectionState.Connecting:
+                        do
+                        {
+                            await Task.Delay(5, cancellationToken).ConfigureAwait(false);
+
+                        } while (State == ConnectionState.Connecting);
+
+                        goto default;
+                    case ConnectionState.Broken:
+#if NETSTANDARD2_1
+                        await connection.CloseAsync()
+                            .ConfigureAwait(false);
+#else
+                        connection.Close();
+#endif
+                        goto default;
+                    default:
+                        if (connection.State == ConnectionState.Closed)
+                        {
+                            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+                }
 
                 connectionState = connection.State;
             }
+#endif
+
+#if NETSTANDARD2_1
+            public override Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default) => connection.ChangeDatabaseAsync(databaseName, cancellationToken);
+
+            public override Task CloseAsync() => connection.CloseAsync();
+
+            public override ValueTask DisposeAsync()
+            {
+                IsActive = false;
+
+                var task = connection
+                    .DisposeAsync();
+
+                task.ConfigureAwait(false)
+                    .GetAwaiter()
+                    .OnCompleted(() =>
+                    {
+                        IsReleased = true;
+                    });
+
+                var task2 = base.DisposeAsync();
+
+                return new ValueTask(Task.WhenAll(task.AsTask(), task2.AsTask()));
+            }
+
 #endif
 
             public bool IsThreadActive => isActiveThread.IsAlive;
@@ -629,7 +345,7 @@ namespace CodeArts.Db
             public bool IsActive { get; private set; } = true;
 
             protected override System.Data.Common.DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => connection.BeginTransaction(isolationLevel);
-            protected override System.Data.Common.DbCommand CreateDbCommand() => new DbCommand(this, connection.CreateCommand());
+            protected override System.Data.Common.DbCommand CreateDbCommand() => connection.CreateCommand();
 
             void IDisposable.Dispose()
             {
@@ -781,12 +497,7 @@ namespace CodeArts.Db
                                  .FirstOrDefault(x => !x.IsThreadActive) ?? connections
                                  .Where(x => !x.IsActive)
                                  .OrderBy(x => x.ActiveTime) //? 移除最长时间不活跃的链接。
-                                 .FirstOrDefault();
-
-                            if (connection is null)
-                            {
-                                throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
-                            }
+                                 .FirstOrDefault() ?? throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
 
                             connections.Remove(connection);
                         }

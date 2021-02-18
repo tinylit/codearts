@@ -81,34 +81,35 @@ namespace CodeArts.Db.Lts
 
 #if NET_NORMAL || NET_CORE
         /// <inheritdoc />
-        public Task OpenAsync(CancellationToken cancellationToken = default)
+        public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
             if (IsAsynchronousSupport)
             {
                 switch (connection.State)
                 {
                     case ConnectionState.Closed:
-                        return dbConnection.OpenAsync(cancellationToken);
+                        await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        break;
                     case ConnectionState.Broken:
+#if NETSTANDARD2_1
+                        await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
                         connection.Close();
+#endif
                         goto default;
                     case ConnectionState.Connecting:
                     default:
                         if (connection.State != ConnectionState.Open)
                         {
-                            return dbConnection.OpenAsync(cancellationToken);
+                            await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
                         }
-
-#if NET45
-                        return Task.Delay(0, cancellationToken);
-#else
-                        return Task.CompletedTask;
-#endif
-
+                        break;
                 }
             }
-
-            throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection.");
+            else
+            {
+                throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection.");
+            }
         }
 #endif
 

@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>6.0.0.0</Version>
+		<Version>6.1.2.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>An ORM Base Library.</Description>
@@ -36,7 +36,7 @@
 		<Reference Include="System.ComponentModel.DataAnnotations" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' ">
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
 		<PackageReference Include="System.ComponentModel.Annotations" Version="4.5.0" />
 	</ItemGroup>
 

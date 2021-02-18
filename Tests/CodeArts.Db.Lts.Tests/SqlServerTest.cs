@@ -1440,14 +1440,21 @@ namespace UnitTest
         [TestMethod]
         public void TransactionAsyncTest()
         {
-            Task.WaitAll(Aw_TransactionAsyncTest());
+            var tasks = new Task[100];
+
+            for (int i = 0; i < 100; i++)
+            {
+                tasks[i] = Aw_TransactionAsyncTest();
+            }
+
+            Task.WaitAll(tasks);
         }
 
         private async Task Aw_TransactionAsyncTest()
         {
             var user = new UserRepository();
 
-            using (var transaction = new TransactionScope())
+            using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
                 var results = await user.ToListAsync().ConfigureAwait(false);
             }

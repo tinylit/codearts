@@ -182,7 +182,7 @@ namespace CodeArts.Db
             {
                 if (mvc.CanConvert(match))
                 {
-                    return mvc.Convert(this as T, match);
+                    return mvc.Convert((T)this, match);
                 }
             }
 

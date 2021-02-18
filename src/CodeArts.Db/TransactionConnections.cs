@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
 using Transaction = System.Transactions.Transaction;
+using System.Threading.Tasks;
 
 namespace CodeArts.Db
 {
@@ -125,6 +126,52 @@ namespace CodeArts.Db
                 this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
             }
 
+#if NET_NORMAL || NET_CORE
+            public override async Task OpenAsync(CancellationToken cancellationToken)
+            {
+                switch (State)
+                {
+                    case ConnectionState.Closed:
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        break;
+                    case ConnectionState.Connecting:
+                        do
+                        {
+                            await Task.Delay(5, cancellationToken).ConfigureAwait(false);
+
+                        } while (State == ConnectionState.Connecting);
+
+                        goto default;
+                    case ConnectionState.Broken:
+#if NETSTANDARD2_1
+                        await connection.CloseAsync()
+                            .ConfigureAwait(false);
+#else
+                        connection.Close();
+#endif
+                        goto default;
+                    default:
+                        if (connection.State == ConnectionState.Closed)
+                        {
+                            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+                }
+            }
+#endif
+
+#if NETSTANDARD2_1
+            public override Task CloseAsync() => connection.CloseAsync();
+
+            public override ValueTask DisposeAsync() => connection.DisposeAsync();
+
+            protected override ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken) => connection.BeginTransactionAsync(isolationLevel, cancellationToken);
+
+
+            public override Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default) => connection.ChangeDatabaseAsync(databaseName, cancellationToken);
+
+#endif
+
             public IDbConnection ReuseConnection()
             {
                 Interlocked.Increment(ref refCount);
@@ -187,7 +234,7 @@ namespace CodeArts.Db
         }
 
         private static readonly ConcurrentDictionary<Transaction, Dictionary<string, ITransactionConnection>> transactionConnections = new ConcurrentDictionary<Transaction, Dictionary<string, ITransactionConnection>>();
-       
+
         /// <summary>
         /// 获取数据库连接。
         /// </summary>
@@ -215,23 +262,30 @@ namespace CodeArts.Db
                 return new Dictionary<string, ITransactionConnection>();
             });
 
+            if (dictionary.TryGetValue(connectionString, out ITransactionConnection info))
+            {
+                return info.ReuseConnection();
+            }
+
             lock (dictionary)
             {
-                if (!dictionary.TryGetValue(connectionString, out ITransactionConnection info))
+                if (dictionary.TryGetValue(connectionString, out info))
                 {
-                    var conn = DispatchConnections.Instance.GetConnection(connectionString, factory, false);
-
-                    if (conn is System.Data.Common.DbConnection dbConnection)
-                    {
-                        info = new TransactionConnection(dbConnection);
-                    }
-                    else
-                    {
-                        info = new DbConnection(conn);
-                    }
-
-                    dictionary.Add(connectionString, info);
+                    return info.ReuseConnection();
                 }
+
+                var conn = DispatchConnections.Instance.GetConnection(connectionString, factory, false);
+
+                if (conn is System.Data.Common.DbConnection dbConnection)
+                {
+                    info = new TransactionConnection(dbConnection);
+                }
+                else
+                {
+                    info = new DbConnection(conn);
+                }
+
+                dictionary.Add(connectionString, info);
 
                 return info.ReuseConnection();
             }
