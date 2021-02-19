@@ -474,13 +474,11 @@ namespace CodeArts.Db.Lts
 
                         foreach (var x in results)
                         {
-                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
-
                             using (var command = connection.CreateCommand())
                             {
                                 command.AllowSkippingFormattingSql = true;
 
-                                command.CommandText = commandSql.Sql;
+                                command.CommandText = x.Item1;
 
                                 foreach (var kv in x.Item2)
                                 {
@@ -505,13 +503,11 @@ namespace CodeArts.Db.Lts
 
                     foreach (var x in results)
                     {
-                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
-
                         using (var command = connection.CreateCommand())
                         {
                             command.AllowSkippingFormattingSql = true;
 
-                            command.CommandText = commandSql.Sql;
+                            command.CommandText = x.Item1;
 
                             command.CommandTimeout = remainingTime;
 

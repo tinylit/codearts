@@ -147,7 +147,7 @@ namespace CodeArts.Db
 
             public bool IsReleased { private set; get; }
 
-            public DateTime ActiveTime { get; private set; }
+            public DateTime ActiveTime { get; private set; } = DateTime.Now;
 
             public void Dispose()
             {
@@ -182,12 +182,12 @@ namespace CodeArts.Db
             {
                 if (disposing)
                 {
-                    IsReleased = true;
-
                     if (IsReleased)
                     {
                         return;
                     }
+
+                    IsReleased = true;
 
                     connection?.Close();
                     connection?.Dispose();
@@ -317,19 +317,28 @@ namespace CodeArts.Db
             {
                 IsActive = false;
 
-                var task = connection
+                var task1 = connection
                     .DisposeAsync();
+
+                var task2 = base.DisposeAsync();
+
+                var task = Task.WhenAll(task1.AsTask(), task2.AsTask());
 
                 task.ConfigureAwait(false)
                     .GetAwaiter()
                     .OnCompleted(() =>
                     {
+                        if (IsReleased)
+                        {
+                            return;
+                        }
+
                         IsReleased = true;
+
+                        GC.SuppressFinalize(this);
                     });
 
-                var task2 = base.DisposeAsync();
-
-                return new ValueTask(Task.WhenAll(task.AsTask(), task2.AsTask()));
+                return new ValueTask(task);
             }
 
 #endif
@@ -340,7 +349,7 @@ namespace CodeArts.Db
 
             public bool IsReleased { private set; get; }
 
-            public DateTime ActiveTime { get; private set; }
+            public DateTime ActiveTime { get; private set; } = DateTime.Now;
 
             public bool IsActive { get; private set; } = true;
 
@@ -380,12 +389,12 @@ namespace CodeArts.Db
             {
                 if (disposing)
                 {
-                    IsReleased = true;
-
                     if (IsReleased)
                     {
                         return;
                     }
+
+                    IsReleased = true;
 
                     connection?.Close();
                     connection?.Dispose();
@@ -497,10 +506,8 @@ namespace CodeArts.Db
                              .OrderBy(x => x.ActiveTime) //? 移除最长时间不活跃的链接。
                              .FirstOrDefault() ?? throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
 
-                        connections.Remove(connection);
+                        return connection.ReuseConnection();
                     }
-
-                    connection.Destroy();
                 }
 
                 var conn = adapter.Create(connectionString);

@@ -19,17 +19,9 @@ namespace CodeArts.Db
             /// 释放。
             /// </summary>
             void Destroy();
-
-            /// <summary>
-            /// 复用。
-            /// </summary>
-            /// <returns></returns>
-            IDbConnection ReuseConnection();
         }
         private class DbConnection : ITransactionConnection
         {
-            private int refCount = 0;
-
             private readonly IDbConnection connection;
 
             public string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
@@ -43,13 +35,6 @@ namespace CodeArts.Db
             public DbConnection(IDbConnection connection)
             {
                 this.connection = connection;
-            }
-
-            public IDbConnection ReuseConnection()
-            {
-                Interlocked.Increment(ref refCount);
-
-                return this;
             }
 
             public void Close() { }
@@ -90,7 +75,7 @@ namespace CodeArts.Db
                 }
             }
 
-            public void Dispose() => Dispose(Interlocked.Decrement(ref refCount) == 0);
+            public void Dispose() { }
 
             protected void Dispose(bool disposing)
             {
@@ -107,8 +92,6 @@ namespace CodeArts.Db
         }
         private class TransactionConnection : System.Data.Common.DbConnection, ITransactionConnection
         {
-            private int refCount = 0;
-
             private readonly System.Data.Common.DbConnection connection;
 
             public override string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
@@ -161,9 +144,9 @@ namespace CodeArts.Db
 #endif
 
 #if NETSTANDARD2_1
-            public override Task CloseAsync() => connection.CloseAsync();
+            public override Task CloseAsync() => Task.CompletedTask;
 
-            public override ValueTask DisposeAsync() => connection.DisposeAsync();
+            public override ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
 
             protected override ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken) => connection.BeginTransactionAsync(isolationLevel, cancellationToken);
 
@@ -172,14 +155,7 @@ namespace CodeArts.Db
 
 #endif
 
-            public IDbConnection ReuseConnection()
-            {
-                Interlocked.Increment(ref refCount);
-
-                return this;
-            }
-
-            void IDisposable.Dispose() => Dispose(Interlocked.Decrement(ref refCount) == 0);
+            void IDisposable.Dispose() { }
 
             public void Destroy() => Dispose(true);
 
@@ -264,14 +240,14 @@ namespace CodeArts.Db
 
             if (dictionary.TryGetValue(connectionString, out ITransactionConnection info))
             {
-                return info.ReuseConnection();
+                return info;
             }
 
             lock (dictionary)
             {
                 if (dictionary.TryGetValue(connectionString, out info))
                 {
-                    return info.ReuseConnection();
+                    return info;
                 }
 
                 var conn = DispatchConnections.Instance.GetConnection(connectionString, factory, false);
@@ -287,7 +263,7 @@ namespace CodeArts.Db
 
                 dictionary.Add(connectionString, info);
 
-                return info.ReuseConnection();
+                return info;
             }
         }
 

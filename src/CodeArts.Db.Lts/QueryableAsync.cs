@@ -1912,13 +1912,20 @@ namespace System.LinqAsync
         {
             var list = new List<TSource>();
 
-            var enumerator = source.AsAsyncEnumerable()
-                .GetAsyncEnumerator(cancellationToken);
-
-            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+#if NETSTANDARD2_1
+            await foreach (var item in source.AsAsyncEnumerable())
             {
-                list.Add(enumerator.Current);
+                list.Add(item);
             }
+#else
+            using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
+            {
+                while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                {
+                    list.Add(enumerator.Current);
+                }
+            }
+#endif
 
             return list;
         }
