@@ -489,25 +489,18 @@ namespace CodeArts.Db
 
                 if (adapter.MaxPoolSize == connections.Count && connections.RemoveAll(x => x.IsReleased) == 0)
                 {
-                    if (connections.Any(x => !x.IsThreadActive || !x.IsActive))
+                    lock (connections)
                     {
-                        lock (connections)
-                        {
-                            connection = connections //? 线程已关闭的。
-                                 .FirstOrDefault(x => !x.IsThreadActive) ?? connections
-                                 .Where(x => !x.IsActive)
-                                 .OrderBy(x => x.ActiveTime) //? 移除最长时间不活跃的链接。
-                                 .FirstOrDefault() ?? throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
+                        connection = connections //? 线程已关闭的。
+                             .FirstOrDefault(x => !x.IsThreadActive) ?? connections
+                             .Where(x => !x.IsActive)
+                             .OrderBy(x => x.ActiveTime) //? 移除最长时间不活跃的链接。
+                             .FirstOrDefault() ?? throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
 
-                            connections.Remove(connection);
-                        }
+                        connections.Remove(connection);
+                    }
 
-                        connection.Destroy();
-                    }
-                    else
-                    {
-                        throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
-                    }
+                    connection.Destroy();
                 }
 
                 var conn = adapter.Create(connectionString);
