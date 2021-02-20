@@ -10,7 +10,11 @@ namespace CodeArts.Db.Lts
     /// <summary>
     /// 数据库(Close和Dispose接口虚拟，通过接口调用时不会真正关闭或释放，只有通过类调用才会真实的执行)
     /// </summary>
-    public class DbConnection : IDisposable
+    public class DbConnection :
+#if NETSTANDARD2_1
+        IAsyncDisposable,
+#endif
+        IDisposable
     {
         private readonly IDbConnection connection; //数据库连接
         private readonly ISQLCorrectSettings settings;
@@ -135,7 +139,7 @@ namespace CodeArts.Db.Lts
                 return dbConnection.DisposeAsync();
             }
 
-            throw new InvalidOperationException("Async operations require use of a DbConnection.");
+            return new ValueTask(Task.Run(Dispose));
         }
 #endif
 

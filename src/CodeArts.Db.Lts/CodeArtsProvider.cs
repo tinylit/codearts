@@ -224,6 +224,7 @@ namespace CodeArts.Db.Lts
             private bool isReadyConnection = false;
             private bool isReadyCommand = false;
             private bool isReadyDataReader = false;
+            private bool isAsyncEnumeratorDisposed = false;
 
             private DbConnection dbConnection;
             private DbCommand dbCommand;
@@ -247,6 +248,11 @@ namespace CodeArts.Db.Lts
             public async Task<bool> MoveNextAsync()
 #endif
             {
+                if (isAsyncEnumeratorDisposed)
+                {
+                    return false;
+                }
+
                 if (isReadyDataReader)
                 {
                     return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -294,6 +300,13 @@ namespace CodeArts.Db.Lts
 #if NETSTANDARD2_1
             public async ValueTask DisposeAsync()
             {
+                if (isAsyncEnumeratorDisposed)
+                {
+                    return;
+                }
+
+                isAsyncEnumeratorDisposed = true;
+
                 if (isReadyDataReader)
                 {
                     await dbDataReader.CloseAsync().ConfigureAwait(false);
@@ -317,54 +330,15 @@ namespace CodeArts.Db.Lts
             }
 #endif
 
-            public async Task<bool> MoveNextAsync(CancellationToken cancellationToken)
-            {
-                if (isReadyDataReader)
-                {
-                    return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
-                }
-
-                CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
-
-                dbConnection = context.CreateDb();
-
-                isReadyConnection = true;
-
-                isClosedConnection = dbConnection.State == ConnectionState.Closed;
-
-                if (isClosedConnection)
-                {
-                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-                    behavior |= CommandBehavior.CloseConnection;
-                }
-
-                dbCommand = dbConnection.CreateCommand();
-
-                dbCommand.AllowSkippingFormattingSql = true;
-
-                dbCommand.CommandText = commandSql.Sql;
-
-                if (commandSql.CommandTimeout.HasValue)
-                {
-                    dbCommand.CommandTimeout = commandSql.CommandTimeout.Value;
-                }
-
-                isReadyCommand = true;
-
-                readyParam.Invoke(dbCommand, commandSql.Parameters);
-
-                dbDataReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
-
-                isReadyDataReader = true;
-
-                isClosedConnection = false;
-
-                return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
-            }
-
             public void Dispose()
             {
+                if (isAsyncEnumeratorDisposed)
+                {
+                    return;
+                }
+
+                isAsyncEnumeratorDisposed = true;
+
                 if (isReadyDataReader)
                 {
                     dbDataReader.Close();
@@ -514,5 +488,5 @@ namespace CodeArts.Db.Lts
             }
         }
 #endif
-    }
+                }
 }

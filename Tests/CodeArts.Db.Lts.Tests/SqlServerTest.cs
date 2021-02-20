@@ -1448,10 +1448,10 @@ namespace UnitTest
 
             for (int i = 0; i < 100; i++)
             {
-                tasks[i] = Aw_TransactionAsyncTest();
+                 Aw_TransactionAsyncTest().GetAwaiter().GetResult();
             }
 
-            Task.WaitAll(tasks);
+            //Task.WaitAll(tasks);
         }
 
         private async Task Aw_TransactionAsyncTest()
@@ -1461,30 +1461,6 @@ namespace UnitTest
             using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
                 var results = await user.ToListAsync().ConfigureAwait(false);
-            }
-        }
-
-        [TestMethod]
-        public void InsertAsyncTest()
-        {
-            var user = new UserRepository();
-
-            var entry = new FeiUsers
-            {
-                Bcid = 0,
-                Username = "admin",
-                Userstatus = 1,
-                Mobile = "18980861011",
-                Email = "tinylit@foxmail.com",
-                Password = "123456",
-                Salt = string.Empty,
-                CreatedTime = DateTime.Now,
-                ModifiedTime = DateTime.Now
-            };
-
-            for (int i = 0; i < 100; i++)
-            {
-                user.AsInsertable(entry).ExecuteCommandAsync().GetAwaiter().GetResult();
             }
         }
     }

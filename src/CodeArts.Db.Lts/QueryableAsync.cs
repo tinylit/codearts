@@ -1913,19 +1913,16 @@ namespace System.LinqAsync
             var list = new List<TSource>();
 
 #if NETSTANDARD2_1
-            await foreach (var item in source.AsAsyncEnumerable())
-            {
-                list.Add(item);
-            }
+            await using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
 #else
             using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
+#endif
             {
                 while (await enumerator.MoveNextAsync().ConfigureAwait(false))
                 {
                     list.Add(enumerator.Current);
                 }
             }
-#endif
 
             return list;
         }
@@ -1978,13 +1975,16 @@ namespace System.LinqAsync
                 throw new ArgumentNullException(nameof(action));
             }
 
-            var enumerator = source
-                .AsAsyncEnumerable()
-                .GetAsyncEnumerator(cancellationToken);
-
-            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+#if NETSTANDARD2_1
+            await using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
+#else
+            using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
+#endif
             {
-                action.Invoke(enumerator.Current);
+                while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                {
+                    action.Invoke(enumerator.Current);
+                }
             }
         }
 
