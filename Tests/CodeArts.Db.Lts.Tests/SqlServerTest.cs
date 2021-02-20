@@ -1448,10 +1448,10 @@ namespace UnitTest
 
             for (int i = 0; i < 100; i++)
             {
-                 Aw_TransactionAsyncTest().GetAwaiter().GetResult();
+                tasks[i] = Aw_TransactionAsyncTest();
             }
 
-            //Task.WaitAll(tasks);
+            Task.WaitAll(tasks);
         }
 
         private async Task Aw_TransactionAsyncTest()
