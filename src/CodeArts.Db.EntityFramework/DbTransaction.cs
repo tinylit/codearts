@@ -308,8 +308,6 @@ namespace CodeArts.Db.EntityFramework
         public void Dispose()
         {
             Dispose(true);
-
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -327,6 +325,8 @@ namespace CodeArts.Db.EntityFramework
 
                     disposed = true;
                 }
+
+                GC.SuppressFinalize(this);
             }
         }
     }
