@@ -74,6 +74,7 @@ namespace UnitTest
             }
 
         }
+
         [TestMethod]
         public void SelectTest()
         {
@@ -150,9 +151,81 @@ namespace UnitTest
                  .FirstOrDefault();
         }
 
+        [TestMethod]
+        public void InsertEntityTest()
+        {
+            var modified = DateTime.Now;
+
+            var entry = new Domain.Entities.User
+            {
+                Id = (ulong)DateTime.Now.Ticks,
+                OrgId = 6518750666955952000,
+                CompanyId = 6518750666955952000,
+                Account = "hyl",
+                Role = UserRole.Owner,
+                Name = "何远利",
+                Tel = "18980861011",
+                Mail = "yepsharp@gmail.com",
+                Sex = UserSex.Male,
+                Password = "$.xxx.1234",
+                Status = CommonStatusEnum.Enabled,
+                Registered = DateTime.Now,
+                Modified = modified
+            };
+
+            int i = userSingleton.AsInsertable(entry)
+                  .ExecuteCommand();
+        }
 
         [TestMethod]
-        public void InsertTest()
+        public void UpdateTest()
+        {
+            int i = userSingleton
+             .Where(x => x.Account.Contains("admin"))
+             .Update(x => new Domain.Entities.User
+             {
+                 Account = "admin"
+             });
+        }
+
+        [TestMethod]
+        public void UpdateEntityTest()
+        {
+            var modified = DateTime.Now;
+
+            var entry = new Domain.Entities.User
+            {
+                Id = (ulong)DateTime.Now.Ticks,
+                OrgId = 6518750666955952000,
+                CompanyId = 6518750666955952000,
+                Account = "hyl",
+                Role = UserRole.Owner,
+                Name = "何远利",
+                Tel = "18980861011",
+                Mail = "yepsharp@gmail.com",
+                Sex = UserSex.Male,
+                Password = "$.xxx.1234",
+                Status = CommonStatusEnum.Enabled,
+                Registered = DateTime.Now,
+                Modified = modified
+            };
+
+            userSingleton.AsUpdateable(entry)
+            .Where(x => new { x.Tel, x.Mail })
+            .Limit(x => x.Account)
+            .ExecuteCommand();
+        }
+
+        [TestMethod]
+        public void DeleteTest()
+        {
+            int i = userSingleton
+             .Where(x => x.Id == 1)
+             .Delete();
+        }
+
+        [TestMethod]
+        public void DeleteEntityTest()
         {
             var modified = DateTime.Now;
 
@@ -174,50 +247,8 @@ namespace UnitTest
             };
 
             int i = userSingleton.AsDeleteable(entry)
-                .Where(x => x.Account ?? x.Tel)
-                .ExecuteCommand();
-
-            userSingleton
-                .Where(x => x.Account.Contains("admin"))
-                .Update(x => new Domain.Entities.User
-                {
-                    Account = "admin"
-                });
-
-            userSingleton.AsUpdateable(entry)
-                .Where(x => new { x.Tel, x.Mail })
-                .Limit(x => x.Account)
-                .ExecuteCommand();
-
-            userSingleton
-                .Where(x => x.Id == 1)
-                .Delete();
-
-            userSingleton.AsDeleteable(new Domain.Entities.User[] { entry })
-                .Where(x => x.Id)
-                .ExecuteCommand();
-
-            userSingleton
-                .Insert(userSingleton.Take(1).Select(x => x));
-
-            userSingleton.AsInsertable(entry)
-                .ExecuteCommand();
-
-            var entity = userSingleton
-                .Where(x => x.Account == "hyl")
-                .FirstOrDefault();
-
-            entity.Tel = "18980861111";
-            entity.Mail = "tinylit@foxmail.com";
-
-            int k = userSingleton.AsUpdateable(entity)
-                .Limit(x => new { x.Tel, x.Mail })
-                .Where(x => x.Account)
-                .ExecuteCommand();
-
-            var data = userSingleton
-                .Where(x => x.Mail == "tinylit@foxmail.com")
-                .FirstOrDefault();
+            .Where(x => x.Account ?? x.Tel)
+            .ExecuteCommand();
         }
 
         [TestMethod]
@@ -260,7 +291,12 @@ namespace UnitTest
         [TestMethod]
         public void ConcatTest()
         {
-            var userDto = userSingleton.Where(x => x.Name.StartsWith(x.Account + x.Name)).FirstOrDefault();
+            var userDto = userSingleton.Where(x => x.Name.StartsWith(x.Account + x.Name))
+                .DefaultIfEmpty(new Domain.Entities.User
+                {
+                    Id = 1
+                })
+                .First();
         }
     }
 }

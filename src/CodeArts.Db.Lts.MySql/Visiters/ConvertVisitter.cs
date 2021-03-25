@@ -22,13 +22,15 @@ namespace CodeArts.Db.Lts.MySql
         /// <param name="writer">写入器。</param>
         /// <param name="node">表达式。</param>
         /// <returns></returns>
-        public Expression Visit(ExpressionVisitor visitor, Writer writer, MethodCallExpression node)
+        public void Visit(ExpressionVisitor visitor, Writer writer, MethodCallExpression node)
         {
             if (node.Method.Name == "IsDBNull")
             {
                 visitor.Visit(node.Arguments[0]);
+
                 writer.IsNull();
-                return node;
+
+                return;
             }
 
             writer.Write("CONVERT");
@@ -69,7 +71,6 @@ namespace CodeArts.Db.Lts.MySql
                     throw new NotSupportedException();
             }
             writer.CloseBrace();
-            return node;
         }
     }
 }

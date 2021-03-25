@@ -1,9 +1,12 @@
 ﻿#if NET_CORE
 using CodeArts.Db;
+using CodeArts.Db.EntityFramework;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -76,38 +79,59 @@ namespace Microsoft.Extensions.DependencyInjection
 
                         var repositoryType2 = typeof(LinqRepository<,>).MakeGenericType(entityType, keyType);
 
-                        services.Add(new ServiceDescriptor(iRepositoryType2, derviceProvider =>
-                        {
-                            var context = derviceProvider.GetService(contextType);
-
-                            if (context is null)
-                            {
-                                return null;
-                            }
-
-                            return Activator.CreateInstance(repositoryType2, new object[1] { context });
-
-                        }, lifetime));
+                        services.Add(new ServiceDescriptor(iRepositoryType2, CreateNewInstance(repositoryType2, contextType), lifetime));
                     }
 
                     var repositoryType = typeof(LinqRepository<>).MakeGenericType(entityType);
                     var iRepositoryType = typeof(ILinqRepository<>).MakeGenericType(entityType);
 
-                    services.Add(new ServiceDescriptor(iRepositoryType, derviceProvider =>
-                    {
-                        var context = derviceProvider.GetService(contextType);
-
-                        if (context is null)
-                        {
-                            return null;
-                        }
-
-                        return Activator.CreateInstance(repositoryType, new object[1] { context });
-
-                    }, lifetime));
+                    services.Add(new ServiceDescriptor(iRepositoryType, CreateNewInstance(repositoryType, contextType), lifetime));
                 });
 
             return services.AddDbContext<TContext>();
+        }
+
+        private readonly static MethodInfo GetServiceMtd = typeof(IServiceProvider).GetMethod(nameof(IServiceProvider.GetService));
+
+        private static Func<IServiceProvider, object> CreateNewInstance(Type repositoryType, Type contextType)
+        {
+            foreach (var item in repositoryType.GetConstructors())
+            {
+                var parameters = item.GetParameters();
+
+                if (parameters.Length != 1)
+                {
+                    continue;
+                }
+
+                if (!parameters.All(x => contextType == x.ParameterType || x.ParameterType == DbContextType))
+                {
+                    continue;
+                }
+
+                var serviceProExp = Expression.Parameter(typeof(IServiceProvider));
+
+                var contextExp = Expression.Variable(contextType);
+
+                var variables = new List<ParameterExpression> { contextExp };
+
+                var callExp = Expression.Call(serviceProExp, GetServiceMtd, Expression.Constant(contextType));
+
+                var list = new Expression[2]
+                {
+                    Expression.Assign(contextExp, Expression.Convert(callExp, contextType)),
+
+                    Expression.Condition(Expression.Equal(contextExp, Expression.Default(contextType)), Expression.Default(repositoryType), Expression.New(item, new Expression[1]{ contextExp }))
+                };
+
+                var bodyExp = Expression.Block(variables, list);
+
+                var lambdaEx = Expression.Lambda<Func<IServiceProvider, object>>(bodyExp, serviceProExp);
+
+                return lambdaEx.Compile();
+            }
+
+            return null;
         }
     }
 }

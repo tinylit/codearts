@@ -881,9 +881,11 @@ namespace CodeArts.Db.Lts
                                value = storeItem.Member.GetValue(item, null);
                            }
 
+                           string key = kv.Key.ToUrlCase();
+
                            var parameterKey = index == 0 && groupIndex == 0
-                           ? Settings.ParamterName(kv.Key.ToUrlCase())
-                           : Settings.ParamterName($"{kv.Key.ToUrlCase()}_{groupIndex}_{index}");
+                           ? Settings.ParamterName(key)
+                           : Settings.ParamterName(groupIndex == 0 ? $"{key}_{index}" : $"{key}_{groupIndex}_{index}");
 
                            parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
@@ -941,8 +943,8 @@ namespace CodeArts.Db.Lts
                     }
 
                     var columns = typeRegions.ReadOrWrites
-                        .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
-                        .Select(x => x.Value)
+                        .Where(x => typeRegions.Keys.Contains(x.Key) || wheres.Any(y => y == x.Key || y == x.Value))
+                        .Select(x => x.Key)
                         .ToArray();
 
                     if (columns.Length == 0)
@@ -967,12 +969,12 @@ namespace CodeArts.Db.Lts
                     {
                         if (item.Key.Length > 1)
                         {
-                            return Complex(TableInfo.ReadWrites.Where(x => item.Key.Contains(x.Value)).ToList(), item, index, parameters);
+                            return Complex(TableInfo.ReadWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, index, parameters);
                         }
 
                         string key = item.Key[0];
 
-                        return Simple(TableInfo.ReadWrites.First(x => x.Value == key), item, index, parameters);
+                        return Simple(TableInfo.ReadWrites.First(x => x.Key == key), item, index, parameters);
                     }));
 
                     results.Add(new Tuple<string, Dictionary<string, ParameterValue>>(sql, parameters));
@@ -1010,13 +1012,13 @@ namespace CodeArts.Db.Lts
 
                     if (item.Key.Length > 1)
                     {
-                        sb.Append(Complex(TableInfo.ReadWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
+                        sb.Append(Complex(TableInfo.ReadOrWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
                     }
                     else
                     {
                         string key = item.Key[0];
 
-                        sb.Append(Simple(TableInfo.ReadWrites.First(x => x.Key == key), item, groupIndex, parameters));
+                        sb.Append(Simple(TableInfo.ReadOrWrites.First(x => x.Key == key), item, groupIndex, parameters));
                     }
 
                     groupIndex++;
@@ -1231,7 +1233,7 @@ namespace CodeArts.Db.Lts
                     var context = new ValidationContext(entry, null, null);
 
                     string whereStr = string.Join(" AND ", typeRegions.ReadOrWrites
-                    .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
+                    .Where(x => wheres.Any(y => y == x.Key))
                     .Select(kv =>
                     {
                         string parameterKey = index == 0 ?
@@ -1388,8 +1390,8 @@ namespace CodeArts.Db.Lts
                         throw new DException("未指定更新条件");
 
                     var whereColumns = typeRegions.ReadOrWrites
-                            .Where(x => wheres.Any(y => y == x.Key || y == x.Value))
-                            .Select(x => x.Value)
+                            .Where(x => typeRegions.Keys.Contains(x.Key) || wheres.Any(y => y == x.Key || y == x.Value))
+                            .Select(x => x.Key)
                             .ToArray();
 
                     if (whereColumns.Length == 0)
@@ -1398,10 +1400,10 @@ namespace CodeArts.Db.Lts
                     if (typeRegions.Tokens.Count > 0)
                     {
                         whereColumns = whereColumns
-                        .Concat(typeRegions.ReadOrWrites
+                        .Concat(typeRegions.ReadWrites
                             .Where(x => typeRegions.Tokens.ContainsKey(x.Key))
-                            .Select(x => x.Value))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .Select(x => x.Key))
+                        .Distinct()
                         .ToArray();
                     }
 

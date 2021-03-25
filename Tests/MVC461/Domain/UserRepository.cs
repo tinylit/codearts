@@ -1,5 +1,6 @@
-﻿using Mvc461.Domain.Entities;
-using CodeArts.Db;
+﻿using CodeArts.Db;
+using CodeArts.Db.Lts;
+using Mvc461.Domain.Entities;
 
 namespace Mvc461.Domain
 {

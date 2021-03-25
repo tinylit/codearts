@@ -1,7 +1,5 @@
-﻿using CodeArts.Db.Tests.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using CodeArts.Db.Lts;
+using CodeArts.Db.Tests.Domain.Entities;
 using UnitTest.Serialize;
 
 namespace CodeArts.Db.Tests.Domain

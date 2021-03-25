@@ -243,7 +243,7 @@ namespace CodeArts.Mvc.Converters
 
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
-                    return Mapper.Map(elements, typeToConvert);
+                    return Mapper.ThrowsMap(elements, typeToConvert);
                 }
 
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
@@ -251,7 +251,7 @@ namespace CodeArts.Mvc.Converters
                     elements.Add(JsonSerializer.Deserialize<T>(ref reader, options));
                 }
 
-                return Mapper.Map(elements, typeToConvert);
+                return Mapper.ThrowsMap(elements, typeToConvert);
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
@@ -395,7 +395,7 @@ namespace CodeArts.Mvc.Converters
                 }
             }
 
-            return Mapper.Cast(value, typeToConvert);
+            return Mapper.ThrowsCast(value, typeToConvert);
         }
         /// <summary>
         /// 写入。
@@ -568,7 +568,7 @@ namespace CodeArts.Mvc.Converters
             if (conversionType == typeof(string))
                 return source.ToString();
 
-            return Mapper.Cast(source, conversionType);
+            return Mapper.ThrowsCast(source, conversionType);
         }
 
         /// <summary>

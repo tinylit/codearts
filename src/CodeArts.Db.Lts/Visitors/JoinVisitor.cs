@@ -1,36 +1,20 @@
 ﻿using CodeArts.Db.Exceptions;
-using CodeArts.Runtime;
 using System;
-using System.Collections.Concurrent;
+using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Text;
 
 namespace CodeArts.Db.Lts.Visitors
 {
     /// <summary>
-    /// Join。
+    /// <see cref="Queryable.Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, System.Collections.Generic.IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})"/>
     /// </summary>
-    public class JoinVisitor : ConditionVisitor
+    public class JoinVisitor : CoreVisitor
     {
-        private class JoinSelectVisitor : SelectVisitor
-        {
-            public JoinSelectVisitor(BaseVisitor visitor) : base(visitor)
-            {
-            }
-
-            protected override void VisitNewMember(MemberInfo memberInfo, Expression memberExp, Type memberOfHostType)
-            {
-                base.VisitNewMember(memberInfo, memberExp, memberOfHostType);
-
-                writer.As(base.GetMemberNaming(memberOfHostType, memberInfo));
-            }
-        }
-
-        private readonly BaseVisitor visitor;
+        private readonly SelectVisitor visitor;
 
         /// <inheritdoc />
-        public JoinVisitor(BaseVisitor visitor) : base(visitor)
+        public JoinVisitor(SelectVisitor visitor) : base(visitor, false, ConditionType.And)
         {
             this.visitor = visitor;
         }
@@ -86,10 +70,11 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Join;
+        public override bool CanResolve(MethodCallExpression node)
+            => node.Method.DeclaringType == Types.Queryable && node.Method.Name == MethodCall.Join && node.Arguments.Count == 5;
 
         /// <inheritdoc />
-        protected override Expression StartupCore(MethodCallExpression node)
+        protected override void StartupCore(MethodCallExpression node)
         {
             if (!IsValidExpretion(node.Arguments[0]))
             {
@@ -98,53 +83,31 @@ namespace CodeArts.Db.Lts.Visitors
 
             if (IsPlainExpression(node.Arguments[1]))
             {
-                return VisitPlainJoin(node);
+                VisitPlainJoin(node);
             }
-
-            return VisitComplexJoin(node);
-        }
-
-        /// <summary>
-        /// 条件。
-        /// </summary>
-        /// <param name="node">节点。</param>
-        /// <returns></returns>
-        protected override Expression VisitCondition(MethodCallExpression node)
-        {
-            base.UsingCondition(() => VisitBinaryIsConditionToVisit(node.Arguments[1]), whereIsNotEmpty =>
+            else
             {
-                base.Visit(node.Arguments[0]);
-
-                if (whereIsNotEmpty)
-                {
-                    writer.And();
-                }
-            });
-
-            return node;
+                VisitComplexJoin(node);
+            }
         }
 
         /// <summary>
         /// 普通Join。
         /// </summary>
         /// <returns></returns>
-        protected virtual Expression VisitPlainJoin(MethodCallExpression node)
+        protected virtual void VisitPlainJoin(MethodCallExpression node)
         {
             var sb = new StringBuilder();
 
             var rightNode = node.Arguments[1];
 
-            base.Workflow(() =>
+            Workflow(() =>
             {
                 visitor.Visit(node.Arguments[0]);
 
                 writer.Join();
 
-                var tableInfo = base.MakeTableInfo(rightNode.Type);
-
-                var prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
+                WriteTableName(rightNode.Type);
 
             }, () =>
             {
@@ -158,8 +121,6 @@ namespace CodeArts.Db.Lts.Visitors
 
                 base.Visit(node.Arguments[1]);
             });
-
-            return node;
         }
 
         private Expression JoinWhereMethod(Expression node)
@@ -173,11 +134,18 @@ namespace CodeArts.Db.Lts.Visitors
 
                 if (methodCall.Method.Name == MethodCall.Where)
                 {
-                    base.UsingCondition(() => base.Visit(methodCall.Arguments[1]), whereIsNotEmpty =>
+                    Workflow(whereIsNotEmpty =>
                     {
                         if (whereIsNotEmpty)
                         {
                             writer.And();
+                        }
+
+                    }, () =>
+                    {
+                        using (var visitor = new WhereVisitor(this))
+                        {
+                            visitor.Startup(methodCall.Arguments[1]);
                         }
                     });
 
@@ -196,13 +164,13 @@ namespace CodeArts.Db.Lts.Visitors
         /// 复杂Join。
         /// </summary>
         /// <returns></returns>
-        protected virtual Expression VisitComplexJoin(MethodCallExpression node)
+        protected virtual void VisitComplexJoin(MethodCallExpression node)
         {
             var sb = new StringBuilder();
 
             var rightNode = node.Arguments[1];
 
-            base.Workflow(() =>
+            Workflow((Action)(() =>
             {
                 visitor.Visit(node.Arguments[0]);
 
@@ -210,7 +178,35 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.OpenBrace();
 
-                using (var visitor = new JoinSelectVisitor(this))
+
+/* 项目“CodeArts.Db.Lts (netstandard2.0)”的未合并的更改
+在此之前:
+                using (var visitor = new SelectVisitor(this))
+在此之后:
+                using (var visitor = new Visitors.SelectVisitor(this))
+*/
+
+/* 项目“CodeArts.Db.Lts (net45)”的未合并的更改
+在此之前:
+                using (var visitor = new SelectVisitor(this))
+在此之后:
+                using (var visitor = new Visitors.SelectVisitor(this))
+*/
+
+/* 项目“CodeArts.Db.Lts (net40)”的未合并的更改
+在此之前:
+                using (var visitor = new SelectVisitor(this))
+在此之后:
+                using (var visitor = new Visitors.SelectVisitor(this))
+*/
+
+/* 项目“CodeArts.Db.Lts (netstandard2.1)”的未合并的更改
+在此之前:
+                using (var visitor = new SelectVisitor(this))
+在此之后:
+                using (var visitor = new Visitors.SelectVisitor(this))
+*/
+                using (var visitor = new SelectVisitor(this))
                 {
                     visitor.Startup(rightNode);
                 }
@@ -221,7 +217,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.Name(GetEntryAlias(rightNode.Type, string.Empty));
 
-            }, () =>
+            }), () =>
             {
                 writer.Write(" ON ");
 
@@ -233,8 +229,6 @@ namespace CodeArts.Db.Lts.Visitors
 
                 rightNode = JoinWhereMethod(rightNode);
             });
-
-            return node;
         }
     }
 }

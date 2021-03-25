@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace CodeArts.Db.Lts.Visitors
 {
@@ -8,37 +7,49 @@ namespace CodeArts.Db.Lts.Visitors
     /// </summary>
     public class AllVisitor : BaseVisitor
     {
+        private readonly SelectVisitor visitor;
+
         /// <inheritdoc />
-        public AllVisitor(BaseVisitor visitor) : base(visitor)
+        public AllVisitor(SelectVisitor visitor) : base(visitor, false)
         {
+            this.visitor = visitor;
         }
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.All;
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.All && node.Method.DeclaringType == Types.Queryable;
 
         /// <inheritdoc />
-        protected override Expression StartupCore(MethodCallExpression node)
+        protected override void StartupCore(MethodCallExpression node)
         {
-            writer.OpenBrace();
-
-            using (var visitor = new AnyVisitor(this))
-            {
-                visitor.Startup(node);
-            }
-
-            writer.And();
+            writer.Select();
+            writer.Write("CASE WHEN ");
 
             writer.ReverseCondition(() =>
             {
-                using (var visitor = new AnyVisitor(this))
+                writer.Exists();
+                writer.OpenBrace();
+
+                if (node.Arguments.Count == 1)
                 {
-                    visitor.Startup(node);
+                    visitor.Visit(node.Arguments[0]);
                 }
+                else
+                {
+                    visitor.VisitCondition(node);
+                }
+
+                writer.CloseBrace();
             });
 
-            writer.CloseBrace();
+            writer.Write(" THEN ");
 
-            return node;
+            writer.BooleanTrue();
+
+            writer.Write(" ELSE ");
+
+            writer.BooleanFalse();
+
+            writer.Write(" END");
         }
     }
 }

@@ -635,7 +635,7 @@ namespace CodeArts.Casting.Implements
                 if (sourceType.IsPrimitive)
                     return source => (TResult)source;
 
-                return source => Mapper.Cast<TResult>(source);
+                return source => Mapper.ThrowsCast<TResult>(source);
             }
 
             if (sourceType == typeof(string))

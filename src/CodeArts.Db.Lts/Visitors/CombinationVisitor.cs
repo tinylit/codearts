@@ -1,48 +1,39 @@
 ﻿using CodeArts.Db.Exceptions;
-using CodeArts.Runtime;
-using System;
-using System.Collections.Concurrent;
+using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace CodeArts.Db.Lts.Visitors
 {
     /// <summary>
-    /// Union/Concat/Except/Intersect。
+    /// <see cref="Queryable.Union{TSource}(IQueryable{TSource}, System.Collections.Generic.IEnumerable{TSource})"/>
+    /// <seealso cref="Queryable.Concat{TSource}(IQueryable{TSource}, System.Collections.Generic.IEnumerable{TSource})"/>
+    /// <seealso cref="Queryable.Except{TSource}(IQueryable{TSource}, System.Collections.Generic.IEnumerable{TSource})"/>
+    /// <seealso cref="Queryable.Intersect{TSource}(IQueryable{TSource}, System.Collections.Generic.IEnumerable{TSource})"/>
     /// </summary>
     public class CombinationVisitor : BaseVisitor
     {
-        private class CombinationSelectVisitor : SelectVisitor
-        {
-            public CombinationSelectVisitor(BaseVisitor visitor) : base(visitor)
-            {
-            }
-
-            protected override void VisitNewMember(MemberInfo memberInfo, Expression memberExp, Type memberOfHostType)
-            {
-                base.VisitNewMember(memberInfo, memberExp, memberOfHostType);
-
-                writer.As(base.GetMemberNaming(memberOfHostType, memberInfo));
-            }
-        }
+        private readonly SelectVisitor visitor;
 
         /// <inheritdoc />
-        public CombinationVisitor(BaseVisitor visitor) : base(visitor, true)
+        public CombinationVisitor(SelectVisitor visitor) : base(visitor, true)
         {
-
+            this.visitor = visitor;
         }
 
         /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node) =>
+            node.Method.DeclaringType == Types.Queryable
+            && (
                 node.Method.Name == MethodCall.Union ||
                 node.Method.Name == MethodCall.Concat ||
                 node.Method.Name == MethodCall.Except ||
-                node.Method.Name == MethodCall.Intersect;
+                node.Method.Name == MethodCall.Intersect
+            ) && node.Arguments.Count == 2;
 
         /// <inheritdoc />
-        protected override Expression StartupCore(MethodCallExpression node)
+        protected override void StartupCore(MethodCallExpression node)
         {
-            using (var visitor = new CombinationSelectVisitor(this))
+            using (var visitor = this.visitor.CreateInstance(this))
             {
                 visitor.Startup(node.Arguments[0]);
             }
@@ -50,27 +41,27 @@ namespace CodeArts.Db.Lts.Visitors
             switch (node.Method.Name)
             {
                 case MethodCall.Intersect:
-                    writer.Write(" INTERSECT ");
-                    break;
                 case MethodCall.Except:
-                    writer.Write(" EXCEPT ");
-                    break;
                 case MethodCall.Union:
-                    writer.Write(" UNION ");
+                    writer.WhiteSpace();
+                    writer.Write(node.Method.Name.ToUpper());
+                    writer.WhiteSpace();
                     break;
                 case MethodCall.Concat:
-                    writer.Write(" UNION ALL ");
+                    writer.WhiteSpace();
+                    writer.Write("UNION");
+                    writer.WhiteSpace();
+                    writer.Write("ALL");
+                    writer.WhiteSpace();
                     break;
                 default:
                     throw new DSyntaxErrorException($"函数“{node.Method.Name}”不被支持!");
             }
 
-            using (var visitor = new CombinationSelectVisitor(this))
+            using (var visitor = this.visitor.CreateInstance(this))
             {
                 visitor.Startup(node.Arguments[1]);
             }
-
-            return node;
         }
     }
 }

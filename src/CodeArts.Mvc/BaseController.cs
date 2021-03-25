@@ -163,7 +163,7 @@ namespace CodeArts.Mvc
 #else
             var token = tokenHandler.ReadJwtToken(values[values.Length - 1]);
 #endif
-            return Mapper.Map<TUser>(token.Payload);
+            return Mapper.ThrowsMap<TUser>(token.Payload);
 #else
             var serializer = new JsonNetSerializer();
             var provider = new UtcDateTimeProvider();

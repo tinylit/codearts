@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 #endif
 
-namespace CodeArts.Db
+namespace CodeArts.Db.EntityFramework
 {
     /// <summary>
     /// 仓库。

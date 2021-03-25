@@ -31,14 +31,9 @@ namespace CodeArts.Casting.Implements
 
             try
             {
-                var value = ThrowsCast<T>(obj);
+                var invoke = Create<T>(obj.GetType());
 
-                if (value == null)
-                {
-                    return def;
-                }
-
-                return value;
+                return invoke.Invoke(obj);
             }
             catch (InvalidCastException)
             {
@@ -60,7 +55,12 @@ namespace CodeArts.Casting.Implements
         {
             if (obj is null)
             {
-                throw new ArgumentNullException(nameof(obj));
+                if (typeof(T).IsValueType)
+                {
+                    throw new NullReferenceException();
+                }
+
+                return default;
             }
 
             var invoke = Create<T>(obj.GetType());
@@ -83,6 +83,11 @@ namespace CodeArts.Casting.Implements
 
             if (obj is null)
             {
+                if (conversionType.IsValueType)
+                {
+                    return Emptyable.Empty(conversionType);
+                }
+
                 return null;
             }
 
@@ -92,6 +97,11 @@ namespace CodeArts.Casting.Implements
             }
             catch (Exception)
             {
+                if (conversionType.IsValueType)
+                {
+                    return Emptyable.Empty(conversionType);
+                }
+
                 return null;
             }
         }
@@ -111,6 +121,11 @@ namespace CodeArts.Casting.Implements
 
             if (obj is null)
             {
+                if (conversionType.IsValueType)
+                {
+                    throw new NullReferenceException();
+                }
+
                 return null;
             }
 

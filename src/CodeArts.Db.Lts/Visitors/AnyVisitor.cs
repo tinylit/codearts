@@ -1,70 +1,65 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace CodeArts.Db.Lts.Visitors
 {
     /// <summary>
-    /// Any函数。
+    /// <see cref="Queryable.Any{TSource}(IQueryable{TSource})"/>、<seealso cref="Queryable.Any{TSource}(IQueryable{TSource}, System.Linq.Expressions.Expression{Func{TSource, bool}})"/>.
     /// </summary>
     public class AnyVisitor : BaseVisitor
     {
-        private class AnySelectVisitor : SelectVisitor
+        private readonly SelectVisitor visitor;
+
+        /// <inheritdoc />
+        public AnyVisitor(SelectVisitor visitor) : base(visitor)
         {
-            public AnySelectVisitor(BaseVisitor visitor) : base(visitor)
-            {
-            }
-
-            /// <inheritdoc />
-            public override bool CanResolve(MethodCallExpression node) =>
-                node.Method.Name == MethodCall.Any || node.Method.Name == MethodCall.All;
-
-            /// <inheritdoc />
-            protected override Expression StartupCore(MethodCallExpression node)
-            {
-                if (node.Arguments.Count == 1)
-                {
-                    return base.Visit(node.Arguments[0]);
-                }
-                else
-                {
-                    return base.VisitCondition(node);
-                }
-            }
+            this.visitor = visitor;
         }
 
         /// <inheritdoc />
-        public AnyVisitor(BaseVisitor visitor) : base(visitor)
-        {
-        }
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Any && node.Method.DeclaringType == Types.Queryable;
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) =>
-            node.Method.Name == MethodCall.Any || node.Method.Name == MethodCall.All;
-
-        /// <inheritdoc />
-        protected override Expression StartupCore(MethodCallExpression node)
+        protected override void StartupCore(MethodCallExpression node)
         {
+            writer.Select();
+
+            writer.Write("CASE WHEN ");
             writer.Exists();
-
             writer.OpenBrace();
 
-            if (node.Arguments.Count == 1)
+            if (writer.IsReverseCondition)
             {
-                using (var visitor = new SelectVisitor(this))
-                {
-                    visitor.Startup(node.Arguments[0]);
-                }
+                writer.ReverseCondition(Done);
             }
             else
             {
-                using (var visitor = new AnySelectVisitor(this))
+                Done();
+            }
+
+            void Done()
+            {
+                if (node.Arguments.Count == 1)
                 {
-                    visitor.Startup(node);
+                    visitor.Visit(node.Arguments[0]);
+                }
+                else
+                {
+                    visitor.VisitCondition(node);
                 }
             }
 
             writer.CloseBrace();
+            writer.Write(" THEN ");
 
-            return node;
+            writer.BooleanTrue();
+
+            writer.Write(" ELSE ");
+
+            writer.BooleanFalse();
+
+            writer.Write(" END");
         }
     }
 }

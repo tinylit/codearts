@@ -1,5 +1,6 @@
 ﻿using Mvc.Core.Domain.Entities;
 using CodeArts.Db;
+using CodeArts.Db.Lts;
 
 namespace Mvc.Core.Domain
 {

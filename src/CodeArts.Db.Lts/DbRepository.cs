@@ -1,5 +1,4 @@
-﻿using CodeArts.Db.Lts;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,16 +7,16 @@ using System.Threading;
 using System.Threading.Tasks;
 #endif
 
-namespace CodeArts.Db
+namespace CodeArts.Db.Lts
 {
     /// <summary>
     /// 数据仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
 #if NET_NORMAL || NET_CORE
-    public class DbRepository<TEntity> : DRepository<TEntity>, IDbRepository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IAsyncEnumerable<TEntity>, IEnumerable<TEntity>, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
+    public class DbRepository<TEntity> : DRepository<TEntity>, IDbRepository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IAsyncEnumerable<TEntity>, IEnumerable<TEntity>, IRepository, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #else
-    public class DbRepository<TEntity> : DRepository<TEntity>, IDbRepository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
+    public class DbRepository<TEntity> : DRepository<TEntity>, IDbRepository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IRepository, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #endif
     {
         /// <summary>

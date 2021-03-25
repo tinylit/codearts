@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>6.1.2.1</Version>
+		<Version>6.1.5</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>A Linq to SQL ORM framework.</Description>
@@ -16,7 +16,6 @@
 		<ApplicationIcon></ApplicationIcon>
 		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-		<RootNamespace>CodeArts.Db</RootNamespace>
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">

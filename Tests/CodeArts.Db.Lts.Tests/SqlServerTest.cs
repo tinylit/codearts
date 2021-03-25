@@ -21,6 +21,13 @@ using System.Threading.Tasks;
 
 namespace UnitTest
 {
+    public class GroupByTest
+    {
+        public FeiUsers Key { get; set; }
+
+        public DateTime CreatedTime { get; set; }
+    }
+
     [TestClass]
     public class SqlServerTest
     {
@@ -158,18 +165,33 @@ namespace UnitTest
             var user = new UserRepository();
             var has = user.Any(x => x.Id < 100);
         }
+
+        [TestMethod]
+        public void NestedAnyTest()
+        {
+            var user = new UserRepository();
+            var has = user.Where(x => !user.Any(y => y.Id < 100)).ToList();
+        }
+
         [TestMethod]
         public void AllTest()
         {
             var user = new UserRepository();
-            var has = user.Where(x => x.Id < 100).All(x => x.Id < 100);
+            var has = user.All(x => x.Id < 100);
+        }
+
+        [TestMethod]
+        public void NestedAllTest()
+        {
+            var user = new UserRepository();
+            var results = user.Where(x => user.All(y => y.Id < 100)).ToList();
         }
 
         [TestMethod]
         public void AvgTest()
         {
             var user = new UserRepository();
-            var has = user.Where(x => x.Id < 100).Average(x => x.Id);
+            var avg = user.Where(x => x.Id < 100).Average(x => x.Id);
         }
 
         [TestMethod]
@@ -541,7 +563,7 @@ namespace UnitTest
         {
             var y = 100;
             var str = "1";
-            FeiUserWeChatStatusEnum? status = null;
+            FeiUserWeChatStatusEnum? status = FeiUserWeChatStatusEnum.Enabled;
             var user = new UserRepository();
             var details = new UserDetailsRepository();
             var userWx = new UserWeChatRepository();
@@ -1022,7 +1044,6 @@ namespace UnitTest
                        where y.Mallagid > 0
                        orderby y.Mallagid
                        orderby x.Id
-                       orderby y.Id
                        select new
                        {
                            x.Id,
@@ -1418,6 +1439,138 @@ namespace UnitTest
             Task.WaitAll(Aw_UpdateAsyncTest());
         }
 
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupBySingleFieldTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by x.Mobile into g
+                       where g.Key == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key,
+                           Count = g.Count()
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Count = g.Count()
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldAnonymousTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldAnonymousKeyPropertyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldClassKeyPropertyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldClassKeyWithClassPropertyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new GroupByTest
+                       {
+                           Key = g.Key,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
         private async Task Aw_UpdateAsyncTest()
         {
             var user = new UserRepository();
@@ -1462,6 +1615,13 @@ namespace UnitTest
             {
                 var results = await user.ToListAsync().ConfigureAwait(false);
             }
+        }
+
+        [TestMethod]
+        public void ToSQL()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
         }
     }
 }

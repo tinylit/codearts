@@ -13,6 +13,6 @@ namespace CodeArts.Db.Lts
         /// <param name="visitor">访问器。</param>
         /// <param name="writer">SQL写入器。</param>
         /// <param name="node">表达式。</param>
-        Expression Visit(ExpressionVisitor visitor, Writer writer, MethodCallExpression node);
+        void Visit(ExpressionVisitor visitor, Writer writer, MethodCallExpression node);
     }
 }

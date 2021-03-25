@@ -20,45 +20,52 @@ namespace CodeArts.Db.Lts.Visitors
 
         /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node)
-            => (node.Method.Name == MethodCall.Insert || node.Method.Name == MethodCall.Update || node.Method.Name == MethodCall.Delete) && node.Method.DeclaringType == typeof(RepositoryExtentions);
+            => (node.Method.Name == MethodCall.Insert || node.Method.Name == MethodCall.Update || node.Method.Name == MethodCall.Delete) && node.Method.DeclaringType == Types.RepositoryExtentions;
 
-        private Expression Visit(IExecuteVisitor visitor, Expression node)
+        /// <summary>
+        /// 设置超时时间。
+        /// </summary>
+        public void SetTimeOut(int timeOut)
         {
-            try
+            if (TimeOut.HasValue)
             {
-                return visitor.Startup(node);
+                timeOut += TimeOut.Value;
             }
-            finally
-            {
-                Behavior = visitor.Behavior;
-                TimeOut = visitor.TimeOut;
-            }
-        }
 
+            TimeOut = new int?(timeOut);
+        }
 
         /// <inheritdoc />
         protected override IEnumerable<ICustomVisitor> GetCustomVisitors() => visitors;
 
         /// <inheritdoc />
-        protected override Expression VisitOfSelect(MethodCallExpression node)
+        protected override void VisitOfLts(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
                 case MethodCall.Insert:
+                    Behavior = ActionBehavior.Insert;
+
                     using (var visitor = new InsertVisitor(this))
                     {
-                        return Visit(visitor, node);
+                        visitor.Startup(node);
                     }
+                    break;
                 case MethodCall.Update:
+                    Behavior = ActionBehavior.Update;
+
                     using (var visitor = new UpdateVisitor(this))
                     {
-                        return Visit(visitor, node);
+                       visitor.Startup(node);
                     }
+                    break;
                 case MethodCall.Delete:
+                    Behavior = ActionBehavior.Delete;
                     using (var visitor = new DeleteVisitor(this))
                     {
-                        return Visit(visitor, node);
+                        visitor.Startup(node);
                     }
+                    break;
                 default:
                     throw new NotSupportedException($"类型“{node.Method.DeclaringType}”的函数“{node.Method.Name}”不被支持!");
             }

@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db;
+using CodeArts.Db.Lts;
 using UnitTest.Domain.Entities;
 
 namespace UnitTest.Domain

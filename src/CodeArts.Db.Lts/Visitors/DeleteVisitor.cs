@@ -6,38 +6,32 @@ namespace CodeArts.Db.Lts.Visitors
     /// <summary>
     /// 删除访问器。
     /// </summary>
-    public class DeleteVisitor : ConditionVisitor, IExecuteVisitor
+    public class DeleteVisitor : CoreVisitor
     {
+        private readonly ExecuteVisitor visitor;
+
         /// <inheritdoc />
         public DeleteVisitor(ExecuteVisitor visitor) : base(visitor)
         {
+            this.visitor = visitor;
         }
 
-        /// <summary>
-        /// 行为。
-        /// </summary>
-        public ActionBehavior Behavior => ActionBehavior.Delete;
-
-        /// <summary>
-        /// 超时时间。
-        /// </summary>
-        public int? TimeOut { private set; get; }
+        /// <inheritdoc />
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Delete && node.Method.DeclaringType == Types.RepositoryExtentions;
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Delete && node.Method.DeclaringType == typeof(RepositoryExtentions);
-
-        /// <inheritdoc />
-        protected override Expression VisitOfSelect(MethodCallExpression node)
+        protected override void VisitOfLts(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
                 case MethodCall.TimeOut:
 
-                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
-                    
+                    visitor.SetTimeOut((int)node.Arguments[1].GetValueFromExpression());
+
                     base.Visit(node.Arguments[0]);
 
-                    return node;
+                    break;
+
                 case MethodCall.Delete:
 
                     Expression objectExp = node.Arguments[0];
@@ -54,7 +48,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                         writer.From();
 
-                        writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
+                        WriteTableName(tableInfo, prefix);
 
                     }, () =>
                     {
@@ -68,9 +62,11 @@ namespace CodeArts.Db.Lts.Visitors
                         }
                     });
 
-                    return node;
+                    break;
                 default:
-                    return base.VisitOfSelect(node);
+                    base.VisitOfLts(node);
+
+                    break;
             }
         }
     }

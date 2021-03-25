@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -9,8 +10,10 @@ namespace CodeArts.Db.Lts.Visitors
     /// <summary>
     /// 插入访问器。
     /// </summary>
-    public class InsertVisitor : BaseVisitor, IExecuteVisitor
+    public class InsertVisitor : BaseVisitor
     {
+        private readonly ExecuteVisitor visitor;
+
         private class InsertSelectVisitor : SelectVisitor
         {
             private readonly List<string> insertFields;
@@ -20,167 +23,46 @@ namespace CodeArts.Db.Lts.Visitors
                 this.insertFields = insertFields;
             }
 
-            protected override void WriteMember(string prefix, string field, string alias)
+            /// <inheritdoc />
+            protected override void DefMemberAs(string field, string alias)
             {
                 insertFields.Add(field);
-
-                base.WriteMember(prefix, field, alias);
-            }
-
-            protected override void WriteMember(string aggregationName, string prefix, string field, string alias)
-            {
-                insertFields.Add(field);
-
-                base.WriteMember(aggregationName, prefix, field, alias);
             }
 
             /// <inheritdoc />
-            protected override Expression VisitNew(NewExpression node)
+            protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
             {
-                var members = FilterMembers(node.Members);
-
-                var enumerator = members.GetEnumerator();
-
-                if (enumerator.MoveNext())
-                {
-                    var tableInfo = base.MakeTableInfo(node.Type);
-
-                    VisitMyMember(enumerator.Current);
-
-                    while (enumerator.MoveNext())
-                    {
-                        writer.Delimiter();
-
-                        VisitMyMember(enumerator.Current);
-                    }
-
-                    void VisitMyMember(MemberInfo memberInfo)
-                    {
-                        if (tableInfo.ReadWrites.TryGetValue(memberInfo.Name, out string value))
-                        {
-                            insertFields.Add(value);
-
-                            VisitCheckIfSubconnection(node.Arguments[node.Members.IndexOf(memberInfo)]);
-                        }
-                        else
-                        {
-                            throw new DSyntaxErrorException($"字段“{memberInfo.Name}”不可写!");
-                        }
-                    }
-
-                    foreach (var kv in tableInfo.Tokens)
-                    {
-                        if (node.Members.Any(x => x.Name == kv.Key))
-                        {
-                            continue;
-                        }
-
-                        writer.Delimiter();
-
-                        writer.Parameter(kv.Value.Create());
-
-                        insertFields.Add(tableInfo.ReadOrWrites[kv.Key]);
-                    }
-
-                    return node;
-                }
-                else
-                {
-                    throw new DException("未指定插入字段!");
-                }
+                insertFields.Add(GetMemberNaming(memberOfHostType, member.Member));
             }
 
             /// <inheritdoc />
-            protected override Expression VisitMemberInit(MemberInitExpression node)
+            protected override void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
             {
-                var bindings = FilterMemberBindings(node.Bindings);
-
-                if (bindings.Count == 0)
-                {
-                    throw new DException("未指定插入字段!");
-                }
-
-                var enumerator = bindings.GetEnumerator();
-
-                if (enumerator.MoveNext())
-                {
-                    var tableInfo = MakeTableInfo(node.Type);
-
-                    VisitMyMemberBinding(enumerator.Current);
-
-                    while (enumerator.MoveNext())
-                    {
-                        writer.Delimiter();
-
-                        VisitMyMemberBinding(enumerator.Current);
-                    }
-
-                    void VisitMyMemberBinding(MemberBinding binding)
-                    {
-                        if (tableInfo.ReadWrites.TryGetValue(binding.Member.Name, out string value))
-                        {
-                            insertFields.Add(value);
-
-                            base.VisitMemberBinding(binding);
-                        }
-                        else
-                        {
-                            throw new DSyntaxErrorException($"字段“{binding.Member.Name}”不可写!");
-                        }
-                    }
-
-                    foreach (var kv in tableInfo.Tokens)
-                    {
-                        if (node.Bindings.Any(x => x.Member.Name == kv.Key))
-                        {
-                            continue;
-                        }
-
-                        writer.Delimiter();
-
-                        writer.Parameter(kv.Value.Create());
-
-                        insertFields.Add(tableInfo.ReadOrWrites[kv.Key]);
-                    }
-
-                    return node;
-                }
-
-                throw new DException("未指定插入字段!");
+                insertFields.Add(GetMemberNaming(memberOfHostType, memberInfo));
             }
         }
 
         /// <inheritdoc />
         public InsertVisitor(ExecuteVisitor visitor) : base(visitor)
         {
+            this.visitor = visitor;
         }
 
-        /// <summary>
-        /// 行为。
-        /// </summary>
-        public ActionBehavior Behavior => ActionBehavior.Insert;
-
-        /// <summary>
-        /// 超时时间。
-        /// </summary>
-        public int? TimeOut { private set; get; }
-
+        /// <inheritdoc />
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Insert && node.Method.DeclaringType == Types.RepositoryExtentions;
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Insert && node.Method.DeclaringType == typeof(RepositoryExtentions);
-
-        /// <inheritdoc />
-        protected override Expression VisitOfSelect(MethodCallExpression node)
+        protected override void VisitOfLts(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
                 case MethodCall.TimeOut:
 
-                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
+                    visitor.SetTimeOut((int)node.Arguments[1].GetValueFromExpression());
 
                     base.Visit(node.Arguments[0]);
 
-                    return node;
+                    break;
                 case MethodCall.Insert:
 
                     var insertFields = new List<string>();
@@ -195,7 +77,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                         writer.Insert();
 
-                        writer.Name(GetTableName(tableInfo));
+                        WriteTableName(tableInfo, string.Empty);
 
                         var enumerator = insertFields.GetEnumerator();
 
@@ -216,7 +98,7 @@ namespace CodeArts.Db.Lts.Visitors
                         }
                         else
                         {
-                            throw new DException("未指定插入字段!");
+                            throw new DException("未指定更新字段!");
                         }
                     }, () =>
                     {
@@ -226,9 +108,12 @@ namespace CodeArts.Db.Lts.Visitors
                         }
                     });
 
-                    return node;
+                    break;
+
                 default:
-                    return base.VisitOfSelect(node);
+                    base.VisitOfLts(node);
+
+                    break;
             }
         }
     }

@@ -8,38 +8,31 @@ namespace CodeArts.Db.Lts.Visitors
     /// <summary>
     /// 更新访问器。
     /// </summary>
-    public class UpdateVisitor : ConditionVisitor, IExecuteVisitor
+    public class UpdateVisitor : CoreVisitor
     {
-        /// <summary>
-        /// 行为。
-        /// </summary>
-        public ActionBehavior Behavior => ActionBehavior.Update;
-
-        /// <summary>
-        /// 超时时间。
-        /// </summary>
-        public int? TimeOut { private set; get; }
+        private readonly ExecuteVisitor visitor;
 
         /// <inheritdoc />
         public UpdateVisitor(ExecuteVisitor visitor) : base(visitor)
         {
+            this.visitor = visitor;
         }
 
         /// <inheritdoc />
-        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Update && node.Method.DeclaringType == typeof(RepositoryExtentions);
+        public override bool CanResolve(MethodCallExpression node) => node.Method.Name == MethodCall.Update && node.Method.DeclaringType == Types.RepositoryExtentions;
 
         /// <inheritdoc />
-        protected override Expression VisitOfSelect(MethodCallExpression node)
+        protected override void VisitOfLts(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
                 case MethodCall.TimeOut:
 
-                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
+                    visitor.SetTimeOut((int)node.Arguments[1].GetValueFromExpression());
 
                     base.Visit(node.Arguments[0]);
 
-                    return node;
+                    break;
                 case MethodCall.Update:
 
                     Expression objectExp = node.Arguments[0];
@@ -58,39 +51,49 @@ namespace CodeArts.Db.Lts.Visitors
                         }
                         else
                         {
-                            writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
+                            WriteTableName(tableInfo, prefix);
                         }
 
                         writer.Set();
 
-                        base.Visit(node.Arguments[1]);
+                        Visit(node.Arguments[1]);
 
                         if (settings.Engine == DatabaseEngine.SqlServer || settings.Engine == DatabaseEngine.Access)
                         {
                             writer.From();
 
-                            writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
+                            WriteTableName(tableInfo, prefix);
                         }
 
                     }, () =>
                     {
-                        base.Visit(objectExp);
+                        Visit(objectExp);
                     });
 
-                    return node;
+                    break;
                 default:
-                    return base.VisitOfSelect(node);
+                    base.VisitOfLts(node);
+
+                    break;
             }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitParameterLeavesIsObject(ParameterExpression node)
+        {
+            throw new DSyntaxErrorException("禁止原字段更新!");
         }
 
         /// <inheritdoc />
         protected override Expression VisitNew(NewExpression node)
         {
-            var enumerator = node.Members.GetEnumerator();
+            var members = FilterMembers(node.Members);
+
+            var enumerator = members.GetEnumerator();
 
             if (enumerator.MoveNext())
             {
-                var tableInfo = base.MakeTableInfo(node.Type);
+                var tableInfo = MakeTableInfo(node.Type);
 
                 VisitMyMember(enumerator.Current);
 
@@ -109,7 +112,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                         writer.Write("=");
 
-                        VisitCheckIfSubconnection(node.Arguments[node.Members.IndexOf(memberInfo)]);
+                        VisitNewMember(memberInfo, node.Arguments[node.Members.IndexOf(memberInfo)]);
                     }
                     else
                     {
@@ -119,7 +122,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 foreach (var kv in tableInfo.Tokens)
                 {
-                    if (node.Members.Any(x => x.Name == kv.Key))
+                    if (members.Any(x => x.Name == kv.Key))
                     {
                         continue;
                     }
@@ -169,7 +172,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                         writer.Write("=");
 
-                        base.VisitMemberBinding(binding);
+                        VisitMemberBinding(binding);
                     }
                     else
                     {
@@ -179,7 +182,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 foreach (var kv in tableInfo.Tokens)
                 {
-                    if (node.Bindings.Any(x => x.Member.Name == kv.Key))
+                    if (bindings.Any(x => x.Member.Name == kv.Key))
                     {
                         continue;
                     }

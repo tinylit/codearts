@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace CodeArts.Db.Lts
@@ -175,6 +176,22 @@ namespace CodeArts.Db.Lts
 
             return node.NodeType == ExpressionType.Constant;
         }
+
+        /// <summary>
+        /// 是否是<see cref="IGrouping{TKey, TElement}"/>
+        /// </summary>
+        /// <param name="node">表达式。</param>
+        /// <returns></returns>
+        public static bool IsGrouping(this Expression node)
+        {
+            if(node is null)
+            {
+                return false;
+            }
+
+            return node.Type.IsGrouping();
+        }
+
         /// <summary>
         /// 获取操作符。
         /// </summary>

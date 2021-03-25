@@ -134,7 +134,11 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// DISTINCT
         /// </summary>
-        public virtual void Distinct() => Write("DISTINCT" + writerMap.WhiteSpace);
+        public virtual void Distinct()
+        {
+            Write("DISTINCT");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// ''
@@ -189,12 +193,24 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// From
         /// </summary>
-        public void From() => Write(writerMap.WhiteSpace + "FROM" + writerMap.WhiteSpace);
+        public void From()
+        {
+            WhiteSpace();
+            Write("FROM");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Left Join
         /// </summary>
-        public void Join() => Write(writerMap.WhiteSpace + "LEFT" + writerMap.WhiteSpace + "JOIN" + writerMap.WhiteSpace);
+        public void Join()
+        {
+            WhiteSpace();
+            Write("LEFT");
+            WhiteSpace();
+            Write("JOIN");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// (
@@ -202,9 +218,28 @@ namespace CodeArts.Db.Lts
         public void OpenBrace() => Write(writerMap.OpenBrace);
 
         /// <summary>
+        /// Group By
+        /// </summary>
+        public void GroupBy()
+        {
+            WhiteSpace();
+            Write("GROUP");
+            WhiteSpace();
+            Write("BY");
+            WhiteSpace();
+        }
+
+        /// <summary>
         /// Order By
         /// </summary>
-        public void OrderBy() => Write(writerMap.WhiteSpace + "ORDER" + writerMap.WhiteSpace + "BY" + writerMap.WhiteSpace);
+        public void OrderBy()
+        {
+            WhiteSpace();
+            Write("ORDER");
+            WhiteSpace();
+            Write("BY");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// 参数。
@@ -219,26 +254,62 @@ namespace CodeArts.Db.Lts
                 return;
             }
 
-            foreach (var kv in Parameters)
-            {
-                if (kv.Value == parameterValue)
-                {
-                    Write(settings.ParamterName(kv.Key));
+            var type = parameterValue.GetType();
 
-                    return;
-                }
+            if (!type.IsValueType)
+            {
+                Parameter(ParameterName, parameterValue);
+
+                return;
             }
 
-            string parameterName = ParameterName;
+            var cType = type;
 
-            while (Parameters.ContainsKey(parameterName))
+            if (type.IsEnum)
             {
-                parameterName = ParameterName;
+                cType = Enum.GetUnderlyingType(type);
+            }
+            else if (type.IsNullable())
+            {
+                cType = Nullable.GetUnderlyingType(type);
             }
 
-            Write(settings.ParamterName(parameterName));
+            switch (Type.GetTypeCode(cType))
+            {
+                case TypeCode.Boolean:
+                    if (Equals(parameterValue, true))
+                    {
+                        BooleanTrue();
+                    }
+                    else
+                    {
+                        BooleanFalse();
+                    }
+                    break;
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
 
-            Parameters.Add(parameterName, parameterValue);
+                    if (type.IsEnum)
+                    {
+                        parameterValue = Convert.ChangeType(parameterValue, cType);
+                    }
+
+                    Write(parameterValue.ToString());
+
+                    break;
+                default:
+                    Parameter(ParameterName, parameterValue);
+                    break;
+            }
         }
 
         /// <summary>
@@ -255,11 +326,14 @@ namespace CodeArts.Db.Lts
                 return;
             }
 
+            if (parameterValue is Version version)
+            {
+                parameterValue = version.ToString(4);
+            }
+
             if (parameterName is null || parameterName.Length == 0)
             {
-                Parameter(parameterValue);
-
-                return;
+                parameterName = ParameterName;
             }
 
             string argName = parameterName;
@@ -284,12 +358,22 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// Select
         /// </summary>
-        public void Select() => Write("SELECT" + writerMap.WhiteSpace);
+        public void Select()
+        {
+            Write("SELECT");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Insert Into
         /// </summary>
-        public void Insert() => Write("INSERT" + writerMap.WhiteSpace + "INTO" + writerMap.WhiteSpace);
+        public void Insert()
+        {
+            Write("INSERT");
+            WhiteSpace();
+            Write("INTO");
+            WhiteSpace();
+        }
 
         private int usingIndex = 0;
         private readonly Stack<int> usingStack = new Stack<int>();
@@ -329,47 +413,98 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// Update
         /// </summary>
-        public void Update() => Write("UPDATE" + writerMap.WhiteSpace);
+        public void Update()
+        {
+            Write("UPDATE");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Set
         /// </summary>
-        public void Set() => Write(writerMap.WhiteSpace + "SET" + writerMap.WhiteSpace);
+        public void Set()
+        {
+            WhiteSpace();
+            Write("SET");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Delete
         /// </summary>
-        public void Delete() => Write("DELETE" + writerMap.WhiteSpace);
+        public void Delete()
+        {
+            Write("DELETE");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Where
         /// </summary>
-        public void Where() => Write(writerMap.WhiteSpace + "WHERE" + writerMap.WhiteSpace);
+        public void Where()
+        {
+            WhiteSpace();
+            Write("WHERE");
+            WhiteSpace();
+        }
+
+        /// <summary>
+        /// Having
+        /// </summary>
+        public void Having()
+        {
+            WhiteSpace();
+            Write("HAVING");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// And
         /// </summary>
-        public void And() => Write(writerMap.WhiteSpace + (IsReverseCondition ? "OR" : "AND") + writerMap.WhiteSpace);
+        public void And()
+        {
+            WhiteSpace();
+            Write(IsReverseCondition ? "OR" : "AND");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Or
         /// </summary>
-        public void Or() => Write(writerMap.WhiteSpace + (IsReverseCondition ? "AND" : "OR") + writerMap.WhiteSpace);
+        public void Or()
+        {
+            WhiteSpace();
+            Write(IsReverseCondition ? "AND" : "OR");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Desc
         /// </summary>
-        public void Descending() => Write(writerMap.WhiteSpace + "DESC");
+        public void Descending()
+        {
+            WhiteSpace();
+            Write("DESC");
+        }
 
         /// <summary>
         /// Is
         /// </summary>
-        public void Is() => Write(writerMap.WhiteSpace + "IS" + writerMap.WhiteSpace);
+        public void Is()
+        {
+            WhiteSpace();
+            Write("IS");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Not
         /// </summary>
-        private void Not() => Write("NOT" + writerMap.WhiteSpace);
+        private void Not()
+        {
+            Write("NOT");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// Null
@@ -399,7 +534,12 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// AS
         /// </summary>
-        public void As() => Write(writerMap.WhiteSpace + "AS" + writerMap.WhiteSpace);
+        public void As()
+        {
+            WhiteSpace();
+            Write("AS");
+            WhiteSpace();
+        }
 
         /// <summary>
         /// AS {name}
@@ -557,10 +697,12 @@ namespace CodeArts.Db.Lts
         /// 写入类型。
         /// </summary>
         /// <param name="nodeType">节点类型。</param>
-        public void Write(ExpressionType nodeType)
-        {
-            Write(ExpressionExtensions.GetOperator(IsReverseCondition ? nodeType.ReverseWhere() : nodeType));
-        }
+        public void Write(ExpressionType nodeType) => Write(ExpressionExtensions.GetOperator(IsReverseCondition ? nodeType.ReverseWhere() : nodeType));
+
+        /// <summary>
+        /// 写入换行。
+        /// </summary>
+        public void WriteLine() => Write(Environment.NewLine);
 
         /// <summary>
         /// =
@@ -589,18 +731,13 @@ namespace CodeArts.Db.Lts
         /// 条件反转。
         /// </summary>
         /// <param name="reverseCondition">方法。</param>
-        public T ReverseCondition<T>(Func<T> reverseCondition)
+        public void ReverseCondition<T>(Func<T> reverseCondition)
         {
             IsReverseCondition ^= true;
 
-            try
-            {
-                return reverseCondition.Invoke();
-            }
-            finally
-            {
-                IsReverseCondition ^= true;
-            }
+            reverseCondition.Invoke();
+
+            IsReverseCondition ^= true;
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 ﻿using CodeArts;
-using CodeArts.Db;
+using CodeArts.Db.Lts;
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
 using Microsoft.AspNetCore.Authorization;

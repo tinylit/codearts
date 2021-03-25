@@ -339,7 +339,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="typeArgument">泛型约束。</param>
         /// <returns></returns>
         protected override Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type typeArgument)
-            => source => Mapper.Cast<TResult>(source);
+            => source => Mapper.ThrowsCast<TResult>(source);
 
         /// <summary>
         /// 解决 值类型 到 任意类型的转换。
@@ -349,7 +349,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
         protected override Func<object, TResult> ByValueType<TResult>(Type sourceType, Type conversionType)
-            => source => Mapper.Cast<TResult>(source);
+            => source => Mapper.ThrowsCast<TResult>(source);
 
         /// <summary>
         /// 解决 任意类型 到 值类型的转换。
@@ -359,7 +359,7 @@ namespace CodeArts.Casting.Implements
         /// <param name="conversionType">目标数据类型。</param>
         /// <returns></returns>
         protected override Func<object, TResult> ToValueType<TResult>(Type sourceType, Type conversionType)
-            => source => Mapper.Cast<TResult>(source);
+            => source => Mapper.ThrowsCast<TResult>(source);
 
         /// <summary>
         /// 解决 对象 到 任意对象 的操作。
@@ -1285,83 +1285,109 @@ namespace CodeArts.Casting.Implements
             var commonCtor = typeStore.ConstructorStores
                  .Where(x => x.CanRead)
                  .OrderBy(x => x.ParameterStores.Count)
-                 .FirstOrDefault();
+                 .FirstOrDefault() ?? throw new NotSupportedException($"“{conversionType}”没有公共构造函数!");
+
+            var list = new List<Expression>();
+
+            var results = new List<Expression>();
 
             var parameterExp = Parameter(typeof(object), "source");
 
-            var nullCst = Constant(null);
+            var iVar = Parameter(typeof(int), "i");
 
-            var errorExp = Parameter(typeof(Exception), "e");
+            var nullCst = Constant(null);
 
             var valueExp = Variable(sourceType, "value");
 
-            var indexExp = Variable(typeof(int), "index");
-
             var targetExp = Variable(conversionType, "target");
 
-            var negativeExp = Constant(-1);
+            list.Add(Assign(valueExp, Convert(parameterExp, sourceType)));
 
-            var dicKeys = Variable(typeof(Dictionary<int, string>), "__key_2_names");
+            var typeMap = TypeMap.GetOrAdd(sourceType, type =>
+            {
+                var types = new Type[1] { typeof(int) };
 
-            var dicValues = Variable(typeof(Dictionary<int, object>), "__key_2_values");
+                return new Dictionary<Type, MethodInfo>
+                {
+                    [typeof(bool)] = type.GetMethod("GetBoolean", types),
+                    [typeof(byte)] = type.GetMethod("GetByte", types),
+                    [typeof(char)] = type.GetMethod("GetChar", types),
+                    [typeof(short)] = type.GetMethod("GetInt16", types),
+                    [typeof(int)] = type.GetMethod("GetInt32", types),
+                    [typeof(long)] = type.GetMethod("GetInt64", types),
+                    [typeof(float)] = type.GetMethod("GetFloat", types),
+                    [typeof(double)] = type.GetMethod("GetDouble", types),
+                    [typeof(decimal)] = type.GetMethod("GetDecimal", types),
+                    [typeof(Guid)] = type.GetMethod("GetGuid", types),
+                    [typeof(DateTime)] = type.GetMethod("GetDateTime", types),
+                    [typeof(string)] = type.GetMethod("GetString", types),
+                    [typeof(object)] = type.GetMethod("GetValue", types)
+                };
+            });
 
-            var getNames = typeSelf.GetMethod(nameof(GetKeyWithFields), BindingFlags.NonPublic | BindingFlags.Static);
+            var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
 
-            var getValues = typeSelf.GetMethod(nameof(GetKeyWithValues), BindingFlags.NonPublic | BindingFlags.Static);
+            var getFieldType = sourceType.GetMethod("GetFieldType", new Type[] { typeof(int) });
 
-            var getOrdinal = typeSelf.GetMethod(nameof(GetOrdinal), BindingFlags.NonPublic | BindingFlags.Static);
+            var convertMethod = typeof(Convert).GetMethod(nameof(System.Convert.ChangeType), new Type[] { typeof(object), typeof(Type) });
 
-            var getValue = typeSelf.GetMethod(nameof(GetValue), BindingFlags.NonPublic | BindingFlags.Static);
+            var listCases = new List<SwitchCase>();
 
-            var isDBNull = typeSelf.GetMethod(nameof(IsDbNull), BindingFlags.NonPublic | BindingFlags.Static);
-
-            var convertMethod = typeof(Convert).GetMethod("ChangeType", new Type[] { typeof(object), typeof(Type) });
-
-            var list = new List<Expression> { Assign(valueExp, Convert(parameterExp, sourceType)) };
-
-            list.Add(Assign(dicKeys, Call(null, getNames, Convert(valueExp, typeof(IDataRecord)))));
-
-            list.Add(Assign(dicValues, Call(null, getValues, Convert(valueExp, typeof(IDataRecord)))));
-
-            var variables = new List<ParameterExpression> { valueExp, targetExp, indexExp, dicKeys, dicValues };
+            var variables = new List<ParameterExpression> { valueExp, targetExp, iVar };
 
             var arguments = new List<Expression>();
 
             commonCtor.ParameterStores
-                .ForEach(info => ConfigParameter(info));
+                .ForEach(info => Config(info));
+
+            #region for
+
+            var lenVar = Property(valueExp, "FieldCount");
+
+            var getName = sourceType.GetMethod("GetName", new Type[] { typeof(int) });
+
+            var body = Switch(Call(valueExp, getName, iVar), null, GetMethodInfo<string, string, bool>(EqaulsString), listCases.ToArray());
+
+            list.Add(Assign(iVar, Constant(0)));
+
+            LabelTarget break_label = Label(typeof(void));
+            LabelTarget continue_label = Label(typeof(void));
+
+            list.Add(Loop(IfThenElse(
+                             LessThan(iVar, lenVar),
+                             Block(
+                                 body,
+                                 AddAssign(iVar, Constant(1)),
+                                 Continue(continue_label, typeof(void))
+                             ),
+                             Break(break_label, typeof(void))
+                 ), break_label, continue_label));
+
+            #endregion
+
+            list.AddRange(results);
 
             list.Add(Assign(targetExp, New(commonCtor.Member, arguments)));
-
-            if (Kind == PatternKind.Property || Kind == PatternKind.All)
-            {
-                typeStore.PropertyStores
-                    .Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
-                    .ForEach(info => Config(info, Property(targetExp, info.Member)));
-            }
-
-            if (Kind == PatternKind.Field || Kind == PatternKind.All)
-            {
-                typeStore.FieldStores
-                    .Where(x => x.CanWrite && !commonCtor.ParameterStores.Any(y => y.Name == x.Name))
-                    .ForEach(info => Config(info, Field(targetExp, info.Member)));
-            }
-
-            list.Add(targetExp);
 
             var lamdaExp = Lambda<Func<object, TResult>>(Block(variables, list), parameterExp);
 
             return lamdaExp.Compile();
 
-            void Config<T>(StoreItem<T> info, Expression left) where T : MemberInfo
+            void ConfigProperty<T>(StoreItem<T> info, Expression left, string key) where T : MemberInfo
             {
                 var memberType = info.MemberType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Name))));
+                var testValues = new List<Expression>
+                {
+                    Constant(string.Concat(key, info.Name))
+                };
 
                 if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
                 {
-                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Naming)))));
+                    testValues.Add(Constant(string.Concat(key, info.Naming)));
                 }
+
+                var assigns = new List<Expression>();
 
                 if (memberType.IsValueType)
                 {
@@ -1375,30 +1401,44 @@ namespace CodeArts.Casting.Implements
                     }
                 }
 
-                Expression valExp = Call(null, getValue, dicValues, indexExp);
+                var memberTypeCst = Constant(memberType);
 
-                Expression objExp = TryCatch(Convert(valExp, memberType), Catch(errorExp, Convert(Call(null, convertMethod, valExp, Constant(memberType)), memberType)));
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], iVar);
 
-                if (AllowNullPropagationMapping.Value)
+                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
                 {
-                    list.Add(IfThen(GreaterThan(indexExp, negativeExp), IfThenElse(Call(null, isDBNull, dicValues, indexExp), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType)))));
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, iVar)), Call(valueExp, methodInfo, iVar), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
                 }
                 else
                 {
-                    list.Add(IfThen(AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(null, isDBNull, dicValues, indexExp))), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))));
+                    objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
+                }
+
+                if (AllowNullPropagationMapping.Value)
+                {
+                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                }
+                else
+                {
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
                 }
             }
 
-            void ConfigParameter(ParameterItem info)
+            void ConfigParameter(ParameterItem info, List<Expression> argument2s, string key)
             {
                 var memberType = info.ParameterType;
 
-                list.Add(Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Name))));
+                var testValues = new List<Expression>
+                {
+                    Constant(string.Concat(key, info.Name))
+                };
 
                 if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
                 {
-                    list.Add(IfThen(Equal(indexExp, negativeExp), Assign(indexExp, Call(null, getOrdinal, dicKeys, Constant(info.Naming)))));
+                    testValues.Add(Constant(string.Concat(key, info.Naming)));
                 }
+
+                var assigns = new List<Expression>();
 
                 if (memberType.IsValueType)
                 {
@@ -1412,40 +1452,134 @@ namespace CodeArts.Casting.Implements
                     }
                 }
 
-                var nameExp = Variable(info.ParameterType, info.Name.ToCamelCase());
+                var variable = Variable(memberType, string.Concat(key, info.Name.ToCamelCase()));
 
-                Expression valExp = Call(null, getValue, dicValues, indexExp);
+                var memberTypeCst = Constant(memberType);
 
-                Expression objExp = TryCatch(Convert(valExp, memberType), Catch(errorExp, Convert(Call(null, convertMethod, valExp, Constant(memberType)), memberType)));
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], iVar);
 
-                Expression defaultExp = null;
-
-                if (info.IsOptional)
+                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
                 {
-                    defaultExp = Constant(info.DefaultValue, info.ParameterType);
-                }
-                else if (!AllowNullDestinationValues.Value && info.ParameterType == typeof(string))
-                {
-                    defaultExp = Constant(string.Empty);
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, iVar)), Call(valueExp, methodInfo, iVar), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
                 }
                 else
                 {
-                    defaultExp = Default(info.ParameterType);
+                    objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
-
-                var conditionExp = AndAlso(GreaterThan(indexExp, negativeExp), Not(Call(null, isDBNull, dicValues, indexExp)));
 
                 if (AllowNullPropagationMapping.Value)
                 {
-                    list.Add(IfThenElse(conditionExp, memberType == info.ParameterType ? Assign(nameExp, objExp) : Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, defaultExp)));
+                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(variable, Default(info.ParameterType)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
                 }
                 else
                 {
-                    list.Add(IfThenElse(conditionExp, memberType == info.ParameterType ? Assign(nameExp, objExp) : Assign(nameExp, Convert(objExp, info.ParameterType)), Assign(nameExp, defaultExp)));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
                 }
 
-                variables.Add(nameExp);
-                arguments.Add(nameExp);
+                variables.Add(variable);
+
+                argument2s.Add(variable);
+            }
+
+            void Config(ParameterItem info)
+            {
+                var memberType = info.ParameterType;
+
+                if (memberType.IsValueType)
+                {
+                    if (memberType.IsEnum)
+                    {
+                        memberType = Enum.GetUnderlyingType(memberType);
+                    }
+                    else if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+                }
+
+                var variable = Variable(memberType, info.Name.ToCamelCase());
+
+                if (memberType.IsClass && !memberType.IsAbstract && memberType != typeof(string) && memberType != typeof(Version))
+                {
+                    var typeItem = TypeItem.Get(memberType);
+
+                    string propKey = $"__{info.Name.ToLower()}____";
+
+                    if (typeItem.ConstructorStores.Any(x => x.ParameterStores.Count == 0))
+                    {
+                        list.Add(Assign(variable, New(memberType)));
+
+                        if (Kind == PatternKind.Property || Kind == PatternKind.All)
+                        {
+                            typeItem.PropertyStores
+                                .Where(x => x.CanWrite)
+                                .ForEach(x => ConfigProperty(x, Property(variable, x.Member), propKey));
+                        }
+
+                        if (Kind == PatternKind.Field || Kind == PatternKind.All)
+                        {
+                            typeItem.FieldStores
+                                .Where(x => x.CanWrite)
+                                .ForEach(x => ConfigProperty(x, Field(variable, x.Member), propKey));
+                        }
+                    }
+                    else
+                    {
+                        var argument2s = new List<Expression>();
+
+                        var common2Ctor = typeItem.ConstructorStores
+                            .Where(x => x.CanRead)
+                            .OrderBy(x => x.ParameterStores.Count)
+                            .FirstOrDefault() ?? throw new NotSupportedException($"“{conversionType}”没有公共构造函数!");
+
+                        common2Ctor.ParameterStores
+                            .ForEach(x => ConfigParameter(x, argument2s, propKey));
+
+                        results.Add(Assign(variable, New(common2Ctor.Member, argument2s)));
+                    }
+
+                    goto label_add;
+                }
+
+                var testValues = new List<Expression>
+                {
+                    Constant(info.Name)
+                };
+
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    testValues.Add(Constant(info.Naming));
+                }
+
+                var assigns = new List<Expression>();
+
+                var memberTypeCst = Constant(memberType);
+
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], iVar);
+
+                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
+                {
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, iVar)), Call(valueExp, methodInfo, iVar), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
+                }
+                else
+                {
+                    objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
+                }
+
+                if (AllowNullPropagationMapping.Value)
+                {
+                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(variable, Default(info.ParameterType)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
+                }
+                else
+                {
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
+                }
+
+                label_add:
+
+                variables.Add(variable);
+
+                arguments.Add(variable);
             }
         }
 
@@ -1512,6 +1646,8 @@ namespace CodeArts.Casting.Implements
 
             var listCases = new List<SwitchCase>();
 
+            var variables = new List<ParameterExpression> { valueExp, iVar, targetExp };
+
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
                 typeStore.PropertyStores
@@ -1553,13 +1689,89 @@ namespace CodeArts.Casting.Implements
 
             list.Add(targetExp);
 
-            var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { valueExp, iVar, targetExp }, list), parameterExp);
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(variables, list), parameterExp);
 
             return lamdaExp.Compile();
+
+            void ConfigProperty<T>(StoreItem<T> info, Expression left, string key) where T : MemberInfo
+            {
+                var memberType = info.MemberType;
+
+                var testValues = new List<Expression>
+                {
+                    Constant(string.Concat(key, info.Name))
+                };
+
+                if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                {
+                    testValues.Add(Constant(string.Concat(key, info.Naming)));
+                }
+
+                var assigns = new List<Expression>();
+
+                if (memberType.IsValueType)
+                {
+                    if (memberType.IsEnum)
+                    {
+                        memberType = Enum.GetUnderlyingType(memberType);
+                    }
+                    else if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+                }
+
+                var memberTypeCst = Constant(memberType);
+
+                Expression objExp = Call(valueExp, typeMap[typeof(object)], iVar);
+
+                if (typeMap.TryGetValue(memberType, out MethodInfo methodInfo))
+                {
+                    objExp = Condition(Equal(memberTypeCst, Call(valueExp, getFieldType, iVar)), Call(valueExp, methodInfo, iVar), Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType));
+                }
+                else
+                {
+                    objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
+                }
+
+                if (AllowNullPropagationMapping.Value)
+                {
+                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                }
+                else
+                {
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                }
+            }
 
             void Config<T>(StoreItem<T> info, Expression left) where T : MemberInfo
             {
                 var memberType = info.MemberType;
+
+                if (memberType.IsClass && !memberType.IsAbstract && memberType != typeof(string) && memberType != typeof(Version))
+                {
+                    var typeItem = TypeItem.Get(memberType);
+
+                    string key = $"__{info.Name.ToLower()}____";
+
+                    list.Add(Assign(left, New(memberType)));
+
+                    if (Kind == PatternKind.Property || Kind == PatternKind.All)
+                    {
+                        typeItem.PropertyStores
+                            .Where(x => x.CanWrite)
+                            .ForEach(x => ConfigProperty(x, Property(left, x.Member), key));
+                    }
+
+                    if (Kind == PatternKind.Field || Kind == PatternKind.All)
+                    {
+                        typeItem.FieldStores
+                            .Where(x => x.CanWrite)
+                            .ForEach(x => ConfigProperty(x, Field(left, x.Member), key));
+                    }
+
+                    return;
+                }
 
                 var testValues = new List<Expression>
                 {

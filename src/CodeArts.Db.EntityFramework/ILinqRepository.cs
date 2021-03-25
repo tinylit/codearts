@@ -13,7 +13,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CodeArts.Db
+namespace CodeArts.Db.EntityFramework
 {
     /// <summary>
     /// 仓库。

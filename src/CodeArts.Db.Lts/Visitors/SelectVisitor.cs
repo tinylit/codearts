@@ -1,5 +1,7 @@
 ﻿using CodeArts.Db.Exceptions;
+using CodeArts.Runtime;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 #if NET40
@@ -12,9 +14,9 @@ using System.Reflection;
 namespace CodeArts.Db.Lts.Visitors
 {
     /// <summary>
-    /// Select。
+    /// 查询。
     /// </summary>
-    public class SelectVisitor : ConditionVisitor
+    public class SelectVisitor : CoreVisitor
     {
         #region 匿名内部类。
         /// <summary>
@@ -22,27 +24,15 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         private class OrderBySwitch
         {
-            public OrderBySwitch(Action firstAction, Action unFirstAction)
-            {
-                FirstAction = firstAction;
-                UnFirstAction = unFirstAction;
-            }
-
             private bool isFirst = true;
 
-            public Action FirstAction { get; }
+            private readonly Action firstAction;
+            private readonly Action unFirstAction;
 
-            public Action UnFirstAction { get; }
-
-            public void UnWrap(Action action)
+            public OrderBySwitch(Action firstAction, Action unFirstAction)
             {
-                bool isFirst = this.isFirst;
-
-                this.isFirst = true;
-
-                action?.Invoke();
-
-                this.isFirst = isFirst;
+                this.firstAction = firstAction;
+                this.unFirstAction = unFirstAction;
             }
 
             public void OrderBy()
@@ -51,11 +41,11 @@ namespace CodeArts.Db.Lts.Visitors
                 {
                     isFirst = false;
 
-                    FirstAction.Invoke();
+                    firstAction.Invoke();
                 }
                 else
                 {
-                    UnFirstAction.Invoke();
+                    unFirstAction.Invoke();
                 }
             }
         }
@@ -65,14 +55,35 @@ namespace CodeArts.Db.Lts.Visitors
 
         private int skip = -1;
 
-        private int selectDepth = 0;
-
         /// <summary>
         /// 条件。
         /// </summary>
         private readonly OrderBySwitch orderBySwitch;
 
+        /// <summary>
+        /// 是否构建 SELECT 部分。
+        /// </summary>
         private bool buildSelect = true;
+
+        /// <summary>
+        /// 构建表。
+        /// </summary>
+        private bool buildTable = true;
+
+        /// <summary>
+        /// 是否包装。
+        /// </summary>
+        private bool isNoPackage = true;
+
+        /// <summary>
+        /// 有组合函数。
+        /// </summary>
+        private bool hasCombination = false;
+
+        /// <summary>
+        /// 用链接函数。
+        /// </summary>
+        private bool hasJoin = false;
 
         /// <summary>
         /// 去重。
@@ -82,37 +93,60 @@ namespace CodeArts.Db.Lts.Visitors
         /// <summary>
         /// 逆序。
         /// </summary>
-        internal bool reverseOrder = false;
+        private bool reverseOrder = false;
 
         /// <summary>
-        /// 使用了Count函数。
+        /// 使用了OrderBy
         /// </summary>
-        private bool hasCount = false;
+        private bool useOrderBy = false;
 
         /// <summary>
-        /// 含聚合函数。
+        /// 使用了统计函数。
         /// </summary>
-        private bool hasAggregation = false;
+        private bool useCount = false;
 
         /// <summary>
-        /// 有设置排序。
+        /// 使用了聚合函数
         /// </summary>
-        private bool hasOrderBy = false;
+        private bool useAggregation = false;
 
         /// <summary>
-        /// 含组合函数。
+        /// 使用GroupBy。
         /// </summary>
-        private bool hasCombination = false;
+        private GroupByVisitor byVisitor;
 
         /// <summary>
-        /// 含Join函数。
+        /// 使用了GroupBy。
         /// </summary>
-        private bool hasJoin = false;
+        private bool useGroupBy = false;
 
-        private readonly ConcurrentDictionary<Type, List<string>> JoinCache = new ConcurrentDictionary<Type, List<string>>();
+        /// <summary>
+        /// 使用了类型转换。
+        /// </summary>
+        private bool useCast = false;
+
+        /// <summary>
+        /// 有效成员。
+        /// </summary>
+        private List<string> MemberFilters = new List<string>();
+
+        /// <summary>
+        /// 类型关系。
+        /// </summary>
+        private readonly Dictionary<Type, Type> CastCache = new Dictionary<Type, Type>();
+
+        /// <summary>
+        /// 分组字段集合。
+        /// </summary>
+        private readonly Dictionary<MemberInfo, string> GroupByFields = new Dictionary<MemberInfo, string>();
+
+        /// <summary>
+        /// 链接表别名。
+        /// </summary>
+        private readonly Dictionary<Type, List<string>> JoinCache = new Dictionary<Type, List<string>>();
 
         /// <inheritdoc />
-        public SelectVisitor(BaseVisitor visitor) : base(visitor, true)
+        public SelectVisitor(BaseVisitor visitor, bool isNewWriter = true) : base(visitor, isNewWriter)
         {
             orderBySwitch = new OrderBySwitch(writer.OrderBy, writer.Delimiter);
         }
@@ -124,301 +158,45 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
-        protected override Expression StartupCore(MethodCallExpression node)
+        public override bool CanResolve(MethodCallExpression node)
+        => node.Method.DeclaringType == Types.Queryable || node.Method.DeclaringType == Types.RepositoryExtentions;
+
+        /// <inheritdoc />
+        protected override void StartupCore(MethodCallExpression node)
         {
-            return UsingSelect(node, base.StartupCore);
-        }
+            base.StartupCore(node);
 
-        private Expression UsingSelect(MethodCallExpression node, Func<MethodCallExpression, Expression> work)
-        {
-            Action action = null;
-
-            Expression result = null;
-
-            base.Workflow(() =>
+            if (buildSelect)
             {
-                if (buildSelect && !(node.Method.Name == MethodCall.Union ||
-                node.Method.Name == MethodCall.Concat ||
-                node.Method.Name == MethodCall.Except ||
-                node.Method.Name == MethodCall.Intersect))
-                {
-                    action = Select(node);
-                }
-
-            }, () => result = work.Invoke(node));
-
-            action?.Invoke();
-
-            return result;
-        }
-
-        private Expression UsingMustSelect(MethodCallExpression node, Func<MethodCallExpression, Expression> work)
-        {
-            Action action = null;
-
-            Expression result = null;
-
-            buildSelect = false;
-
-            Workflow(() => action = Select(node), () => result = work.Invoke(node));
-
-            action?.Invoke();
-
-            return result;
+                throw new DSyntaxErrorException();
+            }
         }
 
         /// <inheritdoc />
-        protected override Expression VisitParameter(ParameterExpression node)
-        {
-            if (hasCombination)
-            {
-                return node;
-            }
-
-            return base.VisitParameter(node);
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Type.IsQueryable())
-            {
-                if (buildSelect)
-                {
-                    buildSelect = false;
-
-                    return Select(node);
-                }
-
-                if (hasJoin)
-                {
-                    var tableInfo = base.MakeTableInfo(node.Type);
-
-                    var prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                    writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
-                }
-
-                return node;
-            }
-
-            return base.VisitConstant(node);
-        }
-
-        /// <inheritdoc />
-        protected override bool TryGetEntryAlias(Type entryType, string parameterName, bool check, out string aliasName)
-        {
-            if (hasJoin && parameterName.IsNotEmpty() && JoinCache.TryGetValue(entryType, out List<string> list) && list.Contains(parameterName))
-            {
-                aliasName = parameterName;
-
-                return true;
-            }
-
-            return base.TryGetEntryAlias(entryType, parameterName, check, out aliasName);
-        }
-
-        /// <summary>
-        /// 写入成员。
-        /// </summary>
-        /// <param name="aggregationName">聚合函数名称。</param>
-        /// <param name="prefix">前缀。</param>
-        /// <param name="field">字段。</param>
-        /// <param name="alias">别名。</param>
-        protected virtual void WriteMember(string aggregationName, string prefix, string field, string alias)
-        {
-            writer.Write(aggregationName);
-            writer.OpenBrace();
-            writer.NameDot(prefix, field);
-            writer.CloseBrace();
-        }
-
-        /// <summary>
-        /// 写入指定成员。
-        /// </summary>
-        /// <param name="aggregationName">聚合函数名称。</param>
-        /// <param name="prefix">前缀。</param>
-        /// <param name="names">成员集合。</param>
-        protected virtual void WriteMembers(string aggregationName, string prefix, IEnumerable<KeyValuePair<string, string>> names)
-        {
-            var kv = names.GetEnumerator();
-
-            if (kv.MoveNext())
-            {
-                WriteMember(aggregationName, prefix, kv.Current.Value, kv.Current.Key);
-
-                while (kv.MoveNext())
-                {
-                    writer.Delimiter();
-
-                    WriteMember(aggregationName, prefix, kv.Current.Value, kv.Current.Key);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Select。
-        /// </summary>
-        /// <param name="node">节点。</param>
-        protected virtual Expression Select(ConstantExpression node)
-        {
-            var parameterType = TypeToUltimateType(node.Type);
-
-            var prefix = base.GetEntryAlias(parameterType, string.Empty);
-
-            var tableInfo = base.MakeTableInfo(parameterType);
-
-            writer.Select();
-
-            if (isDistinct)
-            {
-                writer.Distinct();
-            }
-
-            WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
-
-            writer.From();
-
-            writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
-
-            return node;
-        }
-
-        /// <summary>
-        /// Select。
-        /// </summary>
-        /// <param name="node">节点。</param>
-        protected virtual Action Select(MethodCallExpression node)
+        protected override void VisitCore(MethodCallExpression node)
         {
             string name = node.Method.Name;
 
-            writer.Select();
-
-            if (isDistinct)
+            if (isNoPackage)
             {
-                writer.Distinct();
-            }
-
-            string prefix;
-
-            Expression parameterExp = node.Arguments[0];
-
-            var tableInfo = MakeTableInfo(parameterExp.Type);
-
-            var members = FilterMembers(tableInfo.ReadOrWrites);
-
-            switch (name)
-            {
-                case MethodCall.LongCount:
-                    name = "Count";
-                    goto case MethodCall.Count;
-                case MethodCall.Count:
-
-                    writer.Write(name);
-
-                    writer.OpenBrace();
-
-                    prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                    if (tableInfo.Keys.Count == 1)
-                    {
-                        foreach (var kv in tableInfo.ReadOrWrites)
-                        {
-                            if (tableInfo.Keys.Contains(kv.Key))
-                            {
-                                writer.NameDot(prefix, kv.Value);
-
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        writer.Write("1");
-                    }
-
-                    writer.CloseBrace();
-                    break;
-
-                case MethodCall.Average:
-                    name = "Avg";
-                    goto case MethodCall.Sum;
-                case MethodCall.Max:
-                case MethodCall.Min:
-                case MethodCall.Sum:
-                    if (node.Arguments.Count > 1)
-                    {
-                        writer.Write(name);
-
-                        writer.OpenBrace();
-
-                        base.Visit(node.Arguments[1]);
-
-                        writer.CloseBrace();
-
-                        prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-                    }
-                    else
-                    {
-                        prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                        WriteMembers(name, prefix, members);
-                    }
-                    break;
-                case MethodCall.Any:
-                case MethodCall.All:
-                    return default;
-                case MethodCall.Select:
-
-                    base.Visit(node.Arguments[1]);
-
-                    prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                    break;
-                default:
-                    prefix = base.GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                    WriteMembers(prefix, members);
-
-                    break;
-            }
-
-            writer.From();
-
-            if (hasCombination)
-            {
-                writer.OpenBrace();
-
-                return () =>
+                switch (name)
                 {
-                    writer.CloseBrace();
-                    writer.WhiteSpace();
-
-                    writer.Name(prefix.IsEmpty() ? "CTE" : prefix);
-                };
+                    case MethodCall.TimeOut:
+                    case MethodCall.From:
+                    case MethodCall.Any:
+                    case MethodCall.All:
+                    case MethodCall.Contains:
+                    case MethodCall.Union:
+                    case MethodCall.Concat:
+                    case MethodCall.Except:
+                    case MethodCall.Intersect:
+                        break;
+                    default:
+                        isNoPackage = false;
+                        break;
+                }
             }
 
-            if (!hasJoin)
-            {
-                writer.NameWhiteSpace(GetTableName(tableInfo), prefix);
-            }
-
-            return default;
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitOfQueryable(MethodCallExpression node)
-        {
-            string name = node.Method.Name;
-
-            if (node.Arguments.Count > 1 ?
-                !(name == MethodCall.Take || name == MethodCall.Skip || name == MethodCall.TakeLast || name == MethodCall.SkipLast || name == MethodCall.DefaultIfEmpty || name == MethodCall.ElementAt || name == MethodCall.ElementAtOrDefault)
-                :
-                (name == MethodCall.Sum || name == MethodCall.Max || name == MethodCall.Min || name == MethodCall.Average)
-                )
-            {
-                selectDepth++;
-            }
 
             switch (name)
             {
@@ -443,11 +221,11 @@ namespace CodeArts.Db.Lts.Visitors
 
                     this.skip += index;
 
-                    return node;
+                    break;
                 case MethodCall.Take:
                 case MethodCall.TakeLast:
 
-                    if (hasAggregation)
+                    if (useAggregation)
                     {
                         throw new DSyntaxErrorException($"使用聚合函数时，禁止使用分页函数({name})!");
                     }
@@ -459,7 +237,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                     base.Visit(node.Arguments[0]);
 
-                    if (!hasOrderBy && name == MethodCall.TakeLast)
+                    if (!useOrderBy && name == MethodCall.TakeLast)
                     {
                         throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
                     }
@@ -481,7 +259,7 @@ namespace CodeArts.Db.Lts.Visitors
                         this.take = take;
                     }
 
-                    return node;
+                    break;
                 case MethodCall.First:
                 case MethodCall.FirstOrDefault:
                 case MethodCall.Single:
@@ -492,12 +270,14 @@ namespace CodeArts.Db.Lts.Visitors
 
                     if (node.Arguments.Count > 1)
                     {
-                        return VisitCondition(node);
+                        VisitCondition(node);
+                    }
+                    else
+                    {
+                        Visit(node.Arguments[0]);
                     }
 
-                    base.Visit(node.Arguments[0]);
-
-                    return node;
+                    break;
                 case MethodCall.Last:
                 case MethodCall.LastOrDefault:
 
@@ -515,30 +295,58 @@ namespace CodeArts.Db.Lts.Visitors
                         base.Visit(node.Arguments[0]);
                     }
 
-                    if (!hasOrderBy)
+                    if (!useOrderBy)
                     {
                         throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
                     }
 
-                    return node;
+                    break;
                 case MethodCall.Max:
+                    buildSelect = false;
+                    useAggregation = true;
+                    using (var visitor = new MaxVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
                 case MethodCall.Min:
+                    buildSelect = false;
+                    useAggregation = true;
+                    using (var visitor = new MinVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
                 case MethodCall.Sum:
+                    buildSelect = false;
+                    useAggregation = true;
+                    using (var visitor = new SumVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
                 case MethodCall.Average:
+                    buildSelect = false;
+                    useAggregation = true;
+                    using (var visitor = new AverageVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
                 case MethodCall.Count:
                 case MethodCall.LongCount:
-
+                    useCount = true;
                     buildSelect = false;
-
-                    hasAggregation = true;
-
-                    hasCount = name == MethodCall.Count || name == MethodCall.LongCount;
-
-                    return VisitAggregation(node);
+                    useAggregation = true;
+                    using (var visitor = new CountVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
                 case MethodCall.Skip:
                 case MethodCall.SkipLast:
 
-                    if (hasAggregation)
+                    if (useAggregation)
                     {
                         throw new DSyntaxErrorException($"使用聚合函数时，禁止使用分页函数({name})!");
                     }
@@ -550,7 +358,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                     base.Visit(node.Arguments[0]);
 
-                    if (!hasOrderBy && name == MethodCall.SkipLast)
+                    if (!useOrderBy && name == MethodCall.SkipLast)
                     {
                         throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
                     }
@@ -571,84 +379,167 @@ namespace CodeArts.Db.Lts.Visitors
                         this.skip += skip;
                     }
 
-                    return node;
+                    break;
                 case MethodCall.Reverse:
 
                     reverseOrder ^= true;
 
                     base.Visit(node.Arguments[0]);
 
-                    if (!hasOrderBy)
+                    if (!useOrderBy)
                     {
                         throw new DSyntaxErrorException($"使用函数“{name}”时，必须使用排序函数(OrderBy/OrderByDescending)!");
                     }
 
-                    return node;
+                    break;
+                case MethodCall.GroupBy:
+                case MethodCall.Where when node.Arguments[0].Type.IsGroupingQueryable():
+                case MethodCall.TakeWhile when node.Arguments[0].Type.IsGroupingQueryable():
+                case MethodCall.SkipWhile when node.Arguments[0].Type.IsGroupingQueryable():
+
+                    if (name == MethodCall.GroupBy)
+                    {
+                        CastCache.Add(node.Type.GetGenericArguments().First(), TypeToEntryType(node.Arguments[0].Type));
+                    }
+
+                    if (!useGroupBy)
+                    {
+                        byVisitor = new GroupByVisitor(this, GroupByFields);
+                    }
+
+                    useGroupBy = true;
+
+                    byVisitor.Startup(node);
+
+                    break;
                 case MethodCall.Select:
 
-                    if (selectDepth > 1)
+                    if (useCount)
+                    {
+                        base.Visit(node.Arguments[0]);
+
+                        break;
+                    }
+
+                    if (!buildSelect)
                     {
                         throw new DSyntaxErrorException($"请将函数“{name}”置于查询最后一个包含入参的函数之后!");
                     }
 
-                    if (hasCount)
-                    {
-                        return base.Visit(node.Arguments[0]);
-                    }
-
                     buildSelect = false;
 
-                    return UsingMustSelect(node, arg => base.Visit(arg.Arguments[0]));
+                    writer.Select();
+
+                    Workflow(() =>
+                    {
+                        if (isDistinct)
+                        {
+                            writer.Distinct();
+                        }
+
+                        Visit(node.Arguments[1]);
+
+                        writer.From();
+
+                        if (!hasJoin && !hasCombination)
+                        {
+                            WriteTableName(node.Arguments[0].Type);
+                        }
+
+                    }, () => base.Visit(node.Arguments[0]));
+
+                    break;
                 case MethodCall.Distinct:
 
                     isDistinct = true;
 
-                    return base.Visit(node.Arguments[0]);
+                    base.Visit(node.Arguments[0]);
+
+                    break;
+                case MethodCall.Cast:
+                case MethodCall.OfType:
+                    Type type = node.Type
+                        .GetGenericArguments()
+                        .First();
+
+                    if (type.IsValueType || type == typeof(string) || typeof(IEnumerable).IsAssignableFrom(type))
+                    {
+                        throw new TypeAccessInvalidException($"“{node.Method.Name}”函数泛型参数类型不能是值类型、字符串类型或迭代类型!");
+                    }
+
+                    var objExp = node.Arguments[0];
+
+                    var originalType = objExp.Type;
+
+                    if (node.Type == originalType)
+                    {
+                        base.Visit(objExp);
+
+                        break;
+                    }
+
+                    useCast = true;
+
+                    if (!CastCache.ContainsKey(type))
+                    {
+                        CastCache.Add(type, TypeToEntryType(originalType));
+                    }
+
+                    var entry = TypeItem.Get(type);
+
+                    if (MemberFilters.Count == 0)
+                    {
+                        MemberFilters.AddRange(entry.PropertyStores
+                            .Where(x => x.CanRead && x.CanWrite)
+                            .Select(x => x.Name.ToLower()));
+                    }
+                    else //? 取交集
+                    {
+                        MemberFilters = MemberFilters
+                           .Intersect(entry.PropertyStores
+                           .Where(x => x.CanRead && x.CanWrite)
+                           .Select(x => x.Name.ToLower()))
+                           .ToList();
+                    }
+
+                    if (MemberFilters.Count == 0)
+                    {
+                        throw new DException("未指定查询字段!");
+                    }
+
+                    base.Visit(objExp);
+
+                    break;
                 case MethodCall.OrderBy:
                 case MethodCall.ThenBy:
                 case MethodCall.OrderByDescending:
                 case MethodCall.ThenByDescending:
 
-                    hasOrderBy = true;
+                    useOrderBy = true;
 
-                    if (hasAggregation)
+                    if (useAggregation)
                     {
-                        return base.Visit(node.Arguments[0]);
+                        base.Visit(node.Arguments[0]);
+
+                        break;
                     }
 
-                    if (buildSelect)
+                    bool thatReverseOrder = reverseOrder;
+
+                    Workflow(() => writer.UsingSort(() =>
                     {
-                        buildSelect = false;
+                        orderBySwitch.OrderBy();
 
-                        Done(node);
+                        base.Visit(node.Arguments[1]);
 
-                        buildSelect = true;
-
-                        return node;
-                    }
-
-                    Done(node);
-
-                    return node;
-
-                    void Done(MethodCallExpression nodeExp)
-                    {
-                        bool thatReverseOrder = reverseOrder;
-
-                        Workflow(() => writer.UsingSort(() =>
+                        if (thatReverseOrder ^ node.Method.Name.EndsWith("Descending"))
                         {
-                            orderBySwitch.OrderBy();
+                            writer.Descending();
+                        }
 
-                            base.Visit(nodeExp.Arguments[1]);
+                    }), () => base.Visit(node.Arguments[0]));
 
-                            if (thatReverseOrder ^ nodeExp.Method.Name.EndsWith("Descending"))
-                            {
-                                writer.Descending();
-                            }
-
-                        }), () => base.Visit(nodeExp.Arguments[0]));
-
-                    }
+                    break;
                 case MethodCall.Join:
 
                     hasJoin = true;
@@ -659,16 +550,20 @@ namespace CodeArts.Db.Lts.Visitors
                         {
                             var parameter = lambda.Parameters[0];
 
-                            var parameterType = TypeToUltimateType(parameter.Type);
-
                             if (isJoin)
                             {
-                                JoinCache.GetOrAdd(parameterType, _ => new List<string>())
-                                    .Add(parameter.Name);
+                                var parameterType = TypeToUltimateType(parameter.Type);
+
+                                if (!JoinCache.TryGetValue(parameterType, out List<string> results))
+                                {
+                                    JoinCache.Add(parameterType, results = new List<string>());
+                                }
+
+                                results.Add(parameter.Name);
                             }
                             else
                             {
-                                AliasCache.AddOrUpdate(parameterType, parameter.Name, (_, _2) => parameter.Name);
+                                AnalysisAlias(parameter);
                             }
                         }
                     }
@@ -677,159 +572,368 @@ namespace CodeArts.Db.Lts.Visitors
 
                     Join(node.Arguments[3], true);
 
-                    return VisitJoin(node);
+                    using (var visitor = new JoinVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+
+                    buildTable = false;
+                    break;
+                case MethodCall.Any:
+                    using (var visitor = new AnyVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
+                case MethodCall.All:
+                    using (var visitor = new AllVisitor(this))
+                    {
+                        visitor.Startup(node);
+                    }
+                    break;
+                case MethodCall.Union:
+                case MethodCall.Concat:
+                case MethodCall.Except:
+                case MethodCall.Intersect:
+
+                    buildTable = false;
+                    hasCombination = true;
+
+                    if (isNoPackage)
+                    {
+                        buildSelect = false;
+
+                        using (var visitor = new CombinationVisitor(this))
+                        {
+                            visitor.Startup(node);
+                        }
+
+                        break;
+                    }
+
+                    string prefix = "x";
+
+                    if (buildSelect)
+                    {
+                        buildSelect = false;
+
+                        var tableInfo = MakeTableInfo(node.Arguments[0].Type);
+
+                        Workflow(() =>
+                        {
+                            writer.Select();
+
+                            if (isDistinct)
+                            {
+                                writer.Distinct();
+                            }
+
+                            WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
+
+                            writer.From();
+
+                        }, Done);
+
+                        break;
+                    }
+
+                    Done();
+
+                    break;
+
+                    void Done()
+                    {
+                        writer.OpenBrace();
+
+                        using (var visitor = new CombinationVisitor(this))
+                        {
+                            visitor.Startup(node);
+                        }
+
+                        writer.CloseBrace();
+
+                        writer.WhiteSpace();
+
+                        writer.Name(prefix = GetEntryAlias(node.Arguments[0].Type, "x"));
+                    }
                 default:
-                    return base.VisitOfQueryable(node);
+                    base.VisitCore(node);
+
+                    break;
             }
         }
 
         /// <inheritdoc />
-        protected virtual Expression VisitJoin(MethodCallExpression node)
+        protected override void WriteTableName(Type paramererType)
         {
-            using (var visitor = new JoinVisitor(this))
+            if (buildTable)
             {
-                visitor.Startup(node);
+                base.WriteTableName(paramererType);
             }
-
-            return node;
         }
 
         /// <inheritdoc />
-        protected override Expression VisitCondition(MethodCallExpression node)
+        protected override void WriteTableName(ITableInfo tableInfo, string alias)
         {
-            if (buildSelect)
+            if (buildTable)
             {
-                return base.UsingCondition(() => base.Visit(node.Arguments[1]), whereIsNotEmpty => base.Visit(node.Arguments[0]), true);
+                base.WriteTableName(tableInfo, alias);
             }
-
-            return base.VisitCondition(node);
         }
 
         /// <inheritdoc />
-        protected override Expression VisitCombination(MethodCallExpression node)
+        protected override void VisitLinq(MethodCallExpression node)
         {
-            try
+            if (node.Arguments[0].NodeType == ExpressionType.Parameter && node.Arguments[0].IsGrouping())
             {
-                hasCombination = false;
-
-                return base.VisitCombination(node);
-            }
-            finally
-            {
-                hasCombination = true;
-            }
-        }
-
-        /// <summary>
-        /// 聚合函数。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual Expression VisitAggregation(MethodCallExpression node)
-        {
-            string name = node.Method.Name;
-
-            if (name == MethodCall.Count || name == MethodCall.LongCount)
-            {
-                return VisitCount(node);
-            }
-
-            if (node.Arguments.Count > 1)
-            {
-                return VisitAggregationMultiArgs(node);
-            }
-
-            return VisitAggregationSingleArg(node);
-        }
-
-        /// <summary>
-        /// 聚合函数之多参数。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual Expression VisitAggregationMultiArgs(MethodCallExpression node)
-        {
-            return UsingMustSelect(node, arg => base.Visit(arg.Arguments[0]));
-        }
-
-        /// <summary>
-        /// 聚合函数之单参数。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual Expression VisitAggregationSingleArg(MethodCallExpression node)
-        {
-            return UsingMustSelect(node, arg => base.Visit(arg.Arguments[0]));
-        }
-
-        /// <summary>
-        /// 聚合“Count”或“LongCount”函数。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual Expression VisitCount(MethodCallExpression node)
-        {
-            return UsingMustSelect(node, arg =>
-            {
-                if (arg.Arguments.Count > 1)
-                {
-                    return base.VisitCondition(node);
-                }
-
-                return base.Visit(arg.Arguments[0]);
-            });
-        }
-
-        /// <summary>
-        /// 过滤成员。
-        /// </summary>
-        /// <param name="members">成员集合。</param>
-        /// <returns></returns>
-#if NET40
-        protected virtual ReadOnlyCollection<MemberInfo> FilterMembers(ReadOnlyCollection<MemberInfo> members) => members;
-#else
-        protected virtual IReadOnlyCollection<MemberInfo> FilterMembers(IReadOnlyCollection<MemberInfo> members) => members;
-#endif
-        /// <summary>
-        /// 访问 new 成员。
-        /// </summary>
-        /// <param name="memberInfo">成员信息。</param>
-        /// <param name="memberExp">成员表达式。</param>
-        /// <param name="memberOfHostType">成员所在宿主类型。</param>
-        /// <returns></returns>
-        protected virtual void VisitNewMember(MemberInfo memberInfo, Expression memberExp, Type memberOfHostType)
-        {
-            VisitCheckIfSubconnection(memberExp);
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitNew(NewExpression node)
-        {
-            var members = FilterMembers(node.Members);
-
-            var enumerator = members.GetEnumerator();
-
-            if (enumerator.MoveNext())
-            {
-                Type memberOfHostType = node.Type;
-
-                VisitMyMember(enumerator.Current);
-
-                while (enumerator.MoveNext())
-                {
-                    writer.Delimiter();
-
-                    VisitMyMember(enumerator.Current);
-                }
-
-                void VisitMyMember(MemberInfo member)
-                {
-                    VisitNewMember(member, node.Arguments[node.Members.IndexOf(member)], memberOfHostType);
-                }
-
-                return node;
+                VisitOfLinqGroupBy(node);
             }
             else
             {
-                throw new DException("未指定查询字段!");
+                base.VisitLinq(node);
             }
         }
+
+        /// <summary>
+        /// 创建实列。
+        /// </summary>
+        /// <param name="baseVisitor">参数。</param>
+        /// <returns></returns>
+        public virtual SelectVisitor CreateInstance(BaseVisitor baseVisitor) => new SelectVisitor(baseVisitor);
+
+        /// <inheritdoc />
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
+            if (buildSelect && node.Type.IsQueryable())
+            {
+                buildSelect = false;
+
+                return Select(node);
+            }
+
+            if (hasJoin && node.Type.IsQueryable())
+            {
+                WriteTableName(node.Type);
+
+                return node;
+            }
+
+            return base.VisitConstant(node);
+        }
+
+        /// <inheritdoc />
+        protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
+        {
+            writer.As(GetMemberNaming(memberOfHostType, member.Member));
+        }
+
+        /// <inheritdoc />
+        protected override void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
+        {
+            writer.As(GetMemberNaming(memberOfHostType, memberInfo));
+        }
+
+        /// <inheritdoc />
+#if NET40
+        protected override ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
+#else
+        protected override IReadOnlyCollection<MemberBinding> FilterMemberBindings(IReadOnlyCollection<MemberBinding> bindings)
+#endif
+        {
+            var vbindings = base.FilterMemberBindings(bindings);
+
+            if (useCast)
+            {
+                return vbindings
+                .Where(x => MemberFilters.Contains(x.Member.Name.ToLower()))
+                .ToList()
+#if NET40
+                .AsReadOnly()
+#endif
+                ;
+            }
+
+            return vbindings;
+        }
+
+        /// <inheritdoc />
+#if NET40
+        protected override IDictionary<string, string> FilterMembers(IDictionary<string, string> members)
+#else
+        protected override IReadOnlyDictionary<string, string> FilterMembers(IReadOnlyDictionary<string, string> members)
+#endif
+        {
+            if (useCast)
+            {
+                var dic = new Dictionary<string, string>();
+
+                foreach (var kv in members)
+                {
+                    if (MemberFilters.Contains(kv.Key.ToLower()))
+                    {
+                        dic.Add(kv.Key, kv.Value);
+                    }
+                }
+
+                return base.FilterMembers(dic);
+            }
+
+            return base.FilterMembers(members);
+        }
+
+        /// <inheritdoc />
+        protected override Type TypeToUltimateType(Type entryType)
+        {
+            var ultimateType = base.TypeToUltimateType(entryType);
+
+            if (CastCache.TryGetValue(ultimateType, out Type ultimateCastType))
+            {
+                return ultimateCastType;
+            }
+
+            return ultimateType;
+        }
+
+        /// <inheritdoc />
+        protected override void VisitMemberLeavesIsObject(MemberExpression node)
+        {
+            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
+            {
+                bool flag = false;
+
+                foreach (var kv in GroupByFields)
+                {
+                    if (flag)
+                    {
+                        writer.Delimiter();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    writer.Write(kv.Value);
+                    writer.As("__key____" + kv.Key.Name.ToLower());
+                }
+            }
+            else
+            {
+                base.VisitMemberLeavesIsObject(node);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
+        {
+            if (GroupByFields.TryGetValue(node.Member, out string value))
+            {
+                writer.Write(value);
+
+                return;
+            }
+
+            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
+            {
+                if (GroupByFields.TryGetValue(GroupByVisitor.KeyMember, out value))
+                {
+                    writer.Write(value);
+
+                    return;
+                }
+            }
+
+            base.VisitMemberIsDependOnParameterTypeIsPlain(node); ;
+        }
+
+        /// <inheritdoc />
+        protected override void VisitMemberIsDependOnParameterTypeIsObject(MemberExpression node)
+        {
+            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
+            {
+                return;
+            }
+
+            base.VisitMemberIsDependOnParameterTypeIsObject(node);
+        }
+
+        /// <inheritdoc />
+        protected virtual void VisitOfLinqGroupBy(MethodCallExpression node)
+        {
+            switch (node.Method.Name)
+            {
+                case MethodCall.Count when node.Arguments.Count == 1:
+                case MethodCall.LongCount when node.Arguments.Count == 1:
+
+                    writer.Write("COUNT(1)");
+
+                    break;
+                case MethodCall.Count:
+                case MethodCall.LongCount:
+                    throw new DSyntaxErrorException($"分组中函数“{node.Method.Name}”不支持条件过滤!");
+                case MethodCall.Max when node.Arguments.Count == 2:
+                case MethodCall.Min when node.Arguments.Count == 2:
+                case MethodCall.Average when node.Arguments.Count == 2:
+
+                    writer.Write(node.Method.Name.ToUpper());
+
+                    writer.OpenBrace();
+
+                    base.Visit(node.Arguments[1]);
+
+                    writer.CloseBrace();
+
+                    break;
+                case MethodCall.Max:
+                case MethodCall.Min:
+                case MethodCall.Average:
+                    throw new DSyntaxErrorException($"分组中函数“{node.Method.Name}”需指定计算属性!");
+                default:
+                    throw new DSyntaxErrorException($"分组中函数“{node.Method.Name}”不被支持!");
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetEntryAlias(Type entryType, string parameterName, bool check, out string aliasName)
+        {
+            if (!hasJoin || parameterName.IsEmpty() || !JoinCache.TryGetValue(entryType, out List<string> list) || !list.Contains(parameterName))
+            {
+                return base.TryGetEntryAlias(entryType, parameterName, check, out aliasName);
+            }
+
+            aliasName = parameterName;
+
+            return true;
+        }
+
+        #region SELECT
+        /// <summary>
+        /// Select。
+        /// </summary>
+        /// <param name="node">节点。</param>
+        protected virtual Expression Select(ConstantExpression node)
+        {
+            var parameterType = TypeToUltimateType(node.Type);
+
+            var prefix = GetEntryAlias(parameterType, string.Empty);
+
+            var tableInfo = MakeTableInfo(parameterType);
+
+            writer.Select();
+
+            if (isDistinct)
+            {
+                writer.Distinct();
+            }
+
+            WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
+
+            writer.From();
+
+            WriteTableName(tableInfo, prefix);
+
+            return node;
+        }
+        #endregion
 
         #region SQL
         /// <summary>
@@ -838,5 +942,28 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         public override string ToSQL() => writer.ToSQL(take, skip);
         #endregion
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                MemberFilters.Clear();
+                CastCache.Clear();
+                GroupByFields.Clear();
+
+                if (hasJoin)
+                {
+                    JoinCache.Clear();
+                }
+
+                if (useGroupBy)
+                {
+                    byVisitor.Dispose();
+                }
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

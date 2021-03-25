@@ -122,6 +122,10 @@ namespace CodeArts.Db.Lts
         /// </summary>
         public const string Distinct = nameof(Queryable.Distinct); //? DESTINCT
         /// <summary>
+        /// 分组。
+        /// </summary>
+        public const string GroupBy = nameof(Queryable.GroupBy); //? GROUP BY {AnyFiled}
+        /// <summary>
         /// 正序。
         /// </summary>
         public const string OrderBy = nameof(Queryable.OrderBy); //? ORDER BY {AnyFiled}

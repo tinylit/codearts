@@ -165,7 +165,7 @@ namespace CodeArts.Db
                 return new ParameterValue(value);
             }
 
-            return new ParameterValue(Mapper.Cast(value, valueType));
+            return new ParameterValue(Mapper.ThrowsCast(value, valueType));
         }
 
         /// <summary>

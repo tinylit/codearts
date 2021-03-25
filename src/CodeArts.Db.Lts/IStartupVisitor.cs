@@ -14,7 +14,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="node">分析表达式。</param>
         /// <returns></returns>
-        Expression Startup(Expression node);
+        void Startup(Expression node);
 
         /// <summary>
         /// 参数。

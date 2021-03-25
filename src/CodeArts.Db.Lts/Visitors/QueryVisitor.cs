@@ -1,13 +1,8 @@
-﻿using CodeArts.Db.Exceptions;
-using CodeArts.Runtime;
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
 #if NET40
 using System.Collections.ObjectModel;
 #endif
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -18,15 +13,11 @@ namespace CodeArts.Db.Lts.Visitors
     /// </summary>
     public sealed class QueryVisitor : SelectVisitor, IQueryVisitor
     {
-        private bool useCast = false;
-
-        private List<string> MemberFilters;
-
-        /// <summary>
-        /// 类型关系。
-        /// </summary>
-        private readonly ConcurrentDictionary<Type, Type> CastCache = new ConcurrentDictionary<Type, Type>();
         private readonly ICustomVisitorList visitors;
+
+        private QueryVisitor(BaseVisitor baseVisitor) : base(baseVisitor)
+        {
+        }
 
         /// <inheritdoc />
         public QueryVisitor(ISQLCorrectSettings settings, ICustomVisitorList visitors) : base(settings)
@@ -35,59 +26,26 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
-        protected override Expression VisitOfQueryable(MethodCallExpression node)
+        public override SelectVisitor CreateInstance(BaseVisitor baseVisitor) => new QueryVisitor(baseVisitor);
+
+        /// <inheritdoc />
+        public override void Startup(Expression node)
+        {
+            if(node is ConstantExpression constant)
+            {
+                VisitConstant(constant);
+            }
+            else
+            {
+                base.Startup(node);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitCore(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
-                case MethodCall.Cast:
-                case MethodCall.OfType:
-
-                    Type type = node.Type
-                        .GetGenericArguments()
-                        .First();
-
-                    if (type.IsValueType || type == typeof(string) || typeof(IEnumerable).IsAssignableFrom(type))
-                    {
-                        throw new TypeAccessInvalidException($"“{node.Method.Name}”函数泛型参数类型不能是值类型、字符串类型或迭代类型!");
-                    }
-
-                    var objExp = node.Arguments[0];
-
-                    var originalType = objExp.Type;
-
-                    if (node.Type == originalType)
-                    {
-                        return base.Visit(objExp);
-                    }
-
-                    useCast = true;
-
-                    CastCache.GetOrAdd(type, _ => TypeToEntryType(originalType));
-
-                    var entry = TypeItem.Get(type);
-
-                    if (MemberFilters is null)
-                    {
-                        MemberFilters = entry.PropertyStores
-                            .Where(x => x.CanRead && x.CanWrite)
-                            .Select(x => x.Name.ToLower())
-                            .ToList();
-                    }
-                    else //? 取交集
-                    {
-                        MemberFilters = MemberFilters
-                           .Intersect(entry.PropertyStores
-                           .Where(x => x.CanRead && x.CanWrite)
-                           .Select(x => x.Name.ToLower()))
-                           .ToList();
-                    }
-
-                    if (MemberFilters.Count == 0)
-                    {
-                        throw new DException("未指定查询字段!");
-                    }
-
-                    return base.Visit(objExp);
                 case MethodCall.DefaultIfEmpty:
                     if (HasDefaultValue)
                     {
@@ -101,7 +59,9 @@ namespace CodeArts.Db.Lts.Visitors
 
                     HasDefaultValue = true;
 
-                    return base.Visit(node.Arguments[0]);
+                    base.Visit(node.Arguments[0]);
+
+                    break;
                 case MethodCall.Last:
                 case MethodCall.First:
                 case MethodCall.Single:
@@ -109,20 +69,31 @@ namespace CodeArts.Db.Lts.Visitors
                     Required = true;
                     goto default;
                 default:
-                    return base.VisitOfQueryable(node);
+                    base.VisitCore(node);
+                    break;
             }
         }
 
         /// <inheritdoc />
-        protected override Expression VisitOfSelect(MethodCallExpression node)
+        protected override void VisitOfLts(MethodCallExpression node)
         {
             switch (node.Method.Name)
             {
                 case MethodCall.TimeOut:
 
-                    TimeOut += (int)node.Arguments[1].GetValueFromExpression();
+                    int timeOut = (int)node.Arguments[1].GetValueFromExpression();
 
-                    return base.Visit(node.Arguments[0]);
+                    if (TimeOut.HasValue)
+                    {
+                        timeOut += TimeOut.Value;
+                    }
+
+                    TimeOut = new int?(timeOut);
+
+                    Visit(node.Arguments[0]);
+
+                    break;
+
                 case MethodCall.NoResultError:
 
                     if (!Required)
@@ -137,51 +108,19 @@ namespace CodeArts.Db.Lts.Visitors
                         MissingDataError = text;
                     }
 
-                    return base.Visit(node.Arguments[0]);
+                    Visit(node.Arguments[0]);
+
+                    break;
                 default:
-                    return base.VisitOfSelect(node);
+                    base.VisitOfLts(node);
+
+                    break;
             }
         }
 
         /// <inheritdoc />
-        protected override Expression VisitOfQueryableAny(MethodCallExpression node)
+        protected override void DefMemberAs(string field, string alias)
         {
-            try
-            {
-                return base.VisitOfQueryableAny(node);
-            }
-            finally
-            {
-                if (settings.Engine == DatabaseEngine.Oracle)
-                {
-                    writer.From();
-                    writer.Name("dual");
-                }
-            }
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitOfQueryableAll(MethodCallExpression node)
-        {
-            try
-            {
-                return base.VisitOfQueryableAll(node);
-            }
-            finally
-            {
-                if (settings.Engine == DatabaseEngine.Oracle)
-                {
-                    writer.From();
-                    writer.Name("dual");
-                }
-            }
-        }
-
-        /// <inheritdoc />
-        protected override void WriteMember(string aggregationName, string prefix, string field, string alias)
-        {
-            base.WriteMember(aggregationName, prefix, field, alias);
-
             if (field != alias)
             {
                 writer.As(alias);
@@ -189,58 +128,15 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
-        protected override void WriteMember(string prefix, string field, string alias)
+        protected override void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
         {
-            base.WriteMember(prefix, field, alias);
-
-            if (field != alias)
-            {
-                writer.As(alias);
-            }
-        }
-
-        /// <inheritdoc />
-        protected override void VisitNewMember(MemberInfo memberInfo, Expression memberExp, Type memberOfHostType)
-        {
-            base.VisitNewMember(memberInfo, memberExp, memberOfHostType);
-
             writer.As(memberInfo.Name);
         }
 
         /// <inheritdoc />
-#if NET40
-        protected override ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
-#else
-        protected override IReadOnlyCollection<MemberBinding> FilterMemberBindings(IReadOnlyCollection<MemberBinding> bindings)
-#endif
+        protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
         {
-            var vbindings = base.FilterMemberBindings(bindings);
-
-            if (!useCast)
-            {
-                return vbindings;
-            }
-
-            return vbindings
-                .Where(x => MemberFilters.Contains(x.Member.Name.ToLower()))
-                .ToList()
-#if NET40
-                .AsReadOnly()
-#endif
-                ;
-        }
-
-        /// <inheritdoc />
-        protected override Type TypeToUltimateType(Type entryType)
-        {
-            var ultimateType = base.TypeToUltimateType(entryType);
-
-            if (useCast && CastCache.TryGetValue(ultimateType, out Type ultimateCastType))
-            {
-                return ultimateCastType;
-            }
-
-            return ultimateType;
+            writer.As(member.Member.Name);
         }
 
         /// <summary>
@@ -249,33 +145,8 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected override IEnumerable<ICustomVisitor> GetCustomVisitors() => visitors;
 
-        /// <inheritdoc />
-#if NET40
-        protected override IDictionary<string, string> FilterMembers(IDictionary<string, string> members)
-#else
-        protected override IReadOnlyDictionary<string, string> FilterMembers(IReadOnlyDictionary<string, string> members)
-#endif
-        {
-            if (useCast)
-            {
-                var dic = new Dictionary<string, string>();
-
-                foreach (var kv in members)
-                {
-                    if (MemberFilters.Contains(kv.Key.ToLower()))
-                    {
-                        dic.Add(kv.Key, kv.Value);
-                    }
-                }
-
-                return base.FilterMembers(dic);
-            }
-
-            return base.FilterMembers(members);
-        }
-
         /// <summary>
-        /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。
+        /// 执行超时时间。
         /// </summary>
         public int? TimeOut { private set; get; }
         /// <summary>

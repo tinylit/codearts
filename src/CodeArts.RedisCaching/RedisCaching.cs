@@ -3,6 +3,7 @@ using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CodeArts.Caching
@@ -41,14 +42,9 @@ namespace CodeArts.Caching
         /// </summary>
         public override void Clear()
         {
-            var script = LuaScript.Prepare("return redis.call('KEYS', @keypattern)");
+            var script = LuaScript.Prepare("return redis.call('DEL',unpack(redis.call('KEYS', @keypattern)))");
 
-            var results = _database.ScriptEvaluate(script, new { @keypattern = GetKey("*") });
-
-            if (!results.IsNull)
-            {
-                _database.KeyDelete((RedisKey[])results);
-            }
+            _database.ScriptEvaluate(script, new { @keypattern = GetKey("*") });
         }
 
         /// <summary>
@@ -333,16 +329,11 @@ namespace CodeArts.Caching
         /// 清空缓存。
         /// </summary>
         /// <returns></returns>
-        public override async Task ClearAsync()
+        public override Task ClearAsync()
         {
-            var script = LuaScript.Prepare("return redis.call('KEYS', @keypattern)");
+            var script = LuaScript.Prepare("return redis.call('DEL',unpack(redis.call('KEYS', @keypattern)))");
 
-            var results = await _database.ScriptEvaluateAsync(script, new { @keypattern = GetKey("*") }).ConfigureAwait(false);
-
-            if (!results.IsNull)
-            {
-                await _database.KeyDeleteAsync((RedisKey[])results).ConfigureAwait(false);
-            }
+            return _database.ScriptEvaluateAsync(script, new { @keypattern = GetKey("*") });
         }
 
         /// <summary>

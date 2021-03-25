@@ -1,5 +1,4 @@
-﻿using CodeArts.Db.Lts;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -9,16 +8,16 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CodeArts.Db
+namespace CodeArts.Db.Lts
 {
     /// <summary>
     /// 数据仓储。
     /// </summary>
     /// <typeparam name="T">实体类型。</typeparam>
 #if NET_NORMAL || NET_CORE
-    public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
+    public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IRepository, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
 #else
-    public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IQueryable, IQueryProvider, IEnumerable
+    public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IRepository, IQueryable, IQueryProvider, IEnumerable
 #endif
     {
         private readonly IReadOnlyConnectionConfig connectionConfig;

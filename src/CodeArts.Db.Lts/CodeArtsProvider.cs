@@ -66,7 +66,7 @@ namespace CodeArts.Db.Lts
 
                             if (dr.Read())
                             {
-                                defaultValue = Mapper.Map<T>(dr);
+                                defaultValue = Mapper.ThrowsMap<T>(dr);
 
                                 while (dr.Read()) { /* ignore subsequent rows */ }
                             }
@@ -134,7 +134,7 @@ namespace CodeArts.Db.Lts
 
                             while (dr.Read())
                             {
-                                yield return Mapper.Map<T>(dr);
+                                yield return Mapper.ThrowsMap<T>(dr);
                             }
 
                             while (dr.NextResult()) { /* ignore subsequent result sets */ }
@@ -240,7 +240,7 @@ namespace CodeArts.Db.Lts
                 this.cancellationToken = cancellationToken;
             }
 
-            public T Current => Mapper.Map<T>(dbDataReader);
+            public T Current => Mapper.ThrowsMap<T>(dbDataReader);
 
 #if NETSTANDARD2_1
             public async ValueTask<bool> MoveNextAsync()
@@ -408,7 +408,7 @@ namespace CodeArts.Db.Lts
 
                             if (await dr.ReadAsync(cancellationToken).ConfigureAwait(false))
                             {
-                                defaultValue = Mapper.Map<T>(dr);
+                                defaultValue = Mapper.ThrowsMap<T>(dr);
 
                                 while (await dr.ReadAsync(cancellationToken).ConfigureAwait(false)) { /* ignore subsequent rows */ }
                             }
