@@ -16,7 +16,7 @@ skip_commits:
     - '**/*.csproj'
     - '**/*.csproj.user'
     - '*.yml'
-    - '[Tt]ests/'
+    - 'Tests/'
 image: Visual Studio 2019
 configuration: Release
 clone_depth: 5
