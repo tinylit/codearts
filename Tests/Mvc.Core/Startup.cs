@@ -1,11 +1,7 @@
 using CodeArts;
-using CodeArts.Caching;
 using CodeArts.Db.EntityFramework;
 using CodeArts.Db.Lts;
 using CodeArts.Mvc;
-using CodeArts.Serialize.Json;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Mvc.Core.Domain;
 using System.ComponentModel.DataAnnotations;

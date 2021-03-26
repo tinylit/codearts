@@ -1,4 +1,4 @@
-version: 2.0.{build}
+version: 2.1.{build}
 branches:
   only:
   - master
@@ -27,7 +27,7 @@ environment:
   DEV-DATABASE-SQLSEVER-PASSWORD: Password12!
   DEV-DATABASE-SQLSERVER-DATABASE: yep_sky_orm
 services:
-- mssql2008r2sp2
+- mssql2012sp1rs
 - mysql
 before_build:
 - cmd: nuget restore
