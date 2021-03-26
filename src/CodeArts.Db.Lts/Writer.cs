@@ -265,13 +265,14 @@ namespace CodeArts.Db.Lts
 
             var cType = type;
 
-            if (type.IsEnum)
-            {
-                cType = Enum.GetUnderlyingType(type);
-            }
-            else if (type.IsNullable())
+            if (cType.IsNullable())
             {
                 cType = Nullable.GetUnderlyingType(type);
+            }
+
+            if (cType.IsEnum)
+            {
+                cType = Enum.GetUnderlyingType(cType);
             }
 
             switch (Type.GetTypeCode(cType))
@@ -298,7 +299,7 @@ namespace CodeArts.Db.Lts
                 case TypeCode.Double:
                 case TypeCode.Decimal:
 
-                    if (type.IsEnum)
+                    if (type.IsEnum || cType.IsEnum)
                     {
                         parameterValue = Convert.ChangeType(parameterValue, cType);
                     }
