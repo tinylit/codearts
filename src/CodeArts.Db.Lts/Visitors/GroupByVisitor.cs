@@ -11,6 +11,11 @@ namespace CodeArts.Db.Lts.Visitors
     /// </summary>
     public class GroupByVisitor : CoreVisitor
     {
+        /// <summary>
+        /// 使用了GROUP BY 聚合函数。
+        /// </summary>
+        private bool useGroupByAggregation = false;
+
         private readonly SelectVisitor visitor;
         private readonly Dictionary<MemberInfo, string> groupByRelationFields;
 
@@ -61,6 +66,32 @@ namespace CodeArts.Db.Lts.Visitors
                 default:
                     visitor.Visit(node);
                     break;
+            }
+        }
+
+        private static bool IsGrouping(Expression node)
+        {
+            switch (node)
+            {
+                case ParameterExpression parameter:
+                    return parameter.IsGrouping();
+                case MethodCallExpression method:
+                    return IsGrouping(method.Arguments[0]);
+                default:
+                    return false;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitLinq(MethodCallExpression node)
+        {
+            if (IsGrouping(node.Arguments[0]))
+            {
+                VisitOfLinqGroupBy(node);
+            }
+            else
+            {
+                base.VisitLinq(node);
             }
         }
 
@@ -163,6 +194,17 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            if (useGroupByAggregation)
+            {
+                return node;
+            }
+
+            return base.VisitParameter(node);
+        }
+
+        /// <inheritdoc />
         protected virtual void VisitGroupBy(Expression node)
         {
             switch (node)
@@ -196,6 +238,17 @@ namespace CodeArts.Db.Lts.Visitors
                     break;
                 default:
                     throw new NotSupportedException();
+            }
+        }
+
+        /// <inheritdoc />
+        protected virtual void VisitOfLinqGroupBy(MethodCallExpression node)
+        {
+            using (var visitor = new GroupByLinqVisitor(this))
+            {
+                useGroupByAggregation = true;
+                visitor.Startup(node);
+                useGroupByAggregation = false;
             }
         }
     }

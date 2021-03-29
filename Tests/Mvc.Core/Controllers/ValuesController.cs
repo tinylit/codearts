@@ -130,7 +130,7 @@ namespace Mvc.Core.Controllers
                 id = 100000,
                 name = account,
                 role = "Admin",
-                account = account
+                account
             });
         }
 
@@ -149,7 +149,7 @@ namespace Mvc.Core.Controllers
             {
                 id = 100000,
                 name = account,
-                account = account
+                account
             });
         }
         /// <summary>

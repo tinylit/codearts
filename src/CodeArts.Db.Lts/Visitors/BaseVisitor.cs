@@ -748,12 +748,17 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            if (!node.Type.IsGrouping())
+            if (!hasVisitor || isMainVisitor)
             {
-                writer.Limit(GetEntryAlias(node.Type, node.Name));
+                if (!node.Type.IsGrouping())
+                {
+                    writer.Limit(GetEntryAlias(node.Type, node.Name));
+                }
+
+                return node;
             }
 
-            return node;
+            return visitor.VisitParameter(node);
         }
 
         /// <inheritdoc />

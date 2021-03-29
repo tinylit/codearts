@@ -210,7 +210,7 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         /// <param name="node">节点。</param>
         /// <returns></returns>
-        protected internal virtual void VisitCondition(MethodCallExpression node)
+        protected virtual internal void VisitCondition(MethodCallExpression node)
         {
             bool isPlainVariable = IsPlainVariableEx(node.Arguments[0]);
 

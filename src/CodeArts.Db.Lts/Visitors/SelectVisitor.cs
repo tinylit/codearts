@@ -106,7 +106,7 @@ namespace CodeArts.Db.Lts.Visitors
         private bool useCount = false;
 
         /// <summary>
-        /// 使用了聚合函数
+        /// 使用了聚合函数。
         /// </summary>
         private bool useAggregation = false;
 
@@ -119,6 +119,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// 使用了GroupBy。
         /// </summary>
         private bool useGroupBy = false;
+
+        /// <summary>
+        /// 使用了GROUP BY 聚合函数。
+        /// </summary>
+        private bool useGroupByAggregation = false;
 
         /// <summary>
         /// 使用了类型转换。
@@ -681,10 +686,23 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
+        private static bool IsGrouping(Expression node)
+        {
+            switch (node)
+            {
+                case ParameterExpression parameter:
+                    return parameter.IsGrouping();
+                case MethodCallExpression method:
+                    return IsGrouping(method.Arguments[0]);
+                default:
+                    return false;
+            }
+        }
+
         /// <inheritdoc />
         protected override void VisitLinq(MethodCallExpression node)
         {
-            if (node.Arguments[0].NodeType == ExpressionType.Parameter && node.Arguments[0].IsGrouping())
+            if (useGroupBy && IsGrouping(node.Arguments[0]))
             {
                 VisitOfLinqGroupBy(node);
             }
@@ -825,6 +843,13 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
         {
+            if (useGroupByAggregation)
+            {
+                base.VisitMemberIsDependOnParameterTypeIsPlain(node);
+
+                return;
+            }
+
             if (GroupByFields.TryGetValue(node.Member, out string value))
             {
                 writer.Write(value);
@@ -842,10 +867,11 @@ namespace CodeArts.Db.Lts.Visitors
                 }
             }
 
-            base.VisitMemberIsDependOnParameterTypeIsPlain(node); ;
+            base.VisitMemberIsDependOnParameterTypeIsPlain(node);
         }
 
         /// <inheritdoc />
+        
         protected override void VisitMemberIsDependOnParameterTypeIsObject(MemberExpression node)
         {
             if (node.Member.Name == "Key" && node.Expression.IsGrouping())
@@ -859,36 +885,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected virtual void VisitOfLinqGroupBy(MethodCallExpression node)
         {
-            switch (node.Method.Name)
+            using (var visitor = new GroupByLinqVisitor(this))
             {
-                case MethodCall.Count when node.Arguments.Count == 1:
-                case MethodCall.LongCount when node.Arguments.Count == 1:
-
-                    writer.Write("COUNT(1)");
-
-                    break;
-                case MethodCall.Count:
-                case MethodCall.LongCount:
-                    throw new DSyntaxErrorException($"分组中函数“{node.Method.Name}”不支持条件过滤!");
-                case MethodCall.Max when node.Arguments.Count == 2:
-                case MethodCall.Min when node.Arguments.Count == 2:
-                case MethodCall.Average when node.Arguments.Count == 2:
-
-                    writer.Write(node.Method.Name.ToUpper());
-
-                    writer.OpenBrace();
-
-                    base.Visit(node.Arguments[1]);
-
-                    writer.CloseBrace();
-
-                    break;
-                case MethodCall.Max:
-                case MethodCall.Min:
-                case MethodCall.Average:
-                    throw new DSyntaxErrorException($"分组中函数“{node.Method.Name}”需指定计算属性!");
-                default:
-                    throw new DSyntaxErrorException($"分组中函数“{node.Method.Name}”不被支持!");
+                useGroupByAggregation = true;
+                visitor.Startup(node);
+                useGroupByAggregation = false;
             }
         }
 

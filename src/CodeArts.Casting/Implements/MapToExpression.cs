@@ -502,7 +502,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataTableToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByDataTableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -580,7 +580,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataTableToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByDataTableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -603,7 +603,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataTableToList<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByDataTableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -770,7 +770,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataRowToCollectionKeyValuePairKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByDataRowToCollectionKeyValuePairKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -811,7 +811,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataRowToDictionaryKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByDataRowToDictionaryKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -852,7 +852,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataRowToDictionaryKeyIsString<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByDataRowToDictionaryKeyIsString), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -876,11 +876,11 @@ namespace CodeArts.Casting.Implements
         {
             var list = new List<SwitchCase>();
 
-            var resultExp = Parameter(conversionType, "result");
+            var resultExp = Parameter(conversionType);
 
-            var nameExp = Parameter(typeof(string), "name");
+            var nameExp = Parameter(typeof(string));
 
-            var valueExp = Parameter(typeof(object), "value");
+            var valueExp = Parameter(typeof(object));
 
             var typeStore = TypeItem.Get(conversionType);
 
@@ -1086,7 +1086,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByIDataRecordToDictionaryKeyIsString<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByIDataRecordToDictionaryKeyIsString), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -1127,7 +1127,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByIDataRecordToDictionaryKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByIDataRecordToDictionaryKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -1168,7 +1168,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByIDataRecordToCollectionKeyValuePairKeyIsStringLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByIDataRecordToCollectionKeyValuePairKeyIsStringLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -1190,11 +1190,11 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByIDataRecordToValueTypeOrString<TResult>(Type sourceType, Type conversionType)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var indexExp = Constant(0);
 
-            var valueExp = Variable(sourceType, "value");
+            var valueExp = Variable(sourceType);
 
             var isDBNull = sourceType.GetMethod("IsDBNull", new Type[] { typeof(int) });
 
@@ -1291,15 +1291,15 @@ namespace CodeArts.Casting.Implements
 
             var results = new List<Expression>();
 
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
-            var iVar = Parameter(typeof(int), "i");
+            var iVar = Parameter(typeof(int));
 
             var nullCst = Constant(null);
 
-            var valueExp = Variable(sourceType, "value");
+            var valueExp = Variable(sourceType);
 
-            var targetExp = Variable(conversionType, "target");
+            var targetExp = Variable(conversionType);
 
             list.Add(Assign(valueExp, Convert(parameterExp, sourceType)));
 
@@ -1452,7 +1452,7 @@ namespace CodeArts.Casting.Implements
                     }
                 }
 
-                var variable = Variable(memberType, string.Concat(key, info.Name.ToCamelCase()));
+                var variable = Variable(memberType/*, string.Concat(key, info.Name.ToCamelCase())*/);
 
                 var memberTypeCst = Constant(memberType);
 
@@ -1497,7 +1497,7 @@ namespace CodeArts.Casting.Implements
                     }
                 }
 
-                var variable = Variable(memberType, info.Name.ToCamelCase());
+                var variable = Variable(memberType/*, info.Name.ToCamelCase()*/);
 
                 if (memberType.IsClass && !memberType.IsAbstract && memberType != typeof(string) && memberType != typeof(Version))
                 {
@@ -1602,15 +1602,15 @@ namespace CodeArts.Casting.Implements
 
             var list = new List<Expression>();
 
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
-            var iVar = Parameter(typeof(int), "i");
+            var iVar = Parameter(typeof(int));
 
             var nullCst = Constant(null);
 
-            var valueExp = Variable(sourceType, "value");
+            var valueExp = Variable(sourceType);
 
-            var targetExp = Variable(conversionType, "target");
+            var targetExp = Variable(conversionType);
 
             list.Add(Assign(valueExp, Convert(parameterExp, sourceType)));
 
@@ -1850,7 +1850,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByIEnumarableLikeToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByEnumarableToList), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -1873,7 +1873,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByIEnumarableLikeToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByEnumarableToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -1930,21 +1930,21 @@ namespace CodeArts.Casting.Implements
                 : Call(Constant(ServiceCtor.Target), methodCtor, Constant(conversionType))
                 , conversionType);
 
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(GetValueByEnumarableKeyValuePair), BindingFlags.NonPublic | BindingFlags.Static);
 
             var methodG = method.MakeGenericMethod(typeArguments);
 
-            var valueExp = Variable(interfaceType, "value");
+            var valueExp = Variable(interfaceType);
 
             var thisExp = Constant(this);
 
             var nullExp = Constant(null);
 
-            var maptoExp = Variable(typeof(object), "mapto");
+            var maptoExp = Variable(typeof(object));
 
-            var resultExp = Variable(conversionType, "target");
+            var resultExp = Variable(conversionType);
 
             var list = new List<Expression>
             {
@@ -2020,7 +2020,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByObjectToList), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -2043,7 +2043,7 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected override Func<object, TResult> ByObjectToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument)
         {
-            var parameterExp = Parameter(typeof(object), "source");
+            var parameterExp = Parameter(typeof(object));
 
             var method = typeSelf.GetMethod(nameof(ByObjectToCollectionLike), BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -2073,11 +2073,11 @@ namespace CodeArts.Casting.Implements
 
             var listKvType = typeof(List<>).MakeGenericType(typeArgument);
 
-            var resultExp = Variable(listKvType, "result");
+            var resultExp = Variable(listKvType);
 
-            var targetExp = Variable(sourceType, "target");
+            var targetExp = Variable(sourceType);
 
-            var sourceExp = Parameter(typeof(object), "source");
+            var sourceExp = Parameter(typeof(object));
 
             var method = listKvType.GetMethod("Add", new Type[] { typeArgument });
 
@@ -2101,7 +2101,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Property(targetExp, info.Member), typeArguments[1]))));
                     });
             }
 
@@ -2111,7 +2111,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Field(targetExp, info.Member), typeArguments[1]))));
                     });
             }
 
@@ -2120,13 +2120,6 @@ namespace CodeArts.Casting.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { targetExp, resultExp }, list), sourceExp);
 
             return lamdaExp.Compile();
-
-            Expression ConvertConfig(Expression node, Type type)
-            {
-                if (node.Type == type) return node;
-
-                return Convert(node, type);
-            }
         }
 
         /// <summary>
@@ -2144,11 +2137,11 @@ namespace CodeArts.Casting.Implements
 
             var list = new List<Expression>();
 
-            var resultExp = Variable(conversionType, "result");
+            var resultExp = Variable(conversionType);
 
-            var targetExp = Variable(sourceType, "target");
+            var targetExp = Variable(sourceType);
 
-            var sourceExp = Parameter(typeof(object), "source");
+            var sourceExp = Parameter(typeof(object));
 
             var method = conversionType.GetMethod("Add", new Type[] { typeArgument });
 
@@ -2172,7 +2165,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1]))));
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Property(targetExp, info.Member), typeArguments[1]))));
                     });
             }
 
@@ -2182,7 +2175,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1]))));
+                        list.Add(Call(resultExp, method, New(ctorSotre.Member, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Field(targetExp, info.Member), typeArguments[1]))));
                     });
             }
 
@@ -2191,13 +2184,6 @@ namespace CodeArts.Casting.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { targetExp, resultExp }, list), sourceExp);
 
             return lamdaExp.Compile();
-
-            Expression ConvertConfig(Expression node, Type type)
-            {
-                if (node.Type == type) return node;
-
-                return Convert(node, type);
-            }
         }
 
         /// <summary>
@@ -2216,11 +2202,11 @@ namespace CodeArts.Casting.Implements
 
             var dicType = typeof(Dictionary<,>).MakeGenericType(typeArguments);
 
-            var resultExp = Variable(dicType, "result");
+            var resultExp = Variable(dicType);
 
-            var targetExp = Variable(sourceType, "target");
+            var targetExp = Variable(sourceType);
 
-            var sourceExp = Parameter(typeof(object), "source");
+            var sourceExp = Parameter(typeof(object));
 
             var method = dicType.GetMethod("Add", typeArguments);
 
@@ -2240,7 +2226,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
+                        list.Add(Call(resultExp, method, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Property(targetExp, info.Member), typeArguments[1])));
                     });
             }
 
@@ -2250,7 +2236,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
+                        list.Add(Call(resultExp, method, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Field(targetExp, info.Member), typeArguments[1])));
                     });
             }
 
@@ -2259,13 +2245,14 @@ namespace CodeArts.Casting.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { targetExp, resultExp }, list), sourceExp);
 
             return lamdaExp.Compile();
+        }
 
-            Expression ConvertConfig(Expression node, Type type)
-            {
-                if (node.Type == type) return node;
+        private static Expression ConvertTo(Expression node, Type type)
+        {
+            if (node.Type == type) 
+                return node;
 
-                return Convert(node, type);
-            }
+            return Convert(node, type);
         }
 
         /// <summary>
@@ -2282,11 +2269,11 @@ namespace CodeArts.Casting.Implements
 
             var list = new List<Expression>();
 
-            var resultExp = Variable(conversionType, "result");
+            var resultExp = Variable(conversionType);
 
-            var targetExp = Variable(sourceType, "target");
+            var targetExp = Variable(sourceType);
 
-            var sourceExp = Parameter(typeof(object), "source");
+            var sourceExp = Parameter(typeof(object));
 
             var method = conversionType.GetMethod("Add", typeArguments);
 
@@ -2306,7 +2293,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Property(targetExp, info.Member), typeArguments[1])));
+                        list.Add(Call(resultExp, method, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Property(targetExp, info.Member), typeArguments[1])));
                     });
             }
 
@@ -2316,7 +2303,7 @@ namespace CodeArts.Casting.Implements
                     .Where(x => x.CanRead)
                     .ForEach(info =>
                     {
-                        list.Add(Call(resultExp, method, ConvertConfig(Constant(info.Naming), typeArguments[0]), ConvertConfig(Field(targetExp, info.Member), typeArguments[1])));
+                        list.Add(Call(resultExp, method, ConvertTo(Constant(info.Naming), typeArguments[0]), ConvertTo(Field(targetExp, info.Member), typeArguments[1])));
                     });
             }
 
@@ -2325,13 +2312,6 @@ namespace CodeArts.Casting.Implements
             var lamdaExp = Lambda<Func<object, TResult>>(Block(new[] { targetExp, resultExp }, list), sourceExp);
 
             return lamdaExp.Compile();
-
-            Expression ConvertConfig(Expression node, Type type)
-            {
-                if (node.Type == type) return node;
-
-                return Convert(node, type);
-            }
         }
     }
 }

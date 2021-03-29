@@ -1487,13 +1487,94 @@ namespace UnitTest
         /// 分组测试。
         /// </summary>
         [TestMethod]
+        public void GroupByMultiFieldCountWhereTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Count = g.Count(),
+                           Count1 = g.Where(x => x.Email != null).Count(),
+                           Count2 = g.Count(x => x.Bcid > 0),
+                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0),
+                           Max = g.Max(x => x.CreatedTime),
+                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest2()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == "" && g.Key.Bcid > 0
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Count = g.Count(),
+                           Count1 = g.Where(x => x.Email != null).Count(),
+                           Count2 = g.Count(x => x.Bcid > 0),
+                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0),
+                           Max = g.Max(x => x.CreatedTime),
+                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest3()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == "" && g.Count(x => x.Bcid > 0) > 2
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Count = g.Count(),
+                           Count1 = g.Where(x => x.Email != null).Count(),
+                           Count2 = g.Count(x => x.Bcid > 0),
+                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0),
+                           Max = g.Max(x => x.CreatedTime),
+                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
         public void GroupByMultiFieldAnonymousTest()
         {
             var user = new UserRepository();
 
             var linq = from x in user
                        where x.Id > 0
-                       group x by new { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       group x by new { x.Mobile, x.Bcid } into g
                        where g.Key.Mobile == ""
                        orderby g.Count()
                        select new
@@ -1515,7 +1596,7 @@ namespace UnitTest
 
             var linq = from x in user
                        where x.Id > 0
-                       group x by new { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       group x by new { x.Mobile, x.Bcid } into g
                        where g.Key.Mobile == ""
                        orderby g.Count()
                        select new
@@ -1613,15 +1694,17 @@ namespace UnitTest
 
             using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                var results = await user.ToListAsync().ConfigureAwait(false);
+                using (var c2 = new SqlCapture
+                {
+                    Captured = context =>
+                    {
+                        Debug.WriteLine($"2:{context.Sql}");
+                    }
+                })
+                {
+                    var results = await user.ToListAsync();
+                }
             }
-        }
-
-        [TestMethod]
-        public void ToSQL()
-        {
-            var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
         }
     }
 }

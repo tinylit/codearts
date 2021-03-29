@@ -191,56 +191,56 @@ namespace CodeArts
             {
                 foreach (var constructorInfo in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
                 {
-                    return Done(constructorInfo);
+                    return DoneCreateInstance(constructorInfo);
                 }
 
                 foreach (var constructorInfo in type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance))
                 {
-                    return Done(constructorInfo);
-                }
-
-                Func<object> Done(ConstructorInfo constructorInfo)
-                {
-                    var parameters = constructorInfo.GetParameters();
-
-                    if (parameters.Length == 0)
-                    {
-                        var lambda = Lambda<Func<object>>(New(constructorInfo));
-
-                        return lambda.Compile();
-                    }
-                    else
-                    {
-                        var expressions = new Expression[parameters.Length];
-
-                        for (int i = 0; i < parameters.Length; i++)
-                        {
-                            var parameterInfo = parameters[i];
-
-                            if (parameterInfo.IsOptional)
-                            {
-                                expressions[i] = Constant(parameterInfo.DefaultValue);
-                            }
-                            else if (parameterInfo.ParameterType.IsValueType)
-                            {
-                                expressions[i] = Default(parameterInfo.ParameterType);
-                            }
-                            else
-                            {
-                                expressions[i] = Call(null, EmptyMethodInfo, Constant(parameterInfo.ParameterType));
-                            }
-                        }
-
-                        var lambda = Lambda<Func<object>>(New(constructorInfo, expressions));
-
-                        return lambda.Compile();
-                    }
+                    return DoneCreateInstance(constructorInfo);
                 }
 
                 throw new NotSupportedException($"未找到“{type.FullName}”的任何有效构造函数！");
             });
 
             return valueFactory.Invoke();
+        }
+
+        private static Func<object> DoneCreateInstance(ConstructorInfo constructorInfo)
+        {
+            var parameters = constructorInfo.GetParameters();
+
+            if (parameters.Length == 0)
+            {
+                var lambda = Lambda<Func<object>>(New(constructorInfo));
+
+                return lambda.Compile();
+            }
+            else
+            {
+                var expressions = new Expression[parameters.Length];
+
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    var parameterInfo = parameters[i];
+
+                    if (parameterInfo.IsOptional)
+                    {
+                        expressions[i] = Constant(parameterInfo.DefaultValue);
+                    }
+                    else if (parameterInfo.ParameterType.IsValueType)
+                    {
+                        expressions[i] = Default(parameterInfo.ParameterType);
+                    }
+                    else
+                    {
+                        expressions[i] = Call(null, EmptyMethodInfo, Constant(parameterInfo.ParameterType));
+                    }
+                }
+
+                var lambda = Lambda<Func<object>>(New(constructorInfo, expressions));
+
+                return lambda.Compile();
+            }
         }
 
         /// <summary>
