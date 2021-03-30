@@ -1502,9 +1502,7 @@ namespace UnitTest
                            Count = g.Count(),
                            Count1 = g.Where(x => x.Email != null).Count(),
                            Count2 = g.Count(x => x.Bcid > 0),
-                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0),
-                           Max = g.Max(x => x.CreatedTime),
-                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.CreatedTime)
+                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0)
                        };
 
             var results = linq.ToList();
@@ -1529,9 +1527,7 @@ namespace UnitTest
                            Count = g.Count(),
                            Count1 = g.Where(x => x.Email != null).Count(),
                            Count2 = g.Count(x => x.Bcid > 0),
-                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0),
-                           Max = g.Max(x => x.CreatedTime),
-                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.CreatedTime)
+                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0)
                        };
 
             var results = linq.ToList();
@@ -1556,9 +1552,124 @@ namespace UnitTest
                            Count = g.Count(),
                            Count1 = g.Where(x => x.Email != null).Count(),
                            Count2 = g.Count(x => x.Bcid > 0),
-                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0),
-                           Max = g.Max(x => x.CreatedTime),
-                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.CreatedTime)
+                           Count3 = g.Where(x => x.Email != null).Count(x => x.Bcid > 0)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest4()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Any = g.Any(),
+                           Any2 = g.Where(x => x.Email != null).Any(),
+                           Any3 = g.Any(x => x.Bcid > 0),
+                           Any4 = g.Where(x => x.Email != null).Any(x => x.Bcid > 0)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest5()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           All = g.All(x => x.Bcid > 0),
+                           All2 = g.Where(x => x.Email != null).All(x => x.Bcid > 0)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest6()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Sum = g.Sum(x => x.Bcid),
+                           Sum2 = g.Where(x => x.Email != null).Sum(x => x.Bcid)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest7()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Average = g.Average(x => x.Bcid),
+                           Average2 = g.Where(x => x.Bcid > 0).Average(x => x.Bcid)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldCountWhereTest8()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           Max = g.Max(x => x.Bcid),
+                           Max2 = g.Where(x => x.Bcid > 0).Max(x => x.Bcid)
                        };
 
             var results = linq.ToList();
@@ -1577,6 +1688,50 @@ namespace UnitTest
                        group x by new { x.Mobile, x.Bcid } into g
                        where g.Key.Mobile == ""
                        orderby g.Count()
+                       select new
+                       {
+                           g.Key.Mobile,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByOrderByKeyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new { x.Mobile, x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Key
+                       select new
+                       {
+                           g.Key.Mobile,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByOrderByKeyPropertyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new { x.Mobile, x.Bcid } into g
+                       where g.Key.Mobile == ""
+                       orderby g.Key.Mobile
                        select new
                        {
                            g.Key.Mobile,

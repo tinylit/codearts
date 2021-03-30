@@ -66,6 +66,11 @@ namespace CodeArts.Db.Lts.Visitors
         private bool buildSelect = true;
 
         /// <summary>
+        /// 在查询部分。
+        /// </summary>
+        private bool inSelect = false;
+
+        /// <summary>
         /// 构建表。
         /// </summary>
         private bool buildTable = true;
@@ -442,7 +447,11 @@ namespace CodeArts.Db.Lts.Visitors
                             writer.Distinct();
                         }
 
+                        inSelect = true;
+
                         Visit(node.Arguments[1]);
+
+                        inSelect = false;
 
                         writer.From();
 
@@ -724,6 +733,11 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (buildSelect && node.Type.IsQueryable())
             {
+                if (useGroupBy)
+                {
+                    throw new DSyntaxErrorException("使用“GroupBy”函数必须指定查询字段（例如：x=> x.Id 或 x=> new { x.Id, x.Name }）！");
+                }
+
                 buildSelect = false;
 
                 return Select(node);
@@ -831,7 +845,11 @@ namespace CodeArts.Db.Lts.Visitors
                     }
 
                     writer.Write(kv.Value);
-                    writer.As("__key____" + kv.Key.Name.ToLower());
+
+                    if (inSelect)
+                    {
+                        writer.As("__key____" + kv.Key.Name.ToLower());
+                    }
                 }
             }
             else
@@ -871,7 +889,7 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
-        
+
         protected override void VisitMemberIsDependOnParameterTypeIsObject(MemberExpression node)
         {
             if (node.Member.Name == "Key" && node.Expression.IsGrouping())
@@ -904,6 +922,19 @@ namespace CodeArts.Db.Lts.Visitors
             aliasName = parameterName;
 
             return true;
+        }
+
+        /// <inheritdoc />
+        protected override void VisitParameterLeavesIsObject(ParameterExpression node)
+        {
+            if (inSelect)
+            {
+                base.VisitParameterLeavesIsObject(node);
+            }
+            else
+            {
+                throw new DSyntaxErrorException("不允许使用表达式参数作为的排序、分组等的条件！");
+            }
         }
 
         #region SELECT

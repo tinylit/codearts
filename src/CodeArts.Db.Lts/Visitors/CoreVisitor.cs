@@ -382,6 +382,11 @@ namespace CodeArts.Db.Lts.Visitors
 
         private void VisitMyMember(Expression node)
         {
+            if (node.NodeType == ExpressionType.Parameter)
+            {
+                throw new DSyntaxErrorException("不允许使用表达式参数作为的属性值（如：x=> new { x } 或 x=> new Class{ Property = x }）！");
+            }
+
             switch (node)
             {
                 case MethodCallExpression method when method.Method.DeclaringType == Types.Queryable:

@@ -55,13 +55,14 @@ namespace CodeArts.Db.Lts
 
         private static DbType LookupDbType(Type dataType)
         {
+            if (dataType.IsNullable())
+            {
+                dataType = Nullable.GetUnderlyingType(dataType);
+            }
+
             if (dataType.IsEnum)
             {
                 dataType = Enum.GetUnderlyingType(dataType);
-            }
-            else if (dataType.IsNullable())
-            {
-                dataType = Nullable.GetUnderlyingType(dataType);
             }
 
             if (typeMap.TryGetValue(dataType, out DbType dbType))
@@ -1094,6 +1095,22 @@ namespace CodeArts.Db.Lts
                                     }
 
                                     storeItem.Member.SetValue(item, value, null);
+                                }
+                                else if (storeItem.MemberType == Types.DateTime)
+                                {
+                                    value = DateTime.Now;
+                                }
+                                else if (storeItem.MemberType == Types.Guid)
+                                {
+                                    value = Guid.NewGuid();
+                                }
+                                else if (storeItem.MemberType == Types.DateTimeOffset)
+                                {
+                                    value = DateTimeOffset.Now;
+                                }
+                                else if (storeItem.MemberType == Types.Version)
+                                {
+                                    value = new Version(1, 0, 0, 0);
                                 }
                             }
 

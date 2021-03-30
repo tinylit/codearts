@@ -56,11 +56,12 @@ namespace CodeArts.Db.Lts.Visitors
                     writer.CloseBrace();
 
                     break;
+                case MethodCall.Sum when node.Arguments.Count == 2 && node.Arguments[0].NodeType == ExpressionType.Parameter:
                 case MethodCall.Max when node.Arguments.Count == 2 && node.Arguments[0].NodeType == ExpressionType.Parameter:
                 case MethodCall.Min when node.Arguments.Count == 2 && node.Arguments[0].NodeType == ExpressionType.Parameter:
                 case MethodCall.Average when node.Arguments.Count == 2 && node.Arguments[0].NodeType == ExpressionType.Parameter:
 
-                    writer.Write(node.Method.Name.ToUpper());
+                    writer.Write(node.Method.Name == MethodCall.Average ? "AVG" : node.Method.Name.ToUpper());
 
                     writer.OpenBrace();
 
@@ -69,11 +70,12 @@ namespace CodeArts.Db.Lts.Visitors
                     writer.CloseBrace();
 
                     break;
+                case MethodCall.Sum when node.Arguments.Count == 2:
                 case MethodCall.Max when node.Arguments.Count == 2:
                 case MethodCall.Min when node.Arguments.Count == 2:
                 case MethodCall.Average when node.Arguments.Count == 2:
 
-                    writer.Write(node.Method.Name.ToUpper());
+                    writer.Write(node.Method.Name == MethodCall.Average ? "AVG" : node.Method.Name.ToUpper());
 
                     writer.OpenBrace();
                     writer.Write("CASE WHEN ");
@@ -86,13 +88,21 @@ namespace CodeArts.Db.Lts.Visitors
 
                     writer.Write(" ELSE ");
 
-                    if (node.Method.ReturnType == typeof(DateTime))
+                    if (node.Method.ReturnType.IsNullable())
                     {
-                        writer.Parameter(UtcBase);
+                        writer.Null();
+                    }
+                    else if (node.Method.ReturnType == Types.DateTime)
+                    {
+                        writer.Parameter("date_utc_base", UtcBase);
+                    }
+                    else if (node.Method.ReturnType == Types.DateTimeOffset)
+                    {
+                        writer.Parameter("date_offset_utc_base", new DateTimeOffset(UtcBase));
                     }
                     else
                     {
-                        writer.Parameter(Emptyable.Empty(node.Method.ReturnType));
+                        writer.Parameter($"{node.Method.ReturnType.Name.ToUrlCase()}_default", Emptyable.Empty(node.Method.ReturnType));
                     }
 
                     writer.Write(" END");
@@ -100,6 +110,62 @@ namespace CodeArts.Db.Lts.Visitors
                     writer.CloseBrace();
 
                     break;
+                case MethodCall.Any when node.Arguments.Count == 1 && node.Arguments[0].NodeType == ExpressionType.Parameter:
+                    writer.BooleanTrue();
+                    break;
+                case MethodCall.Any when node.Arguments.Count == 1:
+                    writer.Write("CASE ");
+
+                    writer.Write("MAX");
+
+                    writer.OpenBrace();
+                    writer.Write("CASE WHEN ");
+
+                    Visit(node.Arguments[0]);
+
+                    writer.Write(" THEN 1 ELSE 0 END");
+
+                    writer.CloseBrace();
+
+                    writer.Write(" WHEN 1 THEN ");
+
+                    writer.BooleanTrue();
+
+                    writer.Write(" ELSE ");
+
+                    writer.BooleanFalse();
+
+                    writer.Write(" END");
+                    break;
+
+                case MethodCall.Any when node.Arguments.Count == 2:
+                case MethodCall.All when node.Arguments.Count == 2:
+
+                    writer.Write("CASE ");
+
+                    writer.Write(node.Method.Name == MethodCall.Any ? "MAX" : "MIN");
+
+                    writer.OpenBrace();
+                    writer.Write("CASE WHEN ");
+
+                    VisitCondition(node);
+
+                    writer.Write(" THEN 1 ELSE 0 END");
+
+                    writer.CloseBrace();
+
+                    writer.Write(" WHEN 1 THEN ");
+
+                    writer.BooleanTrue();
+
+                    writer.Write(" ELSE ");
+
+                    writer.BooleanFalse();
+
+                    writer.Write(" END");
+
+                    break;
+                case MethodCall.Sum:
                 case MethodCall.Max:
                 case MethodCall.Min:
                 case MethodCall.Average:
