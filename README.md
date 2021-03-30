@@ -297,7 +297,7 @@ WHERE ([x].[username] = @__variable_1)
 UPDATE [fei_users] 
 	SET [password]=@password,
 	[modified_time]=@__token_modified_time 
-WHERE [mobile]=@mobile AND [modified_time]=@modified_time
+WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
 ```
 
 * 介绍：
