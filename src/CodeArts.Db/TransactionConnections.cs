@@ -1,10 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+#if NET40 ||NET_NORMAL
+using System.Runtime.Remoting;
+#endif
 using System.Threading;
-using Transaction = System.Transactions.Transaction;
 using System.Threading.Tasks;
+using Transaction = System.Transactions.Transaction;
 
 namespace CodeArts.Db
 {
@@ -93,6 +97,7 @@ namespace CodeArts.Db
         private class TransactionConnection : System.Data.Common.DbConnection, ITransactionConnection
         {
             private readonly System.Data.Common.DbConnection connection;
+            private readonly Transaction transaction;
 
             public override string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
 
@@ -102,11 +107,34 @@ namespace CodeArts.Db
 
             public override string ServerVersion => connection.ServerVersion;
 
+
+            public override int ConnectionTimeout => connection.ConnectionTimeout;
+
+#if NET40 ||NET_NORMAL
+            public override ObjRef CreateObjRef(Type requestedType) => connection.CreateObjRef(requestedType);
+#endif
+
+            public override object InitializeLifetimeService() => connection.InitializeLifetimeService();
+
+            public override DataTable GetSchema() => connection.GetSchema();
+
+            public override DataTable GetSchema(string collectionName) => connection.GetSchema(collectionName);
+
+            public override DataTable GetSchema(string collectionName, string[] restrictionValues) => connection.GetSchema(collectionName, restrictionValues);
+
+            public override ISite Site { get => connection.Site; set => connection.Site = value; }
+
+
+            public override event StateChangeEventHandler StateChange { add { connection.StateChange += value; } remove { connection.StateChange -= value; } }
+
+            public override void EnlistTransaction(Transaction transaction) => connection.EnlistTransaction(transaction);
+
             public override ConnectionState State => connection.State;
 
-            public TransactionConnection(System.Data.Common.DbConnection connection)
+            public TransactionConnection(System.Data.Common.DbConnection connection, Transaction transaction)
             {
                 this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
+                this.transaction = transaction ?? throw new ArgumentNullException(nameof(transaction));
             }
 
 #if NET_NORMAL || NET_CORE
@@ -140,6 +168,8 @@ namespace CodeArts.Db
                         }
                         break;
                 }
+
+                connection.EnlistTransaction(transaction);
             }
 #endif
 
@@ -254,7 +284,7 @@ namespace CodeArts.Db
 
                 if (conn is System.Data.Common.DbConnection dbConnection)
                 {
-                    info = new TransactionConnection(dbConnection);
+                    info = new TransactionConnection(dbConnection, current);
                 }
                 else
                 {

@@ -1,10 +1,13 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
-using System.Linq;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+using System.Linq;
+#if NET40 ||NET_NORMAL
+using System.Runtime.Remoting;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using Timer = System.Timers.Timer;
@@ -221,9 +224,28 @@ namespace CodeArts.Db
 
             public override string ServerVersion => connection.ServerVersion;
 
+            public override int ConnectionTimeout => connection.ConnectionTimeout;
+
+#if NET40 ||NET_NORMAL
+            public override ObjRef CreateObjRef(Type requestedType) => connection.CreateObjRef(requestedType);
+#endif
+
+            public override object InitializeLifetimeService() => connection.InitializeLifetimeService();
+
+            public override DataTable GetSchema() => connection.GetSchema();
+
+            public override DataTable GetSchema(string collectionName) => connection.GetSchema(collectionName);
+
+            public override DataTable GetSchema(string collectionName, string[] restrictionValues) => connection.GetSchema(collectionName, restrictionValues);
+
+            public override ISite Site { get => connection.Site; set => connection.Site = value; }
+
+            public override event StateChangeEventHandler StateChange { add { connection.StateChange += value; } remove { connection.StateChange -= value; } }
+
             public override ConnectionState State => connectionState == ConnectionState.Closed ? connectionState : connection.State;
 
             public override void ChangeDatabase(string databaseName) => connection.ChangeDatabase(databaseName);
+            public override void EnlistTransaction(System.Transactions.Transaction transaction) => connection.EnlistTransaction(transaction);
 
             public override void Close()
             {
