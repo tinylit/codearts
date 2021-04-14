@@ -25,18 +25,8 @@ namespace CodeArts
         [XmlIgnore]
         public bool Success
         {
-            get
-            {
-                if (success.HasValue)
-                {
-                    return success.Value;
-                }
-                return Code == StatusCodes.OK;
-            }
-            set
-            {
-                success = new bool?(value);
-            }
+            get => success ?? Code == StatusCodes.OK;
+            set => success = new bool?(value);
         }
 
         /// <summary>
@@ -49,7 +39,7 @@ namespace CodeArts
         /// Utc。
         /// </summary>
         [XmlElement("timestamp")]
-        public DateTime Timestamp { get; set; } = DateTime.Now;
+        public DateTime Timestamp { get; set; }
 
         /// <summary>
         /// 成功。

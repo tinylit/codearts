@@ -87,6 +87,12 @@ namespace CodeArts
         public static implicit operator UppercaseString(string value) => new UppercaseString(value);
 
         /// <summary>
+        /// 提供隐式转换。
+        /// </summary>
+        /// <param name="value">值。</param>
+        public static implicit operator string(UppercaseString value) => value.value;
+
+        /// <summary>
         /// 返回大写的字符串。
         /// </summary>
         /// <returns></returns>

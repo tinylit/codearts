@@ -1,5 +1,6 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 #if NET40
 using System.Collections.ObjectModel;
@@ -14,11 +15,6 @@ namespace CodeArts.Db
     /// </summary>
     public class DefaultSqlAdpter : ISqlAdpter
     {
-        /// <summary>
-        /// 暂存数据。
-        /// </summary>
-        private static readonly Regex PatternTemporaryStorage = new Regex("--#(?<index>\\d+)", RegexOptions.Compiled);
-
         /// <summary>
         /// 注解。
         /// </summary>
@@ -132,14 +128,9 @@ namespace CodeArts.Db
         private static readonly Regex PatternIndexOf = new Regex(@"\bindexOf\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
-        /// 表令牌。
+        /// 名称令牌。
         /// </summary>
-        private static readonly Regex PatternTableToken = new Regex(@"\{(?<type>[A-Z]+)#(?<name>\w+)\}", RegexOptions.Compiled);
-
-        /// <summary>
-        /// 字段令牌。
-        /// </summary>
-        private static readonly Regex PatternFieldToken = new Regex(@"\[(?<name>\w+)\]", RegexOptions.Compiled);
+        private static readonly Regex PatternNameToken = new Regex(@"\[(?<name>\w+)\]", RegexOptions.Compiled);
 
         /// <summary>
         /// 参数令牌。
@@ -147,6 +138,15 @@ namespace CodeArts.Db
         private static readonly Regex PatternParameterToken = new Regex(@"\{(?<name>[\p{L}\p{N}@_]+)\}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         #endregion
+
+        private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, List<string>> CharacterCache = new ConcurrentDictionary<string, List<string>>();
+
+#if NET40
+        private static readonly ConcurrentDictionary<string, ReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, ReadOnlyCollection<TableToken>>();
+#else
+        private static readonly ConcurrentDictionary<string, IReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyCollection<TableToken>>();
+#endif
 
         /// <summary>
         /// 静态构造函数。
@@ -395,6 +395,11 @@ namespace CodeArts.Db
                 throw new ArgumentException("语句不能为空或空字符串!");
             }
 
+            return SqlCache.GetOrAdd(sql, Aw_Analyze);
+        }
+
+        private static string Aw_Analyze(string sql)
+        {
             //? 注解
             sql = PatternAnnotate.Replace(sql, string.Empty);
 
@@ -403,7 +408,17 @@ namespace CodeArts.Db
                 throw new DSyntaxErrorException("未检测到可执行的语句!");
             }
 
-            List<string> temporaryStorages = new List<string>();
+            List<TableToken> tables = new List<TableToken>();
+
+            void AddTableToken(UppercaseString commandType, string name)
+            {
+                if (!tables.Exists(x => x.CommandType == commandType && string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    tables.Add(new TableToken(commandType, name));
+                }
+            }
+
+            List<string> characters = new List<string>();
 
             //? 提取字符串
             sql = PatternCharacter.Replace(sql, item =>
@@ -412,16 +427,9 @@ namespace CodeArts.Db
 
                 if (value.Length > 2)
                 {
-                    var sb = new StringBuilder();
+                    characters.Add(value.Substring(1, item.Value.Length - 2));
 
-                    sb.Append(value[0])
-                        .Append("--#")
-                        .Append(temporaryStorages.Count)
-                        .Append(value[value.Length - 1]);
-
-                    temporaryStorages.Add(value.Substring(1, item.Value.Length - 2));
-
-                    return sb.ToString();
+                    return string.Concat(char.ToString(value[0]), "?", char.ToString(value[value.Length - 1]));
                 }
 
                 return value;
@@ -448,10 +456,12 @@ namespace CodeArts.Db
 
                 var sb = new StringBuilder();
 
+                AddTableToken(CommandTypes.Create, tableGrp.Value);
+
                 return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
-                 .Append("{CREATE#")
+                 .Append("[")
                  .Append(nameGrp.Value)
-                 .Append("}")
+                 .Append("]")
                  .Append(PatternFieldCreate.Replace(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length), match =>
                  {
                      Group nameGrp2 = match.Groups["name"];
@@ -474,10 +484,12 @@ namespace CodeArts.Db
 
                 var sb = new StringBuilder();
 
+                AddTableToken(CommandTypes.Drop, tableGrp.Value);
+
                 return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
-                 .Append("{DROP#")
+                 .Append("[")
                  .Append(nameGrp.Value)
-                 .Append("}")
+                 .Append("]")
                  .Append(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length))
                  .ToString();
             });
@@ -487,7 +499,9 @@ namespace CodeArts.Db
             {
                 var nameGrp = item.Groups["name"];
 
-                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "{ALTER#", nameGrp.Value, "}");
+                AddTableToken(CommandTypes.Alter, nameGrp.Value);
+
+                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
             });
 
             //? 插入表指令。
@@ -495,7 +509,9 @@ namespace CodeArts.Db
             {
                 var nameGrp = item.Groups["name"];
 
-                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "{INSERT#", nameGrp.Value, "}");
+                AddTableToken(CommandTypes.Insert, nameGrp.Value);
+
+                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
             });
 
             //? 复杂结构表名称处理
@@ -512,16 +528,16 @@ namespace CodeArts.Db
 
                 var sb = new StringBuilder();
 
+                AddTableToken(type, nameGrp.Value);
+
                 sb.Append(value.Substring(0, aliasGrp.Index))
                 .Append("[")
                 .Append(aliasGrp.Value)
                 .Append("]")
                 .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, tableGrp.Index - aliasGrp.Index))
-                .Append("{")
-                .Append(type)
-                .Append("#")
+                .Append("[")
                 .Append(nameGrp.Value)
-                .Append("}");
+                .Append("]");
 
                 value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
 
@@ -543,12 +559,12 @@ namespace CodeArts.Db
 
                 var sb = new StringBuilder();
 
+                AddTableToken(type, nameGrp.Value);
+
                 sb.Append(value.Substring(0, tableGrp.Index - item.Index))
-                .Append("{")
-                .Append(type)
-                .Append("#")
+                .Append("[")
                 .Append(nameGrp.Value)
-                .Append("}");
+                .Append("]");
 
                 value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
 
@@ -568,12 +584,12 @@ namespace CodeArts.Db
 
                 var sb = new StringBuilder();
 
+                AddTableToken(type, nameGrp.Value);
+
                 sb.Append(value.Substring(0, tableGrp.Index - item.Index))
-                    .Append("{")
-                    .Append(type)
-                    .Append("#")
+                    .Append("[")
                     .Append(nameGrp.Value)
-                    .Append("}");
+                    .Append("]");
 
                 if (aliasGrp.Success)
                 {
@@ -608,9 +624,9 @@ namespace CodeArts.Db
             //? 声明变量
             sql = PatternDeclare.Replace(sql, item =>
             {
-                string value = string.Concat("--#", temporaryStorages.Count.ToString());
+                string value = string.Concat("--#", characters.Count.ToString());
 
-                temporaryStorages.Add(item.Value);
+                characters.Add(item.Value);
 
                 return value;
             });
@@ -682,39 +698,19 @@ namespace CodeArts.Db
                 return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
             });
 
-            //? 还原字符
-            if (temporaryStorages.Count > 0)
+            if (tables.Count > 0)
             {
-                int execCount = 0;
-                int dataCount = temporaryStorages.Count;
-                do
-                {
-                    bool flag = true;
-                    sql = PatternTemporaryStorage.Replace(sql, item =>
-                    {
-                        Group indexGrp = item.Groups["index"];
-
-                        if (int.TryParse(indexGrp.Value, out int index) && dataCount > index)
-                        {
-                            execCount++;
-
-                            flag = false;
-
-                            return temporaryStorages[index];
-                        }
-
-                        return item.Value;
-                    });
-
-                    if (flag)
-                    {
-                        break;
-                    }
-
-                } while (execCount < dataCount || PatternTemporaryStorage.IsMatch(sql));
+#if NET40
+                TableCache.TryAdd(sql, tables.AsReadOnly());
+#else
+                TableCache.TryAdd(sql, tables);
+#endif
             }
 
-            temporaryStorages = null;
+            if (characters.Count > 0)
+            {
+                CharacterCache.GetOrAdd(sql, characters);
+            }
 
             return sql;
         }
@@ -729,27 +725,7 @@ namespace CodeArts.Db
 #else
         public IReadOnlyCollection<TableToken> AnalyzeTables(string sql)
 #endif
-        {
-            Match match = PatternTableToken.Match(sql);
-
-            List<TableToken> tables = new List<TableToken>();
-
-            while (match.Success)
-            {
-                if (!tables.Exists(token => token.Token == match.Value))
-                {
-                    tables.Add(new TableToken(match.Value, match.Groups["type"].Value, match.Groups["name"].Value));
-                }
-
-                match = match.NextMatch();
-            }
-
-#if NET40
-            return tables.AsReadOnly();
-#else
-            return tables;
-#endif
-        }
+        => TableCache.GetOrAdd(sql, TableToken.None);
 
         /// <summary>
         /// SQL 分析（参数）。
@@ -757,20 +733,22 @@ namespace CodeArts.Db
         /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
         /// <returns></returns>
 #if NET40
-        public ReadOnlyCollection<ParameterToken> AnalyzeParameters(string sql)
+        public ReadOnlyCollection<string> AnalyzeParameters(string sql)
 #else
-        public IReadOnlyCollection<ParameterToken> AnalyzeParameters(string sql)
+        public IReadOnlyCollection<string> AnalyzeParameters(string sql)
 #endif
         {
             Match match = PatternParameterToken.Match(sql);
 
-            List<ParameterToken> parameters = new List<ParameterToken>();
+            List<string> parameters = new List<string>();
 
             while (match.Success)
             {
-                if (!parameters.Exists(token => token.Token == match.Value))
+                string name = match.Groups["name"].Value;
+
+                if (!parameters.Contains(name))
                 {
-                    parameters.Add(new ParameterToken(match.Value, match.Groups["name"].Value));
+                    parameters.Add(name);
                 }
 
                 match = match.NextMatch();
@@ -787,7 +765,28 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="sql">语句。</param>
         /// <returns></returns>
-        public string Format(string sql) => PatternFieldToken.Replace(PatternTableToken.Replace(sql, item => string.Concat("[", item.Groups["name"].Value, "]")), item => string.Concat("[", item.Groups["name"].Value, "]"));
+        public string Format(string sql)
+        {
+            if (CharacterCache.TryGetValue(sql, out List<string> characters))
+            {
+                int offset = 0;
+
+                //? 还原字符串。
+                sql = PatternCharacter.Replace(sql, item =>
+                {
+                    string value = item.Value;
+
+                    if (value.Length > 2)
+                    {
+                        return string.Concat(char.ToString(value[0]), characters[offset++], char.ToString(value[value.Length - 1]));
+                    }
+
+                    return value;
+                });
+            }
+
+            return sql;
+        }
 
         /// <summary>
         /// SQL 格式化。
@@ -801,6 +800,8 @@ namespace CodeArts.Db
             {
                 throw new ArgumentNullException(nameof(settings));
             }
+
+            bool flag = CharacterCache.TryGetValue(sql, out List<string> characters);
 
             //? 检查 IndexOf 函数，参数处理。
             if (settings.IndexOfSwapPlaces)
@@ -849,11 +850,8 @@ namespace CodeArts.Db
                 return item.Value;
             });
 
-            //? 表名称。
-            sql = PatternTableToken.Replace(sql, item => settings.Name(item.Groups["name"].Value));
-
-            //? 字段名称。
-            sql = PatternFieldToken.Replace(sql, item => settings.Name(item.Groups["name"].Value));
+            //? 名称。
+            sql = PatternNameToken.Replace(sql, item => settings.Name(item.Groups["name"].Value));
 
             //? 参数名称。
             sql = PatternParameterToken.Replace(sql, item => settings.ParamterName(item.Groups["name"].Value));
@@ -861,6 +859,24 @@ namespace CodeArts.Db
             foreach (IFormatter formatter in settings.Formatters)
             {
                 sql = formatter.RegularExpression.Replace(sql, formatter.Evaluator);
+            }
+
+            if (flag)
+            {
+                int offset = 0;
+
+                //? 还原字符串。
+                sql = PatternCharacter.Replace(sql, item =>
+                {
+                    string value = item.Value;
+
+                    if (value.Length > 2)
+                    {
+                        return string.Concat(char.ToString(value[0]), characters[offset++], char.ToString(value[value.Length - 1]));
+                    }
+
+                    return value;
+                });
             }
 
             return sql;

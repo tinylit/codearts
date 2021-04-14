@@ -5,7 +5,6 @@ using System;
 using System.Collections.ObjectModel;
 #endif
 using System.Diagnostics;
-using System.Text;
 
 namespace CodeArts.Db
 {
@@ -21,10 +20,8 @@ namespace CodeArts.Db
     [DebuggerDisplay("{ToString()}")]
     public sealed class SQL
     {
-        private readonly StringBuilder sb;
+        private readonly string sql;
         private static readonly ISqlAdpter adpter;
-
-        private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
 
         /// <summary>
         /// 静态构造函数。
@@ -35,61 +32,46 @@ namespace CodeArts.Db
         /// 构造函数。
         /// </summary>
         /// <param name="sql">原始SQL语句。</param>
-        public SQL(string sql) => sb = new StringBuilder(SqlCache.GetOrAdd(sql, adpter.Analyze));
+        public SQL(string sql) => this.sql = adpter.Analyze(sql);
 
         /// <summary>
         /// 添加语句。
         /// </summary>
         /// <param name="sql">SQL。</param>
         /// <returns></returns>
-        public SQL Add(string sql) => Add(new SQL(SqlCache.GetOrAdd(sql, adpter.Analyze)));
+        public SQL Add(string sql) => new SQL(string.Concat(ToString(), ";", sql));
 
         /// <summary>
         /// 添加语句。
         /// </summary>
         /// <param name="sql">SQL。</param>
-        public SQL Add(SQL sql)
-        {
-            if (sql is null)
-            {
-                throw new ArgumentNullException(nameof(sql));
-            }
-
-            sb.Append(";")
-                .AppendLine()
-                .Append(sql.sb.ToString());
-
-            return this;
-        }
+        public SQL Add(SQL sql) => new SQL(string.Concat(ToString(), ";", sql.ToString()));
 
 #if NET40
-
-        private static readonly ConcurrentDictionary<string, ReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, ReadOnlyCollection<TableToken>>();
-
-        private static readonly ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, ReadOnlyCollection<ParameterToken>>();
+        private ReadOnlyCollection<TableToken> tables;
+        private ReadOnlyCollection<string> parameters;
 
         /// <summary>
         /// 操作的表。
         /// </summary>
-        public ReadOnlyCollection<TableToken> Tables => TableCache.GetOrAdd(sb.ToString(), adpter.AnalyzeTables);
+        public ReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
         /// <summary>
         /// 参数。
         /// </summary>
-        public ReadOnlyCollection<ParameterToken> Parameters => ParameterCache.GetOrAdd(sb.ToString(), adpter.AnalyzeParameters);
+        public ReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
 #else
-        private static readonly ConcurrentDictionary<string, IReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyCollection<TableToken>>();
-
-        private static readonly ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>> ParameterCache = new ConcurrentDictionary<string, IReadOnlyCollection<ParameterToken>>();
+        private IReadOnlyCollection<TableToken> tables;
+        private IReadOnlyCollection<string> parameters;
 
         /// <summary>
         /// 操作的表。
         /// </summary>
-        public IReadOnlyCollection<TableToken> Tables => TableCache.GetOrAdd(sb.ToString(), adpter.AnalyzeTables);
+        public IReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
 
         /// <summary>
         /// 参数。
         /// </summary>
-        public IReadOnlyCollection<ParameterToken> Parameters => ParameterCache.GetOrAdd(sb.ToString(), adpter.AnalyzeParameters);
+        public IReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
 #endif
 
         /// <summary>
@@ -97,13 +79,13 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="settings">SQL修正配置。</param>
         /// <returns></returns>
-        public string ToString(ISQLCorrectSettings settings) => adpter.Format(sb.ToString(), settings);
+        public string ToString(ISQLCorrectSettings settings) => adpter.Format(sql, settings);
 
         /// <summary>
         /// 返回分析的SQL结果。
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => adpter.Format(sb.ToString());
+        public override string ToString() => adpter.Format(sql);
 
         /// <summary>
         /// 追加sql。

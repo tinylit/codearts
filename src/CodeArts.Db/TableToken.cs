@@ -18,11 +18,6 @@ namespace CodeArts.Db
         private static readonly Regex Pattern = new Regex("^[a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.Singleline);
 
         /// <summary>
-        /// 令牌。
-        /// </summary>
-        public string Token { get; }
-
-        /// <summary>
         /// 参数名称。
         /// </summary>
         public string Name { get; }
@@ -35,16 +30,14 @@ namespace CodeArts.Db
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="token">令牌。</param>
         /// <param name="commandType">命令（仅字母构成）。</param>
         /// <param name="name">名称。</param>
         /// <exception cref="SyntaxErrorException"> commandType 包含非字母的符号。</exception>
-        public TableToken(string token, string commandType, string name)
+        public TableToken(UppercaseString commandType, string name)
         {
-            Token = token ?? throw new ArgumentNullException(nameof(token));
             Name = name ?? throw new ArgumentNullException(nameof(name));
 
-            if (!Pattern.IsMatch(commandType ?? throw new ArgumentNullException(nameof(commandType))))
+            if (!Pattern.IsMatch(commandType))
                 throw new SyntaxErrorException();
 
             CommandType = new UppercaseString(commandType);
@@ -60,7 +53,7 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="other">其它。</param>
         /// <returns></returns>
-        public bool Equals(TableToken other) => Token == other.Token && Name == other.Name && CommandType == other.CommandType;
+        public bool Equals(TableToken other) => CommandType == other.CommandType && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
 
 #if NET40
         /// <summary>

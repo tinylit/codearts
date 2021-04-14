@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 #if NET40
 using System.Collections.ObjectModel;
@@ -10,13 +11,8 @@ namespace CodeArts.Db
     /// 参数令牌。
     /// </summary>
     [DebuggerDisplay("{Name}")]
-    public struct ParameterToken
+    public struct ParameterToken : IEquatable<ParameterToken>
     {
-        /// <summary>
-        /// 令牌。
-        /// </summary>
-        public string Token { get; }
-
         /// <summary>
         /// 参数名称。
         /// </summary>
@@ -25,11 +21,9 @@ namespace CodeArts.Db
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="token">令牌。</param>
         /// <param name="name">名称。</param>
-        public ParameterToken(string token, string name)
+        public ParameterToken(string name)
         {
-            Token = token ?? throw new System.ArgumentNullException(nameof(token));
             Name = name ?? throw new System.ArgumentNullException(nameof(name));
         }
         /// <summary>
@@ -37,6 +31,13 @@ namespace CodeArts.Db
         /// </summary>
         /// <returns></returns>
         public override string ToString() => Name;
+
+        /// <summary>
+        /// 是否相同。
+        /// </summary>
+        /// <param name="other">值。</param>
+        /// <returns></returns>
+        public bool Equals(ParameterToken other) => Name == other.Name;
 
 #if NET40
         /// <summary>

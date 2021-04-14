@@ -18,21 +18,11 @@ namespace CodeArts.Emit
         private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
         private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
+        private static readonly List<object> Constants = new List<object>();
         private static readonly Dictionary<object, int> ConstantCache = new Dictionary<object, int>();
         private static readonly MethodInfo GetConstantMethod = typeof(EmitUtils).GetMethod(nameof(GetConstant), BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 
-        private static object GetConstant(int index)
-        {
-            foreach (var kv in ConstantCache)
-            {
-                if (kv.Value == index)
-                {
-                    return kv.Key;
-                }
-            }
-
-            return null;
-        }
+        private static object GetConstant(int index) => Constants[index];
 
         #region Convert
 
@@ -1003,7 +993,15 @@ namespace CodeArts.Emit
 
                         if (!ConstantCache.TryGetValue(value, out int key))
                         {
-                            ConstantCache.Add(value, key = ConstantCache.Count);
+                            lock (ConstantCache)
+                            {
+                                if (!ConstantCache.TryGetValue(value, out key))
+                                {
+                                    ConstantCache.Add(value, key = Constants.Count);
+
+                                    Constants.Add(value);
+                                }
+                            }
                         }
 
                         EmitInt(ilg, key);

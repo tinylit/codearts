@@ -69,11 +69,6 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(getter));
             }
 
-            if (_Getter != null)
-            {
-                throw new InvalidOperationException("已存在一个数据获取器!");
-            }
-
             _Getter = getter;
 
             return this;
@@ -88,11 +83,6 @@ namespace CodeArts.Emit
             if (setter is null)
             {
                 throw new ArgumentNullException(nameof(setter));
-            }
-
-            if (_Setter != null)
-            {
-                throw new InvalidOperationException("已存在一个数据设置器!");
             }
 
             _Setter = setter;

@@ -35,9 +35,9 @@ namespace CodeArts.Db
         /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
         /// <returns></returns>
 #if NET40
-        ReadOnlyCollection<ParameterToken> AnalyzeParameters(string sql);
+        ReadOnlyCollection<string> AnalyzeParameters(string sql);
 #else
-        IReadOnlyCollection<ParameterToken> AnalyzeParameters(string sql);
+        IReadOnlyCollection<string> AnalyzeParameters(string sql);
 #endif
 
         /// <summary>

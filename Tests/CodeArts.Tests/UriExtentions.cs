@@ -92,6 +92,61 @@ namespace CodeArts.Tests
                 })
                 .If(e => true) // 当认真过期时，才会执行上一个TryThen。
                 .And(e => true)
+                .ThenAsync((requestable, e) =>
+                {
+                    return Task.Delay(1000);
+                })
+                .If(e => true)
+                .TryIf(e => e.Status == WebExceptionStatus.Timeout)
+                .Or(e => true)
+                .RetryCount(2) // 设置重试次数
+                .RetryInterval(500)//重试间隔时长。
+                .WebCatch(e => { })
+                .WebCatch(e => { })
+                .Finally(() =>
+                {
+
+                })
+                .JsonCast(entry, NamingType.CamelCase)
+                .WebCatch(e => entry)
+                .Finally(() =>
+                {
+
+                })
+                .GetAsync();
+
+            //var values = "http://localhost:56324/api/values".AsRequestable()
+            //    .AppendHeader("Authorization", token.data.type + " " + token.data.token)
+            //    .ByJson<List<string>>()
+            //    .Get();
+        }
+
+        [TestMethod]
+        public async Task GetJsonThenAsync()
+        {
+            RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
+
+            var entry = new
+            {
+                data = new { type = string.Empty, token = string.Empty },
+                status = true,
+                code = 0,
+                message = string.Empty,
+                timestamp = DateTime.Now
+            };
+
+
+            var token = await "http://localhost:56324/login".AsRequestable()
+                .AppendQueryString("?account=ljl&password=liujialin&debug=true")
+                .TryThenAsync((requestable, e) =>
+                {
+                    requestable.AppendQueryString("debug=false");
+                    //对请求的参数或Headers进行调整。如：令牌认证。 requestable.AppendHeader("Authorization", "{token}");
+
+                    return Task.CompletedTask;
+                })
+                .If(e => true) // 当认真过期时，才会执行上一个TryThen。
+                .And(e => true)
                 .TryIf(e => e.Status == WebExceptionStatus.Timeout)
                 .Or(e => true)
                 .RetryCount(2) // 设置重试次数

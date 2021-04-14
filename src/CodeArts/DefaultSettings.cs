@@ -14,6 +14,11 @@ namespace CodeArts
         private readonly NamingType _camelCase;
 
         /// <summary>
+        /// 默认日期格式。
+        /// </summary>
+        public const string DefaultDateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFFK";
+
+        /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="namingCase">命名规则。</param>
@@ -42,7 +47,7 @@ namespace CodeArts
         /// </summary>
         public string DateFormatString
         {
-            get => dateFormatString ?? "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFFK";
+            get => dateFormatString ?? DefaultDateFormatString;
             set => dateFormatString = value;
         }
 

@@ -482,11 +482,12 @@ namespace CodeArts.Db.Lts.Visitors
             if (value is IQueryable queryable)
             {
                 Visit(queryable.Expression);
-
-                return;
             }
-
-            if (node.Expression is null || node.Expression.NodeType == ExpressionType.MemberAccess && (node.Type.IsValueType || node.Expression.Type == node.Type))
+            else if (value is Expression expression)
+            {
+                Visit(expression);
+            }
+            else if (node.Expression is null || node.Expression.NodeType == ExpressionType.MemberAccess && (node.Type.IsValueType || node.Expression.Type == node.Type))
             {
                 writer.Parameter(string.Concat("__variable_", node.Member.Name.ToLower()), value);
             }
@@ -691,14 +692,11 @@ namespace CodeArts.Db.Lts.Visitors
                 writer.LengthMethod();
                 writer.OpenBrace();
 
-                try
-                {
-                    return base.VisitMember(node);
-                }
-                finally
-                {
-                    writer.CloseBrace();
-                }
+                Visit(node.Expression);
+
+                writer.CloseBrace();
+
+                return node;
             }
 
             switch (node.Expression)
@@ -710,14 +708,9 @@ namespace CodeArts.Db.Lts.Visitors
                     }
                     else if (node.IsHasValue())
                     {
-                        try
-                        {
-                            VisitMember(member);
-                        }
-                        finally
-                        {
-                            writer.IsNotNull();
-                        }
+                        VisitMember(member);
+
+                        writer.IsNotNull();
                     }
                     break;
                 case ParameterExpression parameter:
@@ -833,6 +826,49 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
+        private static bool IsSimpleExpression(Expression node)
+        {
+            if (node.NodeType == ExpressionType.MemberAccess)
+            {
+                return IsNoParamerExpression(node);
+            }
+
+            return node.NodeType == ExpressionType.Constant;
+        }
+
+        private static bool IsNoParamerExpression(Expression node)
+        {
+            if (node.NodeType == ExpressionType.Constant)
+            {
+                return true;
+            }
+
+            if (node.NodeType != ExpressionType.MemberAccess || !(node is MemberExpression member))
+            {
+                return false;
+            }
+
+            return member.Expression is null || IsNoParamerExpression(member.Expression);
+        }
+
+        /// <summary>
+        /// Not表达式。
+        /// </summary>
+        /// <param name="node">表达式。</param>
+        protected virtual void VisitNot(UnaryExpression node)
+        {
+            if (IsSimpleExpression(node.Operand))
+            {
+                writer.Write(node.NodeType);
+
+                Visit(node.Operand);
+            }
+            else
+            {
+                writer.ReverseCondition(() => Visit(node.Operand));
+            }
+        }
+
         /// <inheritdoc />
         protected override Expression VisitUnary(UnaryExpression node)
         {
@@ -843,24 +879,15 @@ namespace CodeArts.Db.Lts.Visitors
                     Visit(node.Operand);
 
                     break;
-                case ExpressionType.Not when node.Operand is ConstantExpression constant && constant.IsBoolean():
+                case ExpressionType.Not when node.Operand.NodeType == ExpressionType.Not && node.Operand is UnaryExpression unary:
 
-                    writer.Write(node.NodeType);
-
-                    VisitConstant(constant);
-
-                    break;
-                case ExpressionType.Not when node.Operand is MemberExpression member && member.IsBoolean() && !member.IsHasValue():
-
-                    writer.Write(node.NodeType);
-
-                    VisitMember(member);
+                    Visit(unary.Operand);
 
                     break;
 
                 case ExpressionType.Not:
 
-                    writer.ReverseCondition(() => Visit(node.Operand));
+                    VisitNot(node);
 
                     break;
                 case ExpressionType.OnesComplement:
@@ -946,6 +973,10 @@ namespace CodeArts.Db.Lts.Visitors
             else if (declaringType == Types.String)
             {
                 VisitOfString(node);
+            }
+            else if (Types.IQueryable.IsAssignableFrom(declaringType))
+            {
+                VisitOfLts(node);
             }
             else
             {

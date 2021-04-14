@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -24,11 +25,10 @@ namespace CodeArts.Serialize.Xml
             var settings = new XmlWriterSettings
             {
                 Indent = indented,
-                NewLineChars = "\r\n",
-                Encoding = encoding,
-                IndentChars = "    "
+                NewLineChars = Environment.NewLine,
+                Encoding = encoding
             };
-
+            
             using (XmlWriter writer = XmlWriter.Create(stream, settings))
             {
                 serializer.Serialize(writer, obj);
@@ -55,7 +55,7 @@ namespace CodeArts.Serialize.Xml
             using (var stream = new MemoryStream())
             {
                 XmlSerializeInternal(stream, obj, encoding, indented);
-                stream.Position = 0;
+                stream.Seek(0, SeekOrigin.Begin);
                 using (var reader = new StreamReader(stream, encoding))
                 {
                     return reader.ReadToEnd();

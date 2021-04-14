@@ -16,11 +16,10 @@ namespace CodeArts.Mvc.DependencyInjection
     {
         private readonly IEnumerable<ServiceDescriptor> serviceDescriptors;
 
-        private readonly ConcurrentDictionary<ServiceDescriptor, object> singletions = new ConcurrentDictionary<ServiceDescriptor, object>();
-        private readonly ConcurrentDictionary<Type, Func<IServiceProvider, object>> implementations = new ConcurrentDictionary<Type, Func<IServiceProvider, object>>();
         private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
 #if NET_NORMAL
         private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
+        private readonly ConcurrentDictionary<HttpContext, List<IDisposable>> transients = new ConcurrentDictionary<HttpContext, List<IDisposable>>();
 #endif
         internal ServiceProvider(IEnumerable<ServiceDescriptor> serviceDescriptors)
         {
@@ -36,69 +35,52 @@ namespace CodeArts.Mvc.DependencyInjection
         {
             ServiceDescriptor service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
 
-            if (service is null)
+            if (!(service is null))
             {
-                if (serviceType.IsGenericType)
+                return GetService(service);
+            }
+
+            if (serviceType.IsGenericType)
+            {
+                if (descriptors.TryGetValue(serviceType, out var descriptor))
                 {
-                    if (descriptors.TryGetValue(serviceType, out ServiceDescriptor descriptor))
-                    {
-                        return GetService(descriptor);
-                    }
-
-                    var genericType = serviceType.GetGenericTypeDefinition();
-
-                    service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
-
-                    if (service is null || service.ImplementationType is null)
-                    {
-                        if (serviceType.IsInterface || serviceType.IsAbstract)
-                        {
-                            return null;
-                        }
-
-                        return GetServiceByImplementationType(serviceType);
-                    }
-
-                    descriptors.TryAdd(serviceType, descriptor = new ServiceDescriptor(serviceType, service.ImplementationType.MakeGenericType(serviceType.GetGenericArguments()), service.Lifetime));
-
                     return GetService(descriptor);
                 }
 
-                if (serviceType.IsValueType || serviceType.IsInterface || serviceType.IsAbstract)
-                    return null;
+                var genericType = serviceType.GetGenericTypeDefinition();
 
-                return GetServiceByImplementationType(serviceType);
+                var implementationService = serviceDescriptors.FirstOrDefault(x => x.ServiceType == genericType);
+
+                if (implementationService is null || implementationService.ImplementationType is null)
+                {
+                    return null;
+                }
+
+                return GetService(descriptors.GetOrAdd(serviceType, implementationType =>
+                {
+                    return new ServiceDescriptor(implementationType, implementationService.ImplementationType.MakeGenericType(implementationType.GetGenericArguments()), implementationService.Lifetime);
+                }));
             }
 
-            return GetService(service);
-        }
-
-        private object GetServiceByImplementationType(Type implementationType)
-        {
-            var constructor = implementationType
-                .GetConstructors()
-                .Where(x => x.IsPublic)
-                .OrderBy(x => x.GetParameters().Length)
-                .FirstOrDefault();
-
-            if (constructor is null)
+            if (serviceType.IsValueType || serviceType.IsInterface || serviceType.IsAbstract)
             {
                 return null;
             }
 
-            var parameters = constructor.GetParameters();
-
-            if (parameters.Length == 0)
+            return GetService(descriptors.GetOrAdd(serviceType, implementationType =>
             {
-                return constructor.Invoke(new object[0]);
+                return new ServiceDescriptor(implementationType, implementationType, ServiceLifetime.Transient);
+            }));
+        }
+
+        private object ImplementationInstance(ServiceDescriptor service)
+        {
+            if (service.ImplementationFactory is null)
+            {
+                service.ImplementationFactory = MakeImplementationFactory(service.ImplementationType);
             }
 
-            if (parameters.All(x => serviceDescriptors.Any(y => x.ParameterType == y.ServiceType)))
-            {
-                return constructor.Invoke(parameters.Select(x => GetService(x.ParameterType)).ToArray());
-            }
-
-            return null;
+            return service.ImplementationFactory.Invoke(this);
         }
 
         private object GetService(ServiceDescriptor service)
@@ -106,17 +88,7 @@ namespace CodeArts.Mvc.DependencyInjection
             switch (service.Lifetime)
             {
                 case ServiceLifetime.Singleton:
-                    return service.ImplementationInstance ?? singletions.GetOrAdd(service, _ =>
-                    {
-                        if (service.ImplementationFactory is null)
-                        {
-                            return implementations
-                            .GetOrAdd(service.ImplementationType, MakeImplementationFactory)
-                            .Invoke(this);
-                        }
-
-                        return service.ImplementationFactory.Invoke(this);
-                    });
+                    return service.ImplementationInstance ?? (service.ImplementationInstance = ImplementationInstance(service));
 #if NET_NORMAL
                 case ServiceLifetime.Scoped:
                     return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
@@ -125,17 +97,53 @@ namespace CodeArts.Mvc.DependencyInjection
                         {
                             if (scopes.TryRemove(context2, out ConcurrentDictionary<ServiceDescriptor, object> cache))
                             {
+                                foreach (var kv in cache)
+                                {
+                                    if (kv.Value is IDisposable disposable)
+                                    {
+                                        disposable.Dispose();
+                                    }
+                                }
+
                                 cache.Clear();
                             }
                         });
+
                         return new ConcurrentDictionary<ServiceDescriptor, object>();
-                    }).GetOrAdd(service, service2 =>
-                    {
-                        return service2.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service2.ImplementationType, MakeImplementationFactory).Invoke(this);
-                    });
+                    }).GetOrAdd(service, ImplementationInstance);
 #endif
+                case ServiceLifetime.Transient when service.ImplementationInstance is null:
+
+                    var instance = ImplementationInstance(service);
+
+#if NET_NORMAL
+                    if (instance is IDisposable disposableValue)
+                    {
+                        var results = transients.GetOrAdd(HttpContext.Current, context =>
+                        {
+                            context.AddOnRequestCompleted(context2 =>
+                            {
+                                if (transients.TryRemove(context2, out List<IDisposable> cache))
+                                {
+                                    foreach (var value in cache)
+                                    {
+                                        value.Dispose();
+                                    }
+
+                                    cache.Clear();
+                                }
+                            });
+
+                            return new List<IDisposable>();
+                        });
+
+                        results.Add(disposableValue);
+                    }
+#endif
+
+                    return instance;
                 case ServiceLifetime.Transient:
-                    return service.ImplementationInstance ?? service.ImplementationFactory?.Invoke(this) ?? implementations.GetOrAdd(service.ImplementationType, MakeImplementationFactory).Invoke(this);
+                    return service.ImplementationInstance;
                 default:
                     return null;
             }
@@ -143,25 +151,30 @@ namespace CodeArts.Mvc.DependencyInjection
 
         private Func<IServiceProvider, object> MakeImplementationFactory(Type implementationType)
         {
-            var constructor = implementationType
-                .GetConstructors()
-                .OrderBy(x => x.GetParameters().Length)
-                .FirstOrDefault(x => x.IsPublic);
+            var constructors = implementationType
+                     .GetConstructors();
 
-            if (constructor is null)
-                return null;
-
-            var parameters = constructor.GetParameters();
-
-            if (parameters.Length == 0)
+            if (constructors.Length == 0)
             {
-                return provider => constructor.Invoke(new object[0]);
+                throw new NotSupportedException($"类型“{implementationType.FullName}”不包含任何公共构造函数！");
             }
 
-            if (parameters.All(x => serviceDescriptors.Any(y => x.ParameterType == y.ServiceType)))
-                return provider => constructor.Invoke(parameters.Select(x => provider.GetService(x.ParameterType)).ToArray());
+            foreach (var constructor in constructors)
+            {
+                var parameters = constructor.GetParameters();
 
-            return null;
+                if (parameters.Length == 0)
+                {
+                    return provider => constructor.Invoke(new object[0]);
+                }
+
+                if (parameters.All(x => serviceDescriptors.Any(y => x.ParameterType == y.ServiceType)))
+                {
+                    return provider => constructor.Invoke(parameters.Select(x => provider.GetService(x.ParameterType)).ToArray());
+                }
+            }
+
+            throw new NotSupportedException($"类型“{implementationType.FullName}”所有公共构造函数都不被支持！");
         }
     }
 }

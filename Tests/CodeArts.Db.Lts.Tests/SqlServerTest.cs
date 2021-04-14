@@ -331,13 +331,14 @@ namespace UnitTest
 
             var list = result.ToList();
         }
+
         [TestMethod]
         public void AnyINTest()
         {
             var y = 100;
             var user = new UserRepository();
             var arr = new List<int> { 1, 10 };
-            var result = user.Where(x => x.Id > 0 && x.Id < ~y && arr.Any(item => item == x.Id))
+            var result = user.Where(x => x.Id > 0 && x.Id < ~~~y && !!arr.Any(item => item == x.Id))
                 .Select(x => new { x.Id, OldId = x.Id + 1, OOID = -y });
 
             var list = result.ToList();
@@ -391,9 +392,9 @@ namespace UnitTest
             var str = "1";
             int? i = 1;
             var user = new UserRepository();
-            var result = user.Where(x => x.Id < 200 && x.Username.Contains(str) && (i.HasValue && x.Id > i.Value) && x.CreatedTime < DateTime.Now && x.Userstatus.HasValue);
+            var result = user.Where(x => x.Id < 200 && x.Username.Contains(str) && (i.HasValue && x.Id > i.Value) && x.CreatedTime < DateTime.Now);
 
-            result = result.Where(x => x.Mallagid == 2);
+            result = result.Where(x => x.Mallagid == 2).Where(x => x.Userstatus.HasValue);
 
             var list = result.OrderBy(x => x.CreatedTime).ToList();
         }
@@ -985,11 +986,12 @@ namespace UnitTest
         public void AnyWhere()
         {
             var user = new UserRepository();
+            var expression = ExpressionSplicing.True<FeiUsers>();
             var userdetails = new UserDetailsRepository();
 
             var results = userdetails
                 .Where(x => x.Id > 100)
-                .Where(x => user.Any(y => x.Id == y.Id))
+                .Where(x => !user.Where(expression).Any(y => x.Id == y.Id))
                 .ToList();
         }
 

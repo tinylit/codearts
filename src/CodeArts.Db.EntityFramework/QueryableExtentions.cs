@@ -62,7 +62,7 @@ namespace System.Linq
                           .PropertyStores.FirstOrDefault(y => y.MemberType == x.MemberType && y.CanRead && y.Name == x.Naming) ?? typeItem2
                           .PropertyStores.FirstOrDefault(y => y.MemberType == x.MemberType && y.CanRead && y.Naming == x.Name);
 
-                        if (propItem is null)
+                        if (propItem is null || propItem.Ignore)
                         {
                             return;
                         }

@@ -10,12 +10,12 @@ namespace CodeArts.Caching
     {
         private readonly int defaultDb;
         private readonly string connectString;
-        private static readonly ConcurrentDictionary<string, ICaching> Caches;
+        private static readonly ConcurrentDictionary<string, ICaching> RedisCaches;
 
         /// <summary>
         /// 静态构造函数。
         /// </summary>
-        static RedisCachingProvider() => Caches = new ConcurrentDictionary<string, ICaching>();
+        static RedisCachingProvider() => RedisCaches = new ConcurrentDictionary<string, ICaching>();
 
         /// <summary>
         /// 构造函数（获取配置中名为“redis”的值）。
@@ -53,7 +53,7 @@ namespace CodeArts.Caching
                 throw new ArgumentException("参数不能为空或空格字符!", nameof(regionName));
             }
 
-            return Caches.GetOrAdd(regionName, name => new RedisCaching(name, connectString, defaultDb));
+            return RedisCaches.GetOrAdd(regionName, name => new RedisCaching(name, connectString, defaultDb));
         }
     }
 }

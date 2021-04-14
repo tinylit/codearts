@@ -99,7 +99,7 @@ namespace CodeArts.Mvc.Authentication
                     var validator = new JwtValidator(serializer, provider);
                     var urlEncoder = new JwtBase64UrlEncoder();
 #if NET461
-                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, new HMACSHA256Algorithm());
+                    var decoder = new JwtDecoder(serializer, validator, urlEncoder, JwtAlgorithmGen.Create());
 #else
                     var decoder = new JwtDecoder(serializer, validator, urlEncoder);
 #endif

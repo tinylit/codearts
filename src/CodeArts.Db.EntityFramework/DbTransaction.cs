@@ -37,11 +37,11 @@ namespace CodeArts.Db.EntityFramework
 
             if (repositories.Length > 1)
             {
-                this.dbContexts = Distinct(repositories.Select(x => x.DBContext), repositories.Length);
+                dbContexts = Distinct(repositories.Select(x => x.DBContext), repositories.Length);
             }
             else
             {
-                this.dbContexts = repositories.Select(x => x.DBContext).ToArray();
+                dbContexts = repositories.Select(x => x.DBContext).ToArray();
             }
         }
 
@@ -61,6 +61,11 @@ namespace CodeArts.Db.EntityFramework
             this.dbContexts = dbContexts;
         }
 
+        /// <summary>
+        /// 析构函数（自动调用<see cref="Dispose()"/>方法。）。
+        /// </summary>
+        ~DbTransaction() => Dispose();
+
         private static bool IsRepeat(ILinqRepository[] repositories)
         {
             if (repositories.Length == 1)
@@ -70,16 +75,21 @@ namespace CodeArts.Db.EntityFramework
 
             var list = new List<ILinqRepository>(repositories.Length);
 
-            foreach (var item in repositories)
+            foreach (var repository in repositories)
             {
-                if (list.Contains(item))
+                if (repository is null)
+                {
+                    throw new ArgumentException();
+                }
+
+                if (list.Contains(repository))
                 {
                     list.Clear();
 
                     return true;
                 }
 
-                list.Add(item);
+                list.Add(repository);
             }
 
             list.Clear();
@@ -96,16 +106,21 @@ namespace CodeArts.Db.EntityFramework
 
             var list = new List<DbContext>(dbContexts.Length);
 
-            foreach (var item in dbContexts)
+            foreach (var context in dbContexts)
             {
-                if (list.Contains(item))
+                if (context is null)
+                {
+                    throw new ArgumentException();
+                }
+
+                if (list.Contains(context))
                 {
                     list.Clear();
 
                     return true;
                 }
 
-                list.Add(item);
+                list.Add(context);
             }
 
             list.Clear();
@@ -305,10 +320,7 @@ namespace CodeArts.Db.EntityFramework
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -320,6 +332,17 @@ namespace CodeArts.Db.EntityFramework
             {
                 if (!disposed)
                 {
+                    foreach (var context in dbContexts)
+                    {
+                        if (context.ChangeTracker.HasChanges())
+                        {
+                            foreach (var entry in context.ChangeTracker.Entries())
+                            {
+                                entry.State = EntityState.Unchanged;
+                            }
+                        }
+                    }
+
                     // dispose the db context.
                     Array.Clear(dbContexts, 0, dbContexts.Length);
 

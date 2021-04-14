@@ -264,7 +264,7 @@ namespace CodeArts.Emit
                 emitter.Emit(builder.DefineProperty(emitter.Name, emitter.Attributes, emitter.ReturnType, emitter.ParameterTypes));
             }
 
-#if NETSTANDARD2_0
+#if NET_CORE
             return builder.CreateTypeInfo().AsType();
 #else
             return builder.CreateType();

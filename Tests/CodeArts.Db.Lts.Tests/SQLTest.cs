@@ -703,7 +703,7 @@ namespace CodeArts.Db.Tests
 
             sql.Parameters.ForEach(token =>
             {
-                param[adapter.Settings.ParamterName(token.Name)] = requestid;
+                param[adapter.Settings.ParamterName(token)] = requestid;
             });
 
             //var applyDto = provider.QueryFirst<ApplyDto>(connection, sql.ToString(adapter.Settings), param);

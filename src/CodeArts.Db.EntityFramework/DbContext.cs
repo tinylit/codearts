@@ -2,8 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 #else
 using System;
 using System.Data.Entity;
@@ -141,9 +139,6 @@ namespace CodeArts.Db.EntityFramework
         {
             DbAdapter.OnConfiguring(optionsBuilder, connectionConfig);
 
-            optionsBuilder.ReplaceService<IConcurrencyDetector, DbConcurrencyDetector>()
-                .ReplaceService<IRelationalCommandBuilderFactory, DbRelationalCommandBuilderFactory>();
-
             base.OnConfiguring(optionsBuilder);
         }
 #endif
@@ -203,75 +198,6 @@ namespace CodeArts.Db.EntityFramework
             => Database.ExecuteSqlRawAsync(sql.ToString(Settings), parameters ?? Enumerable.Empty<object>(), cancellationToken);
 #else
             => Database.ExecuteSqlCommandAsync(sql.ToString(Settings), cancellationToken, parameters);
-#endif
-#endif
-
-#if NET_CORE
-        private volatile bool _initializing = false;
-        private volatile bool _initialized = false;
-
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        /// <returns></returns>
-        public override DbSet<TEntity> Set<TEntity>()
-        {
-            if (_initialized)
-            {
-                return base.Set<TEntity>();
-            }
-
-            if (_initializing)
-            {
-                while (!_initialized)
-                {
-                    Thread.Sleep(0);
-                }
-            }
-
-            _initializing = true;
-
-            try
-            {
-                return base.Set<TEntity>();
-            }
-            finally
-            {
-                _initialized = true;
-            }
-        }
-
-#if NETSTANDARD2_1
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        /// <returns></returns>
-        public override DbSet<TEntity> Set<TEntity>(string name)
-        {
-            if (_initialized)
-            {
-                return base.Set<TEntity>(name);
-            }
-
-            if (_initializing)
-            {
-                while (!_initialized)
-                {
-                    Thread.Sleep(0);
-                }
-            }
-
-            _initializing = true;
-
-            try
-            {
-                return base.Set<TEntity>(name);
-            }
-            finally
-            {
-                _initialized = true;
-            }
-        }
 #endif
 #endif
     }

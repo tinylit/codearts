@@ -793,28 +793,5 @@ namespace UnitTest
 
             var list = result.ToList();
         }
-
-#if NETCOREAPP2_1
-
-        [TestMethod]
-        public void SingleContextWithMultiTaskTest()
-        {
-            var user = new UserRepository(context);
-
-            var tasks = new Task[100];
-
-            for (int i = 0; i < 100; i++)
-            {
-                tasks[i] = TaskTest(user);
-            }
-
-            Task.WaitAll(tasks);
-        }
-
-        private Task TaskTest(UserRepository users)
-        {
-            return users.FirstOrDefaultAsync();
-        }
-#endif
     }
 }

@@ -11,13 +11,13 @@ namespace CodeArts
     /// <typeparam name="T">元素类型。</typeparam>
     public class PagedList<T> : IEnumerable<T>, IEnumerable
     {
-        private readonly bool isEnumerable = false;
+        private readonly bool isEnumerable = true;
 
         private readonly int totalCount = 0;
 
-        private readonly IQueryable<T> queryable;
-
         private readonly IEnumerable<T> enumerable;
+
+        private readonly IQueryable<T> queryable;
 
         /// <summary>
         /// 空集合。
@@ -29,8 +29,6 @@ namespace CodeArts
         /// </summary>
         public PagedList()
         {
-            isEnumerable = true;
-
             enumerable = Enumerable.Empty<T>();
         }
 
@@ -52,6 +50,8 @@ namespace CodeArts
             {
                 throw new IndexOutOfRangeException("分页条目不能小于1。");
             }
+
+            isEnumerable = false;
 
             PageIndex = pageIndex;
 
@@ -94,8 +94,6 @@ namespace CodeArts
                 throw new IndexOutOfRangeException("集合元素总数不能大于总条数。");
             }
 
-            isEnumerable = true;
-
             PageIndex = pageIndex;
 
             PageSize = pageSize;
@@ -116,7 +114,7 @@ namespace CodeArts
         /// <summary>
         /// 总数。
         /// </summary>
-        public int Count => isEnumerable ? totalCount : queryable.Count();
+        public virtual int Count => isEnumerable ? totalCount : queryable.Count();
 
         /// <summary>
         /// 获取迭代器。

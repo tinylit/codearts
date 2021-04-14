@@ -195,7 +195,7 @@ namespace CodeArts.Db.EntityFramework
 
             foreach (var item in entry.Properties)
             {
-                if (updates.Any(y => string.Equals(item.Metadata.Name, y, StringComparison.OrdinalIgnoreCase)) || item.Metadata.PropertyInfo.IsDefined(typeof(KeyAttribute), true))
+                if (item.EntityEntry.IsKeySet || updates.Any(y => string.Equals(item.Metadata.Name, y, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
                 }

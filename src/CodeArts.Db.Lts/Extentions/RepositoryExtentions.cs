@@ -1,5 +1,4 @@
-﻿using CodeArts.Db;
-using CodeArts.Db.Lts;
+﻿using CodeArts.Db.Lts;
 using System.Linq.Expressions;
 
 namespace System.Linq

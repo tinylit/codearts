@@ -31,12 +31,14 @@ namespace CodeArts.Mvc.DependencyInjection
         /// <inheritdoc />
         public object ImplementationInstance
         {
+            internal set;
             get;
         }
 
         /// <inheritdoc />
         public Func<IServiceProvider, object> ImplementationFactory
         {
+            internal set;
             get;
         }
 

@@ -22,7 +22,6 @@ namespace System
     public static class UriExtentions
     {
         private static readonly Regex UriPattern = new Regex(@"\w+://.+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
         private abstract class Requestable<T> : IRequestable<T>
         {
             public T Get(int timeout = 5000) => Request("GET", timeout);
@@ -118,7 +117,11 @@ namespace System
 #endif
         }
 
+#if NET40
         private class VerifyRequestableExtend<T> : Requestable<T>, IVerifyRequestableExtend<T>, IResendVerifyRequestableExtend<T>, IResendIntervalVerifyRequestableExtend<T>
+#else
+        private class VerifyRequestableExtend<T> : Requestable<T>, IVerifyRequestableExtendAsync<T>, IVerifyRequestableExtend<T>, IResendVerifyRequestableExtendAsync<T>, IResendVerifyRequestableExtend<T>, IResendIntervalVerifyRequestableExtendAsync<T>, IResendIntervalVerifyRequestableExtend<T>
+#endif
         {
             private int maxRetires = 1;
             private int millisecondsTimeout = -1;
@@ -139,7 +142,7 @@ namespace System
                 this.requestable = requestable;
             }
 
-            public IVerifyRequestableExtend<T> And(Predicate<T> predicate)
+            IVerifyRequestableExtend<T> IVerifyRequestableExtend<T>.And(Predicate<T> predicate)
             {
                 if (predicate is null)
                 {
@@ -150,72 +153,6 @@ namespace System
 
                 return this;
             }
-
-            public override T RequestImplement(string method, int timeout = 5000)
-            {
-                int times = 0;
-                do
-                {
-                    T result = requestable.RequestImplement(method, timeout);
-
-                    if (predicates.All(x => x.Invoke(result)))
-                    {
-                        return result;
-                    }
-
-                    if (++times <= maxRetires)
-                    {
-                        if (interval != null)
-                        {
-                            millisecondsTimeout = interval.Invoke(result, times);
-                        }
-
-                        if (millisecondsTimeout > -1)
-                        {
-                            Thread.Sleep(millisecondsTimeout);
-                        }
-
-                        continue;
-                    }
-
-                    return result;
-
-                } while (true);
-            }
-#if !NET40
-            public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
-            {
-                int times = 0;
-
-                do
-                {
-                    T result = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
-
-                    if (predicates.All(x => x.Invoke(result)))
-                    {
-                        return result;
-                    }
-
-                    if (++times <= maxRetires)
-                    {
-                        if (interval != null)
-                        {
-                            millisecondsTimeout = interval.Invoke(result, times);
-                        }
-
-                        if (millisecondsTimeout > -1)
-                        {
-                            await Task.Delay(millisecondsTimeout).ConfigureAwait(false);
-                        }
-
-                        continue;
-                    }
-
-                    return result;
-
-                } while (true);
-            }
-#endif
 
             public IResendVerifyRequestableExtend<T> ResendCount(int retryCount)
             {
@@ -253,6 +190,120 @@ namespace System
                 return this;
             }
 
+            public override T RequestImplement(string method, int timeout = 5000)
+            {
+                int times = 0;
+                do
+                {
+                    T result = requestable.RequestImplement(method, timeout);
+
+                    if (predicates.All(x => x.Invoke(result)))
+                    {
+                        return result;
+                    }
+
+                    if (++times <= maxRetires)
+                    {
+                        if (interval != null)
+                        {
+                            millisecondsTimeout = interval.Invoke(result, times);
+                        }
+
+                        if (millisecondsTimeout > -1)
+                        {
+                            Thread.Sleep(millisecondsTimeout);
+                        }
+
+                        continue;
+                    }
+
+                    return result;
+
+                } while (true);
+            }
+#if !NET40
+            IVerifyRequestableExtendAsync<T> IVerifyRequestableExtendAsync<T>.And(Predicate<T> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                predicates.Add(predicate);
+
+                return this;
+            }
+
+            IResendVerifyRequestableExtendAsync<T> IVerifyRequestableExtendAsync<T>.ResendCount(int retryCount)
+            {
+                if (retryCount < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(retryCount), "重试次数必须大于零。");
+                }
+
+                maxRetires = Math.Max(retryCount, maxRetires);
+
+                return this;
+            }
+
+            IResendIntervalVerifyRequestableExtendAsync<T> IResendVerifyRequestableExtendAsync<T>.ResendInterval(int millisecondsTimeout)
+            {
+                if (millisecondsTimeout < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), "重试时间间隔不能小于零。");
+                }
+
+                this.millisecondsTimeout = millisecondsTimeout;
+
+                return this;
+            }
+
+            IResendIntervalVerifyRequestableExtendAsync<T> IResendVerifyRequestableExtendAsync<T>.ResendInterval(Func<T, int, int> interval)
+            {
+                if (interval is null)
+                {
+                    throw new ArgumentNullException(nameof(interval));
+                }
+
+                this.interval = interval;
+
+                return this;
+            }
+
+            public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
+            {
+                int times = 0;
+
+                do
+                {
+                    T result = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
+
+                    if (predicates.All(x => x.Invoke(result)))
+                    {
+                        return result;
+                    }
+
+                    if (++times <= maxRetires)
+                    {
+                        if (interval != null)
+                        {
+                            millisecondsTimeout = interval.Invoke(result, times);
+                        }
+
+                        if (millisecondsTimeout > -1)
+                        {
+                            await Task.Delay(millisecondsTimeout).ConfigureAwait(false);
+                        }
+
+                        continue;
+                    }
+
+                    return result;
+
+                } while (true);
+            }
+#endif
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
@@ -268,7 +319,11 @@ namespace System
             }
         }
 
+#if NET40
         private abstract class RequestableExtend<T> : Requestable<T>, IRequestableExtend<T>
+#else
+        private abstract class RequestableExtend<T> : Requestable<T>, IRequestableExtendAsync<T>, IRequestableExtend<T>
+#endif
         {
             public IVerifyRequestableExtend<T> DataVerify(Predicate<T> predicate)
             {
@@ -279,10 +334,278 @@ namespace System
 
                 return new VerifyRequestableExtend<T>(this, predicate);
             }
+
+#if !NET40
+            IVerifyRequestableExtendAsync<T> IRequestableExtendAsync<T>.DataVerify(Predicate<T> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                return new VerifyRequestableExtend<T>(this, predicate);
+            }
+#endif
         }
 
         #region 补充
-        private class CatchRequestable : RequestableExtend<string>, ICatchRequestable
+
+#if !NET40
+        private class ThenRequestableAsync : CastRequestable, IThenConditionRequestableAsync, IThenAndConditionRequestableAsync, IDisposableFileRequestable
+        {
+            private volatile bool isAllocated = false;
+
+            private IRequestableBase requestable;
+            private Requestable<string> request;
+            private IDisposableFileRequestable file;
+            private List<Predicate<WebException>> predicates;
+            private Func<IRequestableBase, WebException, Task> thenAsync;
+
+            public ThenRequestableAsync(Requestable<string> request, IDisposableFileRequestable file, IRequestableBase requestable, Func<IRequestableBase, WebException, Task> thenAsync)
+            {
+                this.request = request;
+                this.requestable = requestable;
+                this.file = file;
+                this.thenAsync = thenAsync ?? throw new ArgumentNullException(nameof(thenAsync));
+                predicates = new List<Predicate<WebException>>();
+            }
+
+            public ThenRequestableAsync(Requestable requestable, Func<IRequestableBase, WebException, Task> thenAsync) : this(requestable, requestable, requestable, thenAsync)
+            {
+            }
+
+            public IFinallyRequestableAsync Finally(Action log) => new FinallyRequestable(this, file, log);
+
+            public IThenRequestableAsync TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
+
+            public IThenConditionRequestableAsync ThenAsync(Func<IRequestableBase, WebException, Task> thenAsycn) => new ThenRequestableAsync(this, this, requestable, thenAsync);
+
+            public byte[] UploadFile(string fileName, int timeout = 5000) => throw new NotImplementedException();
+
+            public byte[] UploadFile(string method, string fileName, int timeout = 5000) => throw new NotImplementedException();
+
+            public void DownloadFile(string fileName, int timeout = 5000) => throw new NotImplementedException();
+
+            public override string RequestImplement(string method, int timeout = 5000) => throw new NotImplementedException();
+
+            public ICatchRequestableAsync WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
+
+            public IResultStringCatchRequestableAsync WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+
+            public IThenAndConditionRequestableAsync If(Predicate<WebException> match)
+            {
+                if (match is null)
+                {
+                    throw new ArgumentNullException(nameof(match));
+                }
+
+                predicates.Add(match);
+
+                return this;
+            }
+
+            public IThenAndConditionRequestableAsync And(Predicate<WebException> match)
+            {
+                if (match is null)
+                {
+                    throw new ArgumentNullException(nameof(match));
+                }
+
+                predicates.Add(match);
+
+                return this;
+            }
+
+            private static async Task ThenAsync(Func<IRequestableBase, WebException, Task> action, IRequestableBase requestableBase, WebException webException)
+            {
+                if (requestableBase is Requestable requestable)
+                {
+                    try
+                    {
+                        requestable.IsNotQueryFix = false;
+
+                        await action.Invoke(requestableBase, webException);
+                    }
+                    finally
+                    {
+                        requestable.IsNotQueryFix = true;
+                    }
+                }
+                else
+                {
+                    await action.Invoke(requestableBase, webException);
+                }
+            }
+
+#if !NET40
+            public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
+            {
+                if (isAllocated)
+                {
+                    return await request.RequestImplementAsync(method, timeout).ConfigureAwait(false);
+                }
+
+                try
+                {
+                    return await request.RequestImplementAsync(method, timeout).ConfigureAwait(false);
+                }
+                catch (WebException e)
+                {
+                    if (predicates.All(x => x.Invoke(e)))
+                    {
+                        isAllocated = true;
+
+                        await ThenAsync(thenAsync, requestable, e);
+
+                        return await request.RequestImplementAsync(method, timeout).ConfigureAwait(false);
+                    }
+
+                    throw e;
+                }
+            }
+
+            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
+
+            public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
+            {
+                if (isAllocated)
+                {
+                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
+                }
+
+                try
+                {
+                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
+                }
+                catch (WebException e)
+                {
+                    if (predicates.All(x => x.Invoke(e)))
+                    {
+                        isAllocated = true;
+
+                        await ThenAsync(thenAsync, requestable, e);
+
+                        return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
+                    }
+
+                    throw e;
+                }
+            }
+
+            public async Task DownloadFileAsync(string fileName, int timeout = 5000)
+            {
+                if (isAllocated)
+                {
+                    await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
+                }
+                else
+                {
+                    try
+                    {
+                        await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
+                    }
+                    catch (WebException e)
+                    {
+                        if (predicates.All(x => x.Invoke(e)))
+                        {
+                            isAllocated = true;
+
+                            await ThenAsync(thenAsync, requestable, e);
+
+                            await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
+                        }
+
+                        throw e;
+                    }
+                }
+            }
+
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
+            {
+                try
+                {
+                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
+            {
+                try
+                {
+                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
+                }
+                finally
+                {
+                    Dispose();
+                }
+            }
+
+#endif
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    request?.Dispose();
+                    file?.Dispose();
+                    file = null;
+                    thenAsync = null;
+                    request = null;
+                    requestable = null;
+                    predicates = null;
+                }
+
+                base.Dispose(disposing);
+            }
+        }
+#endif
+
+#if NET40
+        private abstract class CastRequestable : RequestableExtend<string>, ICastRequestable
+#else
+        private abstract class CastRequestable : RequestableExtend<string>, ICastRequestableAsync, ICastRequestable
+#endif
+        {
+            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
+
+            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
+
+            public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
+
+            public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
+
+#if !NET40
+            IJsonRequestableAsync<T> ICastRequestableAsync.JsonCast<T>(NamingType namingType) => new JsonRequestable<T>(this, namingType);
+
+            IJsonRequestableAsync<T> ICastRequestableAsync.JsonCast<T>(T _, NamingType namingType) => new JsonRequestable<T>(this, namingType);
+
+            IXmlRequestableAsync<T> ICastRequestableAsync.XmlCast<T>() => new XmlRequestable<T>(this);
+
+            IXmlRequestableAsync<T> ICastRequestableAsync.XmlCast<T>(T _) => new XmlRequestable<T>(this);
+#endif
+        }
+
+#if NET40
+        private class CatchRequestable : CastRequestable, ICatchRequestable
+#else
+        private class CatchRequestable : CastRequestable, ICatchRequestableAsync, ICatchRequestable
+#endif
         {
             private Action<WebException> log;
             private Requestable<string> requestable;
@@ -307,14 +630,10 @@ namespace System
                 return this;
             }
 
-            public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue)
-                => new ResultStringCatchRequestable(this, returnValue);
+            public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
             public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
 
             public override string RequestImplement(string method, int timeout = 5000)
             {
@@ -395,7 +714,24 @@ namespace System
                     Dispose();
                 }
             }
+
 #if !NET40
+            ICatchRequestableAsync ICatchRequestableAsync.WebCatch(Action<WebException> log)
+            {
+                if (log is null)
+                {
+                    throw new ArgumentNullException(nameof(log));
+                }
+
+                this.log += log;
+
+                return this;
+            }
+
+            IResultStringCatchRequestableAsync ICatchRequestableAsync.WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+
+            IFinallyRequestableAsync ICatchRequestableAsync.Finally(Action log) => new FinallyRequestable(this, file, log);
+
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -410,7 +746,7 @@ namespace System
                 }
             }
 
-            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
+            public Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => UploadFileAsync(null, fileName, timeout);
 
             public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
             {
@@ -440,7 +776,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -452,7 +788,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
             {
                 try
                 {
@@ -464,7 +800,7 @@ namespace System
                 }
             }
 
-            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -475,13 +811,7 @@ namespace System
                     Dispose();
                 }
             }
-
 #endif
-
-            public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
-
 
             protected override void Dispose(bool disposing)
             {
@@ -500,7 +830,11 @@ namespace System
             }
         }
 
-        private class FinallyRequestable : RequestableExtend<string>, IFinallyRequestable, IFinallyStringRequestable
+#if NET40
+        private class FinallyRequestable : CastRequestable, IFinallyRequestable, IFinallyStringRequestable
+#else
+        private class FinallyRequestable : CastRequestable, IFinallyRequestableAsync, IFinallyRequestable, IFinallyStringRequestableAsync, IFinallyStringRequestable
+#endif
         {
             private Action log;
             private Requestable<string> requestable;
@@ -513,10 +847,6 @@ namespace System
                 this.log = log ?? throw new ArgumentNullException(nameof(log));
             }
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
-
             public override string RequestImplement(string method, int timeout = 5000)
             {
                 try
@@ -592,6 +922,7 @@ namespace System
             }
 
 #if !NET40
+
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -630,7 +961,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -642,7 +973,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
             {
                 try
                 {
@@ -654,7 +985,7 @@ namespace System
                 }
             }
 
-            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -666,10 +997,6 @@ namespace System
                 }
             }
 #endif
-
-            public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IXmlRequestable<T> XmlCast<T>(T anonymousTypeObject) where T : class => XmlCast<T>();
 
             protected override void Dispose(bool disposing)
             {
@@ -686,7 +1013,11 @@ namespace System
             }
         }
 
-        private class IIFThenRequestable : RequestableExtend<string>, IThenRequestable, IRetryThenRequestable, IRetryIntervalThenRequestable
+#if NET40
+        private class IIFThenRequestable : CastRequestable, IThenRequestable, IRetryThenRequestable, IRetryIntervalThenRequestable
+#else
+        private class IIFThenRequestable : CastRequestable, IThenRequestableAsync, IThenRequestable, IRetryThenRequestableAsync, IRetryThenRequestable, IRetryIntervalThenRequestableAsync, IRetryIntervalThenRequestable
+#endif
         {
             private int maxRetires = 1;
             private int millisecondsTimeout = -1;
@@ -798,14 +1129,6 @@ namespace System
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
-
-            public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
-
             public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
 
             public byte[] UploadFile(string method, string fileName, int timeout = 5000)
@@ -896,6 +1219,57 @@ namespace System
             }
 
 #if !NET40
+
+
+            IThenRequestableAsync IThenRequestableAsync.Or(Predicate<WebException> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                predicates.Add(predicate);
+
+                return this;
+            }
+
+            IRetryThenRequestableAsync IThenRequestableAsync.RetryCount(int retryCount)
+            {
+                if (retryCount < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(retryCount), "重试次数必须大于零。");
+                }
+
+                maxRetires = Math.Max(retryCount, maxRetires);
+
+                return this;
+            }
+
+            ICatchRequestableAsync ICatchRequestableAsync.WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
+
+            IResultStringCatchRequestableAsync ICatchRequestableAsync.WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+
+            IFinallyRequestableAsync ICatchRequestableAsync.Finally(Action log) => new FinallyRequestable(this, file, log);
+
+            IRetryIntervalThenRequestableAsync IRetryThenRequestableAsync.RetryInterval(int millisecondsTimeout)
+            {
+                if (millisecondsTimeout < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), "重试时间间隔不能小于零。");
+                }
+
+                this.millisecondsTimeout = millisecondsTimeout;
+
+                return this;
+            }
+
+            IRetryIntervalThenRequestableAsync IRetryThenRequestableAsync.RetryInterval(Func<WebException, int, int> interval)
+            {
+                this.interval = interval ?? throw new ArgumentNullException(nameof(interval));
+
+                return this;
+            }
+
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 int times = 0;
@@ -999,7 +1373,7 @@ namespace System
                 } while (true);
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -1011,7 +1385,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
             {
                 try
                 {
@@ -1023,7 +1397,7 @@ namespace System
                 }
             }
 
-            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -1051,8 +1425,11 @@ namespace System
                 base.Dispose(disposing);
             }
         }
-
-        private class ThenRequestable : RequestableExtend<string>, IThenConditionRequestable, IThenAndConditionRequestable, IDisposableFileRequestable
+#if NET40
+        private class ThenRequestable : CastRequestable, IThenConditionRequestable, IThenAndConditionRequestable, IDisposableFileRequestable
+#else
+        private class ThenRequestable : CastRequestable, IThenConditionRequestableAsync, IThenConditionRequestable, IThenAndConditionRequestableAsync, IThenAndConditionRequestable, IDisposableFileRequestable
+#endif
         {
             private volatile bool isAllocated = false;
 
@@ -1111,14 +1488,6 @@ namespace System
             public ICatchRequestable WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
-
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
-
-            public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
-
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => JsonCast<T>(namingType);
-
-            public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
 
             public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
 
@@ -1258,6 +1627,41 @@ namespace System
             }
 
 #if !NET40
+
+            IThenAndConditionRequestableAsync IThenConditionRequestableAsync.If(Predicate<WebException> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                predicates.Add(predicate);
+
+                return this;
+            }
+
+            ICatchRequestableAsync ICatchRequestableAsync.WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
+
+            IResultStringCatchRequestableAsync ICatchRequestableAsync.WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
+
+            IFinallyRequestableAsync ICatchRequestableAsync.Finally(Action log) => new FinallyRequestable(this, file, log);
+
+            IThenAndConditionRequestableAsync IThenAndConditionRequestableAsync.And(Predicate<WebException> predicate)
+            {
+                if (predicate is null)
+                {
+                    throw new ArgumentNullException(nameof(predicate));
+                }
+
+                predicates.Add(predicate);
+
+                return this;
+            }
+
+            IThenRequestableAsync IThenAndConditionRequestableAsync.TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
+
+            public IThenConditionRequestableAsync ThenAsync(Func<IRequestableBase, WebException, Task> thenAsync) => new ThenRequestableAsync(this, this, requestable, thenAsync);
+
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 if (isAllocated)
@@ -1340,7 +1744,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -1352,7 +1756,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
             {
                 try
                 {
@@ -1364,7 +1768,7 @@ namespace System
                 }
             }
 
-            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -1395,7 +1799,11 @@ namespace System
             }
         }
 
+#if NET40
         private class ResultCatchRequestable<T> : RequestableExtend<T>, IResultCatchRequestable<T>
+#else
+        private class ResultCatchRequestable<T> : RequestableExtend<T>, IResultCatchRequestableAsync<T>, IResultCatchRequestable<T>
+#endif
         {
             private Requestable<T> requestable;
             private Func<WebException, T> returnValue;
@@ -1421,6 +1829,7 @@ namespace System
             }
 
 #if !NET40
+            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -1447,7 +1856,11 @@ namespace System
             }
         }
 
+#if NET40
         private class JsonCatchRequestable<T> : RequestableExtend<T>, IJsonCatchRequestable<T>, IJsonResultCatchRequestable<T>
+#else
+        private class JsonCatchRequestable<T> : RequestableExtend<T>, IJsonCatchRequestableAsync<T>, IJsonCatchRequestable<T>, IJsonResultCatchRequestableAsync<T>, IJsonResultCatchRequestable<T>
+#endif
         {
             private Action<string, Exception> log;
             private Func<string, Exception, T> returnValue;
@@ -1525,6 +1938,34 @@ namespace System
             }
 
 #if !NET40
+
+            IResultCatchRequestableAsync<T> IJsonCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IJsonCatchRequestableAsync<T> IJsonCatchRequestableAsync<T>.JsonCatch(Action<string, Exception> log)
+            {
+                if (log is null)
+                {
+                    throw new ArgumentNullException(nameof(log));
+                }
+
+                this.log += log;
+
+                return this;
+            }
+
+            IJsonResultCatchRequestableAsync<T> IJsonCatchRequestableAsync<T>.JsonCatch(Func<string, Exception, T> returnValue)
+            {
+                this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
+
+                return this;
+            }
+
+            IFinallyRequestableAsync<T> IJsonCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
+            IResultCatchRequestableAsync<T> IJsonResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
@@ -1561,7 +2002,11 @@ namespace System
             }
         }
 
+#if NET40
         private class JsonResultCatchRequestable<T> : RequestableExtend<T>, IJsonResultCatchRequestable<T>
+#else
+        private class JsonResultCatchRequestable<T> : RequestableExtend<T>, IJsonResultCatchRequestableAsync<T>, IJsonResultCatchRequestable<T>
+#endif
         {
             private Requestable<string> requestable;
             private Func<string, Exception, T> returnValue;
@@ -1574,8 +2019,7 @@ namespace System
                 this.namingType = namingType;
             }
 
-            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
-                => new ResultCatchRequestable<T>(this, returnValue);
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
@@ -1607,6 +2051,11 @@ namespace System
             }
 
 #if !NET40
+
+            IResultCatchRequestableAsync<T> IJsonResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
@@ -1635,7 +2084,11 @@ namespace System
             }
         }
 
+#if NET40
         private class XmlCatchRequestable<T> : RequestableExtend<T>, IXmlCatchRequestable<T>, IXmlResultCatchRequestable<T>
+#else
+        private class XmlCatchRequestable<T> : RequestableExtend<T>, IXmlCatchRequestableAsync<T>, IXmlCatchRequestable<T>, IXmlResultCatchRequestableAsync<T>, IXmlResultCatchRequestable<T>
+#endif
         {
             private Action<string, XmlException> log;
             private Func<string, XmlException, T> returnValue;
@@ -1660,18 +2113,12 @@ namespace System
 
             public IXmlResultCatchRequestable<T> XmlCatch(Func<string, XmlException, T> returnValue)
             {
-                if (returnValue is null)
-                {
-                    throw new ArgumentNullException(nameof(returnValue));
-                }
-
-                this.returnValue = returnValue;
+                this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
 
                 return this;
             }
 
-            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
-                => new ResultCatchRequestable<T>(this, returnValue);
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
@@ -1697,6 +2144,29 @@ namespace System
             }
 
 #if !NET40
+
+            IResultCatchRequestableAsync<T> IXmlCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IXmlCatchRequestableAsync<T> IXmlCatchRequestableAsync<T>.XmlCatch(Action<string, XmlException> log)
+            {
+                this.log += log;
+
+                return this;
+            }
+
+            IXmlResultCatchRequestableAsync<T> IXmlCatchRequestableAsync<T>.XmlCatch(Func<string, XmlException, T> returnValue)
+            {
+                this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
+
+                return this;
+            }
+
+            IFinallyRequestableAsync<T> IXmlCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
+            IResultCatchRequestableAsync<T> IXmlResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
@@ -1733,7 +2203,11 @@ namespace System
             }
         }
 
+#if NET40
         private class XmlResultCatchRequestable<T> : RequestableExtend<T>, IXmlResultCatchRequestable<T>
+#else
+        private class XmlResultCatchRequestable<T> : RequestableExtend<T>, IXmlResultCatchRequestableAsync<T>, IXmlResultCatchRequestable<T>
+#endif
         {
             private Requestable<string> requestable;
             private Func<string, XmlException, T> returnValue;
@@ -1744,8 +2218,7 @@ namespace System
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
             }
 
-            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue)
-                => new ResultCatchRequestable<T>(this, returnValue);
+            public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
             public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
@@ -1764,6 +2237,11 @@ namespace System
             }
 
 #if !NET40
+
+            IResultCatchRequestableAsync<T> IXmlResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 string value = await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
@@ -1791,8 +2269,11 @@ namespace System
                 base.Dispose(disposing);
             }
         }
-
+#if NET40
         private class Finallyequestable<T> : RequestableExtend<T>, IFinallyRequestable<T>
+#else
+        private class Finallyequestable<T> : RequestableExtend<T>, IFinallyRequestableAsync<T>, IFinallyRequestable<T>
+#endif
         {
             private Requestable<T> requestable;
             private Action log;
@@ -1840,8 +2321,11 @@ namespace System
                 base.Dispose(disposing);
             }
         }
-
+#if NET40
         private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestable
+#else
+        private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestableAsync, IFinallyStringRequestable
+#endif
         {
             private Action log;
             private Requestable<string> requestable;
@@ -1891,7 +2375,7 @@ namespace System
         }
         #endregion
 
-        private class Requestable : RequestableExtend<string>, IRequestable, IDisposableFileRequestable
+        private class Requestable : CastRequestable, IRequestable, IDisposableFileRequestable
         {
             private Uri __uri;
             private string __data;
@@ -2210,11 +2694,6 @@ namespace System
                 }
             }
 
-            public IJsonRequestable<T> JsonCast<T>(NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
-            public IXmlRequestable<T> XmlCast<T>() where T : class => new XmlRequestable<T>(this);
-            public IJsonRequestable<T> JsonCast<T>(T _, NamingType namingType = NamingType.Normal) where T : class => new JsonRequestable<T>(this, namingType);
-            public IXmlRequestable<T> XmlCast<T>(T _) where T : class => new XmlRequestable<T>(this);
-
             public IThenRequestable TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, match);
 
             public IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, then);
@@ -2366,7 +2845,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -2378,7 +2857,7 @@ namespace System
                 }
             }
 
-            async Task<byte[]> IFileRequestable.UploadFileAsync(string method, string fileName, int timeout)
+            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
             {
                 try
                 {
@@ -2390,7 +2869,7 @@ namespace System
                 }
             }
 
-            async Task IFileRequestable.DownloadFileAsync(string fileName, int timeout)
+            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
             {
                 try
                 {
@@ -2402,6 +2881,7 @@ namespace System
                 }
             }
 
+            public IThenConditionRequestableAsync TryThenAsync(Func<IRequestableBase, WebException, Task> thenAsync) => new ThenRequestableAsync(this, thenAsync);
 #endif
 
             protected override void Dispose(bool disposing)
@@ -2419,7 +2899,11 @@ namespace System
             }
         }
 
+#if NET40
         private class ResultStringCatchRequestable : RequestableExtend<string>, IResultStringCatchRequestable
+#else
+        private class ResultStringCatchRequestable : RequestableExtend<string>, IResultStringCatchRequestableAsync, IResultStringCatchRequestable
+#endif
         {
             private Requestable<string> requestable;
             private Func<WebException, string> returnValue;
@@ -2445,6 +2929,7 @@ namespace System
             }
 
 #if !NET40
+            IFinallyStringRequestableAsync IResultStringCatchRequestableAsync.Finally(Action log) => new FinallyStringRequestable(this, log);
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -2471,7 +2956,11 @@ namespace System
             }
         }
 
+#if NET40
         private class JsonRequestable<T> : RequestableExtend<T>, IJsonRequestable<T>
+#else
+        private class JsonRequestable<T> : RequestableExtend<T>, IJsonRequestableAsync<T>, IJsonRequestable<T>
+#endif
         {
             private Requestable<string> requestable;
 
@@ -2489,6 +2978,14 @@ namespace System
             }
 
 #if !NET40
+
+            IJsonResultCatchRequestableAsync<T> IJsonRequestableAsync<T>.JsonCatch(Action<string, Exception> log) => new JsonCatchRequestable<T>(requestable, log, NamingType);
+
+            IJsonResultCatchRequestableAsync<T> IJsonRequestableAsync<T>.JsonCatch(Func<string, Exception, T> returnValue) => new JsonResultCatchRequestable<T>(requestable, returnValue, NamingType);
+
+            IResultCatchRequestableAsync<T> IJsonRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IFinallyRequestableAsync<T> IJsonRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
 
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -2516,7 +3013,11 @@ namespace System
             }
         }
 
+#if NET40
         private class XmlRequestable<T> : RequestableExtend<T>, IXmlRequestable<T>
+#else
+        private class XmlRequestable<T> : RequestableExtend<T>, IXmlRequestableAsync<T>, IXmlRequestable<T>
+#endif
         {
             private Requestable<string> requestable;
 
@@ -2531,6 +3032,15 @@ namespace System
             }
 
 #if !NET40
+
+            IXmlCatchRequestableAsync<T> IXmlRequestableAsync<T>.XmlCatch(Action<string, XmlException> log) => new XmlCatchRequestable<T>(requestable, log);
+
+            IXmlResultCatchRequestableAsync<T> IXmlRequestableAsync<T>.XmlCatch(Func<string, XmlException, T> returnValue) => new XmlResultCatchRequestable<T>(requestable, returnValue);
+
+            IResultCatchRequestableAsync<T> IXmlRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
+
+            IFinallyRequestableAsync<T> IXmlRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
+
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 return XmlHelper.XmlDeserialize<T>(await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false));

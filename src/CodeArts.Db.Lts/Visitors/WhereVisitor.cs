@@ -34,12 +34,19 @@ namespace CodeArts.Db.Lts.Visitors
 
             switch (node.Body)
             {
-                case ConstantExpression constant:
-                    if (Equals(constant.Value, false) && !writer.IsReverseCondition)
+                case ConstantExpression constant when constant.Value is bool flag:
+                    if (flag == writer.IsReverseCondition)
                     {
                         writer.BooleanTrue();
 
-                        writer.Equal();
+                        if (flag)
+                        {
+                            writer.NotEqual();
+                        }
+                        else
+                        {
+                            writer.Equal();
+                        }
 
                         writer.BooleanFalse();
                     }
@@ -178,21 +185,25 @@ namespace CodeArts.Db.Lts.Visitors
                     return;
                 }
 
-                if (isConditionBalance)
+                if (isConditionBalance && value is bool flag)
                 {
-                    if (value.Equals(!writer.IsReverseCondition))
+                    if (flag != writer.IsReverseCondition)
                     {
                         return;
                     }
 
                     base.VisitMemberIsVariable(node);
 
-                    if (node.IsBoolean())
+                    if (flag)
                     {
                         writer.Equal();
-
-                        writer.BooleanFalse();
                     }
+                    else
+                    {
+                        writer.NotEqual();
+                    }
+
+                    writer.BooleanFalse();
 
                     return;
                 }
@@ -211,6 +222,19 @@ namespace CodeArts.Db.Lts.Visitors
                 writer.Equal();
 
                 writer.BooleanTrue();
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitNot(UnaryExpression node)
+        {
+            if (node.Operand.IsBoolean())
+            {
+                writer.ReverseCondition(() => Visit(node.Operand));
+            }
+            else
+            {
+                base.VisitNot(node);
             }
         }
     }

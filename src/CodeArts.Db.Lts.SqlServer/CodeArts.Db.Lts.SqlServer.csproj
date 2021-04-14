@@ -6,7 +6,7 @@
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Authors>Tiny Lit</Authors>
-		<Version>6.1.5.2</Version>
+		<Version>7.0.0.0</Version>
 		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
 		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -16,10 +16,10 @@
 		<Description>Provide SqlServer support for ORM.</Description>
 		<RootNamespace>CodeArts.Db.Lts</RootNamespace>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
-	  <ProjectReference Include="..\CodeArts.Db.Lts\CodeArts.Db.Lts.csproj" />
-	  <ProjectReference Include="..\CodeArts.Db.SqlServer\CodeArts.Db.SqlServer.csproj" />
+		<ProjectReference Include="..\CodeArts.Db.Lts\CodeArts.Db.Lts.csproj" />
+		<ProjectReference Include="..\CodeArts.Db.SqlServer\CodeArts.Db.SqlServer.csproj" />
 	</ItemGroup>
 
 </Project>

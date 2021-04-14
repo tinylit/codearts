@@ -1,4 +1,4 @@
-﻿namespace CodeArts.Db.Lts
+﻿namespace CodeArts.Db
 {
     /// <summary>
     /// 命令。

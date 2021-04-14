@@ -145,6 +145,10 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 VisitOfString(node);
             }
+            else if (Types.IQueryable.IsAssignableFrom(declaringType))
+            {
+                VisitOfLts(node);
+            }
             else if (Types.IEnumerable.IsAssignableFrom(declaringType))
             {
                 VisitSet(node);
@@ -193,6 +197,24 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
+        /// <inheritdoc />
+        protected override void VisitOfLts(MethodCallExpression node)
+        {
+            switch (node.Method.Name)
+            {
+                case MethodCall.Where:
+                case MethodCall.TakeWhile:
+                    VisitCondition(node);
+                    break;
+                case MethodCall.SkipWhile:
+                    writer.ReverseCondition(() => VisitCondition(node));
+                    break;
+                default:
+                    base.VisitOfLts(node);
+                    break;
+            }
+        }
+
         private bool IsPlainVariableEx(Expression node)
         {
             switch (node)
@@ -212,32 +234,64 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected virtual internal void VisitCondition(MethodCallExpression node)
         {
-            bool isPlainVariable = IsPlainVariableEx(node.Arguments[0]);
-
-            if (!isPlainVariable)
+            if (node.Arguments.Count == 1)
             {
-                Visit(node.Arguments[0]);
+                bool isPlainVariable = IsPlainVariableEx(node.Object);
+
+                if (!isPlainVariable)
+                {
+                    Visit(node.Object);
+                }
+
+                Workflow(whereIsNotEmpty =>
+                {
+                    if (isPlainVariable)
+                    {
+                        Visit(node.Object);
+                    }
+
+                    if (whereIsNotEmpty)
+                    {
+                        whereSwitch.Execute();
+                    }
+
+                }, () =>
+                {
+                    using (var visitor = new WhereVisitor(this))
+                    {
+                        visitor.Startup(node.Arguments[0]);
+                    }
+                });
             }
-
-            Workflow(whereIsNotEmpty =>
+            else
             {
-                if (isPlainVariable)
+                bool isPlainVariable = IsPlainVariableEx(node.Arguments[0]);
+
+                if (!isPlainVariable)
                 {
                     Visit(node.Arguments[0]);
                 }
 
-                if (whereIsNotEmpty)
+                Workflow(whereIsNotEmpty =>
                 {
-                    whereSwitch.Execute();
-                }
+                    if (isPlainVariable)
+                    {
+                        Visit(node.Arguments[0]);
+                    }
 
-            }, () =>
-            {
-                using (var visitor = new WhereVisitor(this))
+                    if (whereIsNotEmpty)
+                    {
+                        whereSwitch.Execute();
+                    }
+
+                }, () =>
                 {
-                    visitor.Startup(node.Arguments[1]);
-                }
-            });
+                    using (var visitor = new WhereVisitor(this))
+                    {
+                        visitor.Startup(node.Arguments[1]);
+                    }
+                });
+            }
         }
         #endregion
 

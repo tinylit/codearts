@@ -68,7 +68,7 @@ namespace CodeArts.Config
                 return default;
             }
 
-            _helper.OnConfigChanged += _ => value.SaveChanges(_helper.Get<TConfigable>(key, default));
+            _helper.OnConfigChanged += _ => value.SaveChanges(_helper.Get(key, default(TConfigable)));
 
             return value;
         }

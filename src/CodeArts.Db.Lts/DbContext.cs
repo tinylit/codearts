@@ -170,11 +170,9 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                var token = sql.Parameters.First();
-
                 return new Dictionary<string, object>
                 {
-                    [token.Name] = param
+                    [sql.Parameters.First()] = param
                 };
             }
 

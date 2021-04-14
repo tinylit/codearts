@@ -5,6 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Version>7.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>The configuration file reader.</Description>
@@ -14,7 +15,6 @@
 		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
 		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
-		<Version>6.1.5</Version>
 		<RootNamespace>CodeArts</RootNamespace>
 	</PropertyGroup>
 

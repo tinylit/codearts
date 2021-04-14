@@ -212,7 +212,12 @@ namespace CodeArts.Db.Lts
                 this.commandSql = commandSql;
             }
 
-            public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default) => enumerator ?? (enumerator = new AsyncEnumerator<T>(context, readyParam, commandSql, cancellationToken));
+            public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+#if NETSTANDARD2_1
+                => enumerator ??= new AsyncEnumerator<T>(context, readyParam, commandSql, cancellationToken);
+#else
+                => enumerator ?? (enumerator = new AsyncEnumerator<T>(context, readyParam, commandSql, cancellationToken));
+#endif
         }
 
         private sealed class AsyncEnumerator<T> : IAsyncEnumerator<T>
@@ -488,5 +493,5 @@ namespace CodeArts.Db.Lts
             }
         }
 #endif
-                }
+    }
 }

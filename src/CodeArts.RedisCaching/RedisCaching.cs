@@ -28,7 +28,7 @@ namespace CodeArts.Caching
         /// <param name="region">缓存区域。</param>
         /// <param name="connectString">连接字符串（未指定时，从配置文件中读取名为“redis”的字符串作为链接）。</param>
         /// <param name="defaultDb">默认db。</param>
-        public RedisCaching(string region, string connectString = null, int defaultDb = 0)
+        public RedisCaching(string region, string connectString = null, int defaultDb = -1)
         {
             _region = region ?? throw new ArgumentNullException(nameof(region));
 
