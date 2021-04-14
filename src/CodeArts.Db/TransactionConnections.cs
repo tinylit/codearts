@@ -97,7 +97,6 @@ namespace CodeArts.Db
         private class TransactionConnection : System.Data.Common.DbConnection, ITransactionConnection
         {
             private readonly System.Data.Common.DbConnection connection;
-            private readonly Transaction transaction;
 
             public override string ConnectionString { get => connection.ConnectionString; set => connection.ConnectionString = value; }
 
@@ -131,10 +130,9 @@ namespace CodeArts.Db
 
             public override ConnectionState State => connection.State;
 
-            public TransactionConnection(System.Data.Common.DbConnection connection, Transaction transaction)
+            public TransactionConnection(System.Data.Common.DbConnection connection)
             {
                 this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-                this.transaction = transaction ?? throw new ArgumentNullException(nameof(transaction));
             }
 
 #if NET_NORMAL || NET_CORE
@@ -168,8 +166,6 @@ namespace CodeArts.Db
                         }
                         break;
                 }
-
-                connection.EnlistTransaction(transaction);
             }
 #endif
 
@@ -284,7 +280,7 @@ namespace CodeArts.Db
 
                 if (conn is System.Data.Common.DbConnection dbConnection)
                 {
-                    info = new TransactionConnection(dbConnection, current);
+                    info = new TransactionConnection(dbConnection);
                 }
                 else
                 {
