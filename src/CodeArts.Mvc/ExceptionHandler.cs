@@ -93,7 +93,7 @@ namespace CodeArts.Exceptions
                     }
 
 #if NET_CORE
-                    Logger.LogError(error, error.Message);
+                    Logger.Error(error, error.Message);
 #else
                     Logger.Error(error.Message, error);
 #endif

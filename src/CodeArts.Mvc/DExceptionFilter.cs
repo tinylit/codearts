@@ -10,8 +10,6 @@ using System.Web.Http.Filters;
 #endif
 using System;
 using System.Net;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace CodeArts.Mvc
 {
@@ -29,6 +27,7 @@ namespace CodeArts.Mvc
         public void OnException(ExceptionContext context)
         {
             var json = ExceptionHandler.Handler(context.Exception);
+
             if (json is null)
             {
                 return;
@@ -37,6 +36,7 @@ namespace CodeArts.Mvc
             ResultFilter?.Invoke(json);
 
             int code = (int)HttpStatusCode.OK;
+
             context.Result = new JsonResult(json)
             {
                 StatusCode = code
@@ -59,6 +59,7 @@ namespace CodeArts.Mvc
         public override void OnException(HttpActionExecutedContext context)
         {
             var json = ExceptionHandler.Handler(context.Exception);
+
             if (json is null)
             {
                 return;

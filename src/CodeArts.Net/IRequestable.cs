@@ -739,7 +739,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 带有条件的异步延续能力请求。
     /// </summary>
-    public interface IThenConditionRequestableAsync : ICatchRequestableAsync, IFileRequestableAsync
+    public interface IThenConditionRequestableAsync
     {
         /// <summary>
         /// 所有条件都满足时，重试一次请求。
@@ -1308,7 +1308,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 带有条件的延续能力请求。
     /// </summary>
-    public interface IThenConditionRequestable : ICatchRequestable, IFileRequestable
+    public interface IThenConditionRequestable
     {
         /// <summary>
         /// 所有条件都满足时，重试一次请求。
