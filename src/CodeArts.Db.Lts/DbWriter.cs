@@ -320,6 +320,7 @@ namespace CodeArts.Db.Lts
             public IDbRouteExecuter<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel)
             {
                 this.isolationLevel = isolationLevel;
+
                 useTransaction = true;
 
                 return this;
