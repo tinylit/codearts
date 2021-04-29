@@ -58,10 +58,6 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.CloseBrace();
 
-                writer.From();
-
-                WriteTableName(tableInfo, alias);
-
             }, () =>
             {
                 if (node.Arguments.Count == 1)
@@ -72,7 +68,6 @@ namespace CodeArts.Db.Lts.Visitors
                 {
                     visitor.VisitCondition(node);
                 }
-
             });
         }
     }

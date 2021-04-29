@@ -333,6 +333,8 @@ namespace CodeArts.Db
 #if NETSTANDARD2_1
             public override Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default) => connection.ChangeDatabaseAsync(databaseName, cancellationToken);
 
+            protected override ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken) => connection.BeginTransactionAsync(isolationLevel, cancellationToken);
+
             public override Task CloseAsync() => connection.CloseAsync();
 
             public override ValueTask DisposeAsync()

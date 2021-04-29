@@ -1,7 +1,9 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace CodeArts.Db.Lts.Visitors
@@ -11,7 +13,48 @@ namespace CodeArts.Db.Lts.Visitors
     /// </summary>
     public class JoinVisitor : CoreVisitor
     {
+        private class MyNewExpressionVisitor : ExpressionVisitor
+        {
+            private readonly Dictionary<MemberInfo, Expression> keyValues;
+
+            public MyNewExpressionVisitor(Dictionary<MemberInfo, Expression> keyValues)
+            {
+                this.keyValues = keyValues;
+            }
+
+            protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+            {
+                keyValues.Add(node.Member, node.Expression);
+
+                return node;
+            }
+
+            protected override Expression VisitMemberInit(MemberInitExpression node)
+            {
+                foreach (var binding in node.Bindings)
+                {
+                    VisitMemberBinding(binding);
+                }
+
+                return node;
+            }
+
+            /// <inheritdoc />
+            protected override Expression VisitNew(NewExpression node)
+            {
+                for (int i = 0; i < node.Members.Count; i++)
+                {
+                    keyValues.Add(node.Members[i], node.Arguments[i]);
+                }
+
+                return node;
+            }
+        }
+
+        private bool buildNewEqual = false;
+
         private readonly SelectVisitor visitor;
+        private readonly Dictionary<MemberInfo, Expression> joinExpressions = new Dictionary<MemberInfo, Expression>();
 
         /// <inheritdoc />
         public JoinVisitor(SelectVisitor visitor) : base(visitor, false, ConditionType.And)
@@ -91,6 +134,19 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
+        private static bool IsNewEquals(Expression node)
+        {
+            switch (node)
+            {
+                case LambdaExpression lambda:
+                    return IsNewEquals(lambda.Body);
+                case UnaryExpression unary:
+                    return IsNewEquals(unary.Operand);
+                default:
+                    return node.NodeType == ExpressionType.New || node.NodeType == ExpressionType.MemberInit;
+            }
+        }
+
         /// <summary>
         /// 普通Join。
         /// </summary>
@@ -113,14 +169,77 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 writer.Write(" ON ");
 
-                visitor.Visit(node.Arguments[2]);
+                if (IsNewEquals(node.Arguments[2]))
+                {
+                    buildNewEqual = true;
 
-                writer.Equal();
+                    base.Visit(node.Arguments[3]);
 
-                base.Visit(node.Arguments[3]);
+                    buildNewEqual = false;
+
+                    base.Visit(node.Arguments[2]);
+                }
+                else
+                {
+                    visitor.Visit(node.Arguments[2]);
+
+                    writer.Equal();
+
+                    base.Visit(node.Arguments[3]);
+                }
 
                 base.Visit(node.Arguments[1]);
             });
+        }
+
+        /// <inheritdoc />
+        protected override void VisitLambdaBody(Expression node)
+        {
+            if (buildNewEqual)
+            {
+                var visitor = new MyNewExpressionVisitor(joinExpressions);
+
+                visitor.Visit(node);
+            }
+            else
+            {
+                base.VisitLambdaBody(node);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void MemberDelimiter() => writer.And();
+
+        /// <inheritdoc />
+        protected internal override void VisitNewMember(MemberInfo memberInfo, Expression node)
+        {
+            if (!joinExpressions.TryGetValue(memberInfo, out Expression expression))
+            {
+                throw new DSyntaxErrorException($"未找到{memberInfo.Name}的关联关系！");
+            }
+
+            base.VisitNewMember(memberInfo, node);
+
+            writer.Equal();
+
+            visitor.Visit(expression);
+        }
+
+        /// <inheritdoc />
+        protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+        {
+            if (!joinExpressions.TryGetValue(node.Member, out Expression expression))
+            {
+                throw new DSyntaxErrorException($"未找到{node.Member.Name}的关联关系！");
+            }
+
+            var result = base.VisitMemberAssignment(node);
+
+            writer.Equal();
+
+            visitor.Visit(expression);
+
+            return result;
         }
 
         private Expression JoinWhereMethod(Expression node)
@@ -170,7 +289,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             var rightNode = node.Arguments[1];
 
-            Workflow((Action)(() =>
+            Workflow(() =>
             {
                 visitor.Visit(node.Arguments[0]);
 
@@ -178,34 +297,6 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.OpenBrace();
 
-
-/* 项目“CodeArts.Db.Lts (netstandard2.0)”的未合并的更改
-在此之前:
-                using (var visitor = new SelectVisitor(this))
-在此之后:
-                using (var visitor = new Visitors.SelectVisitor(this))
-*/
-
-/* 项目“CodeArts.Db.Lts (net45)”的未合并的更改
-在此之前:
-                using (var visitor = new SelectVisitor(this))
-在此之后:
-                using (var visitor = new Visitors.SelectVisitor(this))
-*/
-
-/* 项目“CodeArts.Db.Lts (net40)”的未合并的更改
-在此之前:
-                using (var visitor = new SelectVisitor(this))
-在此之后:
-                using (var visitor = new Visitors.SelectVisitor(this))
-*/
-
-/* 项目“CodeArts.Db.Lts (netstandard2.1)”的未合并的更改
-在此之前:
-                using (var visitor = new SelectVisitor(this))
-在此之后:
-                using (var visitor = new Visitors.SelectVisitor(this))
-*/
                 using (var visitor = new SelectVisitor(this))
                 {
                     visitor.Startup(rightNode);
@@ -217,18 +308,42 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.Name(GetEntryAlias(rightNode.Type, string.Empty));
 
-            }), () =>
+            }, () =>
             {
                 writer.Write(" ON ");
 
-                visitor.Visit(node.Arguments[2]);
+                if (IsNewEquals(node.Arguments[2]))
+                {
+                    buildNewEqual = true;
 
-                writer.Equal();
+                    base.Visit(node.Arguments[3]);
 
-                base.Visit(node.Arguments[3]);
+                    buildNewEqual = false;
+
+                    base.Visit(node.Arguments[2]);
+                }
+                else
+                {
+                    visitor.Visit(node.Arguments[2]);
+
+                    writer.Equal();
+
+                    base.Visit(node.Arguments[3]);
+                }
 
                 rightNode = JoinWhereMethod(rightNode);
             });
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                joinExpressions.Clear();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

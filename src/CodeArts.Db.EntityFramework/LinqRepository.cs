@@ -170,12 +170,15 @@ namespace CodeArts.Db.EntityFramework
 
             entry.State = EntityState.Unchanged;
 
-            entry.Properties
-                .Where(x => updates.Any(y => string.Equals(x.Metadata.Name, y, StringComparison.OrdinalIgnoreCase)))
-                .ForEach(x =>
+            foreach (var item in entry.Properties)
+            {
+                if (!updates.Any(y => string.Equals(item.Metadata.Name, y, StringComparison.OrdinalIgnoreCase)))
                 {
-                    x.IsModified = true;
-                });
+                    continue;
+                }
+
+                item.IsModified = true;
+            }
         }
 
         /// <summary>

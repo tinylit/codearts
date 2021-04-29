@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Db.Exceptions;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -11,68 +12,10 @@ namespace CodeArts.Db.Lts.Visitors
     {
         private readonly BaseVisitor visitor;
 
-        /// <summary>
-        /// 条件的两端。
-        /// </summary>
-        private bool isConditionBalance = false;
-
-        /// <summary>
-        /// 忽略可空类型。
-        /// </summary>
-        private bool ignoreNullable = false;
-
         /// <inheritdoc />
         public WhereVisitor(BaseVisitor visitor) : base(visitor, false)
         {
             this.visitor = visitor;
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitLambda<T>(Expression<T> node)
-        {
-            AnalysisAlias(node.Parameters[0]);
-
-            switch (node.Body)
-            {
-                case ConstantExpression constant when constant.Value is bool flag:
-                    if (flag == writer.IsReverseCondition)
-                    {
-                        writer.BooleanTrue();
-
-                        if (flag)
-                        {
-                            writer.NotEqual();
-                        }
-                        else
-                        {
-                            writer.Equal();
-                        }
-
-                        writer.BooleanFalse();
-                    }
-                    break;
-                case MemberExpression member:
-                    if (member.IsHasValue())
-                    {
-                        VisitMember(member);
-
-                        break;
-                    }
-
-                    isConditionBalance = true;
-
-                    VisitMember(member);
-
-                    isConditionBalance = false;
-
-                    break;
-                default:
-                    Visit(node.Body);
-
-                    break;
-            }
-
-            return node;
         }
 
         /// <inheritdoc />
@@ -134,95 +77,450 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <inheritdoc />
-        protected override void VisitBinaryIsBooleanLeft(Expression node)
-        {
-            ignoreNullable = node.Type.IsNullable();
-
-            base.VisitBinaryIsBooleanLeft(node);
-
-            ignoreNullable = false;
-        }
+        protected override void VisitLambdaBody(Expression node) => VisitBinaryIsConditionToVisit(node);
 
         /// <inheritdoc />
-        protected override void VisitBinaryIsIsBooleanRight(Expression node)
+        protected override Expression VisitInvocation(InvocationExpression node)
         {
-            ignoreNullable = node.Type.IsNullable();
-
-            base.VisitBinaryIsIsBooleanRight(node);
-
-            ignoreNullable = false;
-        }
-
-        /// <inheritdoc />
-        protected override void VisitBinaryIsBit(Expression node)
-        {
-            ignoreNullable = true;
-
-            base.VisitBinaryIsBit(node);
-
-            ignoreNullable = false;
-        }
-
-        /// <inheritdoc />
-        protected override void VisitBinaryIsConditionToVisit(Expression node)
-        {
-            isConditionBalance = true;
-
             base.VisitBinaryIsConditionToVisit(node);
 
-            isConditionBalance = false;
+            return node;
         }
 
         /// <inheritdoc />
-        protected override void VisitMemberIsVariable(MemberExpression node)
+        protected override void VisitBinaryIsBoolean(BinaryExpression node)
         {
-            if (ignoreNullable || isConditionBalance)
+            if (node.Left.NodeType == ExpressionType.Coalesce || node.Right.NodeType == ExpressionType.Coalesce)
             {
-                var value = node.GetValueFromExpression();
-
-                if (ignoreNullable && value is null)
-                {
-                    return;
-                }
-
-                if (isConditionBalance && value is bool flag)
-                {
-                    if (flag != writer.IsReverseCondition)
-                    {
-                        return;
-                    }
-
-                    base.VisitMemberIsVariable(node);
-
-                    if (flag)
-                    {
-                        writer.Equal();
-                    }
-                    else
-                    {
-                        writer.NotEqual();
-                    }
-
-                    writer.BooleanFalse();
-
-                    return;
-                }
+                VisitSkipIsCondition(Done);
+            }
+            else
+            {
+                base.VisitBinaryIsBoolean(node);
             }
 
-            base.VisitMemberIsVariable(node);
+            void Done()
+            {
+                if (node.Left.NodeType == ExpressionType.Coalesce && node.Right.NodeType == ExpressionType.Coalesce)
+                {
+                    VisitBinaryIsBooleanDoubleCoalesce(node.Left, node.NodeType, node.Right);
+                }
+                else if (node.Left.NodeType == ExpressionType.Coalesce)
+                {
+                    VisitBinaryIsBooleanLeftCoalesce(node.Left, node.NodeType, node.Right);
+                }
+                else
+                {
+                    VisitBinaryIsBooleanRightCoalesce(node.Left, node.NodeType, node.Right);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 1==(x.status??1)
+        /// </summary>
+        protected virtual void VisitBinaryIsBooleanRightCoalesce(Expression left, ExpressionType expressionType, Expression right)
+        {
+            bool flag = false;
+
+            int closeBraceCount = 0;
+
+            int index, length, appendAt;
+
+            while ((right is BinaryExpression binary))
+            {
+                if (binary.NodeType != ExpressionType.Coalesce)
+                {
+                    throw new DSyntaxErrorException("空合并运算中，不允许出现非空合并运算符！");
+                }
+
+                right = binary.Right;
+
+                if (IsSkip(left, expressionType, binary.Left, writer.IsReverseCondition))
+                {
+                    continue;
+                }
+
+                index = writer.Length;
+                length = writer.Length;
+                appendAt = writer.AppendAt;
+
+                if (appendAt > -1)
+                {
+                    index -= (index - appendAt);
+                }
+
+                VisitBinaryIsBoolean(left, expressionType, binary.Left);
+
+                if (writer.Length == length)
+                {
+                    continue;
+                }
+
+                writer.AppendAt = index;
+
+                if (flag)
+                {
+                    writer.And();
+                }
+                else
+                {
+                    flag = true;
+                }
+
+                if (appendAt > -1)
+                {
+                    appendAt += writer.Length - length;
+                }
+
+                writer.AppendAt = appendAt;
+
+                closeBraceCount++;
+
+                writer.Or();
+
+                writer.OpenBrace();
+
+                VisitTail(binary.Left);
+
+                writer.IsNull();
+            }
+
+            if (IsSkip(left, expressionType, right, writer.IsReverseCondition))
+            {
+                goto label_CloseBrace;
+            }
+
+            index = writer.Length;
+            length = writer.Length;
+            appendAt = writer.AppendAt;
+
+            if (appendAt > -1)
+            {
+                index -= (index - appendAt);
+            }
+
+            VisitBinaryIsBoolean(left, expressionType, right);
+
+            if (writer.Length == length)
+            {
+                goto label_CloseBrace;
+            }
+
+            writer.AppendAt = index;
+
+            if (flag)
+            {
+                writer.And();
+            }
+
+            if (appendAt > -1)
+            {
+                appendAt += writer.Length - length;
+            }
+
+            writer.AppendAt = appendAt;
+
+            label_CloseBrace:
+
+            while (closeBraceCount-- > 0)
+            {
+                writer.CloseBrace();
+            }
+        }
+
+        /// <summary>
+        /// (x.status??1)==1
+        /// </summary>
+        protected virtual void VisitBinaryIsBooleanLeftCoalesce(Expression left, ExpressionType expressionType, Expression right)
+        {
+            bool flag = false;
+
+            int closeBraceCount = 0;
+
+            int index, length, appendAt;
+
+            while ((left is BinaryExpression binary))
+            {
+                if (binary.NodeType != ExpressionType.Coalesce)
+                {
+                    throw new DSyntaxErrorException("空合并运算中，不允许出现非空合并运算符！");
+                }
+
+                left = binary.Right;
+
+                if (IsSkip(binary.Left, expressionType, right, writer.IsReverseCondition))
+                {
+                    continue;
+                }
+
+                index = writer.Length;
+                length = writer.Length;
+                appendAt = writer.AppendAt;
+
+                if (appendAt > -1)
+                {
+                    index -= (index - appendAt);
+                }
+
+                VisitBinaryIsBoolean(binary.Left, expressionType, right);
+
+                if (writer.Length == length)
+                {
+                    continue;
+                }
+
+                writer.AppendAt = index;
+
+                if (flag)
+                {
+                    writer.And();
+                }
+                else
+                {
+                    flag = true;
+                }
+
+                if (appendAt > -1)
+                {
+                    appendAt += writer.Length - length;
+                }
+
+                writer.AppendAt = appendAt;
+
+                closeBraceCount++;
+
+                writer.Or();
+
+                writer.OpenBrace();
+
+                VisitTail(binary.Left);
+
+                writer.IsNull();
+            }
+
+            if (IsSkip(left, expressionType, right, writer.IsReverseCondition))
+            {
+                goto label_CloseBrace;
+            }
+
+            index = writer.Length;
+            length = writer.Length;
+            appendAt = writer.AppendAt;
+
+            if (appendAt > -1)
+            {
+                index -= (index - appendAt);
+            }
+
+            VisitBinaryIsBoolean(left, expressionType, right);
+
+            if (writer.Length == length)
+            {
+                goto label_CloseBrace;
+            }
+
+            writer.AppendAt = index;
+
+            if (flag)
+            {
+                writer.And();
+            }
+
+            if (appendAt > -1)
+            {
+                appendAt += writer.Length - length;
+            }
+
+            writer.AppendAt = appendAt;
+
+            label_CloseBrace:
+
+            while (closeBraceCount-- > 0)
+            {
+                writer.CloseBrace();
+            }
+        }
+
+        /// <summary>
+        /// (x.old_status??1)==(x.status??1)
+        /// </summary>
+        protected virtual void VisitBinaryIsBooleanDoubleCoalesce(Expression left, ExpressionType expressionType, Expression right)
+        {
+            bool flag = false;
+
+            int closeBraceCount = 0;
+
+            int index, length, appendAt;
+
+            while ((left is BinaryExpression binary))
+            {
+                if (binary.NodeType != ExpressionType.Coalesce)
+                {
+                    throw new DSyntaxErrorException("空合并运算中，不允许出现非空合并运算符！");
+                }
+
+                left = binary.Right;
+
+                index = writer.Length;
+                length = writer.Length;
+                appendAt = writer.AppendAt;
+
+                if (appendAt > -1)
+                {
+                    index -= (index - appendAt);
+                }
+
+                VisitBinaryIsBooleanRightCoalesce(binary.Left, expressionType, right);
+
+                if (writer.Length == length)
+                {
+                    continue;
+                }
+
+                writer.AppendAt = index;
+
+                if (flag)
+                {
+                    writer.And();
+                }
+                else
+                {
+                    flag = true;
+                }
+
+                if (appendAt > -1)
+                {
+                    appendAt += writer.Length - length;
+                }
+
+                writer.AppendAt = appendAt;
+
+                closeBraceCount++;
+
+                writer.Or();
+
+                writer.OpenBrace();
+
+                VisitTail(binary.Left);
+
+                writer.IsNull();
+            }
+
+            index = writer.Length;
+            length = writer.Length;
+            appendAt = writer.AppendAt;
+
+            if (appendAt > -1)
+            {
+                index -= (index - appendAt);
+            }
+
+            VisitBinaryIsBooleanRightCoalesce(left, expressionType, right);
+
+            if (writer.Length == length)
+            {
+                goto label_CloseBrace;
+            }
+
+            writer.AppendAt = index;
+
+            if (flag)
+            {
+                writer.And();
+            }
+
+            if (appendAt > -1)
+            {
+                appendAt += writer.Length - length;
+            }
+
+            writer.AppendAt = appendAt;
+
+            label_CloseBrace:
+
+            while (closeBraceCount-- > 0)
+            {
+                writer.CloseBrace();
+            }
+        }
+
+        private static bool IsSkip(Expression left, ExpressionType type, Expression right, bool flag)
+        {
+            if (left.NodeType != ExpressionType.Constant || right.NodeType != ExpressionType.Constant)
+            {
+                return false;
+            }
+
+            var body = Expression.MakeBinary(type, left, right);
+
+            var lambdaEx = Expression.Lambda<Func<bool>>(body);
+
+            return lambdaEx.Compile().Invoke() != flag;
         }
 
         /// <inheritdoc />
-        protected override void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
+        protected override void VisitBinaryIsCoalesceLeftIsNormal(BinaryExpression node)
         {
-            base.VisitMemberIsDependOnParameterTypeIsPlain(node);
-
-            if (isConditionBalance && node.IsBoolean())
+            if (node.Left.Type == typeof(bool?))
             {
+                int startIndex = writer.Length;
+
+                VisitSkipIsCondition(node.Left);
+
+                int length = writer.Length - startIndex;
+
                 writer.Equal();
 
                 writer.BooleanTrue();
+
+                writer.Or();
+
+                writer.OpenBrace();
+
+                writer.Write(writer.ToString(startIndex, length));
+
+                writer.IsNull();
+
+                Workflow(hasValue =>
+                {
+                    if (hasValue)
+                    {
+                        writer.And();
+                    }
+
+                }, () => VisitTail(node.Right));
+
+                writer.CloseBrace();
             }
+            else
+            {
+                base.VisitBinaryIsCoalesceLeftIsNormal(node);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitConditionalNormal(ConditionalExpression node)
+        {
+            writer.OpenBrace();
+
+            VisitTail(node.Test);
+
+            writer.And();
+
+            VisitTail(node.IfTrue);
+
+            writer.CloseBrace();
+
+            writer.Or();
+
+            writer.ReverseCondition(() => VisitTail(node.Test));
+
+            writer.And();
+
+            VisitTail(node.IfTrue);
+
+            writer.CloseBrace();
         }
 
         /// <inheritdoc />
@@ -230,7 +528,7 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (node.Operand.IsBoolean())
             {
-                writer.ReverseCondition(() => Visit(node.Operand));
+                writer.ReverseCondition(() => VisitBinaryIsConditionToVisit(node.Operand));
             }
             else
             {

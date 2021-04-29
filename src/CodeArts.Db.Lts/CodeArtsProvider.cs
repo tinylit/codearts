@@ -200,12 +200,12 @@ namespace CodeArts.Db.Lts
         private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
         {
             private readonly IDbContext context;
-            private readonly Action<DbCommand, object> readyParam;
+            private readonly Action<IDbCommand, object> readyParam;
             private readonly CommandSql commandSql;
 
             private IAsyncEnumerator<T> enumerator;
 
-            public AsyncEnumerable(IDbContext context, Action<DbCommand, object> readyParam, CommandSql commandSql)
+            public AsyncEnumerable(IDbContext context, Action<IDbCommand, object> readyParam, CommandSql commandSql)
             {
                 this.context = context;
                 this.readyParam = readyParam;
@@ -223,7 +223,7 @@ namespace CodeArts.Db.Lts
         private sealed class AsyncEnumerator<T> : IAsyncEnumerator<T>
         {
             private readonly IDbContext context;
-            private readonly Action<DbCommand, object> readyParam;
+            private readonly Action<IDbCommand, object> readyParam;
             private readonly CommandSql commandSql;
             private bool isClosedConnection = false;
             private bool isReadyConnection = false;
@@ -237,7 +237,7 @@ namespace CodeArts.Db.Lts
 
             private readonly CancellationToken cancellationToken;
 
-            public AsyncEnumerator(IDbContext context, Action<DbCommand, object> readyParam, CommandSql commandSql, CancellationToken cancellationToken)
+            public AsyncEnumerator(IDbContext context, Action<IDbCommand, object> readyParam, CommandSql commandSql, CancellationToken cancellationToken)
             {
                 this.context = context;
                 this.readyParam = readyParam;

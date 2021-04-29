@@ -114,7 +114,12 @@ namespace CodeArts.Db.Lts
         private DbParameterCollection parameters;
 
         /// <inheritdoc />
-        public IDataParameterCollection Parameters => parameters ?? (parameters = new DbParameterCollection(command.Parameters, settings));
+        public IDataParameterCollection Parameters
+#if NETSTANDARD2_1
+            => parameters ??= new DbParameterCollection(command.Parameters, settings);
+#else
+            => parameters ?? (parameters = new DbParameterCollection(command.Parameters, settings));
+#endif
 
         /// <inheritdoc />
         public UpdateRowSource UpdatedRowSource { get => command.UpdatedRowSource; set => command.UpdatedRowSource = value; }
@@ -123,7 +128,29 @@ namespace CodeArts.Db.Lts
         IDbConnection IDbCommand.Connection { get => command.Connection; set => command.Connection = value; }
 
         /// <inheritdoc />
-        IDbTransaction IDbCommand.Transaction { get => command.Transaction; set => command.Transaction = value; }
+        IDbTransaction IDbCommand.Transaction
+        {
+            get => command.Transaction;
+            set
+            {
+                command.Transaction = value;
+
+                if (value is null)
+                {
+                    transaction = null;
+                }
+#if NETSTANDARD2_1
+                else if (value is System.Data.Common.DbTransaction dbTransaction)
+                {
+                    transaction = new DbTransactionAsync(dbTransaction);
+                }
+#endif
+                else
+                {
+                    transaction = new DbTransaction(value);
+                }
+            }
+        }
 
         /// <inheritdoc />
         public void Cancel() => command.Cancel();

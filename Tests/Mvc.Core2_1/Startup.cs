@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using CodeArts;
+using CodeArts.Db.Lts;
+using CodeArts.Mvc;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using CodeArts.Mvc;
-using CodeArts.Db;
-using CodeArts;
-using CodeArts.Db.Lts;
 
 namespace Mvc.Core2_1
 {

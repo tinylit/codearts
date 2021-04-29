@@ -27,8 +27,9 @@ namespace CodeArts.Db.EntityFramework
         /// <summary>
         /// inheritdoc
         /// </summary>
-        public DbContext() : this(GetDbConfig())
+        public DbContext() : base(new DbContextOptions<TDbContext>())
         {
+            this.connectionConfig = GetDbConfig() ?? throw new ArgumentNullException(nameof(connectionConfig)); ;
         }
         /// <summary>
         /// inheritdoc
@@ -41,7 +42,7 @@ namespace CodeArts.Db.EntityFramework
         /// <summary>
         /// inheritdoc
         /// </summary>
-        public DbContext() : this(GetDbConfig())
+        public DbContext() : this(StaticGetDbConfig())
         {
         }
 
@@ -58,7 +59,7 @@ namespace CodeArts.Db.EntityFramework
         /// 获取数据库配置。
         /// </summary>
         /// <returns></returns>
-        private static IReadOnlyConnectionConfig GetDbConfig()
+        private static IReadOnlyConnectionConfig StaticGetDbConfig()
         {
             var attr = DbConfigCache.GetOrAdd(typeof(TDbContext), type =>
             {
@@ -67,6 +68,12 @@ namespace CodeArts.Db.EntityFramework
 
             return attr.GetConfig();
         }
+
+        /// <summary>
+        /// 获取数据库配置。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IReadOnlyConnectionConfig GetDbConfig() => StaticGetDbConfig();
 
         /// <summary> 连接名称。 </summary>
         public string Name => connectionConfig.Name;

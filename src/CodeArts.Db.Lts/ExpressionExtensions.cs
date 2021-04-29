@@ -14,20 +14,6 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="node">表达式。</param>
         /// <returns></returns>
-        internal static bool IsBoolean(this UnaryExpression node)
-        {
-            if (node is null)
-            {
-                return false;
-            }
-
-            return node.Operand.IsBoolean();
-        }
-        /// <summary>
-        /// 是否为boolean表达式。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
         internal static bool IsBoolean(this Expression node)
         {
             if (node is null)
@@ -45,12 +31,12 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         internal static bool IsHasValue(this MemberExpression node)
         {
-            if (node is null)
+            if (node is null || node.Expression is null)
             {
                 return false;
             }
 
-            return node.Member.Name == "HasValue";
+            return node.Member.Name == "HasValue" && node.Expression.IsNullable();
         }
 
         /// <summary>
@@ -60,13 +46,14 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         internal static bool IsValue(this MemberExpression node)
         {
-            if (node is null)
+            if (node is null || node.Expression is null)
             {
                 return false;
             }
 
-            return node.Member.Name == "Value";
+            return node.Member.Name == "Value" && node.Expression.IsNullable();
         }
+
         /// <summary>
         /// 是否是Length属性。
         /// </summary>
@@ -79,14 +66,15 @@ namespace CodeArts.Db.Lts
                 return false;
             }
 
-            return node.Member.Name == "Length";
+            return node.Member.Name == "Length" && node.Member.DeclaringType == Types.String;
         }
+
         /// <summary>
         /// 是否为可空类型。
         /// </summary>
         /// <param name="member">表达式。</param>
         /// <returns></returns>
-        internal static bool IsNullable(this MemberExpression member)
+        internal static bool IsNullable(this Expression member)
         {
             if (member is null)
             {
@@ -94,128 +82,6 @@ namespace CodeArts.Db.Lts
             }
 
             return member.Type.IsNullable();
-        }
-
-        /// <summary>
-        /// 是否为陈述语句。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static bool IsPredicate(this UnaryExpression node)
-        {
-            if (node is null)
-            {
-                return false;
-            }
-
-            return node.Operand.IsPredicate();
-        }
-        /// <summary>
-        /// 是否为陈述语句。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static bool IsPredicate(this Expression node)
-        {
-            if (node is null)
-            {
-                return false;
-            }
-
-            switch (node.NodeType)
-            {
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
-                case ExpressionType.Not:
-                case ExpressionType.Call:
-                    return node.IsBoolean();
-                case ExpressionType.Equal:
-                case ExpressionType.NotEqual:
-                case ExpressionType.LessThan:
-                case ExpressionType.LessThanOrEqual:
-                case ExpressionType.GreaterThan:
-                case ExpressionType.GreaterThanOrEqual:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        /// <summary>
-        /// 是否为变量类型。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static bool IsVariable(this MemberExpression node)
-        {
-            if (node is null)
-            {
-                return false;
-            }
-
-            return node.Expression.IsVariable();
-        }
-
-        /// <summary>
-        /// 是否为变量类型。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static bool IsVariable(this Expression node)
-        {
-            if (node is null)
-            {
-                return false;
-            }
-
-            if (node.NodeType == ExpressionType.MemberAccess)
-            {
-                return ((MemberExpression)node).IsVariable();
-            }
-
-            return node.NodeType == ExpressionType.Constant;
-        }
-
-        /// <summary>
-        /// 是否是<see cref="IGrouping{TKey, TElement}"/>
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        public static bool IsGrouping(this Expression node)
-        {
-            if(node is null)
-            {
-                return false;
-            }
-
-            return node.Type.IsGrouping();
-        }
-
-        /// <summary>
-        /// 获取操作符。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static string GetOperator(this UnaryExpression node)
-        {
-            if (node is null)
-            {
-                return string.Empty;
-            }
-
-            switch (node.NodeType)
-            {
-                case ExpressionType.Negate:
-                case ExpressionType.NegateChecked:
-                    return "-";
-                case ExpressionType.UnaryPlus:
-                    return "+";
-                case ExpressionType.Not:
-                    return node.IsBoolean() ? "NOT" : "~";
-                default:
-                    return string.Empty;
-            }
         }
 
         /// <summary>
@@ -244,31 +110,6 @@ namespace CodeArts.Db.Lts
             }
         }
 
-        /// <summary>
-        /// 获取操作符。
-        /// </summary>
-        /// <param name="node">节点。</param>
-        /// <param name="nodeType">节点类型。</param>
-        /// <returns></returns>
-        internal static string GetOperator(this BinaryExpression node, ExpressionType? nodeType = null)
-        {
-            if (node is null)
-            {
-                return string.Empty;
-            }
-
-            switch (nodeType ?? node.NodeType)
-            {
-                case ExpressionType.AndAlso:
-                case ExpressionType.And when node.Left.IsBoolean():
-                    return " AND ";
-                case ExpressionType.OrElse:
-                case ExpressionType.Or when node.Left.IsBoolean():
-                    return " OR ";
-                default:
-                    return GetOperator(nodeType ?? node.NodeType);
-            }
-        }
         /// <summary>
         /// 获取操作符。
         /// </summary>
@@ -315,16 +156,17 @@ namespace CodeArts.Db.Lts
                     return " >> ";
                 case ExpressionType.Not:
                 case ExpressionType.OnesComplement:
-                    return " ~";
+                    return "~";
                 case ExpressionType.UnaryPlus:
-                    return " +";
+                    return "+";
                 case ExpressionType.Negate:
                 case ExpressionType.NegateChecked:
-                    return " -";
+                    return "-";
                 default:
                     throw new NotSupportedException();
             }
         }
+
         /// <summary>
         /// 获取表达式值。
         /// </summary>
@@ -341,13 +183,13 @@ namespace CodeArts.Db.Lts
             {
                 case ConstantExpression constant:
                     return constant.Value;
+                case MemberExpression member when member.Expression is ConstantExpression constant:
+                    return constant.Value;
+                case LambdaExpression lambda when lambda.Body is ConstantExpression constant:
+                    return constant.Value;
+                case LambdaExpression lambda when lambda.Parameters.Count > 0:
+                    throw new NotSupportedException();
                 case LambdaExpression lambda:
-
-                    if (lambda.Body is ConstantExpression constantEx)
-                    {
-                        return constantEx.Value;
-                    }
-
                     return lambda.Compile().DynamicInvoke();
                 default:
                     return Expression.Lambda(node).Compile().DynamicInvoke();
@@ -355,168 +197,22 @@ namespace CodeArts.Db.Lts
         }
 
         /// <summary>
-        /// 获取表达式成员名称。
+        /// 是否是<see cref="IGrouping{TKey, TElement}"/>
         /// </summary>
-        /// <param name="node">表达式。</param>
         /// <returns></returns>
-        internal static string GetPropertyMemberNameFromExpression(this MemberExpression node)
+        internal static bool IsGrouping(this Expression node)
         {
-            if (node is null)
-            {
-                return string.Empty;
-            }
-
-            return node.Member.Name;
-        }
-        /// <summary>
-        /// 获取表达式成员名称。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static string GetPropertyMemberNameFromExpression(this Expression node) => node.GetMemberExpression().GetPropertyMemberNameFromExpression();
-        /// <summary>
-        /// 获取表达式属性名称。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static string GetPropertyNameFromExpression(this Expression node)
-        {
-            if (node is null)
-            {
-                return null;
-            }
-
-            switch (node.NodeType)
-            {
-                case ExpressionType.MemberAccess:
-                    return (node as MemberExpression).Member.Name;
-                case ExpressionType.Parameter:
-                    return (node as ParameterExpression).Name;
-                case ExpressionType.Lambda:
-                    return ((LambdaExpression)node).Body.GetPropertyNameFromExpression();
-                default:
-                    if (node is UnaryExpression unary)
-                        return unary.Operand.GetPropertyNameFromExpression();
-                    return null;
-            }
-        }
-        /// <summary>
-        /// 获取成员表达式。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static MemberExpression GetMemberExpression(this ConditionalExpression node)
-        {
-            if (node is null)
-            {
-                return null;
-            }
-
-            return node.Test.GetMemberExpression() ??
-                node.IfTrue.GetMemberExpression() ??
-                node.IfFalse.GetMemberExpression();
-        }
-        /// <summary>
-        /// 获取成员表达式。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static MemberExpression GetMemberExpression(this LambdaExpression node)
-        {
-            if (node is null)
-            {
-                return null;
-            }
-
-            return node.Body.GetMemberExpression();
-        }
-        /// <summary>
-        /// 获取成员表达式。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static MemberExpression GetMemberExpression(this UnaryExpression node)
-        {
-            if (node is null)
-            {
-                return null;
-            }
-
-            return node.Operand.GetMemberExpression();
-        }
-        /// <summary>
-        /// 获取成员表达式。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static MemberExpression GetMemberExpression(this BinaryExpression node)
-        {
-            if (node is null)
-            {
-                return null;
-            }
-
-            return node.Left.GetMemberExpression() ?? node.Right.GetMemberExpression();
-        }
-        /// <summary>
-        /// 获取成员表达式。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <returns></returns>
-        internal static MemberExpression GetMemberExpression(this Expression node)
-        {
-            if (node is null)
-            {
-                return null;
-            }
-
             switch (node)
             {
+                case ParameterExpression parameter:
+                    return parameter.Type.IsGrouping();
+                case MethodCallExpression method:
+                    return IsGrouping(method.Arguments[0]);
+                case MemberExpression member when member.Expression is null:
+                    return member.Type.IsGrouping();
                 case MemberExpression member:
-                    return member;
-                case LambdaExpression lambda:
-                    return lambda.GetMemberExpression();
-                case ConditionalExpression conditional:
-                    return conditional.GetMemberExpression();
-                case UnaryExpression unary:
-                    return unary.GetMemberExpression();
-                case BinaryExpression binary:
-                    return binary.GetMemberExpression();
+                    return member.Member.Name == "Key" ? member.Type.IsClass && !(member.Type == Types.String || member.Type == Types.Version) && member.Expression.Type.IsGrouping() : member.Type.IsGrouping();
                 default:
-                    return null;
-            }
-        }
-        /// <summary>
-        /// 是否继承或泛型包含声明类型。
-        /// </summary>
-        /// <param name="node">表达式。</param>
-        /// <param name="declaringType">声明类型。</param>
-        /// <returns></returns>
-        internal static bool GetDeclaringTypeExpression(this Expression node, Type declaringType)
-        {
-            if (node is null)
-            {
-                return false;
-            }
-
-            switch (node.NodeType)
-            {
-                case ExpressionType.MemberAccess:
-                    return node.Type.IsDeclaringType(declaringType) || ((MemberExpression)node).Expression.Type.IsDeclaringType(declaringType);
-                case ExpressionType.Call:
-                    foreach (var item in ((MethodCallExpression)node).Arguments)
-                    {
-                        if (item.Type.IsDeclaringType(declaringType))
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                default:
-                    if (node is BinaryExpression binary)
-                    {
-                        return binary.Left.GetDeclaringTypeExpression(declaringType) || binary.Right.GetDeclaringTypeExpression(declaringType);
-                    }
                     return false;
             }
         }

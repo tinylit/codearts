@@ -109,14 +109,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IAsyncEnumerable<T> QueryAsync<T>(SQL sql, object param = null, int? commandTimeout = null);
 #endif
-    }
 
-    /// <summary>
-    /// 数据上下文。
-    /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    public interface IDbContext<TEntity> : IDbContext where TEntity : class, IEntiy
-    {
         /// <summary>
         /// 执行命令。
         /// </summary>
@@ -141,7 +134,8 @@ namespace CodeArts.Db.Lts
         /// <param name="param">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
         /// <returns>执行影响行。</returns>
-        int Execute(SQL sql, object param = null, int? commandTimeout = null);
+        /// <remarks>校验数据表</remarks>
+        int Execute<T>(SQL sql, object param = null, int? commandTimeout = null) where T : class, IEntiy;
 
 #if NET_NORMAL || NET_CORE
         /// <summary>
@@ -152,8 +146,8 @@ namespace CodeArts.Db.Lts
         /// <param name="commandTimeout">超时时间。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns>执行影响行。</returns>
-        Task<int> ExecuteAsync(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default);
+        /// <remarks>校验数据表</remarks>
+        Task<int> ExecuteAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where T : class, IEntiy;
 #endif
-
     }
 }

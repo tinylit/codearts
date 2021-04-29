@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CodeArts.Db.Lts
@@ -40,7 +41,6 @@ namespace CodeArts.Db.Lts
         /// 条件。
         /// </summary>
         public const string Where = nameof(Queryable.Where);
-
         /// <summary>
         /// 任意一个。
         /// </summary>
@@ -166,47 +166,82 @@ namespace CodeArts.Db.Lts
         /// </summary>
         public const string Except = nameof(Queryable.Except); //? EXCEPT
 
-        /** 以下为 string 扩展 */
+        /** <see cref="string.IsNullOrEmpty(string)"/> */
         public const string IsNullOrEmpty = nameof(string.IsNullOrEmpty);
-        /** 以下为 string 扩展 */
+
+        /** <see cref="string.Replace(string, string)"/> */
         public const string Replace = nameof(string.Replace);
-        /** 以下为 string 扩展 */
+
+        /** <see cref="string.Substring(int)"/>/<seealso cref="string.Substring(int, int)"/> */
         public const string Substring = nameof(string.Substring);
-        /** 以下为 string 扩展 */
+
+        /// <summary>
+        /// <see cref="string.IndexOf(string)"/>
+        /// |<see cref="string.IndexOf(string, int)"/>
+        /// |<seealso cref="string.IndexOf(string, int, int)"/>
+        /// |<seealso cref="string.IndexOf(char)"/>
+        /// |<seealso cref="string.IndexOf(char, int)"/>
+        /// |<seealso cref="string.IndexOf(char, int, int)"/>
+        /// </summary>
         public const string IndexOf = nameof(string.IndexOf);
-        /** 以下为 string 扩展 */
+
+        /// <summary>
+        /// <see cref="string.ToUpper()"/>
+        /// </summary>
         public const string ToUpper = nameof(string.ToUpper);
-        /** 以下为 string 扩展 */
+
+        /// <summary>
+        /// <see cref="string.ToLower()"/>
+        /// </summary>
         public const string ToLower = nameof(string.ToLower);
-        /** 以下为 string 扩展 */
+
+        /// <summary>
+        /// <see cref="string.Trim()"/>
+        /// </summary>
         public const string Trim = nameof(string.Trim);
-        /** 以下为 string 扩展 */
+        
+        /// <summary>
+        /// <see cref="string.TrimStart(char[])"/>
+        /// </summary>
         public const string TrimStart = nameof(string.TrimStart);
-        /** 以下为 string 扩展 */
+
+        /// <summary>
+        /// <see cref="string.TrimStart(char[])"/>
+        /// </summary>
         public const string TrimEnd = nameof(string.TrimEnd);
 
         /// <summary>
+        /// <see cref="string.EndsWith(string)"/>
         /// 以...结束。Like '%{AnyString}'。
         /// </summary>
         public const string EndsWith = nameof(string.EndsWith); //? Like '%{AnyString}'
 
         /// <summary>
+        /// <see cref="string.StartsWith(string)"/>
         /// 以...开始。Like '{AnyString}%'。
         /// </summary>
         public const string StartsWith = nameof(string.StartsWith); //? Like '{AnyString}%'
 
         /// <summary>
+        /// <see cref="string.Contains(string)"/>
         /// 包含。 Like '%{AnyString}%'。
         /// </summary>
         public const string Contains = nameof(string.Contains); //? Like '%{AnyString}%'
 
-        /** 查询器扩展。 */
+        /// <summary>
+        /// <see cref="RepositoryExtentions.From{TSource}(IRepository{TSource}, Func{ITableInfo, string})"/>
+        /// </summary>
         public const string From = nameof(RepositoryExtentions.From);// "From";
 
-        /** 超时时长。 */
+        /// <summary>
+        /// <see cref="RepositoryExtentions.TimeOut{TSource}(IQueryable{TSource}, int)"/>
+        /// </summary>
         public const string TimeOut = nameof(RepositoryExtentions.TimeOut);// "TimeOut"
 
-        /** 未查询到数据的异常消息(仅对最终的结果类型为【<see cref="string"/>】或【未继承<seealso cref="IEnumerable{T}"/>】的数据时，有效)。 */
+        /// <summary>
+        /// <see cref="RepositoryExtentions.NoResultError{TSource}(IQueryable{TSource}, string)"/>
+        /// 未查询到数据的异常消息(仅对最终的结果类型为【<see cref="string"/>】或【未继承<seealso cref="IEnumerable{T}"/>】的数据时，有效)。
+        /// </summary>
         public const string NoResultError = nameof(RepositoryExtentions.NoResultError);// "NoResultError"
 
         /// <summary>

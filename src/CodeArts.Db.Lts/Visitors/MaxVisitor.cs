@@ -31,15 +31,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             if (node.Arguments.Count == 2)
             {
-                Workflow(() =>
-                {
-                    VisitMax(node.Arguments[1]);
-
-                    writer.From();
-
-                    WriteTableName(node.Arguments[0].Type);
-
-                }, () => visitor.Visit(node.Arguments[0]));
+                Workflow(() => VisitMax(node.Arguments[1]), () => visitor.Visit(node.Arguments[0]));
             }
             else
             {
@@ -50,10 +42,6 @@ namespace CodeArts.Db.Lts.Visitors
                     var prefix = GetEntryAlias(tableInfo.TableType, string.Empty);
 
                     WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
-
-                    writer.From();
-
-                    WriteTableName(tableInfo, prefix);
 
                 }, () => visitor.Visit(node.Arguments[0]));
             }

@@ -46,14 +46,6 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.CloseBrace();
 
-                writer.From();
-
-                var tableInfo = MakeTableInfo(node.Arguments[0].Type);
-
-                var prefix = GetEntryAlias(tableInfo.TableType, string.Empty);
-
-                writer.NameWhiteSpace(tableInfo.TableName, prefix);
-
             }, () => visitor.Visit(node.Arguments[0]));
         }
     }

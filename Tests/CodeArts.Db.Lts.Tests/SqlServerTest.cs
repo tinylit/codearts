@@ -90,9 +90,9 @@ namespace UnitTest
             var y = 100;
             var user = new UserRepository();
 
-            var result = user.Select(x => new { x.Id, OldId = x.Id + 1, OOID = y });//.Where(x => x.Id > 0 && x.Id < y);
+            var result = user.Select(x => new { x.Id, OldId = x.Id + 1, OOID = ~y });//.Where(x => x.Id > 0 && x.Id < y);
 
-            var list = result.ToListAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            var list = result.ToList();
 
         }
         [TestMethod]
@@ -477,7 +477,7 @@ namespace UnitTest
         public void IndexOf()
         {
             var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now && x.Username.IndexOf("in") > 1)
+            var result = user.Where(x => x.Id > 100 && x.CreatedTime < DateTime.Now && x.Username.IndexOf("m", 2, 2) > 1)
                 .Select(x => new { x.Id, Name = x.Username, Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
             var list = result.ToList();
         }
@@ -613,6 +613,37 @@ namespace UnitTest
             var list = result.Count();
         }
 
+        [TestMethod]
+        public void JoinAnonymousEqaulsTest2()
+        {
+            var id = 100;
+            var str = "1";
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join y in details
+                         on new { x.Id, x.Username } equals new { y.Id, Username = y.Realname }
+                         where x.Id > 0 && y.Id < id && x.Username.Contains(str)
+                         select new { x.Id, y.Nickname };
+
+            var list = result.ToList();
+        }
+
+        [TestMethod]
+        public void JoinClassEqaulsTest2()
+        {
+            var id = 100;
+            var str = "1";
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join y in details
+                         on new FeiUsers { Id = x.Id, Username = x.Username } equals new FeiUsers { Id = y.Id, Username = y.Realname }
+                         where x.Id > 0 && y.Id < id && x.Username.Contains(str)
+                         select new { x.Id, y.Nickname };
+
+            var list = result.ToList();
+        }
 
         [TestMethod]
         public void TakeTest()
@@ -658,6 +689,36 @@ namespace UnitTest
             var userEntity = user.Where(x => x.Username.Length > 10 && x.Id < 100 && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.Id)
                 .FirstOrDefault();
+        }
+
+        [TestMethod]
+        public void LengthTest()
+        {
+            var user = new UserRepository();
+
+            var userEntity = user.Where(x => x.Username.Length > 10)
+                .OrderBy(x => x.Id)
+                .FirstOrDefault();
+        }
+
+        [TestMethod]
+        public void HasValueTest()
+        {
+            var userdetails = new UserRepository();
+
+            var results = userdetails
+                .Where(x => x.Userstatus.HasValue)
+                .ToList();
+        }
+
+        [TestMethod]
+        public void ValueTest()
+        {
+            var userdetails = new UserRepository();
+
+            var results = userdetails
+                .Where(x => x.Userstatus.Value == 1)
+                .ToList();
         }
 
 #if NETSTANDARD2_1
@@ -1807,6 +1868,123 @@ namespace UnitTest
                        };
 
             var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldAnonymousHavingKeyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new { x.Mobile, x.Bcid } into g
+                       where g.Key == new { Mobile = string.Empty, Bcid = 0 }
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 分组测试。
+        /// </summary>
+        [TestMethod]
+        public void GroupByMultiFieldClassHavingKeyTest()
+        {
+            var user = new UserRepository();
+
+            var linq = from x in user
+                       where x.Id > 0
+                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
+                       where g.Key != new FeiUsers { Mobile = string.Empty, Bcid = 0 }
+                       orderby g.Count()
+                       select new
+                       {
+                           g.Key,
+                           CreatedTime = g.Max(x => x.CreatedTime)
+                       };
+
+            var results = linq.ToList();
+        }
+
+        /// <summary>
+        /// 左空转IS NULL。
+        /// </summary>
+        [TestMethod]
+        public void WhereLeftNull()
+        {
+            var userdetails = new UserRepository();
+
+            var results = userdetails
+                .Where(x => null == x.Userstatus)
+                .ToList();
+        }
+
+        /// <summary>
+        /// 右空转IS NOT NULL。
+        /// </summary>
+        [TestMethod]
+        public void WhereRightNull()
+        {
+            var userdetails = new UserRepository();
+
+            var results = userdetails
+                .Where(x => x.Userstatus != null)
+                .ToList();
+        }
+
+        /// <summary>
+        /// 左空合并运算符。
+        /// </summary>
+        [TestMethod]
+        public void WhereLeftCoalesce()
+        {
+            var userdetails = new UserRepository();
+
+            int? value = null;
+
+            var results = userdetails
+                .Where(x => (x.Userstatus ?? value ?? 1) == 1)
+                .ToList();
+        }
+
+
+        /// <summary>
+        /// 右可空合并运算符。
+        /// </summary>
+
+        [TestMethod]
+        public void WhereRightCoalesce()
+        {
+            int? value = null;
+
+            var userdetails = new UserRepository();
+
+            var results = userdetails
+                .Where(x => 1 == (x.Userstatus ?? value ?? 1))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 两端可空合并运算符。
+        /// </summary>
+        [TestMethod]
+        public void WhereDoubleCoalesce()
+        {
+            int? value = null;
+
+            var userdetails = new UserRepository();
+
+            var results = userdetails
+                .Where(x => (x.Userstatus ?? value ?? 1) == (value ?? 1))
+                .ToList();
         }
 
         private async Task Aw_UpdateAsyncTest()

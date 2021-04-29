@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Db.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,13 +12,25 @@ namespace CodeArts.Db.Lts.Visitors
     /// </summary>
     public class GroupByVisitor : CoreVisitor
     {
+        internal class MyMemberExpression : Expression
+        {
+            public MemberInfo Member { get; }
+            public Expression Expression { get; }
+
+            public MyMemberExpression(MemberInfo memberInfo, Expression node)
+            {
+                Member = memberInfo;
+                Expression = node;
+            }
+        }
+
         /// <summary>
         /// 使用了GROUP BY 聚合函数。
         /// </summary>
         private bool useGroupByAggregation = false;
 
         private readonly SelectVisitor visitor;
-        private readonly Dictionary<MemberInfo, string> groupByRelationFields;
+        private readonly Dictionary<MemberInfo, Expression> groupByExpressions;
 
         /// <summary>
         /// <see cref="IGrouping{TKey, TElement}.Key"/>
@@ -25,10 +38,10 @@ namespace CodeArts.Db.Lts.Visitors
         public static readonly MemberInfo KeyMember = typeof(IGrouping<,>).GetProperty("Key");
 
         /// <inheritdoc />
-        public GroupByVisitor(SelectVisitor visitor, Dictionary<MemberInfo, string> groupByRelationFields) : base(visitor, false, ConditionType.Having)
+        public GroupByVisitor(SelectVisitor visitor, Dictionary<MemberInfo, Expression> groupByExpressions) : base(visitor, false, ConditionType.Having)
         {
             this.visitor = visitor;
-            this.groupByRelationFields = groupByRelationFields;
+            this.groupByExpressions = groupByExpressions;
         }
 
         /// <inheritdoc />
@@ -69,23 +82,23 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
-        private static bool IsGrouping(Expression node)
+        /// <inheritdoc />
+        public override Expression Visit(Expression node)
         {
-            switch (node)
+            if (node is MyMemberExpression memberExpression)
             {
-                case ParameterExpression parameter:
-                    return parameter.IsGrouping();
-                case MethodCallExpression method:
-                    return IsGrouping(method.Arguments[0]);
-                default:
-                    return false;
+                base.VisitNewMember(memberExpression.Member, memberExpression.Expression);
+
+                return node;
             }
+
+            return base.Visit(node);
         }
 
         /// <inheritdoc />
         protected override void VisitLinq(MethodCallExpression node)
         {
-            if (IsGrouping(node.Arguments[0]))
+            if (node.Arguments[0].IsGrouping())
             {
                 VisitOfLinqGroupBy(node);
             }
@@ -98,11 +111,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override void VisitMemberLeavesIsObject(MemberExpression node)
         {
-            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
+            if (node.Expression.IsGrouping())
             {
                 bool flag = false;
 
-                foreach (var kv in groupByRelationFields)
+                foreach (var kv in groupByExpressions)
                 {
                     if (flag)
                     {
@@ -113,7 +126,8 @@ namespace CodeArts.Db.Lts.Visitors
                         flag = true;
                     }
 
-                    writer.Write(kv.Value);
+                    Visit(kv.Value);
+
                     writer.As("__key____" + kv.Key.Name.ToLower());
                 }
             }
@@ -123,74 +137,44 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
-        /// <summary>
-        /// 成员依赖于参数成员（参数类型是值类型或字符串类型）。
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc />
         protected override void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
         {
-            if (groupByRelationFields.TryGetValue(node.Member, out string value))
+            if (node.Expression.IsGrouping())
             {
-                writer.Write(value);
-
-                return;
-            }
-
-            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
-            {
-                if (groupByRelationFields.TryGetValue(KeyMember, out value))
+                if (groupByExpressions.TryGetValue(node.Member, out Expression expression))
                 {
-                    writer.Write(value);
-
-                    return;
+                    Visit(expression);
+                }
+                else if (node.Member.Name == "Key" && groupByExpressions.TryGetValue(KeyMember, out expression))
+                {
+                    Visit(expression);
+                }
+                else
+                {
+                    throw new DSyntaxErrorException();
                 }
             }
-
-            base.VisitMemberIsDependOnParameterTypeIsPlain(node);
-        }
-
-
-        private void GroupByRelation(MemberInfo memberInfo, Action actionVisit)
-        {
-            var index = writer.Length;
-            var length = writer.Length;
-            var appendAt = writer.AppendAt;
-
-            if (appendAt > -1)
+            else
             {
-                index -= (index - appendAt);
+                base.VisitMemberIsDependOnParameterTypeIsPlain(node);
             }
-
-            writer.AppendAt = index;
-
-            actionVisit.Invoke();
-
-            int offset = writer.Length - length;
-
-            string colStr = writer.ToString(index, offset);
-
-            if (appendAt > -1)
-            {
-                appendAt += offset;
-            }
-
-            writer.AppendAt = appendAt;
-
-            groupByRelationFields[memberInfo] = colStr;
         }
 
         /// <inheritdoc />
         protected internal override void VisitNewMember(MemberInfo memberInfo, Expression node)
-            => GroupByRelation(memberInfo, () => base.VisitNewMember(memberInfo, node));
+        {
+            groupByExpressions[memberInfo] = new MyMemberExpression(memberInfo, node);
+
+            base.VisitNewMember(memberInfo, node);
+        }
 
         /// <inheritdoc />
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
-            MemberAssignment result = node;
+            groupByExpressions[node.Member] = node.Expression;
 
-            GroupByRelation(node.Member, () => result = base.VisitMemberAssignment(node));
-
-            return result;
+            return base.VisitMemberAssignment(node);
         }
 
         /// <inheritdoc />
@@ -210,19 +194,12 @@ namespace CodeArts.Db.Lts.Visitors
             switch (node)
             {
                 case MemberExpression member:
-                    GroupByRelation(KeyMember, () => base.VisitMember(member));
+                    groupByExpressions[KeyMember] = member;
+
+                    base.VisitMember(member);
                     break;
                 case NewExpression newExpression:
                     VisitNew(newExpression);
-                    break;
-                case ParameterExpression parameter:
-                    var tableInfo = MakeTableInfo(parameter.Type);
-
-                    var prefix = GetEntryAlias(tableInfo.TableType, parameter.Name);
-                    var members = FilterMembers(tableInfo.ReadOrWrites);
-
-                    WriteMembers(prefix, members);
-
                     break;
                 case MemberInitExpression memberInit:
                     VisitMemberInit(memberInit);
@@ -249,6 +226,15 @@ namespace CodeArts.Db.Lts.Visitors
                 useGroupByAggregation = true;
                 visitor.Startup(node);
                 useGroupByAggregation = false;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void VisitIsBoolean(Expression node)
+        {
+            using (var visitor = new HavingVisitor(this, groupByExpressions))
+            {
+                visitor.Startup(node);
             }
         }
     }

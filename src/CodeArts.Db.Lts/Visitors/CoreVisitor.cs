@@ -255,13 +255,7 @@ namespace CodeArts.Db.Lts.Visitors
                         whereSwitch.Execute();
                     }
 
-                }, () =>
-                {
-                    using (var visitor = new WhereVisitor(this))
-                    {
-                        visitor.Startup(node.Arguments[0]);
-                    }
-                });
+                }, () => VisitIsBoolean(node.Arguments[0]));
             }
             else
             {
@@ -284,16 +278,21 @@ namespace CodeArts.Db.Lts.Visitors
                         whereSwitch.Execute();
                     }
 
-                }, () =>
-                {
-                    using (var visitor = new WhereVisitor(this))
-                    {
-                        visitor.Startup(node.Arguments[1]);
-                    }
-                });
+                }, () => VisitIsBoolean(node.Arguments[1]));
             }
         }
         #endregion
+
+        /// <summary>
+        /// 条件。
+        /// </summary>
+        protected virtual void VisitIsBoolean(Expression node)
+        {
+            using (var visitor = new WhereVisitor(this))
+            {
+                visitor.Startup(node);
+            }
+        }
 
         /// <summary>
         /// <see cref="Enumerable"/>.
@@ -403,197 +402,6 @@ namespace CodeArts.Db.Lts.Visitors
             using (var visitor = new SetContainsVisitor(this))
             {
                 visitor.Startup(node);
-            }
-        }
-
-        bool DoneAs(MemberInfo memberInfo)
-        {
-            Type memberType;
-
-            switch (memberInfo.MemberType)
-            {
-                case MemberTypes.Constructor when memberInfo is ConstructorInfo constructor:
-                    memberType = constructor.DeclaringType;
-                    break;
-                case MemberTypes.Field when memberInfo is FieldInfo field:
-                    memberType = field.FieldType;
-                    break;
-                case MemberTypes.Property when memberInfo is PropertyInfo property:
-                    memberType = property.PropertyType;
-                    break;
-                case MemberTypes.TypeInfo:
-                case MemberTypes.Custom:
-                case MemberTypes.NestedType:
-                case MemberTypes.All:
-                case MemberTypes.Event:
-                case MemberTypes.Method:
-                default:
-                    return false;
-            }
-
-            return memberType.IsValueType || memberType == typeof(string) || memberType == typeof(Version);
-        }
-
-        private void VisitMyMember(Expression node)
-        {
-            if (node.NodeType == ExpressionType.Parameter)
-            {
-                throw new DSyntaxErrorException("不允许使用表达式参数作为的属性值（如：x=> new { x } 或 x=> new Class{ Property = x }）！");
-            }
-
-            switch (node)
-            {
-                case MethodCallExpression method when method.Method.DeclaringType == Types.Queryable:
-                    switch (method.Method.Name)
-                    {
-                        case MethodCall.Any:
-                            writer.Write("CASE WHEN ");
-                            using (var visitor = new NestedAnyVisitor(this))
-                            {
-                                visitor.Startup(node);
-                            }
-                            writer.Write(" THEN ");
-                            writer.BooleanTrue();
-                            writer.Write(" ELSE ");
-                            writer.BooleanFalse();
-                            writer.Write(" END");
-
-                            break;
-                        case MethodCall.All:
-                            writer.Write("CASE WHEN ");
-                            using (var visitor = new NestedAllVisitor(this))
-                            {
-                                visitor.Startup(node);
-                            }
-                            writer.Write(" THEN ");
-                            writer.BooleanTrue();
-                            writer.Write(" ELSE ");
-                            writer.BooleanFalse();
-                            writer.Write(" END");
-                            break;
-                        default:
-                            using (var visitor = new SelectVisitor(this))
-                            {
-                                writer.OpenBrace();
-                                visitor.Startup(node);
-                                writer.CloseBrace();
-                            }
-                            break;
-                    }
-                    break;
-                default:
-                    base.VisitTail(node);
-
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 访问<see cref="NewExpression"/>成员。
-        /// </summary>
-        /// <param name="memberInfo">成员。</param>
-        /// <param name="node">成员表达式。</param>
-        /// <returns></returns>
-        protected internal virtual void VisitNewMember(MemberInfo memberInfo, Expression node) => VisitMyMember(node);
-
-        /// <inheritdoc />
-        protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
-        {
-            VisitMyMember(node.Expression);
-
-            return node;
-        }
-
-        /// <summary>
-        /// 定义<see cref="NewExpression"/>成员的别名。
-        /// </summary>
-        /// <param name="memberInfo">成员。</param>
-        /// <param name="memberOfHostType">表达式类型。</param>
-        protected virtual void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
-        {
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitNew(NewExpression node)
-        {
-            var members = FilterMembers(node.Members);
-
-            var enumerator = members.GetEnumerator();
-
-            if (enumerator.MoveNext())
-            {
-                Type memberOfHostType = node.Type;
-
-                Done(enumerator.Current);
-
-                while (enumerator.MoveNext())
-                {
-                    writer.Delimiter();
-
-                    Done(enumerator.Current);
-                }
-
-                return node;
-
-                void Done(MemberInfo memberInfo)
-                {
-                    VisitNewMember(memberInfo, node.Arguments[node.Members.IndexOf(memberInfo)]);
-
-                    if (DoneAs(memberInfo))
-                    {
-                        DefNewMemberAs(memberInfo, memberOfHostType);
-                    }
-                }
-            }
-            else
-            {
-                throw new DSyntaxErrorException("未指定查询字段!");
-            }
-        }
-
-        /// <summary>
-        /// 定义<see cref="MemberBinding"/>的别名。
-        /// </summary>
-        /// <param name="member">成员。</param>
-        /// <param name="memberOfHostType">成员所在类型。</param>
-
-        protected virtual void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
-        {
-        }
-
-        /// <inheritdoc />
-        protected override Expression VisitMemberInit(MemberInitExpression node)
-        {
-            var bindings = FilterMemberBindings(node.Bindings);
-
-            var enumerator = bindings.GetEnumerator();
-
-            if (enumerator.MoveNext())
-            {
-                Done(enumerator.Current);
-
-                while (enumerator.MoveNext())
-                {
-                    writer.Delimiter();
-
-                    Done(enumerator.Current);
-                }
-
-                return node;
-
-                void Done(MemberBinding member)
-                {
-                    VisitMemberBinding(member);
-
-                    if (DoneAs(member.Member))
-                    {
-                        DefMemberBindingAs(member, node.Type);
-                    }
-                }
-            }
-            else
-            {
-                throw new DException("未指定查询字段!");
             }
         }
 

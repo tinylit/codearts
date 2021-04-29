@@ -156,7 +156,7 @@ namespace CodeArts.Db.Dapper
         }
 
         /// <summary>
-        /// 转分页SQL（CountSql;listSql）。
+        /// 转分页SQL（countSql;listSql）。
         /// </summary>
         /// <param name="sql">语句。</param>
         /// <param name="pageIndex">页面索引。</param>
@@ -181,23 +181,39 @@ namespace CodeArts.Db.Dapper
 
             var sb = new StringBuilder();
 
+#if NETSTANDARD2_1
+            sb.Append(sqlStr[..colsGrp.Index])
+#else
             sb.Append(sqlStr.Substring(0, colsGrp.Index))
+#endif
                 .Append("COUNT(1)");
 
             int subIndex = colsGrp.Index + colsGrp.Value.Length;
 
             if (orderByMt.Success)
             {
+#if NETSTANDARD2_1
+                sb.Append(sqlStr[subIndex..orderByMt.Index]);
+#else
                 sb.Append(sqlStr.Substring(subIndex, orderByMt.Index - subIndex));
+#endif
             }
             else
             {
+#if NETSTANDARD2_1
+                sb.Append(sqlStr[subIndex..]);
+#else
                 sb.Append(sqlStr.Substring(subIndex));
+#endif
             }
 
             return sb.Append(";")
                  .Append(orderByMt.Success
+#if NETSTANDARD2_1
+                 ? settings.ToSQL(sqlStr[..orderByMt.Index], pageSize, pageSize * pageIndex, sqlStr[orderByMt.Index..])
+#else
                  ? settings.ToSQL(sqlStr.Substring(0, orderByMt.Index), pageSize, pageSize * pageIndex, sqlStr.Substring(orderByMt.Index))
+#endif
                  : settings.ToSQL(sqlStr, pageSize, pageSize * pageIndex, string.Empty)
                  ).ToString();
         }

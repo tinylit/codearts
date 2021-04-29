@@ -75,17 +75,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (flag)
                     {
-                        var iRepositoryType2 = typeof(ILinqRepository<,>).MakeGenericType(entityType, keyType);
-
                         var repositoryType2 = typeof(LinqRepository<,>).MakeGenericType(entityType, keyType);
 
-                        services.Add(new ServiceDescriptor(iRepositoryType2, CreateNewInstance(repositoryType2, contextType), lifetime));
+                        services.Add(new ServiceDescriptor(typeof(ILinqRepository<,>).MakeGenericType(entityType, keyType), CreateNewInstance(repositoryType2, contextType), lifetime));
                     }
 
                     var repositoryType = typeof(LinqRepository<>).MakeGenericType(entityType);
-                    var iRepositoryType = typeof(ILinqRepository<>).MakeGenericType(entityType);
 
-                    services.Add(new ServiceDescriptor(iRepositoryType, CreateNewInstance(repositoryType, contextType), lifetime));
+                    services.Add(new ServiceDescriptor(typeof(ILinqRepository<>).MakeGenericType(entityType), CreateNewInstance(repositoryType, contextType), lifetime));
                 });
 
             return services.AddDbContext<TContext>();
@@ -111,27 +108,16 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 var serviceProExp = Expression.Parameter(typeof(IServiceProvider));
 
-                var contextExp = Expression.Variable(contextType);
-
-                var variables = new List<ParameterExpression> { contextExp };
-
                 var callExp = Expression.Call(serviceProExp, GetServiceMtd, Expression.Constant(contextType));
 
-                var list = new Expression[2]
-                {
-                    Expression.Assign(contextExp, Expression.Convert(callExp, contextType)),
+                var newExp = Expression.New(item, new Expression[1] { Expression.Convert(callExp, contextType) });
 
-                    Expression.Condition(Expression.Equal(contextExp, Expression.Default(contextType)), Expression.Default(repositoryType), Expression.New(item, new Expression[1]{ contextExp }))
-                };
-
-                var bodyExp = Expression.Block(variables, list);
-
-                var lambdaEx = Expression.Lambda<Func<IServiceProvider, object>>(bodyExp, serviceProExp);
+                var lambdaEx = Expression.Lambda<Func<IServiceProvider, object>>(newExp, serviceProExp);
 
                 return lambdaEx.Compile();
             }
 
-            return null;
+            throw new NotSupportedException($"默认仓库未声明{repositoryType.Name}({contextType.Name} context)构造函数！");
         }
     }
 }

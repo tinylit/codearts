@@ -31,6 +31,16 @@ namespace CodeArts.Db.Lts.Visitors
 
         private readonly bool isMainVisitor = false;
 
+        /// <summary>
+        /// 忽略可空类型。
+        /// </summary>
+        private bool ignoreNullable = false;
+
+        /// <summary>
+        /// 条件的两端。
+        /// </summary>
+        private bool isConditionBalance = false;
+
         private bool buildFrom = false;
 
         /// <summary>
@@ -479,6 +489,11 @@ namespace CodeArts.Db.Lts.Visitors
         {
             var value = node.GetValueFromExpression();
 
+            if (ignoreNullable && value is null)
+            {
+                return;
+            }
+
             if (value is IQueryable queryable)
             {
                 Visit(queryable.Expression);
@@ -494,6 +509,20 @@ namespace CodeArts.Db.Lts.Visitors
             else
             {
                 writer.Parameter(node.Member.Name, value);
+            }
+
+            if (isConditionBalance && value is bool flag && flag == writer.IsReverseCondition)
+            {
+                if (flag)
+                {
+                    writer.Equal();
+                }
+                else
+                {
+                    writer.NotEqual();
+                }
+
+                writer.BooleanFalse();
             }
         }
 
@@ -519,20 +548,47 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected virtual void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
         {
-            if (!hasVisitor || isMainVisitor)
+            if (!isConditionBalance || !writer.IsReverseCondition || !node.Type.IsBoolean())
             {
-                var tableInfo = MakeTableInfo(node.Expression.Type);
+                Done();
+            }
+            else if (isConditionBalance)
+            {
+                int length = writer.Length;
 
-                if (!tableInfo.ReadOrWrites.TryGetValue(node.Member.Name, out string value))
+                VisitSkipIsCondition(Done);
+
+                if (writer.Length > length)
                 {
-                    throw new DSyntaxErrorException($"“{node.Member.Name}”不可读写!");
-                }
+                    writer.Equal();
 
-                writer.Name(value);
+                    writer.BooleanTrue();
+                }
             }
             else
             {
-                visitor.VisitMemberIsDependOnParameterTypeIsPlain(node);
+                writer.Write(ExpressionType.Not);
+
+                writer.ReverseCondition(Done);
+            }
+
+            void Done()
+            {
+                if (!hasVisitor || isMainVisitor)
+                {
+                    var tableInfo = MakeTableInfo(node.Expression.Type);
+
+                    if (!tableInfo.ReadOrWrites.TryGetValue(node.Member.Name, out string value))
+                    {
+                        throw new DSyntaxErrorException($"“{node.Member.Name}”不可读写!");
+                    }
+
+                    writer.Name(value);
+                }
+                else
+                {
+                    visitor.VisitMemberIsDependOnParameterTypeIsPlain(node);
+                }
             }
         }
 
@@ -702,13 +758,15 @@ namespace CodeArts.Db.Lts.Visitors
             switch (node.Expression)
             {
                 case MemberExpression member when member.IsNullable():
-                    if (node.IsValue())
+                    if (node.Member.Name == "Value")
                     {
                         VisitMember(member);
                     }
-                    else if (node.IsHasValue())
+                    else if (node.Member.Name == "HasValue")
                     {
-                        VisitMember(member);
+                        //? 避免生成 x.member = true is not null.
+
+                        VisitSkipIsCondition(() => VisitMember(member));
 
                         writer.IsNotNull();
                     }
@@ -765,23 +823,61 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.IsBoolean())
+            if (!isConditionBalance && node.Type.IsBoolean())
             {
-                throw new DSyntaxErrorException("禁止使用布尔常量作为条件语句或结果!");
+                throw new DSyntaxErrorException("禁止使用布尔常量作为结果!");
             }
 
-            if (node.Type.IsValueType || node.Type == typeof(string) || node.Type == typeof(Version))
+            if (node.Type.IsQueryable())
             {
-                writer.Parameter((node.Value as ConstantExpression ?? node).GetValueFromExpression());
+                return node;
             }
 
-            if (buildFrom)
+            var value = (node.Value as ConstantExpression ?? node).GetValueFromExpression();
+
+            if (value is Expression expression)
             {
-                tableGetter = (Func<ITableInfo, string>)(node.Value as ConstantExpression ?? node).GetValueFromExpression();
+                Visit(expression);
+            }
+            else if (value is bool flag)
+            {
+                if (writer.IsReverseCondition == flag)
+                {
+                    writer.Parameter(value);
+
+                    if (flag)
+                    {
+                        writer.Equal();
+                    }
+                    else
+                    {
+                        writer.NotEqual();
+                    }
+
+                    writer.BooleanFalse();
+                }
+            }
+            else if (node.Type.IsValueType || node.Type == typeof(string) || node.Type == typeof(Version))
+            {
+                writer.Parameter(value);
+            }
+            else if (buildFrom && value is Func<ITableInfo, string> valueFn)
+            {
+                tableGetter = valueFn;
+            }
+            else
+            {
+                throw new DSyntaxErrorException($"{node.Type.FullName}类型的常量（{value}）不被支持!");
             }
 
             return node;
         }
+
+        /// <summary>
+        /// 访问表达式内容。
+        /// </summary>
+        /// <param name="node"><see cref="Expression{TDelegate}"/>.<seealso cref="LambdaExpression.Body"/></param>
+        protected virtual void VisitLambdaBody(Expression node) => Visit(node);
 
         /// <inheritdoc />
         protected override Expression VisitLambda<T>(Expression<T> node)
@@ -799,10 +895,228 @@ namespace CodeArts.Db.Lts.Visitors
             }
             else
             {
-                Visit(node.Body);
+                VisitLambdaBody(node.Body);
             }
 
             return node;
+        }
+
+        bool DoneAs(MemberInfo memberInfo)
+        {
+            Type memberType;
+
+            switch (memberInfo.MemberType)
+            {
+                case MemberTypes.Constructor when memberInfo is ConstructorInfo constructor:
+                    memberType = constructor.DeclaringType;
+                    break;
+                case MemberTypes.Field when memberInfo is FieldInfo field:
+                    memberType = field.FieldType;
+                    break;
+                case MemberTypes.Property when memberInfo is PropertyInfo property:
+                    memberType = property.PropertyType;
+                    break;
+                case MemberTypes.TypeInfo:
+                case MemberTypes.Custom:
+                case MemberTypes.NestedType:
+                case MemberTypes.All:
+                case MemberTypes.Event:
+                case MemberTypes.Method:
+                default:
+                    return false;
+            }
+
+            return memberType.IsValueType || memberType == typeof(string) || memberType == typeof(Version);
+        }
+
+        private void VisitMyMember(Expression node)
+        {
+            if (node.NodeType == ExpressionType.Parameter)
+            {
+                throw new DSyntaxErrorException("不允许使用表达式参数作为的属性值（如：x=> new { x } 或 x=> new Class{ Property = x }）！");
+            }
+
+            switch (node)
+            {
+                case MethodCallExpression method when method.Method.DeclaringType == Types.Queryable:
+                    switch (method.Method.Name)
+                    {
+                        case MethodCall.Any:
+                            writer.Write("CASE WHEN ");
+                            using (var visitor = new NestedAnyVisitor(this))
+                            {
+                                visitor.Startup(node);
+                            }
+                            writer.Write(" THEN ");
+                            writer.BooleanTrue();
+                            writer.Write(" ELSE ");
+                            writer.BooleanFalse();
+                            writer.Write(" END");
+
+                            break;
+                        case MethodCall.All:
+                            writer.Write("CASE WHEN ");
+                            using (var visitor = new NestedAllVisitor(this))
+                            {
+                                visitor.Startup(node);
+                            }
+                            writer.Write(" THEN ");
+                            writer.BooleanTrue();
+                            writer.Write(" ELSE ");
+                            writer.BooleanFalse();
+                            writer.Write(" END");
+                            break;
+                        default:
+                            using (var visitor = new SelectVisitor(this))
+                            {
+                                writer.OpenBrace();
+                                visitor.Startup(node);
+                                writer.CloseBrace();
+                            }
+                            break;
+                    }
+                    break;
+                default:
+                    VisitTail(node);
+
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 访问<see cref="NewExpression"/>成员。
+        /// </summary>
+        /// <param name="memberInfo">成员。</param>
+        /// <param name="node">成员表达式。</param>
+        /// <returns></returns>
+        protected internal virtual void VisitNewMember(MemberInfo memberInfo, Expression node) => VisitMyMember(node);
+
+        /// <summary>
+        /// 定义<see cref="NewExpression"/>成员的别名。
+        /// </summary>
+        /// <param name="memberInfo">成员。</param>
+        /// <param name="memberOfHostType">表达式类型。</param>
+        protected virtual void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
+        {
+        }
+
+        /// <inheritdoc />
+        protected override Expression VisitNew(NewExpression node)
+        {
+            if ((node.Type.IsValueType || node.Type == Types.String) && (node.Arguments.Count == 0 || IsPlainVariable(node, true)))
+            {
+                writer.Parameter(node.GetValueFromExpression());
+            }
+            else if (node.Arguments.Count == 1 && (node.Type == Types.Guid || node.Type == Types.DateTime || node.Type == Types.DateTimeOffset || node.Type == Types.Version))
+            {
+                Visit(node.Arguments[0]);
+            }
+            else if (node.Members.Count == node.Arguments.Count)
+            {
+                var members = FilterMembers(node.Members);
+
+                var enumerator = members.GetEnumerator();
+
+                if (enumerator.MoveNext())
+                {
+                    Type memberOfHostType = node.Type;
+
+                    Done(enumerator.Current);
+
+                    while (enumerator.MoveNext())
+                    {
+                        MemberDelimiter();
+
+                        Done(enumerator.Current);
+                    }
+
+                    return node;
+
+                    void Done(MemberInfo memberInfo)
+                    {
+                        VisitNewMember(memberInfo, node.Arguments[node.Members.IndexOf(memberInfo)]);
+
+                        if (DoneAs(memberInfo))
+                        {
+                            DefNewMemberAs(memberInfo, memberOfHostType);
+                        }
+                    }
+                }
+                else
+                {
+                    throw new DSyntaxErrorException("未指定查询字段!");
+                }
+            }
+            else
+            {
+                throw new DSyntaxErrorException($"表达式{node}不被支持!");
+            }
+
+            return node;
+        }
+
+        /// <summary>
+        /// 成员分割符。
+        /// </summary>
+        protected virtual void MemberDelimiter() => writer.Delimiter();
+
+        /// <summary>
+        /// 定义<see cref="MemberBinding"/>的别名。
+        /// </summary>
+        /// <param name="member">成员。</param>
+        /// <param name="memberOfHostType">成员所在类型。</param>
+
+        protected virtual void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
+        {
+        }
+
+        /// <inheritdoc />
+        protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+        {
+            VisitMyMember(node.Expression);
+
+            return node;
+        }
+
+        /// <inheritdoc />
+        protected override Expression VisitMemberInit(MemberInitExpression node)
+        {
+            if (node.NewExpression.Arguments.Count > 0)
+            {
+                throw new DSyntaxErrorException($"表达式{node}不被支持!");
+            }
+
+            var bindings = FilterMemberBindings(node.Bindings);
+
+            var enumerator = bindings.GetEnumerator();
+
+            if (enumerator.MoveNext())
+            {
+                Done(enumerator.Current);
+
+                while (enumerator.MoveNext())
+                {
+                    MemberDelimiter();
+
+                    Done(enumerator.Current);
+                }
+
+                return node;
+
+                void Done(MemberBinding member)
+                {
+                    VisitMemberBinding(member);
+
+                    if (DoneAs(member.Member))
+                    {
+                        DefMemberBindingAs(member, node.Type);
+                    }
+                }
+            }
+            else
+            {
+                throw new DException("未指定查询字段!");
+            }
         }
 
         /// <summary>
@@ -956,6 +1270,31 @@ namespace CodeArts.Db.Lts.Visitors
 
             return node;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        public override Expression Visit(Expression node)
+        {
+            if (isConditionBalance && node.NodeType == ExpressionType.Call)
+            {
+                try
+                {
+                    isConditionBalance = false;
+
+                    return base.Visit(node);
+                }
+                finally
+                {
+                    isConditionBalance = true;
+                }
+            }
+
+            return base.Visit(node);
+        }
+
         #region MethodCallExpression
         /// <inheritdoc />
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -989,14 +1328,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// <summary>
         ///  <see cref="Queryable"/>.
         /// </summary>
-        /// <returns></returns>
         protected virtual void VisitCore(MethodCallExpression node) => VisitByCustom(node);
 
         /// <summary>
-        /// System.String 的函数。
+        /// <see cref="string"/>
         /// </summary>
-        /// <param name="node">节点。</param>
-        /// <returns></returns>
         protected virtual void VisitOfString(MethodCallExpression node)
         {
             switch (node.Method.Name)
@@ -1015,19 +1351,19 @@ namespace CodeArts.Db.Lts.Visitors
                 case MethodCall.Substring:
                     VisitToSubstring(node);
                     break;
-                case MethodCall.ToUpper:
-                case MethodCall.ToLower:
+                case MethodCall.ToUpper when node.Arguments.Count == 0:
+                case MethodCall.ToLower when node.Arguments.Count == 0:
                     VisitToCaseConversion(node);
                     break;
-                case MethodCall.Trim:
-                case MethodCall.TrimEnd:
-                case MethodCall.TrimStart:
+                case MethodCall.Trim when node.Arguments.Count == 0:
+                case MethodCall.TrimEnd when node.Arguments.Count == 0:
+                case MethodCall.TrimStart when node.Arguments.Count == 0:
                     VisitToTrim(node);
                     break;
-                case MethodCall.IndexOf when node.Arguments.Count > 1:
+                case MethodCall.IndexOf when node.Arguments.Count == 3:
                     VisitByIndexOfWithLimit(node);
                     break;
-                case MethodCall.IndexOf:
+                case MethodCall.IndexOf when node.Arguments.Count < 3:
                     VisitByIndexOf(node);
                     break;
                 default:
@@ -1039,10 +1375,8 @@ namespace CodeArts.Db.Lts.Visitors
         #region String
 
         /// <summary>
-        /// System.String 的 Contains、StartsWith、EndsWith函数。
+        /// <see cref="string.Contains(string)"/>/<seealso cref="string.StartsWith(string)"/>/<seealso cref="string.EndsWith(string)"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitLike(MethodCallExpression node)
         {
             if (node.Arguments.Count > 1)
@@ -1050,7 +1384,7 @@ namespace CodeArts.Db.Lts.Visitors
                 throw new DSyntaxErrorException($"仅支持参数类型为“System.String”的({node.Method.Name}(String))方法。");
             }
 
-            if (IsPlainVariable(node.Arguments[0]))
+            if (IsPlainVariable(node.Arguments[0], true))
             {
                 VisitLikeByVariable(node);
             }
@@ -1061,10 +1395,9 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 Contains、StartsWith、EndsWith函数。
+        /// <see cref="string.Contains(string)"/>/<seealso cref="string.StartsWith(string)"/>/<seealso cref="string.EndsWith(string)"/>
+        /// eg: x.Name.Contains("a")
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitLikeByVariable(MethodCallExpression node)
         {
             var objExp = node.Arguments[0];
@@ -1113,10 +1446,9 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 Contains、StartsWith、EndsWith函数。
+        /// <see cref="string.Contains(string)"/>/<seealso cref="string.StartsWith(string)"/>/<seealso cref="string.EndsWith(string)"/>
+        /// eg: x.Name.Contains(x.SimpleName)
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitLikeByExpression(MethodCallExpression node)
         {
             Visit(node.Object);
@@ -1158,10 +1490,9 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 IsNullOrEmpty 函数。
+        /// <see cref="string.IsNullOrEmpty(string)"/>
+        /// <seealso cref="StringExtentions.IsEmpty(string)"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitIsEmpty(MethodCallExpression node)
         {
             var objExp = node.Arguments.Count > 0 ? node.Arguments[0] : node.Object;
@@ -1182,10 +1513,8 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 Replace 函数。
+        /// <see cref="string.Replace(char, char)"/>/<seealso cref="string.Replace(string, string)"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitToReplace(MethodCallExpression node)
         {
             writer.Write(node.Method.Name);
@@ -1204,32 +1533,33 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 Substring 函数。
+        /// <see cref="string.Substring(int)"/>/<see cref="string.Substring(int, int)"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitToSubstring(MethodCallExpression node)
         {
             writer.Write("CASE WHEN ");
 
             Visit(node.Object);
 
-            writer.Write(" IS NULL OR ");
+            writer.Write(" IS NULL THEN NULL WHEN ");
 
-            writer.OpenBrace();
             writer.LengthMethod();
             writer.OpenBrace();
 
             Visit(node.Object);
 
             writer.CloseBrace();
-            writer.Write(" - ");
 
-            Visit(node.Arguments[0]);
+            writer.Write(" < ");
 
-            writer.CloseBrace();
-
-            writer.Write(" < 1");
+            if (node.Arguments.Count > 1)
+            {
+                Visit(node.Arguments[1]);
+            }
+            else
+            {
+                Visit(node.Arguments[0]);
+            }
 
             writer.Write(" THEN ");
             writer.Parameter(string.Empty);
@@ -1242,7 +1572,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             writer.Delimiter();
 
-            if (IsPlainVariable(node.Arguments[0]))
+            if (node.Arguments[0].NodeType == ExpressionType.Constant)
             {
                 writer.Parameter((int)node.Arguments[0].GetValueFromExpression() + 1);
             }
@@ -1278,10 +1608,8 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 ToUpper、ToLower 函数。
+        /// <see cref="string.ToUpper()"/>/<seealso cref="string.ToLower()"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitToCaseConversion(MethodCallExpression node)
         {
 #if NETSTANDARD2_1
@@ -1297,21 +1625,19 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 Trim、TrimStart、TrimEnd 函数。
+        /// <see cref="string.Trim()"/>/<seealso cref="string.TrimEnd(char[])"/>/<seealso cref="string.TrimEnd(char[])"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitToTrim(MethodCallExpression node)
         {
             if (node.Method.Name == MethodCall.TrimStart || node.Method.Name == MethodCall.Trim)
             {
-                writer.Write("LTRIM");
+                writer.Write("Ltrim");
                 writer.OpenBrace();
             }
 
             if (node.Method.Name == MethodCall.TrimEnd || node.Method.Name == MethodCall.Trim)
             {
-                writer.Write("RTRIM");
+                writer.Write("Rtrim");
                 writer.OpenBrace();
             }
 
@@ -1329,17 +1655,16 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 IndexOf(int) 函数。
+        /// <see cref="string.IndexOf(string)"/>
+        /// <see cref="string.IndexOf(string, int)"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitByIndexOf(MethodCallExpression node)
         {
-            var indexOfExp = node.Arguments[0];
+            var substrExp = node.Arguments[0];
 
-            if (IsPlainVariable(indexOfExp, true))
+            if (substrExp.NodeType == ExpressionType.Constant)
             {
-                var value = indexOfExp.GetValueFromExpression();
+                var value = substrExp.GetValueFromExpression();
 
                 if (value is null)
                 {
@@ -1364,7 +1689,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 writer.Write(" IS NULL OR ");
 
-                Visit(node.Arguments[0]);
+                VisitTail(node.Arguments[0]);
             }
 
             writer.Write(" IS NULL THEN -1 ELSE ");
@@ -1372,11 +1697,32 @@ namespace CodeArts.Db.Lts.Visitors
             writer.IndexOfMethod();
             writer.OpenBrace();
 
-            Visit(settings.IndexOfSwapPlaces ? indexOfExp : node.Object);
+            if (settings.IndexOfSwapPlaces)
+            {
+                VisitTail(substrExp);
+            }
+            else
+            {
+                Visit(node.Object);
+            }
 
             writer.Delimiter();
 
-            Visit(settings.IndexOfSwapPlaces ? node.Object : indexOfExp);
+            if (settings.IndexOfSwapPlaces)
+            {
+                Visit(node.Object);
+            }
+            else
+            {
+                VisitTail(substrExp);
+            }
+
+            if (node.Arguments.Count > 1)
+            {
+                writer.Delimiter();
+
+                VisitTail(node.Arguments[1]);
+            }
 
             writer.CloseBrace();
 
@@ -1386,81 +1732,68 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// System.String 的 IndexOf(int,int) 函数。
+        /// <see cref="string.IndexOf(string, int, int)"/>
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
         protected virtual void VisitByIndexOfWithLimit(MethodCallExpression node)
         {
-            var objExp = node.Arguments[1];
+            var substrExp = node.Arguments[0];
 
-            var isVariable = IsPlainVariable(objExp);
+            var indexExp = node.Arguments[1];
 
-            var indexStart = isVariable ? (int)objExp.GetValueFromExpression() : -1;
+            var isVariable = IsPlainVariable(indexExp);
 
-            writer.Write("CASE WHEN ");
+            var indexStart = isVariable ? (int)indexExp.GetValueFromExpression() : -1;
 
-            Visit(settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
-
-            writer.Write(" IS NULL OR ");
-
-            Visit(settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
-
-            writer.Write(" IS NULL ");
-
-            if (node.Arguments.Count > 2)
+            if (IsPlainVariable(substrExp))
             {
-                writer.Write(" OR ");
-                writer.IndexOfMethod();
-                writer.OpenBrace();
+                var value = substrExp.GetValueFromExpression();
 
-                Visit(settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
-
-                writer.Delimiter();
-
-                Visit(settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
-
-                writer.Delimiter();
-
-                if (isVariable)
+                if (value is null)
                 {
-                    writer.Parameter(indexStart + 1);
-                }
-                else
-                {
-                    Visit(objExp);
+                    writer.Parameter(-1);
 
-                    writer.Write(" + 1");
+                    return;
                 }
 
-                writer.CloseBrace();
+                writer.Write("CASE WHEN ");
 
-                writer.Write(" > ");
+                Visit(node.Object);
+            }
+            else
+            {
+                writer.Write("CASE WHEN ");
 
-                if (isVariable)
-                {
-                    writer.Parameter(indexStart);
-                }
-                else
-                {
-                    Visit(objExp);
-                }
+                Visit(settings.IndexOfSwapPlaces ? node.Object : substrExp);
 
-                writer.Write(" + ");
+                writer.Write(" IS NULL OR ");
 
-                Visit(node.Arguments[2]);
+                Visit(settings.IndexOfSwapPlaces ? substrExp : node.Object);
             }
 
-            writer.Write(" THEN -1 ELSE ");
+            writer.Write(" IS NULL OR ");
 
             writer.IndexOfMethod();
             writer.OpenBrace();
 
-            Visit(settings.IndexOfSwapPlaces ? node.Arguments[0] : node.Object);
+            if (settings.IndexOfSwapPlaces)
+            {
+                VisitTail(substrExp);
+            }
+            else
+            {
+                Visit(node.Object);
+            }
 
             writer.Delimiter();
 
-            Visit(settings.IndexOfSwapPlaces ? node.Object : node.Arguments[0]);
+            if (settings.IndexOfSwapPlaces)
+            {
+                Visit(node.Object);
+            }
+            else
+            {
+                VisitTail(substrExp);
+            }
 
             writer.Delimiter();
 
@@ -1470,7 +1803,75 @@ namespace CodeArts.Db.Lts.Visitors
             }
             else
             {
-                Visit(objExp);
+                Visit(indexExp);
+
+                writer.Write(" + 1");
+            }
+
+            writer.CloseBrace();
+
+            writer.Write(" > ");
+
+            var lengthExp = node.Arguments[2];
+
+            if (isVariable && IsPlainVariable(lengthExp))
+            {
+                writer.Parameter(indexStart + (int)lengthExp.GetValueFromExpression());
+            }
+            else
+            {
+                writer.OpenBrace();
+
+                if (isVariable)
+                {
+                    writer.Parameter(indexStart);
+                }
+                else
+                {
+                    VisitTail(indexExp);
+                }
+
+                writer.Write(" + ");
+
+                VisitTail(lengthExp);
+
+                writer.CloseBrace();
+            }
+
+            writer.Write(" THEN -1 ELSE ");
+
+            writer.IndexOfMethod();
+            writer.OpenBrace();
+
+            if (settings.IndexOfSwapPlaces)
+            {
+                VisitTail(substrExp);
+            }
+            else
+            {
+                Visit(node.Object);
+            }
+
+            writer.Delimiter();
+
+            if (settings.IndexOfSwapPlaces)
+            {
+                Visit(node.Object);
+            }
+            else
+            {
+                VisitTail(substrExp);
+            }
+
+            writer.Delimiter();
+
+            if (isVariable)
+            {
+                writer.Parameter(indexStart + 1);
+            }
+            else
+            {
+                Visit(indexExp);
 
                 writer.Write(" + 1");
             }
@@ -1484,7 +1885,6 @@ namespace CodeArts.Db.Lts.Visitors
         /// <summary>
         /// <see cref="RepositoryExtentions.From{TSource}(IRepository{TSource}, Func{ITableInfo, string})"/>
         /// </summary>
-        /// <returns></returns>
         protected virtual void VisitOfLts(MethodCallExpression node)
         {
             switch (node.Method.Name)
@@ -1518,7 +1918,7 @@ namespace CodeArts.Db.Lts.Visitors
                 return true;
             }
 
-            if (node.NodeType == ExpressionType.Parameter)
+            if (node.NodeType == ExpressionType.Parameter || !(depthVerification || node.NodeType == ExpressionType.MemberAccess))
             {
                 return false;
             }
@@ -1529,10 +1929,25 @@ namespace CodeArts.Db.Lts.Visitors
                     return member.Expression is null || IsPlainVariable(member.Expression, depthVerification);
                 case MethodCallExpression method when method.Object is null ? !(method.Method.DeclaringType == Types.Queryable || method.Method.DeclaringType == Types.RepositoryExtentions) : IsPlainVariable(method.Object, depthVerification):
                     return method.Arguments.Count == 0 || method.Arguments.All(arg => IsPlainVariable(arg, depthVerification));
-                case BinaryExpression binary when depthVerification:
+                case BinaryExpression binary:
                     return IsPlainVariable(binary.Left, depthVerification) && IsPlainVariable(binary.Right, depthVerification);
                 case LambdaExpression lambda when lambda.Parameters.Count == 0:
                     return IsPlainVariable(lambda.Body, depthVerification);
+                case NewExpression newExpression when newExpression.Members.Count == 0:
+                    return newExpression.Arguments.Count == 0 || newExpression.Arguments.All(arg => IsPlainVariable(arg, depthVerification));
+                case MemberInitExpression memberInit when IsPlainVariable(memberInit.NewExpression, depthVerification):
+                    foreach (var item in memberInit.Bindings)
+                    {
+                        if (item is MemberAssignment assignment && IsPlainVariable(assignment.Expression, depthVerification))
+                        {
+                            continue;
+                        }
+
+                        return false;
+                    }
+                    return true;
+                case ConditionalExpression conditional when IsPlainVariable(conditional.Test, depthVerification):
+                    return IsPlainVariable(conditional.IfTrue, depthVerification) && IsPlainVariable(conditional.IfFalse, depthVerification);
                 default:
                     return false;
             }
@@ -1583,7 +1998,7 @@ namespace CodeArts.Db.Lts.Visitors
         {
             writer.Write("CASE ");
 
-            base.Visit(node.SwitchValue);
+            VisitTail(node.SwitchValue);
 
             foreach (var item in node.Cases)
             {
@@ -1592,7 +2007,7 @@ namespace CodeArts.Db.Lts.Visitors
 
             writer.Write(" ELSE ");
 
-            base.Visit(node.DefaultBody);
+            VisitTail(node.DefaultBody);
 
             writer.Write(" END");
 
@@ -1631,26 +2046,31 @@ namespace CodeArts.Db.Lts.Visitors
             return node;
         }
 
-        /// <inheritdoc />
-        protected override Expression VisitConditional(ConditionalExpression node)
+        /// <summary>
+        /// 三目运算，条件为常量。
+        /// </summary>
+        /// <param name="node">节点。</param>
+        protected virtual void VisitConditionalTestIsVariable(ConditionalExpression node)
         {
-            if (IsPlainVariable(node.Test, true))
+            if (Equals(node.Test.GetValueFromExpression(), true))
             {
-                if (Equals(node.Test.GetValueFromExpression(), true))
-                {
-                    VisitTail(node.IfTrue);
-                }
-                else
-                {
-                    VisitTail(node.IfFalse);
-                }
-
-                return node;
+                VisitTail(node.IfTrue);
             }
+            else
+            {
+                VisitTail(node.IfFalse);
+            }
+        }
 
+        /// <summary>
+        /// 三目运算，条件为表达式。
+        /// </summary>
+        /// <param name="node">节点。</param>
+        protected virtual void VisitConditionalNormal(ConditionalExpression node)
+        {
             writer.Write("CASE WHEN ");
 
-            VisitTail(node.Test);
+            VisitSkipIsCondition(node.Test);
 
             writer.Write(" THEN ");
 
@@ -1661,6 +2081,19 @@ namespace CodeArts.Db.Lts.Visitors
             VisitTail(node.IfFalse);
 
             writer.Write(" END");
+        }
+
+        /// <inheritdoc />
+        protected override Expression VisitConditional(ConditionalExpression node)
+        {
+            if (IsPlainVariable(node.Test, true))
+            {
+                VisitConditionalTestIsVariable(node);
+            }
+            else
+            {
+                VisitConditionalNormal(node);
+            }
 
             return node;
         }
@@ -1723,7 +2156,7 @@ namespace CodeArts.Db.Lts.Visitors
             }
             else if (nodeType == ExpressionType.And || nodeType == ExpressionType.Or)
             {
-                VisitBinaryIsBoolean(node);
+                VisitBinaryIsBit(node);
             }
             else if (node.Type.IsBoolean())
             {
@@ -1797,43 +2230,107 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         protected virtual void VisitTail(Expression node)
         {
-            switch (node)
+            if (node.NodeType == ExpressionType.Call && node is MethodCallExpression methodCall && methodCall.Method.DeclaringType == Types.Queryable)
             {
-                case MethodCallExpression method when method.Method.DeclaringType == Types.Queryable:
-                    switch (method.Method.Name)
-                    {
-                        case MethodCall.Any:
-                            using (var visitor = new NestedAnyVisitor(this))
-                            {
-                                visitor.Startup(node);
-                            }
-                            break;
-                        case MethodCall.All:
-                            using (var visitor = new NestedAllVisitor(this))
-                            {
-                                visitor.Startup(node);
-                            }
-                            break;
-                        case MethodCall.Contains:
-                            using (var visitor = new NestedContainsVisitor(this))
-                            {
-                                visitor.Startup(node);
-                            }
-                            break;
-                        default:
-                            using (var visitor = new SelectVisitor(this))
-                            {
-                                writer.OpenBrace();
-                                visitor.Startup(node);
-                                writer.CloseBrace();
-                            }
-                            break;
-                    }
-                    break;
-                default:
-                    Visit(node);
-                    break;
+                switch (methodCall.Method.Name)
+                {
+                    case MethodCall.Any:
+                        using (var visitor = new NestedAnyVisitor(this))
+                        {
+                            visitor.Startup(node);
+                        }
+                        break;
+                    case MethodCall.All:
+                        using (var visitor = new NestedAllVisitor(this))
+                        {
+                            visitor.Startup(node);
+                        }
+                        break;
+                    case MethodCall.Contains:
+                        using (var visitor = new NestedContainsVisitor(this))
+                        {
+                            visitor.Startup(node);
+                        }
+                        break;
+                    default:
+                        using (var visitor = new SelectVisitor(this))
+                        {
+                            writer.OpenBrace();
+                            visitor.Startup(node);
+                            writer.CloseBrace();
+                        }
+                        break;
+                }
             }
+            else
+            {
+                Visit(node);
+            }
+        }
+
+        /// <summary>
+        /// 空适配符，左节点为常量。
+        /// </summary>
+        protected virtual void VisitBinaryIsCoalesceLeftIsVariable(BinaryExpression node) => VisitBinaryIsCoalesceLeftIsVariable(node.Left, node.Right);
+
+        /// <summary>
+        /// 空适配符，左节点为常量。
+        /// </summary>
+        protected virtual void VisitBinaryIsCoalesceLeftIsVariable(Expression left, Expression right)
+        {
+            int length = writer.Length;
+
+            ignoreNullable = true;
+
+            VisitTail(left);
+
+            ignoreNullable = false;
+
+            if (writer.Length == length)
+            {
+                VisitTail(right);
+            }
+        }
+
+        /// <summary>
+        /// 空适配符，左节点为表达式。
+        /// </summary>
+        protected virtual void VisitBinaryIsCoalesceLeftIsNormal(BinaryExpression node) => VisitBinaryIsCoalesceLeftIsNormal(node.Left, node.Right);
+
+        /// <summary>
+        /// 空适配符，左节点为表达式。
+        /// </summary>
+        protected virtual void VisitBinaryIsCoalesceLeftIsNormal(Expression left, Expression right)
+        {
+            writer.OpenBrace();
+
+            writer.Write("CASE WHEN ");
+
+            if (isConditionBalance)
+            {
+                isConditionBalance = false;
+
+                VisitTail(left);
+
+                isConditionBalance = true;
+            }
+            else
+            {
+                VisitTail(left);
+            }
+
+            writer.IsNull();
+            writer.Write(" THEN ");
+
+            VisitTail(right);
+
+            writer.Write(" ELSE ");
+
+            VisitTail(left);
+
+            writer.Write(" END");
+
+            writer.CloseBrace();
         }
 
         /// <summary>
@@ -1844,45 +2341,12 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (IsPlainVariable(node.Left, true))
             {
-                var nodeValue = node.Left.GetValueFromExpression();
-
-                if (nodeValue is null)
-                {
-                    VisitTail(node.Right);
-
-                    return;
-                }
-
-                if (node.Left is MemberExpression memberExp)
-                {
-                    writer.Parameter(memberExp.Member.Name, nodeValue);
-                }
-                else
-                {
-                    writer.Parameter(nodeValue);
-                }
-
-                return;
+                VisitBinaryIsCoalesceLeftIsVariable(node);
             }
-
-            writer.OpenBrace();
-
-            writer.Write("CASE WHEN ");
-
-            VisitTail(node.Left);
-
-            writer.IsNull();
-            writer.Write(" THEN ");
-
-            VisitTail(node.Right);
-
-            writer.Write(" ELSE ");
-
-            VisitTail(node.Left);
-
-            writer.Write(" END");
-
-            writer.CloseBrace();
+            else
+            {
+                VisitBinaryIsCoalesceLeftIsNormal(node);
+            }
         }
 
         /// <summary>
@@ -1891,8 +2355,6 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected virtual void VisitBinaryIsAdd(BinaryExpression node)
         {
-            bool useConcat = (settings.Engine == DatabaseEngine.MySQL || settings.Engine == DatabaseEngine.Oracle) && node.Type == typeof(string);
-
             int indexBefore = writer.Length;
 
             VisitTail(node.Right);
@@ -1903,6 +2365,8 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 return;
             }
+
+            bool useConcat = (settings.Engine == DatabaseEngine.MySQL || settings.Engine == DatabaseEngine.Oracle) && node.Type == typeof(string);
 
             int index = writer.Length;
 
@@ -1960,11 +2424,82 @@ namespace CodeArts.Db.Lts.Visitors
         /// 单个条件(field=1)。
         /// </summary>
         /// <returns></returns>
-        protected virtual void VisitBinaryIsBoolean(BinaryExpression node)
+        protected virtual void VisitBinaryIsBoolean(BinaryExpression node) => VisitBinaryIsBoolean(node.Left, node.NodeType, node.Right);
+
+        /// <summary>
+        /// 单个条件(field=1)。
+        /// </summary>
+        protected virtual void VisitBinaryIsBoolean(Expression left, ExpressionType expressionType, Expression right)
         {
             int indexBefore = writer.Length;
 
-            VisitBinaryIsIsBooleanRight(node.Right);
+            if (expressionType == ExpressionType.Equal || expressionType == ExpressionType.NotEqual)
+            {
+                bool flag = false;
+
+                if (right is ConstantExpression constantRight && constantRight.Value is null)
+                {
+                    flag = true;
+
+                    isConditionBalance = true;
+
+                    ignoreNullable = left.Type.IsNullable();
+
+                    VisitTail(left);
+
+                    ignoreNullable = false;
+
+                    isConditionBalance = false;
+
+                    goto label_core;
+                }
+
+                if (left is ConstantExpression constantLeft && constantLeft.Value is null)
+                {
+                    flag = true;
+
+                    isConditionBalance = true;
+
+                    ignoreNullable = right.Type.IsNullable();
+
+                    VisitTail(right);
+
+                    ignoreNullable = false;
+
+                    isConditionBalance = false;
+                }
+
+                label_core:
+
+                if (flag)
+                {
+                    if (writer.Length > indexBefore)
+                    {
+                        if (expressionType == ExpressionType.Equal)
+                        {
+                            writer.IsNull();
+                        }
+                        else
+                        {
+                            writer.IsNotNull();
+                        }
+                    }
+
+                    return;
+                }
+            }
+
+            bool isIgnore = IsPlainVariable(left) ? right.Type.IsNullable() || IsPlainVariable(right) && left.Type.IsNullable() : left.Type.IsNullable();
+
+            isConditionBalance = true;
+
+            ignoreNullable = isIgnore;
+
+            VisitTail(right);
+
+            ignoreNullable = false;
+
+            isConditionBalance = false;
 
             int indexStep = writer.Length;
 
@@ -1990,7 +2525,15 @@ namespace CodeArts.Db.Lts.Visitors
 
             int indexNext = writer.Length;
 
-            VisitBinaryIsBooleanLeft(node.Left);
+            isConditionBalance = true;
+
+            ignoreNullable = isIgnore;
+
+            VisitTail(left);
+
+            ignoreNullable = false;
+
+            isConditionBalance = false;
 
             if (writer.Length == indexNext)
             {
@@ -2001,7 +2544,7 @@ namespace CodeArts.Db.Lts.Visitors
                 return;
             }
 
-            writer.Write(node.NodeType);
+            writer.Write(expressionType);
 
             if (appendAt > -1)
             {
@@ -2014,18 +2557,6 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// 表达式的节点。
-        /// </summary>
-        /// <param name="node">节点。</param>
-        protected virtual void VisitBinaryIsBooleanLeft(Expression node) => VisitTail(node);
-
-        /// <summary>
-        /// 表达式的右节点。
-        /// </summary>
-        /// <param name="node">节点。</param>
-        protected virtual void VisitBinaryIsIsBooleanRight(Expression node) => VisitTail(node);
-
-        /// <summary>
         /// 位运算(field&amp;1)。
         /// </summary>
         /// <returns></returns>
@@ -2033,7 +2564,11 @@ namespace CodeArts.Db.Lts.Visitors
         {
             int indexBefore = writer.Length;
 
+            ignoreNullable = true;
+
             VisitBinaryIsBit(node.Right);
+
+            ignoreNullable = false;
 
             int indexStep = writer.Length;
 
@@ -2059,7 +2594,11 @@ namespace CodeArts.Db.Lts.Visitors
 
             int indexNext = writer.Length;
 
+            ignoreNullable = true;
+
             VisitBinaryIsBit(node.Left);
+
+            ignoreNullable = false;
 
             if (writer.Length == indexNext)
             {
@@ -2089,10 +2628,45 @@ namespace CodeArts.Db.Lts.Visitors
         protected virtual void VisitBinaryIsBit(Expression node) => VisitTail(node);
 
         /// <summary>
-        /// 条件运算（a&amp;&amp;b）。
+        /// 条件运算（a&amp;&amp;b）中的条件a、b。
         /// </summary>
         /// <returns></returns>
-        protected virtual void VisitBinaryIsConditionToVisit(Expression node) => Visit(node);
+        protected virtual void VisitBinaryIsConditionToVisit(Expression node)
+        {
+            isConditionBalance = node.NodeType == ExpressionType.Constant
+                || node.NodeType == ExpressionType.MemberAccess
+                || node.NodeType == ExpressionType.Conditional
+                || node.NodeType == ExpressionType.Coalesce
+                || node.NodeType == ExpressionType.Convert;
+
+            VisitTail(node);
+
+            isConditionBalance = false;
+        }
+
+        /// <summary>
+        /// 跳过条件判断。
+        /// </summary>
+        protected virtual void VisitSkipIsCondition(Expression node) => VisitSkipIsCondition(() => VisitTail(node));
+
+        /// <summary>
+        /// 跳过条件判断。
+        /// </summary>
+        protected virtual void VisitSkipIsCondition(Action action)
+        {
+            if (isConditionBalance)
+            {
+                isConditionBalance = false;
+
+                action.Invoke();
+
+                isConditionBalance = true;
+            }
+            else
+            {
+                action.Invoke();
+            }
+        }
         #endregion
 
         /// <summary>

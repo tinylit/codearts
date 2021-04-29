@@ -1,7 +1,6 @@
 ﻿using CodeArts;
 using CodeArts.Config;
 using CodeArts.Runtime;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -53,10 +52,16 @@ namespace System
 
                     if (char.IsUpper(name[0]))
                     {
-                        return char.ToLower(name[0]) + PatternCamelCase.Replace(name.Substring(1), x =>
-                       {
-                           return x.Groups["letter"].Value.ToUpper();
-                       });
+#if NETSTANDARD2_1
+                        string value = name[1..];
+#else
+                        string value = name.Substring(1);
+#endif
+
+                        return string.Concat(char.ToString(char.ToLower(name[0])), PatternCamelCase.Replace(value, x =>
+                        {
+                            return x.Groups["letter"].Value.ToUpper();
+                        }));
                     }
 
                     return PatternCamelCase.Replace(name, x =>

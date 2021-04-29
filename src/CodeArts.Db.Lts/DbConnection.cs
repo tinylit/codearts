@@ -54,6 +54,31 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public DbTransaction BeginTransaction(IsolationLevel il) => new DbTransaction(connection.BeginTransaction(il));
 
+#if NETSTANDARD2_1
+
+        /// <inheritdoc />
+        public async ValueTask<DbTransactionAsync> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+        {
+            if (IsAsynchronousSupport)
+            {
+                return new DbTransactionAsync(await dbConnection.BeginTransactionAsync(isolationLevel, cancellationToken));
+            }
+
+            throw new InvalidOperationException("Async operations require use of a DbConnection.");
+        }
+
+        /// <inheritdoc />
+        public async ValueTask<DbTransactionAsync> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            if (IsAsynchronousSupport)
+            {
+                return new DbTransactionAsync(await dbConnection.BeginTransactionAsync(cancellationToken));
+            }
+
+            throw new InvalidOperationException("Async operations require use of a DbConnection.");
+        }
+#endif
+
         /// <inheritdoc />
         public void Open()
         {
@@ -87,32 +112,30 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
-            if (IsAsynchronousSupport)
-            {
-                switch (connection.State)
-                {
-                    case ConnectionState.Closed:
-                        await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                        break;
-                    case ConnectionState.Broken:
-#if NETSTANDARD2_1
-                        await dbConnection.CloseAsync().ConfigureAwait(false);
-#else
-                        connection.Close();
-#endif
-                        goto default;
-                    case ConnectionState.Connecting:
-                    default:
-                        if (connection.State != ConnectionState.Open)
-                        {
-                            await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                        }
-                        break;
-                }
-            }
-            else
+            if (!IsAsynchronousSupport)
             {
                 throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection.");
+            }
+
+            switch (connection.State)
+            {
+                case ConnectionState.Closed:
+                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    break;
+                case ConnectionState.Broken:
+#if NETSTANDARD2_1
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                    connection.Close();
+#endif
+                    goto default;
+                case ConnectionState.Connecting:
+                default:
+                    if (connection.State != ConnectionState.Open)
+                    {
+                        await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    break;
             }
         }
 #endif
@@ -132,14 +155,16 @@ namespace CodeArts.Db.Lts
             throw new InvalidOperationException("Async operations require use of a DbConnection.");
         }
         /// <inheritdoc />
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             if (IsAsynchronousSupport)
             {
-                return dbConnection.DisposeAsync();
+                await dbConnection.DisposeAsync().ConfigureAwait(false);
             }
-
-            return new ValueTask(Task.Run(Dispose));
+            else
+            {
+                Dispose();
+            }
         }
 #endif
 
@@ -151,13 +176,9 @@ namespace CodeArts.Db.Lts
             {
                 return new DbCommand(dbConnection.CreateCommand(), settings);
             }
-            else
-            {
-                return new DbCommand(connection.CreateCommand(), settings);
-            }
-#else
-            return new DbCommand(connection.CreateCommand(), settings);
 #endif
+
+            return new DbCommand(connection.CreateCommand(), settings);
         }
 
         /// <inheritdoc />
@@ -168,7 +189,6 @@ namespace CodeArts.Db.Lts
         {
             if (disposing)
             {
-                connection?.Close();
                 connection?.Dispose();
 
                 GC.SuppressFinalize(this);

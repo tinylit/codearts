@@ -34,21 +34,20 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public DRepository() => DbContext = CreateDb(GetDbConfig());
+        public DRepository() : base() { }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="connectionConfig">链接配置。</param>
-        public DRepository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig) => DbContext = CreateDb(connectionConfig);
+        public DRepository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig) { }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="context">数据上下文。</param>
-        public DRepository(IDbContext<TEntity> context) : base(context)
+        public DRepository(IDbContext context) : base(context)
         {
-            DbContext = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         /// <summary>
@@ -56,27 +55,9 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="context">链接配置。</param>
         /// <param name="expression">表达式。</param>
-        private DRepository(IDbContext<TEntity> context, Expression expression) : base(context, expression)
+        private DRepository(IDbContext context, Expression expression) : base(context, expression)
         {
-            DbContext = context ?? throw new ArgumentNullException(nameof(context));
         }
-
-        /// <summary>
-        /// 上下文。
-        /// </summary>
-        protected IDbContext<TEntity> DbContext { get; }
-
-        /// <summary>
-        /// 创建上下文。
-        /// </summary>
-        /// <returns></returns>
-        protected override IDbContext Create(IReadOnlyConnectionConfig connectionConfig) => CreateDb(connectionConfig);
-
-        /// <summary>
-        /// 创建上下文。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual IDbContext<TEntity> CreateDb(IReadOnlyConnectionConfig connectionConfig) => new DbContext<TEntity>(connectionConfig);
 
         /// <summary>
         /// 数据来源。

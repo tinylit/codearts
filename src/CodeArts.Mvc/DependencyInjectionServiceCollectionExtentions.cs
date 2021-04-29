@@ -59,11 +59,16 @@ namespace CodeArts.Mvc.DependencyInjection
 
 #if NET_CORE
             int maxDepth = "di:depth".Config(5);
-            bool isSingleton = "di:singleton".Config(false);
+            ServiceLifetime lifetime = "di:lifetime".Config(ServiceLifetime.Transient);
 #else
             int maxDepth = "di-depth".Config(5);
-            bool isSingleton = "di-singleton".Config(false);
+            ServiceLifetime lifetime = "di-lifetime".Config(ServiceLifetime.Transient);
 #endif
+
+            if (!Enum.IsDefined(typeof(ServiceLifetime), lifetime))
+            {
+                throw new InvalidCastException($"“{lifetime}”不是有效的“ServiceLifetime”枚举类型！");
+            }
 
             foreach (var controllerType in controllerTypes)
             {
@@ -75,7 +80,7 @@ namespace CodeArts.Mvc.DependencyInjection
 
                     foreach (var parameterInfo in constructorInfo.GetParameters())
                     {
-                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 0, maxDepth, isSingleton))
+                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 0, maxDepth, lifetime))
                         {
                             continue;
                         }
@@ -102,7 +107,7 @@ namespace CodeArts.Mvc.DependencyInjection
             return services;
         }
 
-        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, bool isSingleton)
+        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, ServiceLifetime lifetime)
         {
             if (services.Any(x => x.ServiceType == serviceType))
             {
@@ -145,15 +150,22 @@ namespace CodeArts.Mvc.DependencyInjection
                             continue;
                         }
 
-                        if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, isSingleton))
+                        if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, lifetime))
                         {
-                            if (isSingleton)
+                            switch (lifetime)
                             {
-                                services.AddSingleton(serviceType, implementationType);
-                            }
-                            else
-                            {
-                                services.AddTransient(serviceType, implementationType);
+                                case ServiceLifetime.Singleton:
+                                    services.AddSingleton(serviceType, implementationType);
+                                    break;
+#if !NET40
+                                case ServiceLifetime.Scoped:
+                                    services.AddScoped(serviceType, implementationType);
+                                    break;
+#endif
+                                case ServiceLifetime.Transient:
+                                default:
+                                    services.AddTransient(serviceType, implementationType);
+                                    break;
                             }
 
                             continue;
@@ -172,13 +184,20 @@ namespace CodeArts.Mvc.DependencyInjection
 
                 if (flag)
                 {
-                    if (isSingleton)
+                    switch (lifetime)
                     {
-                        services.AddSingleton(serviceType, implementationType);
-                    }
-                    else
-                    {
-                        services.AddTransient(serviceType, implementationType);
+                        case ServiceLifetime.Singleton:
+                            services.AddSingleton(serviceType, implementationType);
+                            break;
+#if !NET40
+                        case ServiceLifetime.Scoped:
+                            services.AddScoped(serviceType, implementationType);
+                            break;
+#endif
+                        case ServiceLifetime.Transient:
+                        default:
+                            services.AddTransient(serviceType, implementationType);
+                            break;
                     }
 
                     break;

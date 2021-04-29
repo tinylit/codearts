@@ -61,9 +61,26 @@ namespace CodeArts.Db.Lts.Visitors
         private readonly OrderBySwitch orderBySwitch;
 
         /// <summary>
+        /// <see cref="Queryable.Any{TSource}(IQueryable{TSource})"/>
+        /// <seealso cref="Queryable.Any{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>
+        /// <seealso cref="Queryable.All{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>
+        /// </summary>
+        private bool isExists = false;
+
+        /// <summary>
         /// 是否构建 SELECT 部分。
         /// </summary>
         private bool buildSelect = true;
+
+        /// <summary>
+        /// 已经构建了Select
+        /// </summary>
+        private bool buildedSelect = false;
+
+        /// <summary>
+        /// 是否构建From。
+        /// </summary>
+        private bool buildFrom = true;
 
         /// <summary>
         /// 在查询部分。
@@ -138,22 +155,22 @@ namespace CodeArts.Db.Lts.Visitors
         /// <summary>
         /// 有效成员。
         /// </summary>
-        private List<string> MemberFilters = new List<string>();
+        private List<string> memberFilters = new List<string>();
 
         /// <summary>
         /// 类型关系。
         /// </summary>
-        private readonly Dictionary<Type, Type> CastCache = new Dictionary<Type, Type>();
+        private readonly Dictionary<Type, Type> castCache = new Dictionary<Type, Type>();
 
         /// <summary>
         /// 分组字段集合。
         /// </summary>
-        private readonly Dictionary<MemberInfo, string> GroupByFields = new Dictionary<MemberInfo, string>();
+        private readonly Dictionary<MemberInfo, Expression> groupByExpressions = new Dictionary<MemberInfo, Expression>();
 
         /// <summary>
         /// 链接表别名。
         /// </summary>
-        private readonly Dictionary<Type, List<string>> JoinCache = new Dictionary<Type, List<string>>();
+        private readonly Dictionary<Type, List<string>> joinCache = new Dictionary<Type, List<string>>();
 
         /// <inheritdoc />
         public SelectVisitor(BaseVisitor visitor, bool isNewWriter = true) : base(visitor, isNewWriter)
@@ -313,6 +330,7 @@ namespace CodeArts.Db.Lts.Visitors
                     break;
                 case MethodCall.Max:
                     buildSelect = false;
+                    buildedSelect = true;
                     useAggregation = true;
                     using (var visitor = new MaxVisitor(this))
                     {
@@ -321,6 +339,7 @@ namespace CodeArts.Db.Lts.Visitors
                     break;
                 case MethodCall.Min:
                     buildSelect = false;
+                    buildedSelect = true;
                     useAggregation = true;
                     using (var visitor = new MinVisitor(this))
                     {
@@ -329,6 +348,7 @@ namespace CodeArts.Db.Lts.Visitors
                     break;
                 case MethodCall.Sum:
                     buildSelect = false;
+                    buildedSelect = true;
                     useAggregation = true;
                     using (var visitor = new SumVisitor(this))
                     {
@@ -337,6 +357,7 @@ namespace CodeArts.Db.Lts.Visitors
                     break;
                 case MethodCall.Average:
                     buildSelect = false;
+                    buildedSelect = true;
                     useAggregation = true;
                     using (var visitor = new AverageVisitor(this))
                     {
@@ -347,6 +368,7 @@ namespace CodeArts.Db.Lts.Visitors
                 case MethodCall.LongCount:
                     useCount = true;
                     buildSelect = false;
+                    buildedSelect = true;
                     useAggregation = true;
                     using (var visitor = new CountVisitor(this))
                     {
@@ -409,12 +431,12 @@ namespace CodeArts.Db.Lts.Visitors
 
                     if (name == MethodCall.GroupBy)
                     {
-                        CastCache.Add(node.Type.GetGenericArguments().First(), TypeToEntryType(node.Arguments[0].Type));
+                        castCache.Add(node.Type.GetGenericArguments().First(), TypeToEntryType(node.Arguments[0].Type));
                     }
 
                     if (!useGroupBy)
                     {
-                        byVisitor = new GroupByVisitor(this, GroupByFields);
+                        byVisitor = new GroupByVisitor(this, groupByExpressions);
                     }
 
                     useGroupBy = true;
@@ -436,12 +458,14 @@ namespace CodeArts.Db.Lts.Visitors
                         throw new DSyntaxErrorException($"请将函数“{name}”置于查询最后一个包含入参的函数之后!");
                     }
 
-                    buildSelect = false;
+                    buildSelect = buildFrom = false;
 
                     writer.Select();
 
                     Workflow(() =>
                     {
+                        buildedSelect = true;
+
                         if (isDistinct)
                         {
                             writer.Distinct();
@@ -464,6 +488,11 @@ namespace CodeArts.Db.Lts.Visitors
 
                     break;
                 case MethodCall.Distinct:
+
+                    if (buildedSelect)
+                    {
+                        throw new DSyntaxErrorException($"函数“{name}”未生效！");
+                    }
 
                     isDistinct = true;
 
@@ -494,29 +523,29 @@ namespace CodeArts.Db.Lts.Visitors
 
                     useCast = true;
 
-                    if (!CastCache.ContainsKey(type))
+                    if (!castCache.ContainsKey(type))
                     {
-                        CastCache.Add(type, TypeToEntryType(originalType));
+                        castCache.Add(type, TypeToEntryType(originalType));
                     }
 
                     var entry = TypeItem.Get(type);
 
-                    if (MemberFilters.Count == 0)
+                    if (memberFilters.Count == 0)
                     {
-                        MemberFilters.AddRange(entry.PropertyStores
+                        memberFilters.AddRange(entry.PropertyStores
                             .Where(x => x.CanRead && x.CanWrite)
                             .Select(x => x.Name.ToLower()));
                     }
                     else //? 取交集
                     {
-                        MemberFilters = MemberFilters
+                        memberFilters = memberFilters
                            .Intersect(entry.PropertyStores
                            .Where(x => x.CanRead && x.CanWrite)
                            .Select(x => x.Name.ToLower()))
                            .ToList();
                     }
 
-                    if (MemberFilters.Count == 0)
+                    if (memberFilters.Count == 0)
                     {
                         throw new DException("未指定查询字段!");
                     }
@@ -560,25 +589,32 @@ namespace CodeArts.Db.Lts.Visitors
 
                     void Join(Expression expression, bool isJoin)
                     {
-                        if (expression is UnaryExpression unary && unary.Operand is LambdaExpression lambda && lambda.Parameters.Count == 1)
+                        switch (expression)
                         {
-                            var parameter = lambda.Parameters[0];
+                            case UnaryExpression unary:
+                                Join(unary.Operand, isJoin);
+                                break;
+                            case LambdaExpression lambda when lambda.Parameters.Count == 1:
+                                var parameter = lambda.Parameters[0];
 
-                            if (isJoin)
-                            {
-                                var parameterType = TypeToUltimateType(parameter.Type);
-
-                                if (!JoinCache.TryGetValue(parameterType, out List<string> results))
+                                if (isJoin)
                                 {
-                                    JoinCache.Add(parameterType, results = new List<string>());
-                                }
+                                    var parameterType = TypeToUltimateType(parameter.Type);
 
-                                results.Add(parameter.Name);
-                            }
-                            else
-                            {
-                                AnalysisAlias(parameter);
-                            }
+                                    if (!joinCache.TryGetValue(parameterType, out List<string> results))
+                                    {
+                                        joinCache.Add(parameterType, results = new List<string>());
+                                    }
+
+                                    results.Add(parameter.Name);
+                                }
+                                else
+                                {
+                                    AnalysisAlias(parameter);
+                                }
+                                break;
+                            default:
+                                throw new DSyntaxErrorException();
                         }
                     }
 
@@ -594,12 +630,14 @@ namespace CodeArts.Db.Lts.Visitors
                     buildTable = false;
                     break;
                 case MethodCall.Any:
+                    isExists = true;
                     using (var visitor = new AnyVisitor(this))
                     {
                         visitor.Startup(node);
                     }
                     break;
                 case MethodCall.All:
+                    isExists = true;
                     using (var visitor = new AllVisitor(this))
                     {
                         visitor.Startup(node);
@@ -610,13 +648,13 @@ namespace CodeArts.Db.Lts.Visitors
                 case MethodCall.Except:
                 case MethodCall.Intersect:
 
-                    buildTable = false;
+                    buildTable = buildFrom = false;
                     hasCombination = true;
 
                     if (isNoPackage)
                     {
                         buildSelect = false;
-
+                        buildedSelect = true;
                         using (var visitor = new CombinationVisitor(this))
                         {
                             visitor.Startup(node);
@@ -635,6 +673,8 @@ namespace CodeArts.Db.Lts.Visitors
 
                         Workflow(() =>
                         {
+                            buildedSelect = true;
+
                             writer.Select();
 
                             if (isDistinct)
@@ -643,8 +683,6 @@ namespace CodeArts.Db.Lts.Visitors
                             }
 
                             WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
-
-                            writer.From();
 
                         }, Done);
 
@@ -657,6 +695,8 @@ namespace CodeArts.Db.Lts.Visitors
 
                     void Done()
                     {
+                        writer.From();
+
                         writer.OpenBrace();
 
                         using (var visitor = new CombinationVisitor(this))
@@ -695,23 +735,10 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
-        private static bool IsGrouping(Expression node)
-        {
-            switch (node)
-            {
-                case ParameterExpression parameter:
-                    return parameter.IsGrouping();
-                case MethodCallExpression method:
-                    return IsGrouping(method.Arguments[0]);
-                default:
-                    return false;
-            }
-        }
-
         /// <inheritdoc />
         protected override void VisitLinq(MethodCallExpression node)
         {
-            if (useGroupBy && IsGrouping(node.Arguments[0]))
+            if (useGroupBy && node.Arguments[0].IsGrouping())
             {
                 VisitOfLinqGroupBy(node);
             }
@@ -722,7 +749,7 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
-        /// 创建实列。
+        /// 创建条件实列。
         /// </summary>
         /// <param name="baseVisitor">参数。</param>
         /// <returns></returns>
@@ -731,21 +758,33 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (buildSelect && node.Type.IsQueryable())
+            if (node.Type.IsQueryable())
             {
-                if (useGroupBy)
+                if (buildSelect)
                 {
-                    throw new DSyntaxErrorException("使用“GroupBy”函数必须指定查询字段（例如：x=> x.Id 或 x=> new { x.Id, x.Name }）！");
+                    if (useGroupBy)
+                    {
+                        throw new DSyntaxErrorException("使用“GroupBy”函数必须指定查询字段（例如：x=> x.Id 或 x=> new { x.Id, x.Name }）！");
+                    }
+
+                    buildSelect = buildFrom = false;
+                    buildedSelect = true;
+
+                    return Select(node);
                 }
 
-                buildSelect = false;
+                if (buildFrom)
+                {
+                    buildFrom = false;
 
-                return Select(node);
-            }
+                    writer.From();
 
-            if (hasJoin && node.Type.IsQueryable())
-            {
-                WriteTableName(node.Type);
+                    WriteTableName(node.Type);
+                }
+                else if (hasJoin)
+                {
+                    WriteTableName(node.Type);
+                }
 
                 return node;
             }
@@ -777,7 +816,7 @@ namespace CodeArts.Db.Lts.Visitors
             if (useCast)
             {
                 return vbindings
-                .Where(x => MemberFilters.Contains(x.Member.Name.ToLower()))
+                .Where(x => memberFilters.Contains(x.Member.Name.ToLower()))
                 .ToList()
 #if NET40
                 .AsReadOnly()
@@ -801,7 +840,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 foreach (var kv in members)
                 {
-                    if (MemberFilters.Contains(kv.Key.ToLower()))
+                    if (memberFilters.Contains(kv.Key.ToLower()))
                     {
                         dic.Add(kv.Key, kv.Value);
                     }
@@ -818,7 +857,7 @@ namespace CodeArts.Db.Lts.Visitors
         {
             var ultimateType = base.TypeToUltimateType(entryType);
 
-            if (CastCache.TryGetValue(ultimateType, out Type ultimateCastType))
+            if (castCache.TryGetValue(ultimateType, out Type ultimateCastType))
             {
                 return ultimateCastType;
             }
@@ -829,11 +868,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override void VisitMemberLeavesIsObject(MemberExpression node)
         {
-            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
+            if (node.Expression.IsGrouping())
             {
                 bool flag = false;
 
-                foreach (var kv in GroupByFields)
+                foreach (var kv in groupByExpressions)
                 {
                     if (flag)
                     {
@@ -844,7 +883,7 @@ namespace CodeArts.Db.Lts.Visitors
                         flag = true;
                     }
 
-                    writer.Write(kv.Value);
+                    byVisitor.Visit(kv.Value);
 
                     if (inSelect)
                     {
@@ -864,40 +903,37 @@ namespace CodeArts.Db.Lts.Visitors
             if (useGroupByAggregation)
             {
                 base.VisitMemberIsDependOnParameterTypeIsPlain(node);
-
-                return;
             }
-
-            if (GroupByFields.TryGetValue(node.Member, out string value))
+            else if (node.Expression.IsGrouping())
             {
-                writer.Write(value);
-
-                return;
-            }
-
-            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
-            {
-                if (GroupByFields.TryGetValue(GroupByVisitor.KeyMember, out value))
+                if (groupByExpressions.TryGetValue(node.Member, out Expression expression))
                 {
-                    writer.Write(value);
-
-                    return;
+                    byVisitor.Visit(expression);
+                }
+                else if (node.Member.Name == "Key" && groupByExpressions.TryGetValue(GroupByVisitor.KeyMember, out expression))
+                {
+                    byVisitor.Visit(expression);
+                }
+                else
+                {
+                    throw new DSyntaxErrorException();
                 }
             }
+            else
+            {
 
-            base.VisitMemberIsDependOnParameterTypeIsPlain(node);
+                base.VisitMemberIsDependOnParameterTypeIsPlain(node);
+            }
         }
 
         /// <inheritdoc />
 
         protected override void VisitMemberIsDependOnParameterTypeIsObject(MemberExpression node)
         {
-            if (node.Member.Name == "Key" && node.Expression.IsGrouping())
+            if (!node.Expression.IsGrouping())
             {
-                return;
+                base.VisitMemberIsDependOnParameterTypeIsObject(node);
             }
-
-            base.VisitMemberIsDependOnParameterTypeIsObject(node);
         }
 
         /// <inheritdoc />
@@ -914,7 +950,7 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override bool TryGetEntryAlias(Type entryType, string parameterName, bool check, out string aliasName)
         {
-            if (!hasJoin || parameterName.IsEmpty() || !JoinCache.TryGetValue(entryType, out List<string> list) || !list.Contains(parameterName))
+            if (!hasJoin || parameterName.IsEmpty() || !joinCache.TryGetValue(entryType, out List<string> list) || !list.Contains(parameterName))
             {
                 return base.TryGetEntryAlias(entryType, parameterName, check, out aliasName);
             }
@@ -952,12 +988,41 @@ namespace CodeArts.Db.Lts.Visitors
 
             writer.Select();
 
-            if (isDistinct)
+            if (isDistinct && !isExists)
             {
                 writer.Distinct();
             }
 
-            WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
+            var members = FilterMembers(tableInfo.ReadOrWrites);
+
+            if (isExists)
+            {
+                var existsMembers = new List<KeyValuePair<string, string>>();
+
+                if (tableInfo.Keys.Count > 0)
+                {
+                    foreach (var item in members)
+                    {
+                        if (tableInfo.Keys.Contains(item.Key))
+                        {
+                            existsMembers.Add(item);
+                        }
+                    }
+                }
+
+                if (existsMembers.Count == tableInfo.Keys.Count)
+                {
+                    WriteMembers(prefix, existsMembers);
+                }
+                else
+                {
+                    WriteMembers(prefix, members);
+                }
+            }
+            else
+            {
+                WriteMembers(prefix, members);
+            }
 
             writer.From();
 
@@ -980,13 +1045,13 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (disposing)
             {
-                MemberFilters.Clear();
-                CastCache.Clear();
-                GroupByFields.Clear();
+                memberFilters.Clear();
+                castCache.Clear();
+                groupByExpressions.Clear();
 
                 if (hasJoin)
                 {
-                    JoinCache.Clear();
+                    joinCache.Clear();
                 }
 
                 if (useGroupBy)

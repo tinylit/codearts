@@ -88,21 +88,23 @@ namespace CodeArts.Db.Lts.Visitors
 
                     writer.Write(" ELSE ");
 
-                    if (node.Method.ReturnType.IsNullable())
+                    var returnType = node.Method.ReturnType;
+
+                    if (!returnType.IsValueType || returnType.IsNullable())
                     {
                         writer.Null();
                     }
-                    else if (node.Method.ReturnType == Types.DateTime)
+                    else if (returnType == Types.DateTime)
                     {
                         writer.Parameter("date_utc_base", UtcBase);
                     }
-                    else if (node.Method.ReturnType == Types.DateTimeOffset)
+                    else if (returnType == Types.DateTimeOffset)
                     {
                         writer.Parameter("date_offset_utc_base", new DateTimeOffset(UtcBase));
                     }
                     else
                     {
-                        writer.Parameter($"{node.Method.ReturnType.Name.ToUrlCase()}_default", Emptyable.Empty(node.Method.ReturnType));
+                        writer.Parameter($"{returnType.Name.ToUrlCase()}_default", Emptyable.Empty(node.Method.ReturnType));
                     }
 
                     writer.Write(" END");

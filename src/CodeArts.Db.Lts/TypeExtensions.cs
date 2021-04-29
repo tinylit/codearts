@@ -16,7 +16,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="type">类型入参。</param>
         /// <returns></returns>
-        public static bool IsBoolean(this Type type) => type == typeof(bool) || type == typeof(bool?);
+        public static bool IsBoolean(this Type type) => type.IsValueType && (type == typeof(bool) || type == typeof(bool?));
 
         /// <summary>
         /// 是否是查询器的派生类。
@@ -37,97 +37,67 @@ namespace CodeArts.Db.Lts
                 return false;
             }
 
-            if (!IsGenericType(type, out Type[] typeArguments))
+            while (type.IsQueryable())
             {
-                return false;
-            }
-
-            if (typeArguments.Length > 1)
-            {
-                return false;
-            }
-
-            return IsGrouping(typeArguments[0]);
-
-            bool IsGenericType(Type typeSelf, out Type[] type2Arguments)
-            {
-                while (typeSelf != null && typeSelf != typeof(object))
+                if (!IsGenericType(type, out Type[] typeArguments))
                 {
-                    if (typeSelf.IsGenericType && typeSelf.GetGenericTypeDefinition() == Queryable_T_Type)
-                    {
-                        type2Arguments = typeSelf.GetGenericArguments();
-
-                        return true;
-                    }
-
-                    Type[] interfaces = typeSelf.GetInterfaces();
-
-                    foreach (Type type2 in interfaces)
-                    {
-                        if (IsGenericType(type2, out type2Arguments))
-                        {
-                            return true;
-                        }
-                    }
-
-                    typeSelf = typeSelf.BaseType;
+                    goto label_continue;
                 }
 
-                type2Arguments = Type.EmptyTypes;
+                if (typeArguments.Length > 1)
+                {
+                    goto label_continue;
+                }
 
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 是否是<see cref="IGrouping{TKey, TElement}"/>
-        /// </summary>
-        /// <param name="type">类型。</param>
-        /// <returns></returns>
-        public static bool IsGrouping(this Type type)
-        {
-            while (type != null && type != typeof(object))
-            {
-                if (type.IsInterface && type.IsGenericType && type.GetGenericTypeDefinition() == Grouping_T1_T2_Type)
+                if (IsGrouping(typeArguments[0]))
                 {
                     return true;
                 }
 
-                Type[] interfaces = type.GetInterfaces();
-
-                foreach (Type type2 in interfaces)
+                label_continue:
                 {
-                    if (IsGrouping(type2))
-                    {
-                        return true;
-                    }
+                    type = type.BaseType;
                 }
-
-                type = type.BaseType;
             }
 
             return false;
         }
 
-        /// <summary>
-        /// 是否为声明类型，或type为泛型且泛型参数类型包含声明。
-        /// </summary>
-        /// <param name="type">类型。</param>
-        /// <param name="declaringType">声明类型。</param>
-        /// <returns></returns>
-        public static bool IsDeclaringType(this Type type, Type declaringType)
+        private static bool IsGenericType(Type typeSelf, out Type[] type2Arguments)
         {
-            if (type.IsGenericType)
+            while (typeSelf != null && typeSelf != typeof(object))
             {
-                foreach (var item in type.GetGenericArguments())
+                if (typeSelf.IsInterface && typeSelf.IsGenericType && typeSelf.GetGenericTypeDefinition() == Queryable_T_Type)
                 {
-                    if (item == declaringType) return true;
+                    type2Arguments = typeSelf.GetGenericArguments();
+
+                    return true;
                 }
 
-                return false;
+                Type[] interfaces = typeSelf.GetInterfaces();
+
+                foreach (Type type2 in interfaces)
+                {
+                    if (IsGenericType(type2, out type2Arguments))
+                    {
+                        return true;
+                    }
+                }
+
+                typeSelf = typeSelf.BaseType;
             }
-            return type == declaringType;
+
+            type2Arguments = Type.EmptyTypes;
+
+            return false;
         }
+
+        /// <summary>
+        /// <see cref="IGrouping{TKey, TElement}"/>
+        /// </summary>
+        /// <param name="type">类型。</param>
+        /// <returns></returns>
+        public static bool IsGrouping(this Type type) => type.IsInterface && type.IsGenericType && type.GetGenericTypeDefinition() == Grouping_T1_T2_Type;
 
         /// <summary>
         /// 查找指定类型。

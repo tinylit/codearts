@@ -165,7 +165,7 @@ namespace CodeArts.Db
             }
 
             sb.Append(") ")
-                 .Append(Name("CTE"))
+                 .Append(Name("x"))
                  .Append(" WHERE ")
                  .Append(row_name)
                  .Append(" > ")

@@ -287,7 +287,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         private abstract class DbRouteExecuter : IDbRouteExecuter<TEntity>
         {
-            public DbRouteExecuter(IDbContext<TEntity> context, ICollection<TEntity> entries)
+            public DbRouteExecuter(IDbContext context, ICollection<TEntity> entries)
             {
                 this.Entries = entries ?? throw new ArgumentNullException(nameof(entries));
                 this.context = context ?? throw new ArgumentNullException(nameof(context));
@@ -305,7 +305,7 @@ namespace CodeArts.Db.Lts
             protected static readonly ITableInfo typeRegions;
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
-            private readonly IDbContext<TEntity> context;
+            private readonly IDbContext context;
             private TransactionScopeOption? transactionScopeOption = null;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
 
@@ -471,7 +471,7 @@ namespace CodeArts.Db.Lts
                 {
                     using (var connection = context.CreateDb())
                     {
-                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false); connection.BeginTransaction();
 
                         foreach (var x in results)
                         {
@@ -537,7 +537,7 @@ namespace CodeArts.Db.Lts
 
             private async Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
             {
-                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required))
+                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
                 {
                     int influenceLine = await ExecutedAsync(results, commandTimeout, cancellationToken).ConfigureAwait(false);
 
@@ -584,7 +584,7 @@ namespace CodeArts.Db.Lts
 
         private class Deleteable : DbRouteExecuter, IDeleteable<TEntity>
         {
-            public Deleteable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
+            public Deleteable(IDbContext context, ICollection<TEntity> entries) : base(context, entries)
             {
                 wheres = defaultWhere;
             }
@@ -1040,7 +1040,7 @@ namespace CodeArts.Db.Lts
 
         private class Insertable : DbRouteExecuter, IInsertable<TEntity>
         {
-            public Insertable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
+            public Insertable(IDbContext context, ICollection<TEntity> entries) : base(context, entries)
             {
             }
 
@@ -1207,7 +1207,7 @@ namespace CodeArts.Db.Lts
 
         private class Updateable : DbRouteExecuter, IUpdateable<TEntity>
         {
-            public Updateable(IDbContext<TEntity> context, ICollection<TEntity> entries) : base(context, entries)
+            public Updateable(IDbContext context, ICollection<TEntity> entries) : base(context, entries)
             {
             }
 
@@ -1485,7 +1485,7 @@ namespace CodeArts.Db.Lts
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IInsertable<TEntity> AsInsertable(IDbContext<TEntity> executeable, ICollection<TEntity> entries)
+        public static IInsertable<TEntity> AsInsertable(IDbContext executeable, ICollection<TEntity> entries)
             => new Insertable(executeable, entries);
 
         /// <summary>
@@ -1494,7 +1494,7 @@ namespace CodeArts.Db.Lts
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IUpdateable<TEntity> AsUpdateable(IDbContext<TEntity> executeable, ICollection<TEntity> entries)
+        public static IUpdateable<TEntity> AsUpdateable(IDbContext executeable, ICollection<TEntity> entries)
             => new Updateable(executeable, entries);
 
         /// <summary>
@@ -1503,7 +1503,7 @@ namespace CodeArts.Db.Lts
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IDeleteable<TEntity> AsDeleteable(IDbContext<TEntity> executeable, ICollection<TEntity> entries)
+        public static IDeleteable<TEntity> AsDeleteable(IDbContext executeable, ICollection<TEntity> entries)
             => new Deleteable(executeable, entries);
     }
 }

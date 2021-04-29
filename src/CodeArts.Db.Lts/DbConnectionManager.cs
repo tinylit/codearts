@@ -41,6 +41,7 @@ namespace CodeArts.Db.Lts
 
         /// <summary> 注册适配器。</summary>
         /// <param name="adapter">适配器。</param>
+        /// <exception cref="NotSupportedException">适配器已在运作，禁止修改！</exception>
         public static void RegisterAdapter(IDbConnectionLtsAdapter adapter)
         {
             if (adapter is null)
@@ -53,7 +54,15 @@ namespace CodeArts.Db.Lts
                 throw new DException("数据库适配器名称不能为空!");
             }
 
-            Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (_, _2) => adapter);
+            Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (name, _) =>
+            {
+                if (FactoryProviders.ContainsKey(name))
+                {
+                    throw new NotSupportedException();
+                }
+
+                return adapter;
+            });
         }
 
         /// <summary>

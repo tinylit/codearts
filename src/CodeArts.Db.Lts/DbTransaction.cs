@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Data;
+#if NETSTANDARD2_1
+using System.Threading;
+using System.Threading.Tasks;
+#endif
 
 namespace CodeArts.Db.Lts
 {
@@ -8,13 +12,13 @@ namespace CodeArts.Db.Lts
     /// </summary>
     public class DbTransaction : IDisposable
     {
-         /// <inheritdoc />
+        /// <inheritdoc />
         internal DbTransaction(IDbTransaction transaction)
         {
             this.Transaction = transaction ?? throw new ArgumentNullException(nameof(transaction));
         }
 
-         /// <inheritdoc />
+        /// <inheritdoc />
         internal IDbTransaction Transaction { get; }
 
         /// <inheritdoc />
@@ -29,4 +33,28 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public void Dispose() => Transaction.Dispose();
     }
+
+#if NETSTANDARD2_1
+    /// <summary>
+    /// 事务。
+    /// </summary>
+    public class DbTransactionAsync : DbTransaction, IAsyncDisposable
+    {
+        private readonly System.Data.Common.DbTransaction transaction;
+
+        /// <inheritdoc />
+        internal DbTransactionAsync(System.Data.Common.DbTransaction transaction) : base(transaction)
+        {
+            this.transaction = transaction;
+        }
+        /// <inheritdoc />
+        public Task CommitAsync(CancellationToken cancellationToken = default) => transaction.CommitAsync(cancellationToken);
+
+        /// <inheritdoc />
+        public virtual Task RollbackAsync(CancellationToken cancellationToken = default) => transaction.RollbackAsync(cancellationToken);
+        
+        /// <inheritdoc />
+        public ValueTask DisposeAsync() => transaction.DisposeAsync();
+    }
+#endif
 }

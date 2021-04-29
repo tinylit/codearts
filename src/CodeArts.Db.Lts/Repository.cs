@@ -28,7 +28,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public Repository() => Context = Create(GetDbConfig());
+        public Repository() => DbContext = Create(GetDbConfig());
 
         /// <summary>
         /// 构造函数。
@@ -43,14 +43,14 @@ namespace CodeArts.Db.Lts
 
             this.connectionConfig = connectionConfig;
 
-            Context = Create(connectionConfig);
+            DbContext = Create(connectionConfig);
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="context">数据库上下文。</param>
-        public Repository(IDbContext context) => Context = context ?? throw new ArgumentNullException(nameof(context));
+        public Repository(IDbContext context) => DbContext = context ?? throw new ArgumentNullException(nameof(context));
 
         /// <summary>
         /// 构造函数。
@@ -85,7 +85,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 数据上下文。
         /// </summary>
-        protected IDbContext Context { get; }
+        protected IDbContext DbContext { get; }
 
         /// <summary>
         /// 获取数据库配置。
@@ -134,7 +134,7 @@ namespace CodeArts.Db.Lts
 
             return (IQueryable)Activator.CreateInstance(type2, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[2]
             {
-                Context,
+                DbContext,
                 expression
             }, null);
         }
@@ -145,14 +145,14 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="TElement">泛型类型。</typeparam>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(Context, expression);
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(DbContext, expression);
 
         /// <summary>
         /// 执行表达式。
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        object IQueryProvider.Execute(Expression expression) => Context.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
+        object IQueryProvider.Execute(Expression expression) => DbContext.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
 
         /// <summary>
         /// 执行结果。
@@ -177,7 +177,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return Context.Read<TResult>(expression);
+            return DbContext.Read<TResult>(expression);
         }
 
         /// <summary>
@@ -191,13 +191,18 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 表达式。
         /// </summary>
-        public Expression Expression => expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
+        public Expression Expression
+#if NETSTANDARD2_1
+            => expression ?? (_ContextExpression ??= Expression.Constant(this));
+#else
+            => expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
+#endif
 
         private IEnumerator<T> GetEnumerator()
         {
             if (isEmpty || Enumerable is null)
             {
-                Enumerable = Context.Query<T>(Expression);
+                Enumerable = DbContext.Query<T>(Expression);
             }
 
             return Enumerable.GetEnumerator();
@@ -232,7 +237,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return Context.ReadAsync<TResult>(expression);
+            return DbContext.ReadAsync<TResult>(expression);
         }
 
         private IAsyncEnumerable<T> AsyncEnumerable;
@@ -246,7 +251,7 @@ namespace CodeArts.Db.Lts
         {
             if (isEmpty || AsyncEnumerable is null)
             {
-                AsyncEnumerable = Context.QueryAsync<T>(Expression);
+                AsyncEnumerable = DbContext.QueryAsync<T>(Expression);
             }
 
             return AsyncEnumerable.GetAsyncEnumerator(cancellationToken);

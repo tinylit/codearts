@@ -34,7 +34,7 @@ namespace CodeArts.Db.Lts
         /// 构造函数。
         /// </summary>
         /// <param name="context">数据上下文。</param>
-        public DbRepository(IDbContext<TEntity> context) : base(context)
+        public DbRepository(IDbContext context) : base(context)
         {
         }
 

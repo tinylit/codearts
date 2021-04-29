@@ -7,6 +7,9 @@ namespace System
     /// </summary>
     public static class TypeExtensions
     {
+        static readonly Type Nullable_T_Type = typeof(Nullable<>);
+        static readonly Type KeyValuePair_TKey_TValue_Type = typeof(KeyValuePair<,>);
+
         private static readonly List<Type> _simpleTypes = new List<Type>
         {
             typeof(byte),
@@ -42,13 +45,13 @@ namespace System
         /// </summary>
         /// <param name="type"> 要处理的类型。</param>
         /// <returns> 是返回True，不是返回False。</returns>
-        public static bool IsNullable(this Type type) => type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        public static bool IsNullable(this Type type) => type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == Nullable_T_Type;
 
         /// <summary>
         /// 判断类型是否为KeyValuePair类型。
         /// </summary>
         /// <param name="type"> 要处理的类型。 </param>
         /// <returns> 是返回True，不是返回False。 </returns>
-        public static bool IsKeyValuePair(this Type type) => type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
+        public static bool IsKeyValuePair(this Type type) => type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == KeyValuePair_TKey_TValue_Type;
     }
 }

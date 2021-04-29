@@ -58,5 +58,10 @@ namespace CodeArts.Db.Lts
         /// <see cref="System.Collections.IEnumerable"/>
         /// </summary>
         public static readonly Type IEnumerable = typeof(IEnumerable);
+
+        /// <summary>
+        /// <see cref="object"/>
+        /// </summary>
+        public static readonly Type Object = typeof(object);
     }
 }
