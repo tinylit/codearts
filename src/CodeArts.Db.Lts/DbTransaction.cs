@@ -51,8 +51,8 @@ namespace CodeArts.Db.Lts
         public Task CommitAsync(CancellationToken cancellationToken = default) => transaction.CommitAsync(cancellationToken);
 
         /// <inheritdoc />
-        public virtual Task RollbackAsync(CancellationToken cancellationToken = default) => transaction.RollbackAsync(cancellationToken);
-        
+        public Task RollbackAsync(CancellationToken cancellationToken = default) => transaction.RollbackAsync(cancellationToken);
+
         /// <inheritdoc />
         public ValueTask DisposeAsync() => transaction.DisposeAsync();
     }

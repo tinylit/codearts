@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 #endif
-using System.Transactions;
 
 namespace CodeArts.Db.Lts
 {
@@ -20,11 +19,19 @@ namespace CodeArts.Db.Lts
         ISQLCorrectSettings Settings { get; }
 
         /// <summary>
-        /// 设置事务，默认:仅生成一条SQL命令时，不使用事务；否则，默认使用<see cref="TransactionScopeOption.Required"/>。。
+        /// 开启事务保护，使用数据库默认隔离级别。
+        /// <see cref="System.Data.IDbConnection.BeginTransaction()"/>
         /// </summary>
-        /// <param name="transactionScopeOption">配置。</param>
         /// <returns></returns>
-        IDbRouteExecuter<TEntity> UseTransaction(TransactionScopeOption transactionScopeOption);
+        IDbRouteExecuter<TEntity> UseTransaction();
+
+        /// <summary>
+        /// 开启事务保护，设置事务隔离级别。
+        /// <see cref="System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel)"/>
+        /// </summary>
+        /// <param name="isolationLevel">隔离级别。</param>
+        /// <returns></returns>
+        IDbRouteExecuter<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel);
 
         /// <summary>
         /// 执行指令。

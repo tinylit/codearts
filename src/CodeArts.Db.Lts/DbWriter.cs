@@ -306,12 +306,21 @@ namespace CodeArts.Db.Lts
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
             private readonly IDbContext context;
-            private TransactionScopeOption? transactionScopeOption = null;
+            private bool useTransaction = false;
+            private System.Data.IsolationLevel? isolationLevel = null;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
 
-            public IDbRouteExecuter<TEntity> UseTransaction(TransactionScopeOption transactionScopeOption)
+            public IDbRouteExecuter<TEntity> UseTransaction()
             {
-                this.transactionScopeOption = transactionScopeOption;
+                useTransaction = true;
+
+                return this;
+            }
+
+            public IDbRouteExecuter<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel)
+            {
+                this.isolationLevel = isolationLevel;
+                useTransaction = true;
 
                 return this;
             }
@@ -336,7 +345,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                if (transactionScopeOption.HasValue || results.Count > 1)
+                if (useTransaction)
                 {
                     return UseTransactionExecute(results, commandTimeout);
                 }
@@ -397,20 +406,18 @@ namespace CodeArts.Db.Lts
 
                             command.CommandText = x.Item1;
 
-                            command.CommandTimeout = remainingTime;
+                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
                             foreach (var kv in x.Item2)
                             {
                                 DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
                             }
 
-                            stopwatch.Restart();
+                            stopwatch.Start();
 
                             influenceLine += command.ExecuteNonQuery();
 
                             stopwatch.Stop();
-
-                            remainingTime -= (int)(stopwatch.ElapsedMilliseconds / 1000);
                         }
                     });
                 }
@@ -420,14 +427,106 @@ namespace CodeArts.Db.Lts
 
             private int UseTransactionExecute(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout)
             {
-                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required))
-                {
-                    int influenceLine = Execute(results, commandTimeout);
+                int influenceLine = 0;
 
-                    transaction.Complete();
+                SqlCapture capture = SqlCapture.Current;
+
+                if (!commandTimeout.HasValue)
+                {
+                    using (var connection = context.CreateDb())
+                    {
+                        connection.Open();
+
+                        using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
+                        {
+                            try
+                            {
+                                results.ForEach(x =>
+                                {
+                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                                    using (var command = connection.CreateCommand())
+                                    {
+                                        command.Transaction = transaction;
+
+                                        command.AllowSkippingFormattingSql = true;
+
+                                        command.CommandText = x.Item1;
+
+                                        foreach (var kv in x.Item2)
+                                        {
+                                            DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                        }
+
+                                        influenceLine += command.ExecuteNonQuery();
+                                    }
+                                });
+
+                                transaction.Commit();
+                            }
+                            catch (Exception)
+                            {
+                                transaction.Rollback();
+
+                                throw;
+                            }
+                        }
+                    }
 
                     return influenceLine;
                 }
+
+                Stopwatch stopwatch = new Stopwatch();
+
+                int remainingTime = commandTimeout.Value;
+
+                using (var connection = context.CreateDb())
+                {
+                    connection.Open();
+
+                    using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            results.ForEach(x =>
+                            {
+                                capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                                using (var command = connection.CreateCommand())
+                                {
+                                    command.Transaction = transaction;
+
+                                    command.AllowSkippingFormattingSql = true;
+
+                                    command.CommandText = x.Item1;
+
+                                    command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                    foreach (var kv in x.Item2)
+                                    {
+                                        DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                    }
+
+                                    stopwatch.Start();
+
+                                    influenceLine += command.ExecuteNonQuery();
+
+                                    stopwatch.Stop();
+                                }
+                            });
+
+                            transaction.Commit();
+                        }
+                        catch (Exception)
+                        {
+                            transaction.Rollback();
+
+                            throw;
+                        }
+                    }
+                }
+
+                return influenceLine;
             }
 
             /// <summary>
@@ -453,7 +552,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                if (transactionScopeOption.HasValue || results.Count > 1)
+                if (useTransaction)
                 {
                     return UseTransactionAsync(results, commandTimeout, cancellationToken);
                 }
@@ -514,20 +613,18 @@ namespace CodeArts.Db.Lts
 
                             command.CommandText = x.Item1;
 
-                            command.CommandTimeout = remainingTime;
+                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
                             foreach (var kv in x.Item2)
                             {
                                 DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
                             }
 
-                            stopwatch.Restart();
+                            stopwatch.Start();
 
                             influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
 
                             stopwatch.Stop();
-
-                            remainingTime -= (int)(stopwatch.ElapsedMilliseconds / 1000);
                         }
                     }
 
@@ -537,21 +634,133 @@ namespace CodeArts.Db.Lts
 
             private async Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
             {
-#if NET45
-                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
-#else
-                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
-#endif
-                {
-                    int influenceLine = await ExecutedAsync(results, commandTimeout, cancellationToken).ConfigureAwait(false);
+                int influenceLine = 0;
 
-                    transaction.Complete();
+                SqlCapture capture = SqlCapture.Current;
+
+                if (!commandTimeout.HasValue)
+                {
+                    using (var connection = context.CreateDb())
+                    {
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NETSTANDARD2_1
+                        await using (var transaction = isolationLevel.HasValue ? await connection.BeginTransactionAsync(isolationLevel.Value).ConfigureAwait(false) : await connection.BeginTransactionAsync().ConfigureAwait(false))
+#else
+                        using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
+#endif
+                        {
+                            try
+                            {
+                                foreach (var x in results)
+                                {
+                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                                    using (var command = connection.CreateCommand())
+                                    {
+                                        command.Transaction = transaction;
+
+                                        command.AllowSkippingFormattingSql = true;
+
+                                        command.CommandText = x.Item1;
+
+                                        foreach (var kv in x.Item2)
+                                        {
+                                            DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                        }
+
+                                        influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
+                                    }
+                                }
+
+#if NETSTANDARD2_1
+                                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
+                                transaction.Commit();
+#endif
+                            }
+                            catch (Exception)
+                            {
+#if NETSTANDARD2_1
+                                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+#else
+                                transaction.Rollback();
+#endif
+
+                                throw;
+                            }
+                        }
+                    }
+
+                    return influenceLine;
+                }
+
+                Stopwatch stopwatch = new Stopwatch();
+
+                int remainingTime = commandTimeout.Value;
+
+                using (var connection = context.CreateDb())
+                {
+                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NETSTANDARD2_1
+                    await using (var transaction = isolationLevel.HasValue ? await connection.BeginTransactionAsync(isolationLevel.Value).ConfigureAwait(false) : await connection.BeginTransactionAsync().ConfigureAwait(false))
+#else
+                    using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
+#endif
+                    {
+                        try
+                        {
+                            foreach (var x in results)
+                            {
+                                capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                                using (var command = connection.CreateCommand())
+                                {
+                                    command.Transaction = transaction;
+
+                                    command.AllowSkippingFormattingSql = true;
+
+                                    command.CommandText = x.Item1;
+
+                                    command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                    foreach (var kv in x.Item2)
+                                    {
+                                        DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                    }
+
+                                    stopwatch.Start();
+
+                                    influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
+
+                                    stopwatch.Stop();
+                                }
+
+#if NETSTANDARD2_1
+                                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
+                                transaction.Commit();
+#endif
+                            }
+                        }
+                        catch (Exception)
+                        {
+#if NETSTANDARD2_1
+                            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+#else
+                            transaction.Rollback();
+#endif
+
+                            throw;
+                        }
+                    }
 
                     return influenceLine;
                 }
             }
 #endif
-            }
+        }
 
         private class StringArrayComparer : IEqualityComparer<string[]>
         {
