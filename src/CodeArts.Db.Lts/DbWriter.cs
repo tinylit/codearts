@@ -537,7 +537,11 @@ namespace CodeArts.Db.Lts
 
             private async Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
             {
+#if NET45
                 using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
+#else
+                using (TransactionScope transaction = new TransactionScope(transactionScopeOption ?? TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
+#endif
                 {
                     int influenceLine = await ExecutedAsync(results, commandTimeout, cancellationToken).ConfigureAwait(false);
 
@@ -547,7 +551,7 @@ namespace CodeArts.Db.Lts
                 }
             }
 #endif
-        }
+            }
 
         private class StringArrayComparer : IEqualityComparer<string[]>
         {
