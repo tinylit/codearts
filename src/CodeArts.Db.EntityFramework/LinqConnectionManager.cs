@@ -1,6 +1,5 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace CodeArts.Db.EntityFramework
@@ -13,7 +12,7 @@ namespace CodeArts.Db.EntityFramework
 #if NET_CORE
         private static readonly Dictionary<string, IDbConnectionLinqAdapter> Adapters;
 #else
-        private static readonly ConcurrentDictionary<string, IDbConnectionAdapter> Adapters;
+        private static readonly Dictionary<string, IDbConnectionAdapter> Adapters;
 #endif
 
         /// <summary>
