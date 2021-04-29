@@ -24,8 +24,9 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 创建数据库链接。
         /// </summary>
+        /// <param name="createNewInstance">为真创建新实例，否则优先复用链接池。</param>
         /// <returns></returns>
-        DbConnection CreateDb();
+        DbConnection CreateDb(bool createNewInstance = false);
 
         /// <summary>
         /// 读取数据。

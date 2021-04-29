@@ -183,8 +183,6 @@ namespace CodeArts.Db.Lts
             {
                 case ConstantExpression constant:
                     return constant.Value;
-                case MemberExpression member when member.Expression is ConstantExpression constant:
-                    return constant.Value;
                 case LambdaExpression lambda when lambda.Body is ConstantExpression constant:
                     return constant.Value;
                 case LambdaExpression lambda when lambda.Parameters.Count > 0:

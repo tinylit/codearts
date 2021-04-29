@@ -434,7 +434,7 @@ namespace CodeArts.Db.Lts
 
                 if (!commandTimeout.HasValue)
                 {
-                    using (var connection = context.CreateDb())
+                    using (var connection = context.CreateDb(true))
                     {
                         connection.Open();
 
@@ -481,7 +481,7 @@ namespace CodeArts.Db.Lts
 
                 int remainingTime = commandTimeout.Value;
 
-                using (var connection = context.CreateDb())
+                using (var connection = context.CreateDb(true))
                 {
                     connection.Open();
 
@@ -571,7 +571,7 @@ namespace CodeArts.Db.Lts
                 {
                     using (var connection = context.CreateDb())
                     {
-                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false); connection.BeginTransaction();
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
                         foreach (var x in results)
                         {
@@ -641,7 +641,7 @@ namespace CodeArts.Db.Lts
 
                 if (!commandTimeout.HasValue)
                 {
-                    using (var connection = context.CreateDb())
+                    using (var connection = context.CreateDb(true))
                     {
                         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
@@ -700,7 +700,7 @@ namespace CodeArts.Db.Lts
 
                 int remainingTime = commandTimeout.Value;
 
-                using (var connection = context.CreateDb())
+                using (var connection = context.CreateDb(true))
                 {
                     await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 

@@ -106,14 +106,16 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 创建数据库链接。
         /// </summary>
+        /// <param name="createNewInstance">创建新实例，否则优先复用链接池。</param>
         /// <returns></returns>
-        DbConnection IDbContext.CreateDb() => new DbConnection(CreateDb(), Settings);
+        DbConnection IDbContext.CreateDb(bool createNewInstance) => new DbConnection(CreateDb(createNewInstance), Settings);
 
         /// <summary>
         /// 创建数据库查询器。
         /// </summary>
+        /// <param name="createNewInstance">创建新实例，否则优先复用链接池。</param>
         /// <returns></returns>
-        protected virtual IDbConnection CreateDb() => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter);
+        protected virtual IDbConnection CreateDb(bool createNewInstance = false) => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, !createNewInstance);
 
         /// <summary>
         /// 读取命令。
