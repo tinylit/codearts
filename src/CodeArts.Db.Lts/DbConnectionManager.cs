@@ -16,7 +16,7 @@ namespace CodeArts.Db.Lts
     {
         private static readonly Dictionary<string, Func<IDbConnectionLtsAdapter, RepositoryProvider>> FactoryProviders;
 
-        private static readonly ConcurrentDictionary<string, IDbConnectionLtsAdapter> Adapters;
+        private static readonly Dictionary<string, IDbConnectionLtsAdapter> Adapters;
 
         private static readonly ConcurrentDictionary<IDbConnectionLtsAdapter, RepositoryProvider> Providers;
 
@@ -35,7 +35,7 @@ namespace CodeArts.Db.Lts
         static DbConnectionManager()
         {
             Providers = new ConcurrentDictionary<IDbConnectionLtsAdapter, RepositoryProvider>();
-            Adapters = new ConcurrentDictionary<string, IDbConnectionLtsAdapter>();
+            Adapters = new Dictionary<string, IDbConnectionLtsAdapter>();
             FactoryProviders = new Dictionary<string, Func<IDbConnectionLtsAdapter, RepositoryProvider>>();
         }
 
@@ -54,15 +54,7 @@ namespace CodeArts.Db.Lts
                 throw new DException("数据库适配器名称不能为空!");
             }
 
-            Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (name, _) =>
-            {
-                if (FactoryProviders.ContainsKey(name))
-                {
-                    throw new NotSupportedException();
-                }
-
-                return adapter;
-            });
+            Adapters[adapter.ProviderName.ToLower()] = adapter;
         }
 
         /// <summary>

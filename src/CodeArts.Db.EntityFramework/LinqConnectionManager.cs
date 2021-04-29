@@ -1,6 +1,7 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace CodeArts.Db.EntityFramework
 {
@@ -10,7 +11,7 @@ namespace CodeArts.Db.EntityFramework
     public static class LinqConnectionManager
     {
 #if NET_CORE
-        private static readonly ConcurrentDictionary<string, IDbConnectionLinqAdapter> Adapters;
+        private static readonly Dictionary<string, IDbConnectionLinqAdapter> Adapters;
 #else
         private static readonly ConcurrentDictionary<string, IDbConnectionAdapter> Adapters;
 #endif
@@ -19,9 +20,9 @@ namespace CodeArts.Db.EntityFramework
         /// 静态构造函数。
         /// </summary>
 #if NET_CORE
-        static LinqConnectionManager() => Adapters = new ConcurrentDictionary<string, IDbConnectionLinqAdapter>();
+        static LinqConnectionManager() => Adapters = new Dictionary<string, IDbConnectionLinqAdapter>();
 #else
-        static LinqConnectionManager() => Adapters = new ConcurrentDictionary<string, IDbConnectionAdapter>();
+        static LinqConnectionManager() => Adapters = new Dictionary<string, IDbConnectionAdapter>();
 #endif
 
         /// <summary> 注册适配器。</summary>
@@ -42,7 +43,7 @@ namespace CodeArts.Db.EntityFramework
                 throw new DException("数据库适配器名称不能为空!");
             }
 
-            Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (_, _2) => adapter);
+            Adapters[adapter.ProviderName.ToLower()] = adapter;
         }
 
         /// <summary> 创建数据库适配器。</summary>

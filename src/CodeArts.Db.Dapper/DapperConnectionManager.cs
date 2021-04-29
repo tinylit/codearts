@@ -1,6 +1,6 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace CodeArts.Db.Dapper
 {
@@ -9,8 +9,8 @@ namespace CodeArts.Db.Dapper
     /// </summary>
     public static class DapperConnectionManager
     {
-        private static readonly ConcurrentDictionary<string, IDbConnectionAdapter> Adapters;
-        static DapperConnectionManager() => Adapters = new ConcurrentDictionary<string, IDbConnectionAdapter>();
+        private static readonly Dictionary<string, IDbConnectionAdapter> Adapters;
+        static DapperConnectionManager() => Adapters = new Dictionary<string, IDbConnectionAdapter>();
 
         /// <summary> 注册适配器。</summary>
         /// <param name="adapter">适配器。</param>
@@ -26,7 +26,7 @@ namespace CodeArts.Db.Dapper
                 throw new DException("数据库适配器名称不能为空!");
             }
 
-            Adapters.AddOrUpdate(adapter.ProviderName.ToLower(), adapter, (_, _2) => adapter);
+            Adapters[adapter.ProviderName.ToLower()] = adapter;
         }
 
         /// <summary> 创建数据库适配器。</summary>
