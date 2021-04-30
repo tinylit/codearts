@@ -334,12 +334,13 @@ namespace CodeArts.Db.EntityFramework
                 {
                     foreach (var context in dbContexts)
                     {
-                        if (context.ChangeTracker.HasChanges())
+                        var list = context.ChangeTracker
+                            .Entries()
+                            .ToList();
+
+                        foreach (var entry in list)
                         {
-                            foreach (var entry in context.ChangeTracker.Entries())
-                            {
-                                entry.State = EntityState.Unchanged;
-                            }
+                            entry.State = EntityState.Detached;
                         }
                     }
 

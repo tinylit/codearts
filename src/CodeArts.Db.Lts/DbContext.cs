@@ -14,6 +14,34 @@ namespace CodeArts.Db.Lts
     /// </summary>
     public class DbContext : IDbContext
     {
+        private sealed class NestedDbCommand : DbCommand
+        {
+            public NestedDbCommand(DbCommand command) : base(command)
+            {
+            }
+
+            public override DbTransaction Transaction { get => base.Transaction; set => throw new NotSupportedException(); }
+        }
+        private sealed class DbCommandFactory : IDbCommandFactory
+        {
+            private readonly DbConnection connection;
+            private readonly DbTransaction transaction;
+
+            public DbCommandFactory(DbConnection connection, DbTransaction transaction)
+            {
+                this.connection = connection;
+                this.transaction = transaction;
+            }
+
+            public DbCommand CreateCommand()
+            {
+                DbCommand command = connection.CreateCommand();
+
+                command.Transaction = transaction;
+
+                return new NestedDbCommand(command);
+            }
+        }
         private class DbAssistant<T> where T : class, IEntiy
         {
             static readonly ITableInfo regions;
@@ -22,6 +50,7 @@ namespace CodeArts.Db.Lts
         }
 
         private readonly IReadOnlyConnectionConfig connectionConfig;
+        
         /// <summary>
         /// 构造函数。
         /// </summary>
@@ -106,16 +135,96 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 创建数据库链接。
         /// </summary>
-        /// <param name="createNewInstance">创建新实例，否则优先复用链接池。</param>
         /// <returns></returns>
-        DbConnection IDbContext.CreateDb(bool createNewInstance) => new DbConnection(CreateDb(createNewInstance), Settings);
+        DbConnection IDbContext.CreateDb() => PriviteCreateDb(true);
+
+        private DbConnection PriviteCreateDb(bool useCache) => new DbConnection(CreateDb(useCache), Settings);
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <returns></returns>
+        public T Transaction<T>(Func<IDbCommandFactory, T> inTransactionExecution)
+        {
+            if (inTransactionExecution is null)
+            {
+                throw new ArgumentNullException(nameof(inTransactionExecution));
+            }
+
+            using (var connection = PriviteCreateDb(false))
+            {
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var commandFactory = new DbCommandFactory(connection, transaction);
+
+                    try
+                    {
+                        var result = inTransactionExecution.Invoke(commandFactory);
+
+                        transaction.Commit();
+
+                        return result;
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+
+                        throw;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <param name="isolationLevel">事务隔离级别。</param>
+        /// <returns></returns>
+        public T Transaction<T>(Func<IDbCommandFactory, T> inTransactionExecution, System.Data.IsolationLevel isolationLevel)
+        {
+            if (inTransactionExecution is null)
+            {
+                throw new ArgumentNullException(nameof(inTransactionExecution));
+            }
+
+            using (var connection = PriviteCreateDb(false))
+            {
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction(isolationLevel))
+                {
+                    var commandFactory = new DbCommandFactory(connection, transaction);
+
+                    try
+                    {
+                        var result = inTransactionExecution.Invoke(commandFactory);
+
+                        transaction.Commit();
+
+                        return result;
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+
+                        throw;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// 创建数据库查询器。
         /// </summary>
-        /// <param name="createNewInstance">创建新实例，否则优先复用链接池。</param>
+        /// <param name="useCache">优先复用链接池，否则：始终创建新链接。</param>
         /// <returns></returns>
-        protected virtual IDbConnection CreateDb(bool createNewInstance = false) => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, !createNewInstance);
+        protected virtual IDbConnection CreateDb(bool useCache = true) => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, useCache);
 
         /// <summary>
         /// 读取命令。
@@ -273,6 +382,112 @@ namespace CodeArts.Db.Lts
         }
 
 #if NET_NORMAL || NET_CORE
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public async Task<T> TransactionAsync<T>(Func<IDbCommandFactory, Task<T>> inTransactionExecution, CancellationToken cancellationToken = default)
+        {
+            if (inTransactionExecution is null)
+            {
+                throw new ArgumentNullException(nameof(inTransactionExecution));
+            }
+
+            using (var connection = PriviteCreateDb(false))
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NETSTANDARD2_1
+                await using (var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
+#else
+                using (var transaction = connection.BeginTransaction())
+#endif
+                {
+                    var commandFactory = new DbCommandFactory(connection, transaction);
+
+                    try
+                    {
+                        var result = await inTransactionExecution.Invoke(commandFactory);
+
+#if NETSTANDARD2_1
+                        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
+                        transaction.Commit();
+#endif
+
+                        return result;
+                    }
+                    catch (Exception)
+                    {
+#if NETSTANDARD2_1
+                        await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+#else
+                        transaction.Rollback();
+#endif
+
+                        throw;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <param name="isolationLevel">事务隔离级别。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public async Task<T> TransactionAsync<T>(Func<IDbCommandFactory, Task<T>> inTransactionExecution, System.Data.IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+        {
+            if (inTransactionExecution is null)
+            {
+                throw new ArgumentNullException(nameof(inTransactionExecution));
+            }
+
+            using (var connection = PriviteCreateDb(false))
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+#if NETSTANDARD2_1
+                await using (var transaction = await connection.BeginTransactionAsync(isolationLevel, cancellationToken).ConfigureAwait(false))
+#else
+                using (var transaction = connection.BeginTransaction(isolationLevel))
+#endif
+                {
+                    var commandFactory = new DbCommandFactory(connection, transaction);
+
+                    try
+                    {
+                        var result = await inTransactionExecution.Invoke(commandFactory);
+
+#if NETSTANDARD2_1
+                        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
+                        transaction.Commit();
+#endif
+
+                        return result;
+                    }
+                    catch (Exception)
+                    {
+#if NETSTANDARD2_1
+                        await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+#else
+                        transaction.Rollback();
+#endif
+
+                        throw;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// 读取数据。
         /// </summary>

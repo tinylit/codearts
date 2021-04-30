@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,9 +25,25 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 创建数据库链接。
         /// </summary>
-        /// <param name="createNewInstance">为真创建新实例，否则优先复用链接池。</param>
         /// <returns></returns>
-        DbConnection CreateDb(bool createNewInstance = false);
+        DbConnection CreateDb();
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <returns></returns>
+        T Transaction<T>(Func<IDbCommandFactory, T> inTransactionExecution);
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <param name="isolationLevel">事务隔离级别。</param>
+        /// <returns></returns>
+        T Transaction<T>(Func<IDbCommandFactory, T> inTransactionExecution, System.Data.IsolationLevel isolationLevel);
 
         /// <summary>
         /// 读取数据。
@@ -68,6 +85,25 @@ namespace CodeArts.Db.Lts
         IEnumerable<T> Query<T>(SQL sql, object param = null, int? commandTimeout = null);
 
 #if NET_NORMAL || NET_CORE
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        Task<T> TransactionAsync<T>(Func<IDbCommandFactory, Task<T>> inTransactionExecution, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// 使用事务。
+        /// </summary>
+        /// <typeparam name="T">返回结果。</typeparam>
+        /// <param name="inTransactionExecution">事务中执行。</param>
+        /// <param name="isolationLevel">事务隔离级别。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        Task<T> TransactionAsync<T>(Func<IDbCommandFactory, Task<T>> inTransactionExecution, System.Data.IsolationLevel isolationLevel, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// 读取数据。

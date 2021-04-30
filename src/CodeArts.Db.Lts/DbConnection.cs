@@ -45,19 +45,24 @@ namespace CodeArts.Db.Lts
         }
 #endif
 
+        internal DbConnection(DbConnection connection) : this(connection.connection, connection.settings)
+        {
+
+        }
+
         /// <inheritdoc />
         public ConnectionState State => connection.State;
 
         /// <inheritdoc />
-        public DbTransaction BeginTransaction() => new DbTransaction(connection.BeginTransaction());
+        public virtual DbTransaction BeginTransaction() => new DbTransaction(connection.BeginTransaction());
 
         /// <inheritdoc />
-        public DbTransaction BeginTransaction(IsolationLevel il) => new DbTransaction(connection.BeginTransaction(il));
+        public virtual DbTransaction BeginTransaction(IsolationLevel il) => new DbTransaction(connection.BeginTransaction(il));
 
 #if NETSTANDARD2_1
 
         /// <inheritdoc />
-        public async ValueTask<DbTransactionAsync> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+        public virtual async ValueTask<DbTransactionAsync> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
         {
             if (IsAsynchronousSupport)
             {
@@ -68,7 +73,7 @@ namespace CodeArts.Db.Lts
         }
 
         /// <inheritdoc />
-        public async ValueTask<DbTransactionAsync> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        public virtual async ValueTask<DbTransactionAsync> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
             if (IsAsynchronousSupport)
             {
@@ -169,7 +174,7 @@ namespace CodeArts.Db.Lts
 #endif
 
         /// <inheritdoc />
-        public DbCommand CreateCommand()
+        public virtual DbCommand CreateCommand()
         {
 #if NET_NORMAL || NET_CORE
             if (IsAsynchronousSupport)

@@ -88,8 +88,9 @@ namespace CodeArts.Db.Dapper
         /// <summary>
         /// 创建数据库查询器。
         /// </summary>
+        /// <param name="useCache">优先复用链接池，否则：始终创建新链接。</param>
         /// <returns></returns>
-        protected virtual IDbConnection CreateDb() => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter);
+        protected virtual IDbConnection CreateDb(bool useCache = true) => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, useCache);
 
         /// <summary>
         /// 查询第一行第一列结果。

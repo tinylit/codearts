@@ -428,106 +428,90 @@ namespace CodeArts.Db.Lts
 
             private int UseTransactionExecute(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout)
             {
-                int influenceLine = 0;
-
                 SqlCapture capture = SqlCapture.Current;
 
                 if (!commandTimeout.HasValue)
                 {
-                    using (var connection = context.CreateDb(true))
+                    if (isolationLevel.HasValue)
                     {
-                        connection.Open();
-
-                        using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
-                        {
-                            try
-                            {
-                                results.ForEach(x =>
-                                {
-                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                                    using (var command = connection.CreateCommand())
-                                    {
-                                        command.Transaction = transaction;
-
-                                        command.AllowSkippingFormattingSql = true;
-
-                                        command.CommandText = x.Item1;
-
-                                        foreach (var kv in x.Item2)
-                                        {
-                                            DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                                        }
-
-                                        influenceLine += command.ExecuteNonQuery();
-                                    }
-                                });
-
-                                transaction.Commit();
-                            }
-                            catch (Exception)
-                            {
-                                transaction.Rollback();
-
-                                throw;
-                            }
-                        }
+                        return context.Transaction(Done, isolationLevel.Value);
                     }
+                    else
+                    {
+                        return context.Transaction(Done);
+                    }
+                }
+
+                if (isolationLevel.HasValue)
+                {
+                    return context.Transaction(DoneTimeOut, isolationLevel.Value);
+                }
+                else
+                {
+                    return context.Transaction(DoneTimeOut);
+                }
+
+                int Done(IDbCommandFactory factory)
+                {
+                    int influenceLine = 0;
+
+                    results.ForEach(x =>
+                    {
+                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                        using (var command = factory.CreateCommand())
+                        {
+                            command.AllowSkippingFormattingSql = true;
+
+                            command.CommandText = x.Item1;
+
+                            foreach (var kv in x.Item2)
+                            {
+                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                            }
+
+                            influenceLine += command.ExecuteNonQuery();
+                        }
+                    });
 
                     return influenceLine;
                 }
 
-                Stopwatch stopwatch = new Stopwatch();
-
-                int remainingTime = commandTimeout.Value;
-
-                using (var connection = context.CreateDb(true))
+                int DoneTimeOut(IDbCommandFactory factory)
                 {
-                    connection.Open();
+                    int influenceLine = 0;
 
-                    using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
+                    Stopwatch stopwatch = new Stopwatch();
+
+                    int remainingTime = commandTimeout.Value;
+
+                    results.ForEach(x =>
                     {
-                        try
+                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                        using (var command = factory.CreateCommand())
                         {
-                            results.ForEach(x =>
+                            command.AllowSkippingFormattingSql = true;
+
+                            command.CommandText = x.Item1;
+
+                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                            foreach (var kv in x.Item2)
                             {
-                                capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                            }
 
-                                using (var command = connection.CreateCommand())
-                                {
-                                    command.Transaction = transaction;
+                            stopwatch.Start();
 
-                                    command.AllowSkippingFormattingSql = true;
+                            influenceLine += command.ExecuteNonQuery();
 
-                                    command.CommandText = x.Item1;
-
-                                    command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                                    foreach (var kv in x.Item2)
-                                    {
-                                        DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                                    }
-
-                                    stopwatch.Start();
-
-                                    influenceLine += command.ExecuteNonQuery();
-
-                                    stopwatch.Stop();
-                                }
-                            });
-
-                            transaction.Commit();
+                            stopwatch.Stop();
                         }
-                        catch (Exception)
-                        {
-                            transaction.Rollback();
+                    });
 
-                            throw;
-                        }
-                    }
+                    return influenceLine;
                 }
-
-                return influenceLine;
             }
 
             /// <summary>
@@ -633,127 +617,87 @@ namespace CodeArts.Db.Lts
                 }
             }
 
-            private async Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
+            private Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
             {
-                int influenceLine = 0;
-
                 SqlCapture capture = SqlCapture.Current;
 
                 if (!commandTimeout.HasValue)
                 {
-                    using (var connection = context.CreateDb(true))
+                    if (isolationLevel.HasValue)
                     {
-                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        return context.TransactionAsync(Done, isolationLevel.Value);
+                    }
+                    else
+                    {
+                        return context.TransactionAsync(Done);
+                    }
+                }
 
-#if NETSTANDARD2_1
-                        await using (var transaction = isolationLevel.HasValue ? await connection.BeginTransactionAsync(isolationLevel.Value).ConfigureAwait(false) : await connection.BeginTransactionAsync().ConfigureAwait(false))
-#else
-                        using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
-#endif
+                if (isolationLevel.HasValue)
+                {
+                    return context.TransactionAsync(DoneTimeOut, isolationLevel.Value);
+                }
+                else
+                {
+                    return context.TransactionAsync(DoneTimeOut);
+                }
+
+                async Task<int> Done(IDbCommandFactory factory)
+                {
+                    int influenceLine = 0;
+
+                    foreach (var x in results)
+                    {
+                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                        using (var command = factory.CreateCommand())
                         {
-                            try
+                            command.AllowSkippingFormattingSql = true;
+
+                            command.CommandText = x.Item1;
+
+                            foreach (var kv in x.Item2)
                             {
-                                foreach (var x in results)
-                                {
-                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                                    using (var command = connection.CreateCommand())
-                                    {
-                                        command.Transaction = transaction;
-
-                                        command.AllowSkippingFormattingSql = true;
-
-                                        command.CommandText = x.Item1;
-
-                                        foreach (var kv in x.Item2)
-                                        {
-                                            DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                                        }
-
-                                        influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
-                                    }
-                                }
-
-#if NETSTANDARD2_1
-                                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-#else
-                                transaction.Commit();
-#endif
+                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
                             }
-                            catch (Exception)
-                            {
-#if NETSTANDARD2_1
-                                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-#else
-                                transaction.Rollback();
-#endif
 
-                                throw;
-                            }
+                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
                         }
                     }
 
                     return influenceLine;
                 }
 
-                Stopwatch stopwatch = new Stopwatch();
-
-                int remainingTime = commandTimeout.Value;
-
-                using (var connection = context.CreateDb(true))
+                async Task<int> DoneTimeOut(IDbCommandFactory factory)
                 {
-                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    int influenceLine = 0;
 
-#if NETSTANDARD2_1
-                    await using (var transaction = isolationLevel.HasValue ? await connection.BeginTransactionAsync(isolationLevel.Value).ConfigureAwait(false) : await connection.BeginTransactionAsync().ConfigureAwait(false))
-#else
-                    using (var transaction = isolationLevel.HasValue ? connection.BeginTransaction(isolationLevel.Value) : connection.BeginTransaction())
-#endif
+                    Stopwatch stopwatch = new Stopwatch();
+
+                    int remainingTime = commandTimeout.Value;
+
+                    foreach (var x in results)
                     {
-                        try
+                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                        using (var command = factory.CreateCommand())
                         {
-                            foreach (var x in results)
+                            command.AllowSkippingFormattingSql = true;
+
+                            command.CommandText = x.Item1;
+
+                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                            foreach (var kv in x.Item2)
                             {
-                                capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                                using (var command = connection.CreateCommand())
-                                {
-                                    command.Transaction = transaction;
-
-                                    command.AllowSkippingFormattingSql = true;
-
-                                    command.CommandText = x.Item1;
-
-                                    command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                                    foreach (var kv in x.Item2)
-                                    {
-                                        DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                                    }
-
-                                    stopwatch.Start();
-
-                                    influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
-
-                                    stopwatch.Stop();
-                                }
-
-#if NETSTANDARD2_1
-                                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-#else
-                                transaction.Commit();
-#endif
+                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
                             }
-                        }
-                        catch (Exception)
-                        {
-#if NETSTANDARD2_1
-                            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-#else
-                            transaction.Rollback();
-#endif
 
-                            throw;
+                            stopwatch.Start();
+
+                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
+
+                            stopwatch.Stop();
                         }
                     }
 

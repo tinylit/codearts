@@ -946,6 +946,7 @@ namespace UnitTest
             };
 
             var i = user.AsUpdateable(entry)
+                .UseTransaction(System.Data.IsolationLevel.ReadCommitted)
                 .ExecuteCommand();
 
             var j = user.AsUpdateable(entry)

@@ -61,11 +61,18 @@ namespace CodeArts.Db.Lts
         }
 #endif
 
+        internal DbCommand(DbCommand command) : this(command.command, command.settings)
+        {
+            parameters = command.parameters;
+            transaction = command.transaction;
+
+            AllowSkippingFormattingSql = command.AllowSkippingFormattingSql;
+        }
 
         private DbTransaction transaction;
 
         /// <inheritdoc />
-        public DbTransaction Transaction
+        public virtual DbTransaction Transaction
         {
             get => transaction;
             set
