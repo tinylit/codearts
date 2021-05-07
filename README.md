@@ -310,7 +310,7 @@ WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
 > - 支持大多数常见的字符串属性和函数，以及可空的类型支持。有关详细信息，请参阅单元测试。
 
 ##### UML
-* ![ORM Lts UML](http://oss.jschar.com/ORM_UML.svg '框架模型')
+* ![ORM Lts UML](http://oss.jschar.com/ORM_UML.svg 'UML')
 
 * Unit testing.
     [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/SqlServerTest.cs)
