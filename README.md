@@ -247,7 +247,9 @@ WHERE ((([x].[uid] > @__variable_1)
     AND [x].[username] LIKE @str) 
 ORDER BY [x].[uid],[y].[registertime] DESC
 ```
+
 	+更新(方式一)：
+	
 ``` csharp
 	var user = new UserRepository();
 	var lines = user
@@ -272,7 +274,9 @@ UPDATE [x]
 FROM [fei_users] [x] 
 WHERE ([x].[username] = @__variable_1)
 ```
+
 	+更新（方式二）
+	
 ``` csharp
 	var user = new UserRepository();	
 	var entry = new FeiUsers
