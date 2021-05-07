@@ -25,7 +25,6 @@
     <ProjectReference Include="..\..\src\CodeArts.Json\CodeArts.Json.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.MemoryCaching\CodeArts.MemoryCaching.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj" />
-    <ProjectReference Include="..\..\src\CodeArts.RedisCaching\CodeArts.RedisCaching.csproj" />
   </ItemGroup>
 
 </Project>
