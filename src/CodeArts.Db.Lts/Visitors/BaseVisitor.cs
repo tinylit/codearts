@@ -41,6 +41,11 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         private bool isConditionBalance = false;
 
+        /// <summary>
+        /// 常量条件两端。
+        /// </summary>
+        private bool isVariableConditionBalance = false;
+
         private bool buildFrom = false;
 
         /// <summary>
@@ -548,11 +553,32 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected virtual void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
         {
-            if (!isConditionBalance || !writer.IsReverseCondition || !node.Type.IsBoolean())
+            if ((isConditionBalance || writer.IsReverseCondition) && node.Type.IsBoolean())
+            {
+                if (isConditionBalance)
+                {
+                    if (writer.IsReverseCondition)
+                    {
+                        writer.ReverseCondition(DoneBetweenReverse);
+                    }
+                    else
+                    {
+                        DoneBetween();
+                    }
+                }
+                else
+                {
+                    writer.Write(ExpressionType.Not);
+
+                    writer.ReverseCondition(Done);
+                }
+            }
+            else
             {
                 Done();
             }
-            else if (isConditionBalance)
+
+            void DoneBetween()
             {
                 int length = writer.Length;
 
@@ -565,11 +591,19 @@ namespace CodeArts.Db.Lts.Visitors
                     writer.BooleanTrue();
                 }
             }
-            else
-            {
-                writer.Write(ExpressionType.Not);
 
-                writer.ReverseCondition(Done);
+            void DoneBetweenReverse()
+            {
+                int length = writer.Length;
+
+                VisitSkipIsCondition(Done);
+
+                if (writer.Length > length)
+                {
+                    writer.Equal();
+
+                    writer.BooleanFalse();
+                }
             }
 
             void Done()
@@ -823,7 +857,7 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (!isConditionBalance && node.Type.IsBoolean())
+            if (isVariableConditionBalance && node.Type.IsBoolean())
             {
                 throw new DSyntaxErrorException("禁止使用布尔常量作为结果!");
             }
@@ -2491,6 +2525,8 @@ namespace CodeArts.Db.Lts.Visitors
 
             bool isIgnore = IsPlainVariable(left) ? right.Type.IsNullable() || IsPlainVariable(right) && left.Type.IsNullable() : left.Type.IsNullable();
 
+            isVariableConditionBalance = true;
+
             isConditionBalance = true;
 
             ignoreNullable = isIgnore;
@@ -2500,6 +2536,8 @@ namespace CodeArts.Db.Lts.Visitors
             ignoreNullable = false;
 
             isConditionBalance = false;
+
+            isVariableConditionBalance = false;
 
             int indexStep = writer.Length;
 
@@ -2525,6 +2563,8 @@ namespace CodeArts.Db.Lts.Visitors
 
             int indexNext = writer.Length;
 
+            isVariableConditionBalance = true;
+
             isConditionBalance = true;
 
             ignoreNullable = isIgnore;
@@ -2534,6 +2574,8 @@ namespace CodeArts.Db.Lts.Visitors
             ignoreNullable = false;
 
             isConditionBalance = false;
+
+            isVariableConditionBalance = false;
 
             if (writer.Length == indexNext)
             {

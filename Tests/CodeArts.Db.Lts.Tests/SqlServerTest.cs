@@ -18,6 +18,7 @@ using UnitTest.Domain.Entities;
 using UnitTest.Dtos;
 using System.Transactions;
 using System.Threading.Tasks;
+using CodeArts.Db.Lts.Tests.Domain.Entities;
 
 namespace UnitTest
 {
@@ -2041,6 +2042,18 @@ namespace UnitTest
                     var results = await user.ToListAsync();
                 }
             }
+        }
+
+        [TestMethod]
+        public void TestFirst()
+        {
+            var bucket = "hys-good-skus";
+
+            var buckets = new DbRepository<OssBuckets>();
+
+            var ossBucket = buckets
+             .NoResultError($"未找到桶({bucket})的相关信息!")
+             .First(x => x.Name == bucket && x.Enabled);
         }
     }
 }

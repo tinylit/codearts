@@ -77,3 +77,26 @@ BEGIN
 	  [status] int DEFAULT ((0)) NOT NULL
 	)
 END
+
+IF NOT EXISTS (SELECT * FROM sys.all_objects WHERE object_id = OBJECT_ID(N'[dbo].[oss_buckets]') AND type IN ('U'))
+BEGIN
+	CREATE TABLE [dbo].[oss_buckets] (
+	  [id] bigint  NOT NULL,
+	  [app_key] varchar(50) COLLATE Chinese_PRC_CI_AS  NOT NULL,
+	  [app_secret] varchar(60) COLLATE Chinese_PRC_CI_AS  NOT NULL,
+	  [name] varchar(65) COLLATE Chinese_PRC_CI_AS  NOT NULL,
+	  [region] varchar(50) COLLATE Chinese_PRC_CI_AS  NOT NULL,
+	  [storage] int  NOT NULL,
+	  [acl] int  NOT NULL,
+	  [multiversions] bit  NOT NULL,
+	  [open_sls] bit  NOT NULL,
+	  [open_hbr] bit  NOT NULL,
+	  [algorithm] int  NOT NULL,
+	  [kms_encryption_algorithm] int  NOT NULL,
+	  [domain] varchar(100) COLLATE Chinese_PRC_CI_AS  NOT NULL,
+	  [enabled] bit DEFAULT 1 NOT NULL,
+	  [limit_size] bigint  NOT NULL,
+	  [create_time] datetime  NOT NULL
+	)
+END
+
