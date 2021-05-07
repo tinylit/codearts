@@ -195,7 +195,6 @@ PM> Install-Package CodeArts
     }
     ```
 
-    ```
 	+ 可读写的仓库。
     ``` csharp
     [DbConfig] // （1）设置数据库连接。
