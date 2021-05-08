@@ -91,11 +91,25 @@ namespace UnitTest
             var y = 100;
             var user = new UserRepository();
 
-            var result = user.Select(x => new { x.Id, OldId = x.Id + 1, OOID = ~y });//.Where(x => x.Id > 0 && x.Id < y);
+            var result = user.Select(x => new { x.Id, Enabled = true, OldId = x.Id + 1, OOID = ~y });//.Where(x => x.Id > 0 && x.Id < y);
 
             var list = result.ToList();
 
         }
+
+        [TestMethod]
+        public void SelectTest2()
+        {
+            var y = 100;
+            bool enabled = true;
+
+            var user = new UserRepository();
+
+            var result = user.Select(x => new { x.Id, Enabled = enabled, OldId = x.Id + 1, OOID = ~y });//.Where(x => x.Id > 0 && x.Id < y);
+
+            var list = result.ToList();
+        }
+
         [TestMethod]
         public void WhereTest()
         {
@@ -105,6 +119,51 @@ namespace UnitTest
 
             var list = result.ToList();
         }
+
+        [TestMethod]
+        public void WhereTest2()
+        {
+            var y = 100;
+            bool enabled = true;
+            var user = new UserRepository();
+            var result = user.Where(x => x.Id > 0 && enabled && x.Id < y);
+
+            var list = result.ToList();
+        }
+
+        [TestMethod]
+        public void WhereTest3()
+        {
+            var y = 100;
+            bool enabled = false;
+            var user = new UserRepository();
+            var result = user.Where(x => x.Id > 0 && !enabled && x.Id < y);
+
+            var list = result.ToList();
+        }
+
+        [TestMethod]
+        public void WhereTest4()
+        {
+            var y = 100;
+            bool enabled = true;
+            var user = new UserRepository();
+            var result = user.Where(x => x.Id > 0 && !enabled && x.Id < y);
+
+            var list = result.ToList();
+        }
+
+        [TestMethod]
+        public void WhereTest5()
+        {
+            var y = 100;
+            bool enabled = false;
+            var user = new UserRepository();
+            var result = user.Where(x => x.Id > 0 && enabled && x.Id < y);
+
+            var list = result.ToList();
+        }
+
         [TestMethod]
         public void SelectWhereTest()
         {
@@ -2054,6 +2113,30 @@ namespace UnitTest
             var ossBucket = buckets
              .NoResultError($"未找到桶({bucket})的相关信息!")
              .First(x => x.Name == bucket && x.Enabled);
+        }
+
+        [TestMethod]
+        public void TestFirst2()
+        {
+            var bucket = "hys-good-skus";
+
+            var buckets = new DbRepository<OssBuckets>();
+
+            var ossBucket = buckets
+             .NoResultError($"未找到桶({bucket})的相关信息!")
+             .First(x => x.Name == bucket && x.Enabled == true);
+        }
+
+        [TestMethod]
+        public void TestFirst3()
+        {
+            var bucket = "hys-good-skus";
+
+            var buckets = new DbRepository<OssBuckets>();
+
+            var ossBucket = buckets
+             .NoResultError($"未找到桶({bucket})的相关信息!")
+             .First(x => x.Name == bucket && x.Enabled != false);
         }
     }
 }

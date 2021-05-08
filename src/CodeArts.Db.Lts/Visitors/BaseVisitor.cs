@@ -507,6 +507,26 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 Visit(expression);
             }
+            else if (isConditionBalance && !isVariableConditionBalance && value is bool flag)
+            {
+                if (flag == writer.IsReverseCondition)
+                {
+                    writer.Parameter(node.Member.Name, value);
+
+                    if (flag)
+                    {
+                        writer.NotEqual();
+
+                        writer.BooleanFalse();
+                    }
+                    else
+                    {
+                        writer.Equal();
+
+                        writer.BooleanTrue();
+                    }
+                }
+            }
             else if (node.Expression is null || node.Expression.NodeType == ExpressionType.MemberAccess && (node.Type.IsValueType || node.Expression.Type == node.Type))
             {
                 writer.Parameter(string.Concat("__variable_", node.Member.Name.ToLower()), value);
@@ -514,20 +534,6 @@ namespace CodeArts.Db.Lts.Visitors
             else
             {
                 writer.Parameter(node.Member.Name, value);
-            }
-
-            if (isConditionBalance && value is bool flag && flag == writer.IsReverseCondition)
-            {
-                if (flag)
-                {
-                    writer.Equal();
-                }
-                else
-                {
-                    writer.NotEqual();
-                }
-
-                writer.BooleanFalse();
             }
         }
 
@@ -584,7 +590,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 VisitSkipIsCondition(Done);
 
-                if (writer.Length > length)
+                if (!isVariableConditionBalance && writer.Length > length)
                 {
                     writer.Equal();
 
@@ -598,7 +604,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                 VisitSkipIsCondition(Done);
 
-                if (writer.Length > length)
+                if (!isVariableConditionBalance && writer.Length > length)
                 {
                     writer.Equal();
 
@@ -857,11 +863,6 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (isVariableConditionBalance && node.Type.IsBoolean())
-            {
-                throw new DSyntaxErrorException("禁止使用布尔常量作为结果!");
-            }
-
             if (node.Type.IsQueryable())
             {
                 return node;
@@ -873,7 +874,7 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 Visit(expression);
             }
-            else if (value is bool flag)
+            else if (isConditionBalance && !isVariableConditionBalance && value is bool flag)
             {
                 if (writer.IsReverseCondition == flag)
                 {
@@ -881,14 +882,16 @@ namespace CodeArts.Db.Lts.Visitors
 
                     if (flag)
                     {
-                        writer.Equal();
+                        writer.NotEqual();
+
+                        writer.BooleanFalse();
                     }
                     else
                     {
-                        writer.NotEqual();
-                    }
+                        writer.Equal();
 
-                    writer.BooleanFalse();
+                        writer.BooleanTrue();
+                    }
                 }
             }
             else if (node.Type.IsValueType || node.Type == typeof(string) || node.Type == typeof(Version))
