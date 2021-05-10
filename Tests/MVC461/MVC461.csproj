@@ -140,6 +140,14 @@
     <Folder Include="App_Data\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.Casting\CodeArts.Casting.csproj">
+      <Project>{d32d72f4-7d45-4610-b126-a658c36ac639}</Project>
+      <Name>CodeArts.Casting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj">
+      <Project>{2fe5dea1-f628-476b-bacf-0fa220537a29}</Project>
+      <Name>CodeArts.Configuration</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Db.Lts.MySql\CodeArts.Db.Lts.MySql.csproj">
       <Project>{e49cc361-3352-4f1e-a215-5d0475331c9e}</Project>
       <Name>CodeArts.Db.Lts.MySql</Name>
@@ -151,6 +159,10 @@
     <ProjectReference Include="..\..\src\CodeArts.Db\CodeArts.Db.csproj">
       <Project>{949a8d0b-92b3-4ba8-8dd4-8240b45e42d3}</Project>
       <Name>CodeArts.Db</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.Json\CodeArts.Json.csproj">
+      <Project>{769368d2-b5df-491b-acc9-f17d074463c7}</Project>
+      <Name>CodeArts.Json</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj">
       <Project>{9b087ff3-37b9-4477-a2cb-c44f1388758d}</Project>

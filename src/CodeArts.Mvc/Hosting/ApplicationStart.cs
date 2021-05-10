@@ -240,7 +240,7 @@ namespace CodeArts.Mvc.Hosting
             {
                 descriptors.Clear();
 
-                #if NET_NORMAL
+#if NET_NORMAL
                 foreach (var kv in scopes)
                 {
                     kv.Value.Clear();
@@ -318,8 +318,6 @@ namespace CodeArts.Mvc.Hosting
 
                 var configureServices = conversionType.GetMethod(ConfigureServices, new Type[1] { typeof(IServiceCollection) });
 
-                var configure = conversionType.GetMethod(Configure, new Type[1] { typeof(IApplicationBuilder) });
-
                 if (configuration.ReturnType == typeof(void) || typeof(IServiceProvider).IsAssignableFrom(configuration.ReturnType) || typeof(IDependencyResolver).IsAssignableFrom(configuration.ReturnType))
                 {
                     return config =>
@@ -364,18 +362,70 @@ namespace CodeArts.Mvc.Hosting
                             }
                         }
 
-                        if (configure is null)
-                            return null;
+                        var methodInfos = conversionType.GetMethods();
 
-                        var handler = new ApplicationBuilder();
+                        foreach (var configure in methodInfos)
+                        {
+                            if (!string.Equals(configure.Name, Configure) || configure.DeclaringType != conversionType)
+                            {
+                                continue;
+                            }
 
-                        configure.Invoke(instance, new object[1] { handler });
+                            return Done(instance, config, configure);
+                        }
 
-                        return handler;
+                        foreach (var configure in methodInfos)
+                        {
+                            if (!string.Equals(configure.Name, Configure))
+                            {
+                                continue;
+                            }
+
+                            return Done(instance, config, configure);
+                        }
+
+                        return null;
                     };
                 }
 
-                throw new NotSupportedException($"函数{Configuration}的返回值{configuration.ReturnType}类型不被支持!");
+                ApplicationBuilder Done(object instance, HttpConfiguration config, MethodInfo configure)
+                {
+                    if (configure.ReturnType != typeof(void))
+                    {
+                        throw new NotSupportedException($"函数“{configure.Name}”必须是无返回值类型!");
+                    }
+
+                    var applicationBuilderType = typeof(IApplicationBuilder);
+
+                    var parameters = configure.GetParameters();
+
+                    if (!parameters.Any(x => x.ParameterType == applicationBuilderType))
+                    {
+                        configure.Invoke(instance, parameters
+                            .Select(x => config.DependencyResolver.GetService(x.ParameterType))
+                            .ToArray());
+
+                        return null;
+                    }
+
+                    var handler = new ApplicationBuilder();
+
+                    configure.Invoke(instance, parameters
+                    .Select(x =>
+                    {
+                        if (x.ParameterType == applicationBuilderType)
+                        {
+                            return handler;
+                        }
+
+                        return config.DependencyResolver.GetService(x.ParameterType);
+                    })
+                    .ToArray());
+
+                    return handler;
+                }
+
+                throw new NotSupportedException($"函数“{Configuration}”的返回值{configuration.ReturnType}类型不被支持!");
             }
 
             /// <summary>

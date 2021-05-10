@@ -105,7 +105,7 @@ namespace UnitTest
 
             var user = new UserRepository();
 
-            var result = user.Select(x => new { x.Id, Enabled = enabled, OldId = x.Id + 1, OOID = ~y });//.Where(x => x.Id > 0 && x.Id < y);
+            var result = user.Select(x => new { x.Id, Enabled = enabled, OldId = x.Id + 1, OOID = y ^ 5 });//.Where(x => x.Id > 0 && x.Id < y);
 
             var list = result.ToList();
         }

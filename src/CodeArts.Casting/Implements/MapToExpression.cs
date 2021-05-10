@@ -1235,13 +1235,14 @@ namespace CodeArts.Casting.Implements
 
             if (conversionType.IsValueType)
             {
+                if (conversionType.IsNullable())
+                {
+                    conversionType = Nullable.GetUnderlyingType(conversionType);
+                }
+
                 if (conversionType.IsEnum)
                 {
                     conversionType = Enum.GetUnderlyingType(conversionType);
-                }
-                else if (conversionType.IsNullable())
-                {
-                    conversionType = Nullable.GetUnderlyingType(conversionType);
                 }
             }
 
@@ -1391,13 +1392,14 @@ namespace CodeArts.Casting.Implements
 
                 if (memberType.IsValueType)
                 {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+
                     if (memberType.IsEnum)
                     {
                         memberType = Enum.GetUnderlyingType(memberType);
-                    }
-                    else if (memberType.IsNullable())
-                    {
-                        memberType = Nullable.GetUnderlyingType(memberType);
                     }
                 }
 
@@ -1442,13 +1444,14 @@ namespace CodeArts.Casting.Implements
 
                 if (memberType.IsValueType)
                 {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+
                     if (memberType.IsEnum)
                     {
                         memberType = Enum.GetUnderlyingType(memberType);
-                    }
-                    else if (memberType.IsNullable())
-                    {
-                        memberType = Nullable.GetUnderlyingType(memberType);
                     }
                 }
 
@@ -1487,13 +1490,14 @@ namespace CodeArts.Casting.Implements
 
                 if (memberType.IsValueType)
                 {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+
                     if (memberType.IsEnum)
                     {
                         memberType = Enum.GetUnderlyingType(memberType);
-                    }
-                    else if (memberType.IsNullable())
-                    {
-                        memberType = Nullable.GetUnderlyingType(memberType);
                     }
                 }
 
@@ -1711,13 +1715,14 @@ namespace CodeArts.Casting.Implements
 
                 if (memberType.IsValueType)
                 {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+
                     if (memberType.IsEnum)
                     {
                         memberType = Enum.GetUnderlyingType(memberType);
-                    }
-                    else if (memberType.IsNullable())
-                    {
-                        memberType = Nullable.GetUnderlyingType(memberType);
                     }
                 }
 
@@ -1787,13 +1792,14 @@ namespace CodeArts.Casting.Implements
 
                 if (memberType.IsValueType)
                 {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+
                     if (memberType.IsEnum)
                     {
                         memberType = Enum.GetUnderlyingType(memberType);
-                    }
-                    else if (memberType.IsNullable())
-                    {
-                        memberType = Nullable.GetUnderlyingType(memberType);
                     }
                 }
 
@@ -2249,7 +2255,7 @@ namespace CodeArts.Casting.Implements
 
         private static Expression ConvertTo(Expression node, Type type)
         {
-            if (node.Type == type) 
+            if (node.Type == type)
                 return node;
 
             return Convert(node, type);

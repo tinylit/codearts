@@ -97,7 +97,7 @@ namespace MVC461.Controllers
         /// <inheritdoc />
         // GET api/values/5
         [HttpGet]
-        public ulong Get(ulong id)
+        public long Get(long id)
         {
             return id;
         }

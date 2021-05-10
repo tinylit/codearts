@@ -201,12 +201,12 @@ namespace CodeArts.Db.Lts
         }
 
         /// <summary>
-        /// Left Join
+        /// Inner Join
         /// </summary>
         public void Join()
         {
             WhiteSpace();
-            Write("LEFT");
+            Write("INNER");
             WhiteSpace();
             Write("JOIN");
             WhiteSpace();

@@ -2191,7 +2191,7 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 VisitBinaryIsAdd(node);
             }
-            else if (nodeType == ExpressionType.And || nodeType == ExpressionType.Or)
+            else if (nodeType == ExpressionType.And || nodeType == ExpressionType.Or || nodeType == ExpressionType.ExclusiveOr)
             {
                 VisitBinaryIsBit(node);
             }

@@ -366,14 +366,14 @@ namespace CodeArts.Mvc.Converters
                 return null;
             }
 
-            if (typeToConvert.IsEnum)
-            {
-                return Enum.Parse(typeToConvert, Encoding.UTF8.GetString(reader.ValueSpan.ToArray()), true);
-            }
-
             if (typeToConvert.IsNullable())
             {
                 typeToConvert = Nullable.GetUnderlyingType(typeToConvert);
+            }
+
+            if (typeToConvert.IsEnum)
+            {
+                return Enum.Parse(typeToConvert, Encoding.UTF8.GetString(reader.ValueSpan.ToArray()), true);
             }
 
             if (TryRead(reader, typeToConvert, out object value))
@@ -413,13 +413,14 @@ namespace CodeArts.Mvc.Converters
 
             var type = value.GetType();
 
+            if (type.IsNullable())
+            {
+                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
+            }
+
             if (type.IsEnum)
             {
                 value = Convert.ChangeType(value, Enum.GetUnderlyingType(type));
-            }
-            else if (type.IsNullable())
-            {
-                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
             }
 
             switch (value)
@@ -604,13 +605,14 @@ namespace CodeArts.Mvc.Converters
 
             var type = value.GetType();
 
+            if (type.IsNullable())
+            {
+                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
+            }
+
             if (type.IsEnum)
             {
                 value = Convert.ChangeType(value, Enum.GetUnderlyingType(type));
-            }
-            else if (type.IsNullable())
-            {
-                value = Convert.ChangeType(value, Nullable.GetUnderlyingType(type));
             }
 
             switch (value)
