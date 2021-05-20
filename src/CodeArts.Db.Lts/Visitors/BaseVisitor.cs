@@ -815,9 +815,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                     if (node.Type.IsValueType || node.Type == typeof(string))
                     {
-                        VisitParameter(parameter);
-
-                        VisitMemberIsDependOnParameter(node);
+                        VisitMemberIsDependOnParameterWithParameterExpression(parameter, node);
 
                         break;
                     }
@@ -826,14 +824,38 @@ namespace CodeArts.Db.Lts.Visitors
 
                     break;
                 case MemberExpression member:
-                    VisitMemberIsDependOnParameter(member);
-                    goto default;
+                    VisitMemberIsDependOnParameterWithMemmberExpression(member, node);
+                    break;
                 default:
                     VisitMemberIsDependOnParameter(node);
                     break;
             }
 
             return node;
+        }
+
+        /// <summary>
+        /// 成员依赖于参数成员的成员。
+        /// </summary>
+        /// <param name="member">等同于<paramref name="node"/>.Expression</param>
+        /// <param name="node">节点。</param>
+        protected virtual void VisitMemberIsDependOnParameterWithMemmberExpression(MemberExpression member, MemberExpression node)
+        {
+            VisitMemberIsDependOnParameter(member);
+
+            VisitMemberIsDependOnParameter(node);
+        }
+
+        /// <summary>
+        /// 成员依赖于参数成员的参数成员。
+        /// </summary>
+        /// <param name="parameter">等同于<paramref name="node"/>.Expression</param>
+        /// <param name="node">节点。</param>
+        protected virtual void VisitMemberIsDependOnParameterWithParameterExpression(ParameterExpression parameter, MemberExpression node)
+        {
+            VisitParameter(parameter);
+
+            VisitMemberIsDependOnParameter(node);
         }
 
         /// <inheritdoc />

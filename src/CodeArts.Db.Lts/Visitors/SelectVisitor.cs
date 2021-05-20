@@ -172,6 +172,34 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         private readonly Dictionary<Type, List<string>> joinCache = new Dictionary<Type, List<string>>();
 
+        private sealed class TupleEqualityComparer : IEqualityComparer<Tuple<Type, string>>
+        {
+            private TupleEqualityComparer() { }
+
+            public static TupleEqualityComparer Instance = new TupleEqualityComparer();
+            public bool Equals(Tuple<Type, string> x, Tuple<Type, string> y)
+            {
+                if (x is null)
+                {
+                    return y is null;
+                }
+
+                if (y is null)
+                {
+                    return false;
+                }
+
+                return x.Item1 == y.Item1 && x.Item2 == y.Item2;
+            }
+
+            public int GetHashCode(Tuple<Type, string> obj) => obj?.Item1.GetHashCode() ?? 0;
+        }
+
+        /// <summary>
+        /// 默认值。
+        /// </summary>
+        private readonly Dictionary<Tuple<Type, string>, Expression> defaultCache = new Dictionary<Tuple<Type, string>, Expression>(TupleEqualityComparer.Instance);
+
         /// <inheritdoc />
         public SelectVisitor(BaseVisitor visitor, bool isNewWriter = true) : base(visitor, isNewWriter)
         {
@@ -436,7 +464,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                     if (!useGroupBy)
                     {
-                        byVisitor = new GroupByVisitor(this, groupByExpressions);
+                        byVisitor = new GroupByVisitor(this, defaultCache, groupByExpressions);
                     }
 
                     useGroupBy = true;
@@ -485,6 +513,46 @@ namespace CodeArts.Db.Lts.Visitors
                         }
 
                     }, () => base.Visit(node.Arguments[0]));
+
+                    break;
+                case MethodCall.SelectMany when node.Arguments.Count == 3:
+
+                    hasJoin = true;
+
+                    var parameterExp = Join(node.Arguments[2], true);
+
+                    bool DoneLeftJoin(ParameterExpression parameter, Expression expression)
+                    {
+                        if (expression.NodeType == ExpressionType.MemberAccess)
+                        {
+                            return false;
+                        }
+
+                        switch (expression)
+                        {
+                            case UnaryExpression unary:
+                                return DoneLeftJoin(parameter, unary.Operand);
+                            case LambdaExpression lambda when lambda.Parameters.Count == 1:
+                                return DoneLeftJoin(parameter, lambda.Body);
+                            case MethodCallExpression methodCall when methodCall.Method.Name == MethodCall.DefaultIfEmpty:
+
+                                if (methodCall.Arguments.Count > 1)
+                                {
+                                    defaultCache.Add(Tuple.Create(parameter.Type, parameter.Name), methodCall.Arguments[1]);
+                                }
+
+                                return true;
+                            default:
+                                throw new DSyntaxErrorException();
+                        }
+                    }
+
+                    using (var visitor = new GroupJoinVisitor(this, parameterExp, DoneLeftJoin(parameterExp, node.Arguments[1])))
+                    {
+                        visitor.Startup(node.Arguments[0]);
+                    }
+
+                    buildTable = false;
 
                     break;
                 case MethodCall.Distinct:
@@ -587,37 +655,6 @@ namespace CodeArts.Db.Lts.Visitors
 
                     hasJoin = true;
 
-                    void Join(Expression expression, bool isJoin)
-                    {
-                        switch (expression)
-                        {
-                            case UnaryExpression unary:
-                                Join(unary.Operand, isJoin);
-                                break;
-                            case LambdaExpression lambda when lambda.Parameters.Count == 1:
-                                var parameter = lambda.Parameters[0];
-
-                                if (isJoin)
-                                {
-                                    var parameterType = TypeToUltimateType(parameter.Type);
-
-                                    if (!joinCache.TryGetValue(parameterType, out List<string> results))
-                                    {
-                                        joinCache.Add(parameterType, results = new List<string>());
-                                    }
-
-                                    results.Add(parameter.Name);
-                                }
-                                else
-                                {
-                                    AnalysisAlias(parameter);
-                                }
-                                break;
-                            default:
-                                throw new DSyntaxErrorException();
-                        }
-                    }
-
                     Join(node.Arguments[2], false);
 
                     Join(node.Arguments[3], true);
@@ -714,6 +751,36 @@ namespace CodeArts.Db.Lts.Visitors
                     base.VisitCore(node);
 
                     break;
+            }
+
+            ParameterExpression Join(Expression expression, bool isJoin)
+            {
+                switch (expression)
+                {
+                    case UnaryExpression unary:
+                        return Join(unary.Operand, isJoin);
+                    case LambdaExpression lambda when lambda.Parameters.Count == 1 || lambda.Parameters.Count == 2:
+                        var parameter = lambda.Parameters[lambda.Parameters.Count - 1];
+
+                        if (isJoin)
+                        {
+                            var parameterType = TypeToUltimateType(parameter.Type);
+
+                            if (!joinCache.TryGetValue(parameterType, out List<string> results))
+                            {
+                                joinCache.Add(parameterType, results = new List<string>());
+                            }
+
+                            results.Add(parameter.Name);
+                        }
+                        else
+                        {
+                            AnalysisAlias(parameter);
+                        }
+                        return parameter;
+                    default:
+                        throw new DSyntaxErrorException();
+                }
             }
         }
 
@@ -897,6 +964,161 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
+        /// <summary>
+        /// 查询的默认值表达式。
+        /// <see cref="Queryable.SelectMany{TSource, TCollection, TResult}(IQueryable{TSource}, Expression{Func{TSource, IEnumerable{TCollection}}}, Expression{Func{TSource, TCollection, TResult}})"/>
+        /// <seealso cref="Enumerable.DefaultIfEmpty{TSource}(IEnumerable{TSource}, TSource)"/>
+        /// </summary>
+        protected virtual void VisitSelectManyDefaultExpression(MemberExpression member, Expression node)
+        {
+            switch (node)
+            {
+                case ConstantExpression constant:
+                    switch (member.Member.MemberType)
+                    {
+                        case MemberTypes.Field when member.Member is FieldInfo field:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), field.GetValue(constant.Value));
+                            break;
+                        case MemberTypes.Property when member.Member is PropertyInfo property:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), property.GetValue(constant.Value, null));
+                            break;
+                        default:
+                            throw new DSyntaxErrorException();
+                    }
+                    break;
+                case MemberExpression memberExpression when IsPlainVariable(memberExpression):
+
+                    var objValue = memberExpression.GetValueFromExpression();
+
+                    switch (member.Member.MemberType)
+                    {
+                        case MemberTypes.Field when member.Member is FieldInfo field:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), field.GetValue(objValue));
+                            break;
+                        case MemberTypes.Property when member.Member is PropertyInfo property:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), property.GetValue(objValue, null));
+                            break;
+                        default:
+                            throw new DSyntaxErrorException();
+                    }
+                    break;
+                case MemberInitExpression memberInit:
+                    foreach (var binding in memberInit.Bindings)
+                    {
+                        if (binding.Member != member.Member)
+                        {
+                            continue;
+                        }
+
+                        VisitMemberBinding(binding);
+
+                        goto label_break;
+                    }
+
+                    throw new DSyntaxErrorException($"成员“{member.Member.Name}”未设置默认值!");
+
+                    label_break:
+
+                    break;
+
+                case NewExpression newExpression:
+                    Visit(newExpression.Arguments[newExpression.Members.IndexOf(member.Member)]);
+                    break;
+                default:
+                    throw new DSyntaxErrorException();
+            }
+        }
+
+        private void Aw_VisitSelectManyDefaultExpression(string parameterName, MemberExpression member, Expression node, Action action)
+        {
+            var tableInfo = MakeTableInfo(member.Expression.Type);
+
+            var prefix = GetEntryAlias(tableInfo.TableType, parameterName);
+
+            writer.OpenBrace();
+            writer.Write("CASE WHEN ");
+
+            bool flag = false;
+
+            if (tableInfo.Keys.Count > 0)
+            {
+                foreach (var item in tableInfo.ReadOrWrites.Where(x => tableInfo.Keys.Contains(x.Key)))
+                {
+                    if (flag)
+                    {
+                        writer.Or();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    writer.NameDot(prefix, item.Value);
+
+                    writer.Write(" IS NOT NULL");
+                }
+            }
+            else
+            {
+                foreach (var item in tableInfo.ReadOrWrites)
+                {
+                    if (flag)
+                    {
+                        writer.Or();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    writer.NameDot(prefix, item.Value);
+
+                    writer.Write(" IS NOT NULL");
+                }
+            }
+
+            writer.Write(" THEN ");
+
+            action.Invoke();
+
+            writer.Write(" ELSE ");
+
+            VisitSelectManyDefaultExpression(member, node);
+
+            writer.Write(" END");
+            writer.CloseBrace();
+        }
+
+        /// <inheritdoc />
+        protected override void VisitMemberIsDependOnParameterWithMemmberExpression(MemberExpression member, MemberExpression node)
+        {
+            if (defaultCache.TryGetValue(Tuple.Create(member.Type, member.Member.Name), out Expression expression))
+            {
+                Aw_VisitSelectManyDefaultExpression(member.Member.Name, node, expression, () => base.VisitMemberIsDependOnParameterWithMemmberExpression(member, node));
+            }
+            else
+            {
+                base.VisitMemberIsDependOnParameterWithMemmberExpression(member, node);
+            }
+        }
+
+        /// <summary>
+        /// 成员依赖于参数成员的参数成员。
+        /// </summary>
+        /// <param name="parameter">等同于<paramref name="node"/>.Expression</param>
+        /// <param name="node">节点。</param>
+        protected override void VisitMemberIsDependOnParameterWithParameterExpression(ParameterExpression parameter, MemberExpression node)
+        {
+            if (defaultCache.TryGetValue(Tuple.Create(parameter.Type, parameter.Name), out Expression expression))
+            {
+                Aw_VisitSelectManyDefaultExpression(parameter.Name, node, expression, () => base.VisitMemberIsDependOnParameterWithParameterExpression(parameter, node));
+            }
+            else
+            {
+                base.VisitMemberIsDependOnParameterWithParameterExpression(parameter, node);
+            }
+        }
+
         /// <inheritdoc />
         protected override void VisitMemberIsDependOnParameterTypeIsPlain(MemberExpression node)
         {
@@ -921,7 +1143,6 @@ namespace CodeArts.Db.Lts.Visitors
             }
             else
             {
-
                 base.VisitMemberIsDependOnParameterTypeIsPlain(node);
             }
         }

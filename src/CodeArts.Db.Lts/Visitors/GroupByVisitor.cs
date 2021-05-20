@@ -29,7 +29,10 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         private bool useGroupByAggregation = false;
 
+        private volatile bool initGroupVisitor = true;
+
         private readonly SelectVisitor visitor;
+        private readonly Dictionary<Tuple<Type, string>, Expression> defaultCache;
         private readonly Dictionary<MemberInfo, Expression> groupByExpressions;
 
         /// <summary>
@@ -38,9 +41,10 @@ namespace CodeArts.Db.Lts.Visitors
         public static readonly MemberInfo KeyMember = typeof(IGrouping<,>).GetProperty("Key");
 
         /// <inheritdoc />
-        public GroupByVisitor(SelectVisitor visitor, Dictionary<MemberInfo, Expression> groupByExpressions) : base(visitor, false, ConditionType.Having)
+        public GroupByVisitor(SelectVisitor visitor, Dictionary<Tuple<Type, string>, Expression> defaultCache, Dictionary<MemberInfo, Expression> groupByExpressions) : base(visitor, false, ConditionType.Having)
         {
             this.visitor = visitor;
+            this.defaultCache = defaultCache;
             this.groupByExpressions = groupByExpressions;
         }
 
@@ -53,12 +57,54 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (node.Method.Name == MethodCall.GroupBy)
             {
-                Workflow(() => visitor.Visit(node.Arguments[0]), () =>
+                int startIndex = 0, removeLength = 0;
+
+                Workflow(() =>
                 {
+                    visitor.Visit(node.Arguments[0]);
+
+                    startIndex = writer.AppendAt > -1 ? writer.AppendAt : writer.Length;
+
+                }, () =>
+                {
+                    startIndex = writer.Length;
+
                     writer.GroupBy();
 
                     VisitGroupBy(node.Arguments[1]);
+
+                    removeLength = writer.Length - startIndex;
                 });
+
+                initGroupVisitor = false;
+
+                //? GroupBy 总是先行，遇到默认值是，重新生成GroupBy，以确保默认值也纳入分组结果。
+                if (defaultCache.Count > 0)
+                {
+                    writer.Remove(startIndex, removeLength);
+
+                    var index = writer.Length;
+                    var length = writer.Length;
+                    var appendAt = writer.AppendAt;
+
+                    if (appendAt > -1)
+                    {
+                        index -= (index - appendAt);
+                    }
+
+                    writer.AppendAt = startIndex;
+
+                    writer.GroupBy();
+
+                    VisitGroupBy(node.Arguments[1]);
+
+                    if (appendAt > -1)
+                    {
+                        appendAt += writer.Length - length;
+                    }
+
+                    writer.AppendAt = appendAt;
+                }
             }
             else
             {
@@ -105,6 +151,161 @@ namespace CodeArts.Db.Lts.Visitors
             else
             {
                 base.VisitLinq(node);
+            }
+        }
+
+        /// <summary>
+        /// 查询的默认值表达式。
+        /// <see cref="Queryable.SelectMany{TSource, TCollection, TResult}(IQueryable{TSource}, Expression{Func{TSource, IEnumerable{TCollection}}}, Expression{Func{TSource, TCollection, TResult}})"/>
+        /// <seealso cref="Enumerable.DefaultIfEmpty{TSource}(IEnumerable{TSource}, TSource)"/>
+        /// </summary>
+        protected virtual void VisitSelectManyDefaultExpression(MemberExpression member, Expression node)
+        {
+            switch (node)
+            {
+                case ConstantExpression constant:
+                    switch (member.Member.MemberType)
+                    {
+                        case MemberTypes.Field when member.Member is FieldInfo field:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), field.GetValue(constant.Value));
+                            break;
+                        case MemberTypes.Property when member.Member is PropertyInfo property:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), property.GetValue(constant.Value, null));
+                            break;
+                        default:
+                            throw new DSyntaxErrorException();
+                    }
+                    break;
+                case MemberExpression memberExpression when IsPlainVariable(memberExpression):
+
+                    var objValue = memberExpression.GetValueFromExpression();
+
+                    switch (member.Member.MemberType)
+                    {
+                        case MemberTypes.Field when member.Member is FieldInfo field:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), field.GetValue(objValue));
+                            break;
+                        case MemberTypes.Property when member.Member is PropertyInfo property:
+                            writer.Parameter(member.Member.Name.ToUrlCase(), property.GetValue(objValue, null));
+                            break;
+                        default:
+                            throw new DSyntaxErrorException();
+                    }
+                    break;
+                case MemberInitExpression memberInit:
+                    foreach (var binding in memberInit.Bindings)
+                    {
+                        if (binding.Member != member.Member)
+                        {
+                            continue;
+                        }
+
+                        VisitMemberBinding(binding);
+
+                        goto label_break;
+                    }
+
+                    throw new DSyntaxErrorException($"成员“{member.Member.Name}”未设置默认值!");
+
+                    label_break:
+
+                    break;
+
+                case NewExpression newExpression:
+                    Visit(newExpression.Arguments[newExpression.Members.IndexOf(member.Member)]);
+                    break;
+                default:
+                    throw new DSyntaxErrorException();
+            }
+        }
+
+        private void Aw_VisitSelectManyDefaultExpression(string parameterName, MemberExpression member, Expression node, Action action)
+        {
+            var tableInfo = MakeTableInfo(member.Expression.Type);
+
+            var prefix = GetEntryAlias(tableInfo.TableType, parameterName);
+
+            writer.OpenBrace();
+            writer.Write("CASE WHEN ");
+
+            bool flag = false;
+
+            if (tableInfo.Keys.Count > 0)
+            {
+                foreach (var item in tableInfo.ReadOrWrites.Where(x => tableInfo.Keys.Contains(x.Key)))
+                {
+                    if (flag)
+                    {
+                        writer.Or();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    writer.NameDot(prefix, item.Value);
+
+                    writer.Write(" IS NOT NULL");
+                }
+            }
+            else
+            {
+                foreach (var item in tableInfo.ReadOrWrites)
+                {
+                    if (flag)
+                    {
+                        writer.Or();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    writer.NameDot(prefix, item.Value);
+
+                    writer.Write(" IS NOT NULL");
+                }
+            }
+
+            writer.Write(" THEN ");
+
+            action.Invoke();
+
+            writer.Write(" ELSE ");
+
+            VisitSelectManyDefaultExpression(member, node);
+
+            writer.Write(" END");
+            writer.CloseBrace();
+        }
+
+        /// <inheritdoc />
+        protected override void VisitMemberIsDependOnParameterWithMemmberExpression(MemberExpression member, MemberExpression node)
+        {
+            if (defaultCache.TryGetValue(Tuple.Create(member.Type, member.Member.Name), out Expression expression))
+            {
+                Aw_VisitSelectManyDefaultExpression(member.Member.Name, node, expression, () => base.VisitMemberIsDependOnParameterWithMemmberExpression(member, node));
+            }
+            else
+            {
+                base.VisitMemberIsDependOnParameterWithMemmberExpression(member, node);
+            }
+        }
+
+        /// <summary>
+        /// 成员依赖于参数成员的参数成员。
+        /// </summary>
+        /// <param name="parameter">等同于<paramref name="node"/>.Expression</param>
+        /// <param name="node">节点。</param>
+        protected override void VisitMemberIsDependOnParameterWithParameterExpression(ParameterExpression parameter, MemberExpression node)
+        {
+            if (defaultCache.TryGetValue(Tuple.Create(parameter.Type, parameter.Name), out Expression expression))
+            {
+                Aw_VisitSelectManyDefaultExpression(parameter.Name, node, expression, () => base.VisitMemberIsDependOnParameterWithParameterExpression(parameter, node));
+            }
+            else
+            {
+                base.VisitMemberIsDependOnParameterWithParameterExpression(parameter, node);
             }
         }
 
@@ -164,7 +365,10 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected internal override void VisitNewMember(MemberInfo memberInfo, Expression node)
         {
-            groupByExpressions[memberInfo] = new MyMemberExpression(memberInfo, node);
+            if (initGroupVisitor)
+            {
+                groupByExpressions[memberInfo] = new MyMemberExpression(memberInfo, node);
+            }
 
             base.VisitNewMember(memberInfo, node);
         }
@@ -172,7 +376,10 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
         {
-            groupByExpressions[node.Member] = node.Expression;
+            if (initGroupVisitor)
+            {
+                groupByExpressions[node.Member] = node.Expression;
+            }
 
             return base.VisitMemberAssignment(node);
         }
@@ -194,7 +401,10 @@ namespace CodeArts.Db.Lts.Visitors
             switch (node)
             {
                 case MemberExpression member:
-                    groupByExpressions[KeyMember] = member;
+                    if (initGroupVisitor)
+                    {
+                        groupByExpressions[KeyMember] = member;
+                    }
 
                     base.VisitMember(member);
                     break;

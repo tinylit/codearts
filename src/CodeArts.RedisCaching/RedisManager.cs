@@ -11,13 +11,13 @@ namespace CodeArts.Caching
     {
         #region 单例
 
-        private static readonly Lazy<RedisManager> Lazy =
+        private static readonly Lazy<RedisManager> _lazy =
             new Lazy<RedisManager>(() => new RedisManager());
 
         /// <summary>
         /// 实例。
         /// </summary>
-        public static RedisManager Instance => Lazy.Value;
+        public static RedisManager Instance => _lazy.Value;
 
         private RedisManager() => _connections = new ConcurrentDictionary<string, ConnectionMultiplexer>();
 
@@ -27,9 +27,7 @@ namespace CodeArts.Caching
 
         private readonly ConcurrentDictionary<string, ConnectionMultiplexer> _connections;
 
-        private ConnectionMultiplexer GetConnection(string connectionString, string name = "default") => _connections.GetOrAdd(name, p => Connect(ConfigurationOptions.Parse(connectionString)));
-
-        private ConnectionMultiplexer Connect(ConfigurationOptions configOpts) => ConnectionMultiplexer.Connect(configOpts);
+        private ConnectionMultiplexer GetConnection(string connectionString) => _connections.GetOrAdd(connectionString, connectionStrings => ConnectionMultiplexer.Connect(ConfigurationOptions.Parse(connectionStrings)));
 
         #endregion
 
@@ -39,7 +37,7 @@ namespace CodeArts.Caching
         /// <param name="connectionString">连接字符串。</param>
         /// <param name="defaultDb">获取数据库的ID。</param>
         /// <returns></returns>
-        public IDatabase GetDatabase(string connectionString, int defaultDb = 0) => GetConnection(connectionString).GetDatabase(defaultDb);
+        public IDatabase GetDatabase(string connectionString, int defaultDb = -1) => GetConnection(connectionString).GetDatabase(defaultDb);
 
         /// <summary>
         /// 释放。

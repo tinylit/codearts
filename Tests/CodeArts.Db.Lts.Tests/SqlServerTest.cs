@@ -706,6 +706,148 @@ namespace UnitTest
         }
 
         [TestMethod]
+        public void JoinIntoTest()
+        {
+            var y = 100;
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join d in details on x.Id equals d.Id
+                         into r
+                         from c in r
+                         where x.Id > 0 && c.Id < y
+                         orderby x.Id, c.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, OOID = c.Id, DDD = y };
+
+            var list = result.ToList();
+
+            /***
+             * SELECT [x].[uid] AS [Id],([x].[uid] + 1) AS [OldId],[c].[uid] AS [OOID],@y AS [DDD] 
+             *  FROM [fei_users] [x] 
+             *  INNER JOIN [fei_userdetails] [c] ON [x].[uid] = [c].[uid] 
+             * WHERE (([x].[uid] > 0) AND ([c].[uid] < @y)) 
+             * ORDER BY [x].[uid],[c].[registertime] DESC
+             */
+        }
+
+
+        [TestMethod]
+        public void LeftJoinTest()
+        {
+            var y = 100;
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join d in details on x.Id equals d.Id
+                         into r
+                         from c in r.DefaultIfEmpty()
+                         where x.Id > 0 && c.Id < y
+                         orderby x.Id, c.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, OOID = c.Id, DDD = y };
+
+            var list = result.ToList();
+
+            /***
+             * SELECT [x].[uid] AS [Id],([x].[uid] + 1) AS [OldId],[c].[uid] AS [OOID],@y AS [DDD] 
+             *  FROM [fei_users] [x] 
+             *  LEFT JOIN [fei_userdetails] [c] ON [x].[uid] = [c].[uid] 
+             * WHERE (([x].[uid] > 0) AND ([c].[uid] < @y)) 
+             * ORDER BY [x].[uid],[c].[registertime] DESC
+             */
+        }
+
+        [TestMethod]
+        public void LeftJoinDefaultConstantExpressionTest()
+        {
+            var y = 100;
+            FeiUserdetails userdetails = new FeiUserdetails
+            {
+                Id = 100,
+                Registertime = DateTime.Now
+            };
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join d in details on x.Id equals d.Id
+                         into r
+                         from c in r.DefaultIfEmpty(userdetails)
+                         where x.Id > 0 && c.Id < y
+                         orderby x.Id, c.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, OOID = c.Id, DDD = y };
+
+            var list = result.ToList();
+            //! 默认值不在查询条件中体现。
+            /***
+             * SELECT [x].[uid] AS [Id],([x].[uid] + 1) AS [OldId],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[uid] ELSE @id END) AS [OOID],@y AS [DDD] 
+             *  FROM [fei_users] [x] 
+             *  LEFT JOIN [fei_userdetails] [c] ON [x].[uid] = [c].[uid] 
+             * WHERE (([x].[uid] > 0) AND ([c].[uid] < @y)) 
+             * ORDER BY [x].[uid],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[registertime] ELSE @registertime END) DESC
+             */
+        }
+
+        [TestMethod]
+        public void LeftJoinDefaultNewExpressionTest()
+        {
+            var y = 100;
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join d in details on x.Id equals d.Id
+                         into r
+                         from c in r.DefaultIfEmpty(new FeiUserdetails
+                         {
+                             Id = x.Id,
+                             Registertime = x.CreatedTime
+                         })
+                         where x.Id > 0 && c.Id < y
+                         orderby x.Id, c.Registertime descending
+                         select new { x.Id, OldId = x.Id + 1, OOID = c.Id, DDD = y };
+
+            var list = result.ToList();
+            //! 默认值不在查询条件中体现。
+            /***
+             * SELECT [x].[uid] AS [Id],([x].[uid] + 1) AS [OldId],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[uid] ELSE [x].[uid] END) AS [OOID],@y AS [DDD] 
+             *  FROM [fei_users] [x] 
+             *  LEFT JOIN [fei_userdetails] [c] ON [x].[uid] = [c].[uid] 
+             * WHERE (([x].[uid] > 0) AND ([c].[uid] < @y)) 
+             * ORDER BY [x].[uid],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[registertime] ELSE [x].[created_time] END) DESC
+             */
+        }
+
+        [TestMethod]
+        public void LeftJoinGroupDefaultNewExpressionTest()
+        {
+            var y = 100;
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+            var result = from x in user
+                         join d in details on x.Id equals d.Id
+                         into r
+                         from c in r.DefaultIfEmpty(new FeiUserdetails
+                         {
+                             Id = x.Id,
+                             Registertime = x.CreatedTime
+                         })
+                         where x.Id > 0 && c.Id < y
+                         group x by new { x.Id, x.Bcid, GroupId = c.Id, c.Registertime, x.CreatedTime } into g
+                         orderby g.Key.Registertime descending
+                         select new { g.Key };
+
+
+            var list = result.ToList();
+            //! 默认值不在查询条件中体现，注意字段加入分组时，默认值的表达式字段也需要加入分组。
+            /***
+             * SELECT [x].[uid] AS [__key____id],[x].[bcid] AS [__key____bcid],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[uid] ELSE [x].[uid] END) AS [__key____groupid],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[registertime] ELSE [x].[created_time] END) AS [__key____registertime],[x].[created_time] AS [__key____createdtime] 
+             *  FROM [fei_users] [x] 
+             *  LEFT JOIN [fei_userdetails] [c] ON [x].[uid] = [c].[uid] 
+             * WHERE (([x].[uid] > 0) AND ([c].[uid] < @y)) 
+             * GROUP BY [x].[uid],[x].[bcid],(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[uid] ELSE [x].[uid] END),(CASE WHEN [c].[uid] IS NOT NULL THEN [c].[registertime] ELSE [x].[created_time] END),[x].[created_time] 
+             * ORDER BY (CASE WHEN [c].[uid] IS NOT NULL THEN [c].[registertime] ELSE [x].[created_time] END) DESC
+             */
+        }
+
+        [TestMethod]
         public void TakeTest()
         {
             var user = new UserRepository();

@@ -14,6 +14,10 @@ namespace CodeArts.Db.Lts
         /// </summary>
         public const string Select = nameof(Queryable.Select);
         /// <summary>
+        /// 查询。
+        /// </summary>
+        public const string SelectMany = nameof(Queryable.SelectMany);
+        /// <summary>
         /// 求和。
         /// </summary>
         public const string Sum = nameof(Queryable.Sum);
@@ -60,7 +64,13 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 合并。
         /// </summary>
-        public const string Join = nameof(Queryable.Join); //? LEFT JOIN
+        public const string Join = nameof(Queryable.Join); //? INNER JOIN
+
+        /// <summary>
+        /// 合并。
+        /// </summary>
+        public const string GroupJoin = nameof(Queryable.GroupJoin); //? LEFT JOIN
+
         /// <summary>
         /// 第N个元素。
         /// </summary>

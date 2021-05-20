@@ -10,18 +10,18 @@ namespace CodeArts.Caching
     {
         private readonly int defaultDb;
         private readonly string connectString;
-        private static readonly ConcurrentDictionary<string, ICaching> RedisCaches;
+        private static readonly ConcurrentDictionary<string, ICaching> redisCaches;
 
         /// <summary>
         /// 静态构造函数。
         /// </summary>
-        static RedisCachingProvider() => RedisCaches = new ConcurrentDictionary<string, ICaching>();
+        static RedisCachingProvider() => redisCaches = new ConcurrentDictionary<string, ICaching>();
 
         /// <summary>
         /// 构造函数（获取配置中名为“redis”的值）。
         /// </summary>
         /// <param name="defaultDb">获取数据库的ID。</param>
-        public RedisCachingProvider(int defaultDb = 0) : this("redis".Config<string>(), defaultDb)
+        public RedisCachingProvider(int defaultDb = -1) : this("redis".Config<string>(), defaultDb)
         {
         }
 
@@ -30,7 +30,7 @@ namespace CodeArts.Caching
         /// </summary>
         /// <param name="connectString">链接。</param>
         /// <param name="defaultDb">获取数据库的ID。</param>
-        public RedisCachingProvider(string connectString, int defaultDb = 0)
+        public RedisCachingProvider(string connectString, int defaultDb = -1)
         {
             this.connectString = connectString ?? throw new ArgumentNullException(nameof(connectString));
             this.defaultDb = defaultDb;
@@ -53,7 +53,7 @@ namespace CodeArts.Caching
                 throw new ArgumentException("参数不能为空或空格字符!", nameof(regionName));
             }
 
-            return RedisCaches.GetOrAdd(regionName, name => new RedisCaching(name, connectString, defaultDb));
+            return redisCaches.GetOrAdd(regionName, name => new RedisCaching(name, connectString, defaultDb));
         }
     }
 }

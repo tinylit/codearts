@@ -36,6 +36,8 @@ namespace CodeArts.Casting.Implements
     public class CopyToExpression<TCopyto> : ProfileExpression<TCopyto>, ICopyToExpression, IProfileConfiguration, IProfile where TCopyto : CopyToExpression<TCopyto>
     {
         private static readonly Type typeSelf = typeof(CopyToExpression<TCopyto>);
+        private static readonly Type StringType = typeof(string);
+        private static readonly Type VersionType = typeof(Version);
 
         private static readonly MethodInfo MapGenericMethod;
         private static readonly MethodInfo CastGenericMethod;
@@ -427,7 +429,7 @@ namespace CodeArts.Casting.Implements
             {
                 if (left.Type != right.Type)
                 {
-                    if (left.Type.IsValueType || left.Type == typeof(string) || !IsDepthMapping.Value)
+                    if (left.Type.IsValueType || left.Type == StringType || left.Type == VersionType || !IsDepthMapping.Value)
                     {
                         try
                         {
@@ -441,7 +443,7 @@ namespace CodeArts.Casting.Implements
 
                             var body = Convert(Call(null, convertMethod, rightObjExp, Constant(left.Type)), left.Type);
 
-                            if (left.Type.IsValueType || left.Type == typeof(string))
+                            if (left.Type.IsValueType || left.Type == StringType || left.Type == VersionType)
                             {
                                 right = TryCatch(body, Catch(typeof(Exception), Call(null, CastGenericMethod.MakeGenericMethod(left.Type), rightObjExp)));
                             }
@@ -476,7 +478,7 @@ namespace CodeArts.Casting.Implements
                     return;
                 }
 
-                if (left.Type == typeof(string))
+                if (left.Type == StringType)
                 {
                     if (info.CanRead && !AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value)
                     {
@@ -497,6 +499,32 @@ namespace CodeArts.Casting.Implements
                     if (info.CanRead && !AllowNullDestinationValues.Value)
                     {
                         list.Add(IfThen(Equal(left, nullCst), Assign(left, Constant(string.Empty))));
+                    }
+
+                    return;
+                }
+
+                if (left.Type == VersionType)
+                {
+                    if (info.CanRead && !AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value)
+                    {
+                        list.Add(Assign(left, Coalesce(right, Coalesce(left, New(VersionType)))));
+
+                        return;
+                    }
+
+                    if (AllowNullDestinationValues.Value)
+                    {
+                        list.Add(Assign(left, right));
+                    }
+                    else
+                    {
+                        list.Add(IfThen(NotEqual(right, nullCst), Assign(left, right)));
+                    }
+
+                    if (info.CanRead && !AllowNullDestinationValues.Value)
+                    {
+                        list.Add(IfThen(Equal(left, nullCst), Assign(left, New(VersionType))));
                     }
 
                     return;
@@ -523,7 +551,7 @@ namespace CodeArts.Casting.Implements
 
                 if (parameterType != node.Type)
                 {
-                    if (parameterType.IsValueType || parameterType == typeof(string) || !IsDepthMapping.Value)
+                    if (parameterType.IsValueType || parameterType == StringType || parameterType == VersionType || !IsDepthMapping.Value)
                     {
                         try
                         {
@@ -537,7 +565,7 @@ namespace CodeArts.Casting.Implements
 
                             var body = Convert(Call(null, convertMethod, rightObjExp, Constant(parameterType)), parameterType);
 
-                            if (parameterType.IsValueType || parameterType == typeof(string))
+                            if (parameterType.IsValueType || parameterType == StringType || parameterType == VersionType)
                             {
                                 node = TryCatch(body, Catch(typeof(Exception), Call(null, CastGenericMethod.MakeGenericMethod(parameterType), rightObjExp)));
                             }
@@ -579,7 +607,7 @@ namespace CodeArts.Casting.Implements
                     return;
                 }
 
-                if (parameterType == typeof(string))
+                if (parameterType == StringType)
                 {
                     if (!AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value)
                     {
@@ -600,6 +628,32 @@ namespace CodeArts.Casting.Implements
                     if (!AllowNullDestinationValues.Value)
                     {
                         list.Add(IfThen(Equal(nameExp, nullCst), Assign(nameExp, Constant(string.Empty))));
+                    }
+
+                    return;
+                }
+
+                if (parameterType == VersionType)
+                {
+                    if (!AllowNullPropagationMapping.Value && !AllowNullDestinationValues.Value)
+                    {
+                        list.Add(Assign(nameExp, Coalesce(node, Coalesce(nameExp, New(VersionType)))));
+
+                        return;
+                    }
+
+                    if (AllowNullDestinationValues.Value)
+                    {
+                        list.Add(Assign(nameExp, node));
+                    }
+                    else
+                    {
+                        list.Add(IfThen(NotEqual(node, nullCst), Assign(nameExp, node)));
+                    }
+
+                    if (!AllowNullDestinationValues.Value)
+                    {
+                        list.Add(IfThen(Equal(nameExp, nullCst), Assign(nameExp, New(VersionType))));
                     }
 
                     return;
@@ -638,7 +692,7 @@ namespace CodeArts.Casting.Implements
                 return source => Mapper.ThrowsCast<TResult>(source);
             }
 
-            if (sourceType == typeof(string))
+            if (sourceType == StringType)
                 return source => (TResult)source;
 
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))

@@ -17,6 +17,7 @@ namespace CodeArts.Casting.Implements
     {
         private static readonly Type typeSelf = typeof(MapToExpression);
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Dictionary<Type, MethodInfo>> TypeMap = new System.Collections.Concurrent.ConcurrentDictionary<Type, Dictionary<Type, MethodInfo>>();
+        private static readonly ConstructorInfo invalidCastExceptionOneArgConstructorInfo = typeof(InvalidCastException).GetConstructor(new Type[] { typeof(string) });
 
         /// <summary>
         /// 构造函数。
@@ -210,22 +211,35 @@ namespace CodeArts.Casting.Implements
 
         private static TResult ByIDataRecordToDictionaryKeyIsStringLike<TValue, TResult>(IDataRecord dr, MapToExpression mapTo) where TResult : IDictionary<string, TValue>
         {
+            var valueType = typeof(TValue);
+            bool allowNullvalue = valueType.IsClass || valueType.IsNullable();
+
             var dic = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
 
             for (int i = 0; i < dr.FieldCount; i++)
             {
                 string name = dr.GetName(i);
 
-                if (dr.IsDBNull(i))
+                if (!dr.IsDBNull(i))
                 {
-                    if (mapTo.AllowNullPropagationMapping.Value)
-                    {
-                        dic.Add(name, default);
-                    }
+                    dic.Add(name, (TValue)dr.GetValue(i));
+
                     continue;
                 }
 
-                dic.Add(name, (TValue)dr.GetValue(i));
+                if (!mapTo.AllowNullPropagationMapping.Value)
+                {
+                    continue;
+                }
+
+                if (allowNullvalue)
+                {
+                    dic.Add(name, default);
+
+                    continue;
+                }
+
+                throw new InvalidCastException($"“{valueType} {name}”不能为Null!");
             }
 
             return dic;
@@ -233,22 +247,35 @@ namespace CodeArts.Casting.Implements
 
         private static TResult ByIDataRecordToCollectionKeyValuePairKeyIsStringLike<TValue, TResult>(IDataRecord dr, MapToExpression mapTo) where TResult : ICollection<KeyValuePair<string, TValue>>
         {
+            var valueType = typeof(TValue);
+            bool allowNullvalue = valueType.IsClass || valueType.IsNullable();
+
             var results = (TResult)mapTo.ServiceCtor.Invoke(typeof(TResult));
 
             for (int i = 0; i < dr.FieldCount; i++)
             {
                 string name = dr.GetName(i);
 
-                if (dr.IsDBNull(i))
+                if (!dr.IsDBNull(i))
                 {
-                    if (mapTo.AllowNullPropagationMapping.Value)
-                    {
-                        results.Add(new KeyValuePair<string, TValue>(name, default));
-                    }
+                    results.Add(new KeyValuePair<string, TValue>(name, (TValue)dr.GetValue(i)));
+
                     continue;
                 }
 
-                results.Add(new KeyValuePair<string, TValue>(name, (TValue)dr.GetValue(i)));
+                if (!mapTo.AllowNullPropagationMapping.Value)
+                {
+                    continue;
+                }
+
+                if (allowNullvalue)
+                {
+                    results.Add(new KeyValuePair<string, TValue>(name, default));
+
+                    continue;
+                }
+
+                throw new InvalidCastException($"“{valueType} {name}”不能为Null!");
             }
 
             return results;
@@ -1416,13 +1443,26 @@ namespace CodeArts.Casting.Implements
                     objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
 
+                BinaryExpression binaryExpression = memberType == info.MemberType
+                    ? Assign(left, objExp)
+                    : Assign(left, Convert(objExp, info.MemberType));
+
                 if (AllowNullPropagationMapping.Value)
                 {
-                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                    if (info.MemberType.IsClass || info.MemberType.IsNullable())
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), binaryExpression), testValues));
+                    }
+                    else
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar),
+                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.MemberType} {info.Name}”不能为Null!"))),
+                            binaryExpression), testValues));
+                    }
                 }
                 else
                 {
-                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), binaryExpression), testValues));
                 }
             }
 
@@ -1470,13 +1510,27 @@ namespace CodeArts.Casting.Implements
                     objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
 
+                BinaryExpression binaryExpression =
+                    memberType == info.ParameterType
+                    ? Assign(variable, objExp)
+                    : Assign(variable, Convert(objExp, info.ParameterType));
+
                 if (AllowNullPropagationMapping.Value)
                 {
-                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(variable, Default(info.ParameterType)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
+                    if (info.ParameterType.IsClass || info.ParameterType.IsNullable())
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(variable, Default(info.ParameterType)), binaryExpression), testValues));
+                    }
+                    else
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar),
+                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.ParameterType} {info.Name}”不能为Null!"))),
+                            binaryExpression), testValues));
+                    }
                 }
                 else
                 {
-                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), binaryExpression), testValues));
                 }
 
                 variables.Add(variable);
@@ -1570,13 +1624,26 @@ namespace CodeArts.Casting.Implements
                     objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
 
+                BinaryExpression binaryExpression = memberType == info.ParameterType
+                    ? Assign(variable, objExp)
+                    : Assign(variable, Convert(objExp, info.ParameterType));
+
                 if (AllowNullPropagationMapping.Value)
                 {
-                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(variable, Default(info.ParameterType)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
+                    if (info.ParameterType.IsClass || info.ParameterType.IsNullable())
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(variable, Default(info.ParameterType)), binaryExpression), testValues));
+                    }
+                    else
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), 
+                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.ParameterType} {info.Name}”不能为Null!"))), 
+                            binaryExpression), testValues));
+                    }
                 }
                 else
                 {
-                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.ParameterType ? Assign(variable, objExp) : Assign(variable, Convert(objExp, info.ParameterType))), testValues));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), binaryExpression), testValues));
                 }
 
                 label_add:
@@ -1739,13 +1806,26 @@ namespace CodeArts.Casting.Implements
                     objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
 
+                BinaryExpression binaryExpression = memberType == info.MemberType
+                    ? Assign(left, objExp)
+                    : Assign(left, Convert(objExp, info.MemberType));
+
                 if (AllowNullPropagationMapping.Value)
                 {
-                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                    if (info.MemberType.IsClass || info.MemberType.IsNullable())
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), binaryExpression), testValues));
+                    }
+                    else
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar),
+                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.MemberType} {info.Name}”不能为Null!"))),
+                            binaryExpression), testValues));
+                    }
                 }
                 else
                 {
-                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), binaryExpression), testValues));
                 }
             }
 
@@ -1816,13 +1896,26 @@ namespace CodeArts.Casting.Implements
                     objExp = Convert(Call(null, convertMethod, objExp, memberTypeCst), memberType);
                 }
 
+                BinaryExpression binaryExpression = memberType == info.MemberType
+                    ? Assign(left, objExp)
+                    : Assign(left, Convert(objExp, info.MemberType));
+
                 if (AllowNullPropagationMapping.Value)
                 {
-                    listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                    if (info.MemberType.IsClass || info.MemberType.IsNullable())
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), Assign(left, Default(info.MemberType)), binaryExpression), testValues));
+                    }
+                    else
+                    {
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar),
+                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.MemberType} {info.Name}”不能为Null!"))),
+                            binaryExpression), testValues));
+                    }
                 }
                 else
                 {
-                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), memberType == info.MemberType ? Assign(left, objExp) : Assign(left, Convert(objExp, info.MemberType))), testValues));
+                    listCases.Add(SwitchCase(IfThen(Not(Call(valueExp, isDBNull, iVar)), binaryExpression), testValues));
                 }
             }
         }

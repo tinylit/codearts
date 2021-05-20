@@ -75,7 +75,7 @@ namespace CodeArts.Casting
 
                 var convertExp = Convert(methodCallExp, delegateType);
 
-                var invokeVar = Variable(delegateType, "lamda");
+                var invokeVar = Variable(delegateType, "lambda");
 
                 var bodyExp = Lambda(Call(invokeVar, invokeMethod, Call(toObjectArrMethod, paramterSourceExp)), paramterSourceExp);
 

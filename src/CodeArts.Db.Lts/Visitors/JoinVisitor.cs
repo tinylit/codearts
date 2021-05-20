@@ -161,7 +161,7 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 visitor.Visit(node.Arguments[0]);
 
-                writer.Join();
+                JoinMode();
 
                 WriteTableName(rightNode.Type);
 
@@ -280,6 +280,11 @@ namespace CodeArts.Db.Lts.Visitors
         }
 
         /// <summary>
+        /// 拼接模式。
+        /// </summary>
+        protected virtual void JoinMode() => writer.Join();
+
+        /// <summary>
         /// 复杂Join。
         /// </summary>
         /// <returns></returns>
@@ -293,7 +298,7 @@ namespace CodeArts.Db.Lts.Visitors
             {
                 visitor.Visit(node.Arguments[0]);
 
-                writer.Join();
+                JoinMode();
 
                 writer.OpenBrace();
 

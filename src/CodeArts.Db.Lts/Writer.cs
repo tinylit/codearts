@@ -59,7 +59,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 内容长度。
         /// </summary>
-        public int Length => sb.Length;
+        public int Length => writeOrderBy ? sbOrder.Length : sb.Length;
 
         /// <summary>
         /// 条件取反。
@@ -71,7 +71,17 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="index">索引开始位置。</param>
         /// <param name="lenght">移除字符长度。</param>
-        public void Remove(int index, int lenght) => sb.Remove(index, lenght);
+        public void Remove(int index, int lenght)
+        {
+            if (writeOrderBy)
+            {
+                sbOrder.Remove(index, lenght);
+            }
+            else
+            {
+                sb.Remove(index, lenght);
+            }
+        }
 
         private Dictionary<string, object> parameters;
         /// <summary>
@@ -207,6 +217,18 @@ namespace CodeArts.Db.Lts
         {
             WhiteSpace();
             Write("INNER");
+            WhiteSpace();
+            Write("JOIN");
+            WhiteSpace();
+        }
+
+        /// <summary>
+        /// Left Join
+        /// </summary>
+        public void GroupJoin()
+        {
+            WhiteSpace();
+            Write("LEFT");
             WhiteSpace();
             Write("JOIN");
             WhiteSpace();
