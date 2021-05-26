@@ -429,7 +429,9 @@ namespace CodeArts.Db
                 {
                     characters.Add(value.Substring(1, item.Value.Length - 2));
 
-                    return string.Concat(char.ToString(value[0]), "?", char.ToString(value[value.Length - 1]));
+                    var charStr = char.ToString(value[0]);
+
+                    return string.Concat(charStr, "?", charStr);
                 }
 
                 return value;
@@ -778,7 +780,9 @@ namespace CodeArts.Db
 
                     if (value.Length > 2)
                     {
-                        return string.Concat(char.ToString(value[0]), characters[offset++], char.ToString(value[value.Length - 1]));
+                        var charStr = char.ToString(value[0]);
+
+                        return string.Concat(charStr, characters[offset++], charStr);
                     }
 
                     return value;
@@ -872,7 +876,9 @@ namespace CodeArts.Db
 
                     if (value.Length > 2)
                     {
-                        return string.Concat(char.ToString(value[0]), characters[offset++], char.ToString(value[value.Length - 1]));
+                        var charStr = char.ToString(value[0]);
+
+                        return string.Concat(charStr, characters[offset++], charStr);
                     }
 
                     return value;
