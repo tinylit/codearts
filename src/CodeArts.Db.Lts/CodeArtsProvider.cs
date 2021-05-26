@@ -43,6 +43,8 @@ namespace CodeArts.Db.Lts
                     behavior |= CommandBehavior.CloseConnection;
                 }
 
+                bool flag = true;
+
                 T defaultValue = commandSql.DefaultValue;
 
                 try
@@ -66,7 +68,24 @@ namespace CodeArts.Db.Lts
 
                             if (dr.Read())
                             {
+                                var valueType = typeof(T);
+
+                                if (valueType.IsValueType && !valueType.IsNullable())
+                                {
+                                    if (dr.IsDBNull(0))
+                                    {
+                                        if (commandSql.HasDefaultValue)
+                                        {
+                                            goto label_end;
+                                        }
+
+                                        throw new DRequiredException(commandSql.MissingMsg);
+                                    }
+                                }
+
                                 defaultValue = Mapper.ThrowsMap<T>(dr);
+
+                                label_end:
 
                                 while (dr.Read()) { /* ignore subsequent rows */ }
                             }

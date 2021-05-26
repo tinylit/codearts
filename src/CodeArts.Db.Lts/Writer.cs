@@ -340,7 +340,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="parameterName">参数名称。</param>
         /// <param name="parameterValue">参数值。</param>
-        public void Parameter(string parameterName, object parameterValue)
+        public virtual void Parameter(string parameterName, object parameterValue)
         {
             if (parameterValue is null)
             {
@@ -538,7 +538,7 @@ namespace CodeArts.Db.Lts
         /// {prefix}.
         /// </summary>
         /// <param name="prefix">字段前缀。</param>
-        public void Limit(string prefix)
+        public virtual void Limit(string prefix)
         {
             if (prefix.IsNotEmpty())
             {
@@ -552,7 +552,7 @@ namespace CodeArts.Db.Lts
         /// 别名。
         /// </summary>
         /// <param name="name">名称。</param>
-        public void Alias(string name) => Write(writerMap.Name(name));
+        public virtual void Alias(string name) => Write(writerMap.Name(name));
 
         /// <summary>
         /// AS
@@ -568,7 +568,7 @@ namespace CodeArts.Db.Lts
         /// AS {name}
         /// </summary>
         /// <param name="name">别名。</param>
-        public void As(string name)
+        public virtual void As(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -584,14 +584,14 @@ namespace CodeArts.Db.Lts
         /// 字段。
         /// </summary>
         /// <param name="name">名称。</param>
-        public void Name(string name) => Write(writerMap.Name(name));
+        public virtual void Name(string name) => Write(writerMap.Name(name));
 
         /// <summary>
         /// {prefix}.{name}
         /// </summary>
         /// <param name="prefix">前缀。</param>
         /// <param name="name">字段。</param>
-        public void NameDot(string prefix, string name)
+        public virtual void NameDot(string prefix, string name)
         {
             Limit(prefix);
 
@@ -603,7 +603,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="name">名称。</param>
         /// <param name="alias">别名。</param>
-        public void NameWhiteSpace(string name, string alias)
+        public virtual void NameWhiteSpace(string name, string alias)
         {
             Name(name);
 

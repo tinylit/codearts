@@ -277,7 +277,11 @@ namespace UnitTest
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
 
-            var max = result.Union(result2).Max(x => x.Id);
+            var max = result.Union(result2).DefaultIfEmpty(new
+            {
+                Id = 100,
+                Name = string.Empty
+            }).Max(x => x.Id);
         }
 
         [TestMethod]
@@ -330,7 +334,7 @@ namespace UnitTest
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Name = x.Realname });
 
-            var list = result.Union(result2).Take(10).Skip(100).OrderBy(x => x.Id).ToList();
+            var list = result.Union(result2).Skip(100).Take(10).OrderBy(x => x.Id).ToList();
         }
 
         [TestMethod]
@@ -873,7 +877,7 @@ namespace UnitTest
         public void TakeSkipOrderByTest()
         {
             var user = new UserRepository();
-            var result = user.Take(10).Skip(10000).OrderBy(x => x.Id);
+            var result = user.Skip(10000).Take(10).OrderBy(x => x.Id);
             var list = result.ToList();
         }
         [TestMethod]
@@ -1064,8 +1068,8 @@ namespace UnitTest
             var user = new UserRepository();
             var result = user.Where(x => x.Id > user.Skip(100000).OrderBy(y => y.CreatedTime).Select(y => y.Id).First() && x.CreatedTime < DateTime.Now)
                 .OrderBy(x => x.CreatedTime)
-                .Take(10)
                 .Skip(100)
+                .Take(10)
                 .Select(x => x.Username.Substring(2))
                 .ToList();
         }
@@ -2279,6 +2283,16 @@ namespace UnitTest
             var ossBucket = buckets
              .NoResultError($"未找到桶({bucket})的相关信息!")
              .First(x => x.Name == bucket && x.Enabled != false);
+        }
+
+        [TestMethod]
+        public void MaxWithDefultTest()
+        {
+            var user = new UserRepository();
+            var result = user.Where(x => x.Id < 0).DefaultIfEmpty(new FeiUsers
+            {
+                Id = 100
+            }).Max(x => x.Id);
         }
     }
 }

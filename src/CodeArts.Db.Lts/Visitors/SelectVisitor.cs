@@ -55,6 +55,8 @@ namespace CodeArts.Db.Lts.Visitors
 
         private int skip = -1;
 
+        private bool hasTake = false;
+
         /// <summary>
         /// 条件。
         /// </summary>
@@ -309,6 +311,8 @@ namespace CodeArts.Db.Lts.Visitors
                         throw new IndexOutOfRangeException();
                     }
 
+                    hasTake = true;
+
                     if (this.take == -1)
                     {
                         this.take = take;
@@ -437,6 +441,16 @@ namespace CodeArts.Db.Lts.Visitors
                     else
                     {
                         this.skip += skip;
+                    }
+
+                    if (hasTake)
+                    {
+                        if (this.skip > this.take)
+                        {
+                            throw new IndexOutOfRangeException();
+                        }
+
+                        this.take -= this.skip;
                     }
 
                     break;

@@ -11,7 +11,7 @@ namespace CodeArts.Db.Lts.Visitors
     /// <summary>
     /// 查询访问器。
     /// </summary>
-    public sealed class QueryVisitor : SelectVisitor, IQueryVisitor
+    public class QueryVisitor : SelectVisitor, IQueryVisitor
     {
         private readonly ICustomVisitorList visitors;
 
@@ -31,7 +31,7 @@ namespace CodeArts.Db.Lts.Visitors
         /// <inheritdoc />
         public override void Startup(Expression node)
         {
-            if(node is ConstantExpression constant)
+            if (node is ConstantExpression constant)
             {
                 VisitConstant(constant);
             }
@@ -59,8 +59,50 @@ namespace CodeArts.Db.Lts.Visitors
 
                     HasDefaultValue = true;
 
-                    base.Visit(node.Arguments[0]);
+                    Visit(node.Arguments[0]);
 
+                    break;
+                case MethodCall.Min:
+                case MethodCall.Max:
+                case MethodCall.Average:
+                    Required = true;
+
+                    base.VisitCore(node);
+
+                    if (node.Arguments.Count == 1)
+                    {
+                        break;
+                    }
+
+                    if (HasDefaultValue)
+                    {
+                        if (DefaultValue is null)
+                        {
+                            if (node.Type.IsValueType && !node.Type.IsNullable())
+                            {
+                                throw new NotSupportedException($"表达式“{node}”不能从默认值“null”中获取数据!");
+                            }
+                        }
+                        else
+                        {
+                            var argType = node.Arguments[0].Type.GetGenericArguments()[0];//? 获取泛型参数。
+                            var defaultType = DefaultValue.GetType();
+
+                            var parameterExp = Expression.Parameter(argType);
+
+                            //? 获取表达式值。
+                            var lambdaEx = (LambdaExpression)(new LambdaExpressionVisitor(parameterExp).Visit(node.Arguments[1]));
+
+                            if (argType == defaultType || defaultType.IsAssignableFrom(argType))
+                            {
+                                DefaultValue = lambdaEx.Compile().DynamicInvoke(DefaultValue);
+                            }
+                            else
+                            {
+                                DefaultValue = lambdaEx.Compile().DynamicInvoke(Mapper.ThrowsMap(DefaultValue, argType));
+                            }
+                        }
+                    }
                     break;
                 case MethodCall.Last:
                 case MethodCall.First:
@@ -98,7 +140,7 @@ namespace CodeArts.Db.Lts.Visitors
 
                     if (!Required)
                     {
-                        throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链以“Last”、“First”、“Single”或“ElementAt”结尾时，可用！");
+                        throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链以“Min”、“Max”、“Average”、“Last”、“First”、“Single”或“ElementAt”结尾时，可用！");
                     }
 
                     var valueObj = node.Arguments[1].GetValueFromExpression();
@@ -144,6 +186,52 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         /// <returns></returns>
         protected override IEnumerable<ICustomVisitor> GetCustomVisitors() => visitors;
+
+        private class LambdaExpressionVisitor : ExpressionVisitor
+        {
+            private readonly ParameterExpression parameter;
+
+            public LambdaExpressionVisitor(ParameterExpression parameter)
+            {
+                this.parameter = parameter;
+            }
+
+            protected override Expression VisitUnary(UnaryExpression node)
+            {
+                if (node.Operand.NodeType == ExpressionType.Lambda)
+                {
+                    return base.Visit(node.Operand);
+                }
+
+                return base.VisitUnary(node);
+            }
+
+            protected override Expression VisitLambda<T>(Expression<T> node)
+            {
+                return Expression.Lambda(new ReplaceExpressionVisitor(node.Parameters[0], parameter).Visit(node.Body), new ParameterExpression[1] { parameter });
+            }
+        }
+
+        private class ReplaceExpressionVisitor : ExpressionVisitor
+        {
+            private readonly Expression _oldExpression;
+            private readonly Expression _newExpression;
+
+            public ReplaceExpressionVisitor(Expression oldExpression, Expression newExpression)
+            {
+                _oldExpression = oldExpression;
+                _newExpression = newExpression;
+            }
+            public override Expression Visit(Expression node)
+            {
+                if (_oldExpression == node)
+                {
+                    return base.Visit(_newExpression);
+                }
+
+                return base.Visit(node);
+            }
+        }
 
         /// <summary>
         /// 执行超时时间。
