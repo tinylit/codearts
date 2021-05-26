@@ -42,9 +42,7 @@ namespace CodeArts.Db.Lts
 
                     behavior |= CommandBehavior.CloseConnection;
                 }
-
-                bool flag = true;
-
+                
                 T defaultValue = commandSql.DefaultValue;
 
                 try
