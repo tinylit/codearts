@@ -55,8 +55,6 @@ namespace CodeArts.Db.Lts.Visitors
 
         private int skip = -1;
 
-        private bool hasTake = false;
-
         /// <summary>
         /// 条件。
         /// </summary>
@@ -292,13 +290,6 @@ namespace CodeArts.Db.Lts.Visitors
                         reverseOrder ^= true;
                     }
 
-                    base.Visit(node.Arguments[0]);
-
-                    if (!useOrderBy && name == MethodCall.TakeLast)
-                    {
-                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
-                    }
-
                     int take = (int)node.Arguments[1].GetValueFromExpression();
 
                     if (take < 1)
@@ -311,11 +302,26 @@ namespace CodeArts.Db.Lts.Visitors
                         throw new IndexOutOfRangeException();
                     }
 
-                    hasTake = true;
+                    if (this.skip > -1)
+                    {
+                        if (this.skip > take)
+                        {
+                            throw new IndexOutOfRangeException();
+                        }
+
+                        take -= this.skip;
+                    }
 
                     if (this.take == -1)
                     {
                         this.take = take;
+                    }
+
+                    base.Visit(node.Arguments[0]);
+
+                    if (!useOrderBy && name == MethodCall.TakeLast)
+                    {
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
                     }
 
                     break;
@@ -420,13 +426,6 @@ namespace CodeArts.Db.Lts.Visitors
                         reverseOrder ^= true;
                     }
 
-                    base.Visit(node.Arguments[0]);
-
-                    if (!useOrderBy && name == MethodCall.SkipLast)
-                    {
-                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
-                    }
-
                     int skip = (int)node.Arguments[1].GetValueFromExpression();
 
                     if (skip < 0)
@@ -443,14 +442,11 @@ namespace CodeArts.Db.Lts.Visitors
                         this.skip += skip;
                     }
 
-                    if (hasTake)
-                    {
-                        if (this.skip > this.take)
-                        {
-                            throw new IndexOutOfRangeException();
-                        }
+                    base.Visit(node.Arguments[0]);
 
-                        this.take -= this.skip;
+                    if (!useOrderBy && name == MethodCall.SkipLast)
+                    {
+                        throw new DSyntaxErrorException($"使用函数({name})时，必须使用排序函数(OrderBy/OrderByDescending)!");
                     }
 
                     break;
