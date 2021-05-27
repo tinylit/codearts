@@ -324,9 +324,9 @@ namespace CodeArts.Casting.Implements
             return results;
         }
 
-        private static object GetValueByEnumarableKeyValuePair<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> valuePairs, string key, Type conversionType, MapToExpression mapTo)
+        private static object GetValueByEnumarableKeyValuePair<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> valuePairs, string namingKey, string originalKey, Type conversionType, MapToExpression mapTo)
         {
-            foreach (var kv in valuePairs.Where(kv => string.Equals(kv.Key.ToString(), key, StringComparison.OrdinalIgnoreCase)))
+            foreach (var kv in valuePairs.Where(kv => string.Equals(kv.Key.ToString(), namingKey, StringComparison.OrdinalIgnoreCase)))
             {
                 if (kv.Value == null)
                 {
@@ -334,6 +334,19 @@ namespace CodeArts.Casting.Implements
                 }
 
                 return mapTo.ThrowsMap(kv.Value, conversionType);
+            }
+
+            if (!string.Equals(namingKey, originalKey, StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var kv in valuePairs.Where(kv => string.Equals(kv.Key.ToString(), originalKey, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (kv.Value == null)
+                    {
+                        return null;
+                    }
+
+                    return mapTo.ThrowsMap(kv.Value, conversionType);
+                }
             }
 
             return null;
@@ -901,6 +914,24 @@ namespace CodeArts.Casting.Implements
         /// <returns></returns>
         protected virtual Func<object, TResult> ByDataRowToObject<TResult>(Type sourceType, Type conversionType)
         {
+            var typeStore = TypeItem.Get(conversionType);
+
+            if (typeStore.ConstructorStores.Any(x => x.ParameterStores.Count == 0))
+                return ByDataRowToCommon<TResult>(typeStore, sourceType, conversionType);
+
+            return ByDataRowToComplex<TResult>(typeStore, sourceType, conversionType);
+        }
+
+        /// <summary>
+        /// 解决 DataRow 到 对象 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="typeStore">类型仓库。</param>
+        /// <param name="sourceType">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByDataRowToCommon<TResult>(TypeItem typeStore, Type sourceType, Type conversionType)
+        {
             var list = new List<SwitchCase>();
 
             var resultExp = Parameter(conversionType);
@@ -908,8 +939,6 @@ namespace CodeArts.Casting.Implements
             var nameExp = Parameter(typeof(string));
 
             var valueExp = Parameter(typeof(object));
-
-            var typeStore = TypeItem.Get(conversionType);
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
@@ -956,6 +985,112 @@ namespace CodeArts.Casting.Implements
                 if (source is DataRow dr)
                 {
                     var result = (TResult)ServiceCtor.Invoke(conversionType);
+
+                    foreach (DataColumn item in dr.Table.Columns)
+                    {
+                        invoke.Invoke(result, item.ColumnName, dr[item]);
+                    }
+
+                    return result;
+                }
+
+                return default;
+            };
+        }
+
+        /// <summary>
+        /// 解决 DataRow 到 对象 的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="typeStore">类型仓库。</param>
+        /// <param name="sourceType">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByDataRowToComplex<TResult>(TypeItem typeStore, Type sourceType, Type conversionType)
+        {
+            var commonCtor = typeStore.ConstructorStores
+             .Where(x => x.CanRead)
+             .OrderBy(x => x.ParameterStores.Count)
+             .FirstOrDefault() ?? throw new NotSupportedException($"“{conversionType}”没有公共构造函数!");
+
+            var list = new List<SwitchCase>();
+
+            var resultExp = Parameter(conversionType);
+
+            var nameExp = Parameter(typeof(string));
+
+            var valueExp = Parameter(typeof(object));
+
+            if (Kind == PatternKind.Property || Kind == PatternKind.All)
+            {
+                typeStore.PropertyStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
+                    {
+                        var testValues = new List<Expression> { Constant(info.Name) };
+
+                        if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                        {
+                            testValues.Add(Constant(info.Naming));
+                        }
+
+                        list.Add(SwitchCase(Assign(Property(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
+                    });
+            }
+
+            if (Kind == PatternKind.Field || Kind == PatternKind.All)
+            {
+                typeStore.FieldStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
+                    {
+                        var testValues = new List<Expression> { Constant(info.Name) };
+
+                        if (!string.Equals(info.Name, info.Naming, StringComparison.OrdinalIgnoreCase))
+                        {
+                            testValues.Add(Constant(info.Naming));
+                        }
+
+                        list.Add(SwitchCase(Assign(Field(resultExp, info.Member), Convert(valueExp, info.MemberType)), testValues));
+                    });
+            }
+
+            var bodyExp = Switch(nameExp, null, GetMethodInfo<string, string, bool>(EqaulsString), list.ToArray());
+
+            var lamdaExp = Lambda<Action<TResult, string, object>>(bodyExp, resultExp, nameExp, valueExp);
+
+            var invoke = lamdaExp.Compile();
+
+            return source =>
+            {
+                if (source is DataRow dr)
+                {
+                    var result = (TResult)commonCtor.Member.Invoke(commonCtor.ParameterStores.Select(x =>
+                    {
+                        string name = x.Naming;
+
+                        foreach (DataColumn item in dr.Table.Columns)
+                        {
+                            if (string.Equals(item.ColumnName, name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return Mapper.ThrowsCast(dr[item], x.ParameterType);
+                            }
+                        }
+
+                        if (!string.Equals(name, x.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            foreach (DataColumn item in dr.Table.Columns)
+                            {
+                                if (string.Equals(item.ColumnName, x.Name, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return Mapper.ThrowsCast(dr[item], x.ParameterType);
+                                }
+                            }
+                        }
+
+                        return Emptyable.Empty(x.ParameterType);
+
+                    }).ToArray());
 
                     foreach (DataColumn item in dr.Table.Columns)
                     {
@@ -1304,7 +1439,7 @@ namespace CodeArts.Casting.Implements
         /// 解决 IDataRecord 到 复杂构造函数 的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="typeStore">构造函数。</param>
+        /// <param name="typeStore">类型存储。</param>
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
@@ -1636,8 +1771,8 @@ namespace CodeArts.Casting.Implements
                     }
                     else
                     {
-                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar), 
-                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.ParameterType} {info.Name}”不能为Null!"))), 
+                        listCases.Add(SwitchCase(IfThenElse(Call(valueExp, isDBNull, iVar),
+                            Throw(New(invalidCastExceptionOneArgConstructorInfo, Constant($"“{info.ParameterType} {info.Name}”不能为Null!"))),
                             binaryExpression), testValues));
                     }
                 }
@@ -1658,7 +1793,7 @@ namespace CodeArts.Casting.Implements
         /// 解决 IDataRecord 到 公共无参构造函数 的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="typeStore">构造函数。</param>
+        /// <param name="typeStore">类型存储。</param>
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
@@ -2005,7 +2140,7 @@ namespace CodeArts.Casting.Implements
                 var typeArgument = typeArguments.First();
 
                 if (typeArgument.IsValueType && typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                    return ByEnumarableKeyValuePairToCommon<TResult>(sourceType, conversionType, type, typeArgument.GetGenericArguments());
+                    return ByEnumarableKeyValuePairToObject<TResult>(sourceType, conversionType, type, typeArgument.GetGenericArguments());
             }
 
             return base.ByIEnumarableLikeToCommon<TResult>(sourceType, conversionType);
@@ -2020,7 +2155,27 @@ namespace CodeArts.Casting.Implements
         /// <param name="interfaceType">接口类型。</param>
         /// <param name="typeArguments">方向约束。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByEnumarableKeyValuePairToCommon<TResult>(Type sourceType, Type conversionType, Type interfaceType, Type[] typeArguments)
+        protected virtual Func<object, TResult> ByEnumarableKeyValuePairToObject<TResult>(Type sourceType, Type conversionType, Type interfaceType, Type[] typeArguments)
+        {
+            var typeStore = TypeItem.Get(conversionType);
+
+            if (typeStore.ConstructorStores.Any(x => x.ParameterStores.Count == 0))
+                return ByEnumarableKeyValuePairToCommon<TResult>(typeStore, sourceType, conversionType, interfaceType, typeArguments);
+
+            return ByEnumarableKeyValuePairToComplex<TResult>(typeStore, sourceType, conversionType, interfaceType, typeArguments);
+        }
+
+        /// <summary>
+        ///  解决 IEnumarable&lt;T&gt; 到 泛型约束类的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="typeStore">类型存储。</param>
+        /// <param name="sourceType">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <param name="interfaceType">接口类型。</param>
+        /// <param name="typeArguments">方向约束。</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByEnumarableKeyValuePairToCommon<TResult>(TypeItem typeStore, Type sourceType, Type conversionType, Type interfaceType, Type[] typeArguments)
         {
             var methodCtor = ServiceCtor.Method;
 
@@ -2041,7 +2196,7 @@ namespace CodeArts.Casting.Implements
 
             var nullExp = Constant(null);
 
-            var maptoExp = Variable(typeof(object));
+            var objectExp = Variable(typeof(object));
 
             var resultExp = Variable(conversionType);
 
@@ -2051,8 +2206,6 @@ namespace CodeArts.Casting.Implements
 
                 Assign(resultExp, bodyExp)
             };
-
-            var typeStore = TypeItem.Get(conversionType);
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
             {
@@ -2076,15 +2229,124 @@ namespace CodeArts.Casting.Implements
 
             list.Add(resultExp);
 
-            var lamdaExp = Lambda<Func<object, TResult>>(Block(new ParameterExpression[] { valueExp, maptoExp, resultExp }, list), parameterExp);
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(new ParameterExpression[] { valueExp, objectExp, resultExp }, list), parameterExp);
 
             return lamdaExp.Compile();
 
             void Config<T>(StoreItem<T> item, Expression node) where T : MemberInfo
             {
-                list.Add(Assign(maptoExp, Call(null, methodG, valueExp, Constant(item.Naming), Constant(item.MemberType), thisExp)));
+                list.Add(Assign(objectExp, Call(null, methodG, valueExp, Constant(item.Naming), Constant(item.Name), Constant(item.MemberType), thisExp)));
 
-                list.Add(IfThen(NotEqual(maptoExp, nullExp), Assign(node, Convert(maptoExp, item.MemberType))));
+                list.Add(IfThen(NotEqual(objectExp, nullExp), Assign(node, Convert(objectExp, item.MemberType))));
+            }
+        }
+
+        /// <summary>
+        ///  解决 IEnumarable&lt;T&gt; 到 泛型约束类的转换。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="typeStore">类型存储。</param>
+        /// <param name="sourceType">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <param name="interfaceType">接口类型。</param>
+        /// <param name="typeArguments">方向约束。</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> ByEnumarableKeyValuePairToComplex<TResult>(TypeItem typeStore, Type sourceType, Type conversionType, Type interfaceType, Type[] typeArguments)
+        {
+            var commonCtor = typeStore.ConstructorStores
+             .Where(x => x.CanRead)
+             .OrderBy(x => x.ParameterStores.Count)
+             .FirstOrDefault() ?? throw new NotSupportedException($"“{conversionType}”没有公共构造函数!");
+
+            var parameterExp = Parameter(typeof(object));
+
+            var method = typeSelf.GetMethod(nameof(GetValueByEnumarableKeyValuePair), BindingFlags.NonPublic | BindingFlags.Static);
+
+            var methodG = method.MakeGenericMethod(typeArguments);
+
+            var valueExp = Variable(interfaceType);
+
+            var thisExp = Constant(this);
+
+            var nullExp = Constant(null);
+
+            var objectExp = Variable(typeof(object));
+
+            var resultExp = Variable(conversionType);
+
+            var arguments = new List<Expression>();
+
+            var variables = new List<ParameterExpression> { valueExp, objectExp, resultExp };
+
+            var list = new List<Expression>
+            {
+                Assign(valueExp, Convert(parameterExp, interfaceType))
+            };
+
+            commonCtor.ParameterStores
+                .ForEach(info => ConfigParameter(info));
+
+            list.Add(Assign(resultExp, New(commonCtor.Member, arguments)));
+
+            if (Kind == PatternKind.Property || Kind == PatternKind.All)
+            {
+                typeStore.PropertyStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
+                    {
+                        Config(info, Property(resultExp, info.Member));
+                    });
+            }
+
+            if (Kind == PatternKind.Field || Kind == PatternKind.All)
+            {
+                typeStore.FieldStores
+                    .Where(x => x.CanWrite)
+                    .ForEach(info =>
+                    {
+                        Config(info, Field(resultExp, info.Member));
+                    });
+            }
+
+            list.Add(resultExp);
+
+            var lamdaExp = Lambda<Func<object, TResult>>(Block(variables, list), parameterExp);
+
+            return lamdaExp.Compile();
+
+            void ConfigParameter(ParameterItem parameterItem)
+            {
+                var memberType = parameterItem.ParameterType;
+
+                if (memberType.IsValueType)
+                {
+                    if (memberType.IsNullable())
+                    {
+                        memberType = Nullable.GetUnderlyingType(memberType);
+                    }
+
+                    if (memberType.IsEnum)
+                    {
+                        memberType = Enum.GetUnderlyingType(memberType);
+                    }
+                }
+
+                var variable = Variable(memberType/*, info.Name.ToCamelCase()*/);
+
+                list.Add(Assign(objectExp, Call(null, methodG, valueExp, Constant(parameterItem.Naming), Constant(parameterItem.Name), Constant(memberType), thisExp)));
+
+                list.Add(IfThen(NotEqual(objectExp, nullExp), Assign(variable, Convert(objectExp, parameterItem.ParameterType))));
+
+                arguments.Add(variable);
+
+                variables.Add(variable);
+            }
+
+            void Config<T>(StoreItem<T> item, Expression node) where T : MemberInfo
+            {
+                list.Add(Assign(objectExp, Call(null, methodG, valueExp, Constant(item.Naming), Constant(item.Name), Constant(item.MemberType), thisExp)));
+
+                list.Add(IfThen(NotEqual(objectExp, nullExp), Assign(node, Convert(objectExp, item.MemberType))));
             }
         }
 
