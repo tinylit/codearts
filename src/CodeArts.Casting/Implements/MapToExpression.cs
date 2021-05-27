@@ -2283,6 +2283,9 @@ namespace CodeArts.Casting.Implements
                 Assign(valueExp, Convert(parameterExp, interfaceType))
             };
 
+            commonCtor.ParameterStores
+                .ForEach(info => ConfigParameter(info));
+
             list.Add(Assign(resultExp, New(commonCtor.Member, arguments)));
 
             if (Kind == PatternKind.Property || Kind == PatternKind.All)
@@ -2304,9 +2307,6 @@ namespace CodeArts.Casting.Implements
                         Config(info, Field(resultExp, info.Member));
                     });
             }
-
-            commonCtor.ParameterStores
-                .ForEach(info => ConfigParameter(info));
 
             list.Add(resultExp);
 

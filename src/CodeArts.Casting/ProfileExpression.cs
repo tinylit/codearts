@@ -335,7 +335,15 @@ namespace CodeArts.Casting
         /// <param name="conversionType">目标类型。</param>
         /// <param name="typeArguments">泛型约束。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
+        protected virtual Func<object, TResult> ByIEnumarableLikeToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
+        {
+            if (conversionType.IsInterface || conversionType.IsAbstract)
+            {
+                return ByIEnumarableLikeToAbstract<TResult>(sourceType, conversionType);
+            }
+
+            return ByIEnumarableLikeToCommon<TResult>(sourceType, conversionType);
+        }
 
         #endregion
 

@@ -553,6 +553,40 @@ namespace CodeArts.Tests
             var value = Mapper.Map<ApplyDto>(data);
         }
 
+        [TestMethod]
+        public void MapTest2()
+        {
+            var dic = new Dictionary<string, object>
+            {
+                ["id"] = "12143",
+                ["name"] = "测试",
+                ["Icon"] = string.Empty
+            };
+
+            var commodity = Mapper.Map<CommodityListDto>(dic);
+        }
+
+
+        [TestMethod]
+        public void MapTest3()
+        {
+            var testValue = new
+            {
+                Id = 0,
+                name = string.Empty,
+                icon = string.Empty
+            };
+
+            var dic = new Dictionary<string, object>
+            {
+                ["id"] = 12143,
+                ["name"] = "测试",
+                ["Icon"] = string.Empty
+            };
+
+            var commodity = Mapper.Map(dic, testValue.GetType());
+        }
+
         public interface IEmptyA<T>
         {
 
