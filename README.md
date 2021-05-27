@@ -9,6 +9,33 @@
 ### “CodeArts”是什么？
 CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、实体复制、实体映射，以及基于Linq分析实现的、支持分表和读写分离的ORM框架）。
 
+NuGet包
+--------
+
+| Package | NuGet | Downloads |
+| ------- | ----- | --------- |
+| [CodeArts](https://www.nuget.org/packages/CodeArts/) | [![CodeArts](https://img.shields.io/nuget/v/CodeArts.svg)](https://www.nuget.org/packages/CodeArts/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts) |
+| [CodeArts.Caching](https://www.nuget.org/packages/CodeArts.Caching/) | [![CodeArts.Caching](https://img.shields.io/nuget/v/CodeArts.Caching.svg)](https://www.nuget.org/packages/CodeArts.Caching/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Caching) |
+| [CodeArts.MemoryCaching](https://www.nuget.org/packages/CodeArts.MemoryCaching/) | [![CodeArts.MemoryCaching](https://img.shields.io/nuget/v/CodeArts.MemoryCaching.svg)](https://www.nuget.org/packages/CodeArts.MemoryCaching/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.MemoryCaching) |
+| [CodeArts.RedisCaching](https://www.nuget.org/packages/CodeArts.RedisCaching/) | [![CodeArts.RedisCaching](https://img.shields.io/nuget/v/CodeArts.RedisCaching.svg)](https://www.nuget.org/packages/CodeArts.RedisCaching/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.RedisCaching) |
+| [CodeArts.Casting](https://www.nuget.org/packages/CodeArts.Casting/) | [![CodeArts.Casting](https://img.shields.io/nuget/v/CodeArts.Casting.svg)](https://www.nuget.org/packages/CodeArts.Casting/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Casting) |
+| [CodeArts.Configuration](https://www.nuget.org/packages/CodeArts.Configuration/) | [![CodeArts.Configuration](https://img.shields.io/nuget/v/CodeArts.Configuration.svg)](https://www.nuget.org/packages/CodeArts.Configuration/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Configuration) |
+| [CodeArts.Json](https://www.nuget.org/packages/CodeArts.Json/) | [![CodeArts.Json](https://img.shields.io/nuget/v/CodeArts.Json.svg)](https://www.nuget.org/packages/CodeArts.Json/) | ![Nuget](https://img.shields.io/nuget/dt/Codearts.Json) |
+| [CodeArts.Net](https://www.nuget.org/packages/CodeArts.Net/) | [![CodeArts.Net](https://img.shields.io/nuget/v/CodeArts.Net.svg)](https://www.nuget.org/packages/CodeArts.Net/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Net) |
+| [CodeArts.Logging](https://www.nuget.org/packages/CodeArts.Logging/) | [![CodeArts.Logging](https://img.shields.io/nuget/v/CodeArts.Logging.svg)](https://www.nuget.org/packages/CodeArts.Logging/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Logging) |
+| [CodeArts.Emit](https://www.nuget.org/packages/CodeArts.Emit/) | [![CodeArts.Emit](https://img.shields.io/nuget/v/CodeArts.Emit.svg)](https://www.nuget.org/packages/CodeArts.Emit/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Emit) |
+| [CodeArts.Mvc](https://www.nuget.org/packages/CodeArts.Mvc/) | [![CodeArts.Mvc](https://img.shields.io/nuget/v/CodeArts.Mvc.svg)](https://www.nuget.org/packages/CodeArts.Mvc/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Mvc) |
+| [CodeArts.Db](https://www.nuget.org/packages/CodeArts.Db/) | [![CodeArts.Db](https://img.shields.io/nuget/v/CodeArts.Db.svg)](https://www.nuget.org/packages/CodeArts.Db/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db) |
+| [CodeArts.Db.MySql](https://www.nuget.org/packages/CodeArts.Db.MySql/) | [![CodeArts.Db.MySql](https://img.shields.io/nuget/v/CodeArts.Db.MySql.svg)](https://www.nuget.org/packages/CodeArts.Db.MySql/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.MySql) |
+| [CodeArts.Db.SqlServer](https://www.nuget.org/packages/CodeArts.Db.SqlServer/) | [![CodeArts.Db.SqlServer](https://img.shields.io/nuget/v/CodeArts.Db.SqlServer.svg)](https://www.nuget.org/packages/CodeArts.Db.SqlServer/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.SqlServer) |
+| [CodeArts.Db.Sqlite](https://www.nuget.org/packages/CodeArts.Db.Sqlite/) | [![CodeArts.Db.Sqlite](https://img.shields.io/nuget/v/CodeArts.Db.Sqlite.svg)](https://www.nuget.org/packages/CodeArts.Db.Sqlite/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Sqlite) |
+| [CodeArts.Db.Lts](https://www.nuget.org/packages/CodeArts.Db.Lts/) | [![CodeArts.Db.Lts](https://img.shields.io/nuget/v/CodeArts.Db.Lts.svg)](https://www.nuget.org/packages/CodeArts.Db.Lts/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Lts) |
+| [CodeArts.Db.Lts.MySql](https://www.nuget.org/packages/CodeArts.Db.Lts.MySql/) | [![CodeArts.Db.Lts.MySql](https://img.shields.io/nuget/v/CodeArts.Db.Lts.MySql.svg)](https://www.nuget.org/packages/CodeArts.Db.Lts.MySql/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Lts.MySql) |
+| [CodeArts.Db.Lts.SqlServer](https://www.nuget.org/packages/CodeArts.Db.Lts.SqlServer/) | [![CodeArts.Db.Lts.SqlServer](https://img.shields.io/nuget/v/CodeArts.Db.Lts.SqlServer.svg)](https://www.nuget.org/packages/CodeArts.Db.Lts.SqlServer/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Lts.SqlServer) |
+| [CodeArts.Db.EntityFramework](https://www.nuget.org/packages/CodeArts.Db.EntityFramework/) | [![CodeArts.Db.EntityFramework](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework) |
+| [CodeArts.Db.EntityFramework.SqlServer](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.SqlServer/) | [![CodeArts.Db.EntityFramework.SqlServer](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.SqlServer.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.SqlServer/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework.SqlServer) |
+| [CodeArts.Db.EntityFramework.Sqlite](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.Sqlite/) | [![CodeArts.Db.EntityFramework.Sqlite](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.Sqlite.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.Sqlite/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework.Sqlite) |
+
 ### 如何使用？
 在Object类型上做了扩展函数。使用非常简便，可以不做任何配置就能使用。
 
