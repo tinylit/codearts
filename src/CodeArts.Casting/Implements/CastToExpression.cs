@@ -220,10 +220,9 @@ namespace CodeArts.Casting.Implements
 
                 var ctorInfo = typeStore.ConstructorStores.First(x => x.ParameterStores.Count == 1);
 
-                var coreExp = invoke.Method.IsStatic ?
-                    Call(null, invoke.Method, parameterExp)
-                    :
-                    Call(Constant(invoke.Target), invoke.Method, parameterExp);
+                var coreExp = invoke.Method.IsStatic
+                    ? Call(null, invoke.Method, parameterExp)
+                    : Call(Constant(invoke.Target), invoke.Method, parameterExp);
 
                 var bodyExp = New(ctorInfo.Member, Convert(coreExp, typeArgument));
 
@@ -272,7 +271,7 @@ namespace CodeArts.Casting.Implements
                 if (conversionType.IsEnum)
                     return source => (TResult)Enum.Parse(conversionType, source.ToString(), true);
 
-                if (conversionType == typeof(Guid) || conversionType == typeof(Version))
+                if (conversionType == typeof(Guid))
                     return source => (TResult)Activator.CreateInstance(conversionType, source);
             }
 

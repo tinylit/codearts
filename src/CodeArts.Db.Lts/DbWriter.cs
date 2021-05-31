@@ -1,6 +1,7 @@
 ﻿using CodeArts.Db.Exceptions;
 using CodeArts.Runtime;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -87,13 +88,13 @@ namespace CodeArts.Db.Lts
         {
             switch (param)
             {
-                case IDictionary<string, ParameterValue> parameters:
+                case IEnumerable<KeyValuePair<string, ParameterValue>> parameters:
                     foreach (var kv in parameters)
                     {
                         AddParameterAuto(command, kv.Key, kv.Value);
                     }
                     break;
-                case IDictionary<string, object> dic:
+                case IEnumerable<KeyValuePair<string, object>> dic:
                     foreach (var kv in dic)
                     {
                         if (kv.Value is ParameterValue parameterValue)
@@ -191,49 +192,222 @@ namespace CodeArts.Db.Lts
         /// <param name="value">参数值。</param>
         public static void AddParameterAuto(IDbCommand command, string key, object value)
         {
+            if (value is string)
+            {
+                Private_AddParameterAuto(command, key, value);
+            }
+            else if (value is IEnumerable list)
+            {
+                bool flag = false;
+
+                var listType = list.GetType();
+
+                if (listType.IsArray)
+                {
+                    if (Done(listType.GetElementType()))
+                    {
+                        value = DBNull.Value;
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+                }
+                else
+                {
+                    foreach (var type in listType.GetInterfaces())
+                    {
+                        if (!type.IsGenericType)
+                        {
+                            continue;
+                        }
+
+                        var typeDefinition = type.GetGenericTypeDefinition();
+
+                        if (typeDefinition == typeof(IList<>)
+#if !NET40
+                            || typeDefinition == typeof(IReadOnlyCollection<>)
+#endif
+                            || typeDefinition == typeof(ICollection<>)
+                            || typeDefinition == typeof(IEnumerable<>))
+                        {
+                            var valueType = type.GetGenericArguments()[0];
+
+                            if (Done(valueType))
+                            {
+                                value = null;
+                            }
+                            else
+                            {
+                                flag = true;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                bool Done(Type valueType)
+                {
+                    int count = 0;
+
+                    foreach (var item in list)
+                    {
+                        if (item is null)
+                        {
+                            Private_AddParameterAuto(command, string.Concat(key, count.ToString()), new ParameterValue(valueType));
+                        }
+                        else
+                        {
+                            Private_AddParameterAuto(command, string.Concat(key, count.ToString()), item);
+                        }
+
+                        count++;
+                    }
+
+                    string pattern = string.Concat("([?@:]", Regex.Escape(key), @")(?!\w)(\s+(?i)unknown(?-i))?");
+
+                    if (count == 0)
+                    {
+                        command.CommandText = Regex.Replace(command.CommandText, pattern, match =>
+                        {
+                            var variableName = match.Groups[1].Value;
+
+                            if (match.Groups[2].Success)
+                            {
+                                // looks like an optimize hint; leave it alone!
+                                return match.Value;
+                            }
+                            else
+                            {
+                                return "(SELECT " + variableName + " WHERE 1 = 0)";
+                            }
+                        }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+
+
+                        return true;
+                    }
+
+                    command.CommandText = Regex.Replace(command.CommandText, pattern, match =>
+                    {
+                        var sb = new StringBuilder();
+
+                        var variableName = match.Groups[1].Value;
+
+                        if (match.Groups[2].Success)
+                        {
+                            var suffix = match.Groups[2].Value;
+
+                            sb.Append(variableName)
+                            .Append(0)
+                            .Append(suffix);
+
+                            for (int i = 1; i < count; i++)
+                            {
+                                sb.Append(',')
+                                .Append(variableName)
+                                .Append(i)
+                                .Append(suffix);
+                            }
+
+                            return sb.ToString();
+                        }
+                        else
+                        {
+                            sb.Append('(')
+                            .Append(variableName)
+                            .Append(0);
+
+                            for (int i = 1; i < count; i++)
+                            {
+                                sb.Append(',')
+                                .Append(variableName)
+                                .Append(i);
+                            }
+                            return sb
+                            .Append(')')
+                            .ToString();
+                        }
+                    }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+
+                    return false;
+                }
+
+                if (!flag)
+                {
+                    Private_AddParameterAuto(command, key, value);
+                }
+            }
+            else
+            {
+                Private_AddParameterAuto(command, key, value);
+            }
+        }
+
+        private static void Private_AddParameterAuto(IDbCommand command, string key, object value)
+        {
             var dbParameter = command.CreateParameter();
 
             switch (value)
             {
-                case IDbDataParameter dbDataParameter when dbParameter is IDbDataParameter parameter:
+                case IDbDataParameter dbDataParameter:
 
-                    parameter.Value = dbDataParameter.Value;
-                    parameter.ParameterName = key;
-                    parameter.Direction = dbDataParameter.Direction;
-                    parameter.DbType = dbDataParameter.DbType;
-                    parameter.SourceColumn = dbDataParameter.SourceColumn;
-                    parameter.SourceVersion = dbDataParameter.SourceVersion;
+                    dbParameter.Value = dbDataParameter.Value;
+                    dbParameter.ParameterName = key;
+                    dbParameter.Direction = dbDataParameter.Direction;
+                    dbParameter.DbType = dbDataParameter.DbType;
+                    dbParameter.SourceColumn = dbDataParameter.SourceColumn;
+                    dbParameter.SourceVersion = dbDataParameter.SourceVersion;
 
                     if (dbParameter is System.Data.Common.DbParameter myParameter)
                     {
                         myParameter.IsNullable = dbDataParameter.IsNullable;
                     }
 
-                    parameter.Scale = dbDataParameter.Scale;
-                    parameter.Size = dbDataParameter.Size;
-                    parameter.Precision = dbDataParameter.Precision;
+                    dbParameter.Scale = dbDataParameter.Scale;
+                    dbParameter.Size = dbDataParameter.Size;
+                    dbParameter.Precision = dbDataParameter.Precision;
 
-                    command.Parameters.Add(dbParameter);
                     break;
                 case IDataParameter dataParameter:
+
                     dbParameter.Value = dataParameter.Value;
                     dbParameter.ParameterName = key;
                     dbParameter.Direction = dataParameter.Direction;
                     dbParameter.DbType = dataParameter.DbType;
                     dbParameter.SourceColumn = dataParameter.SourceColumn;
                     dbParameter.SourceVersion = dataParameter.SourceVersion;
+
                     break;
                 case ParameterValue parameterValue:
+
                     dbParameter.Value = parameterValue.IsNull ? DBNull.Value : parameterValue.Value;
                     dbParameter.ParameterName = key;
                     dbParameter.Direction = ParameterDirection.Input;
                     dbParameter.DbType = LookupDbType(parameterValue.ValueType);
+
+                    break;
+                case string text:
+                    dbParameter.Value = text;
+                    dbParameter.ParameterName = key;
+                    dbParameter.Direction = ParameterDirection.Input;
+                    dbParameter.DbType = DbType.String;
+                    if (text.Length > 4000)
+                    {
+                        dbParameter.Size = -1;
+                    }
+                    else
+                    {
+                        dbParameter.Size = 4000;
+                    }
                     break;
                 default:
+
                     dbParameter.Value = value ?? DBNull.Value;
                     dbParameter.ParameterName = key;
                     dbParameter.Direction = ParameterDirection.Input;
                     dbParameter.DbType = value is null ? DbType.Object : LookupDbType(value.GetType());
+
                     break;
             }
 

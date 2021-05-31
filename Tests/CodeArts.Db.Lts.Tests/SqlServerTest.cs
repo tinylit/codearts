@@ -2289,6 +2289,7 @@ namespace UnitTest
         public void MaxWithDefultTest()
         {
             var user = new UserRepository();
+
             var result = user.Where(x => x.Id < 0).DefaultIfEmpty(new FeiUsers
             {
                 Id = 100
