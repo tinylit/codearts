@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using static System.Linq.Expressions.Expression;
 
@@ -36,7 +37,7 @@ namespace CodeArts.Casting
         /// </summary>
         /// <typeparam name="TResult">返回数据类型。</typeparam>
         /// <returns></returns>
-        public virtual Func<object, TResult> Create<TResult>(Type sourceType) => Nested<TResult>.Create(this, sourceType ?? throw new ArgumentNullException(nameof(sourceType)));
+        public Func<object, TResult> Create<TResult>(Type sourceType) => Nested<TResult>.Create(this, sourceType ?? throw new ArgumentNullException(nameof(sourceType)));
 
         /// <summary>
         /// 构建器。
@@ -44,7 +45,7 @@ namespace CodeArts.Casting
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        protected virtual Func<object, object> Create(Type sourceType, Type conversionType)
+        protected Func<object, object> Create(Type sourceType, Type conversionType)
         {
             if (conversionType.IsNullable())
             {
@@ -79,9 +80,9 @@ namespace CodeArts.Casting
 
                 var bodyExp = Lambda(Call(invokeVar, invokeMethod, Call(toObjectArrMethod, paramterSourceExp)), paramterSourceExp);
 
-                var lamda = Lambda<Func<IProfile, Type, Func<object, object>>>(Block(new[] { invokeVar }, Assign(invokeVar, methodCallExp), bodyExp), paramterExp, paramterTypeExp);
+                var lambda = Lambda<Func<IProfile, Type, Func<object, object>>>(Block(new[] { invokeVar }, Assign(invokeVar, methodCallExp), bodyExp), paramterExp, paramterTypeExp);
 
-                return lamda.Compile();
+                return lambda.Compile();
             });
 
             return factory.Invoke(this, sourceType);
@@ -91,7 +92,11 @@ namespace CodeArts.Casting
         /// 创建表达式。
         /// </summary>
         /// <typeparam name="TResult">返回数据类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
+        /// <param name="sourceType">源类型。
+        /// 1、目标类型是值类型。
+        /// 2、目标类型和源类型相同，或目标类型是源类型的父类。
+        /// 3、源类型是值类型。
+        /// </param>
         /// <returns></returns>
         protected virtual Func<object, TResult> CreateExpression<TResult>(Type sourceType)
         {
@@ -109,14 +114,16 @@ namespace CodeArts.Casting
             if (conversionType.IsValueType)
                 return ToValueType<TResult>(sourceType, conversionType);
 
-            if (conversionType == typeof(string))
-                return ToString<TResult>(sourceType, conversionType);
-
             if (sourceType == typeof(string))
                 return ByString<TResult>(sourceType, conversionType);
 
+            if (conversionType == typeof(string))
+                return ToString<TResult>(sourceType, conversionType);
+
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
-                return sourceType.IsInterface ? ByIEnumarableLike<TResult>(sourceType, conversionType) : ByEnumarableLike<TResult>(sourceType, conversionType);
+                return sourceType.IsInterface
+                    ? ByIEnumarableLike<TResult>(sourceType, conversionType)
+                    : ByEnumarableLike<TResult>(sourceType, conversionType);
 
             return ByObject<TResult>(sourceType, conversionType);
         }
@@ -128,7 +135,20 @@ namespace CodeArts.Casting
         /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        protected virtual Func<object, TResult> ByString<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
+        protected virtual Func<object, TResult> ByString<TResult>(Type sourceType, Type conversionType)
+        {
+            if (conversionType == typeof(string))
+            {
+                return source => (TResult)source;
+            }
+
+            if (conversionType == typeof(Version) || conversionType == typeof(StringBuilder) || conversionType == typeof(UppercaseString))
+            {
+                return source => (TResult)Activator.CreateInstance(conversionType, source);
+            }
+
+            throw new InvalidCastException();
+        }
 
         /// <summary>
         /// 解决 任意类型 到 String 的转换。

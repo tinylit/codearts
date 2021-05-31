@@ -204,68 +204,6 @@ namespace CodeArts.Casting.Implements
         #endregion
 
         /// <summary>
-        /// 创建工厂。
-        /// </summary>
-        /// <typeparam name="TResult">返回数据类型。</typeparam>
-        /// <returns></returns>
-        public override Func<object, TResult> Create<TResult>(Type sourceType)
-        {
-            if (sourceType is null)
-            {
-                throw new ArgumentNullException(nameof(sourceType));
-            }
-
-            if ((sourceType == typeof(TResult) || typeof(TResult).IsAssignableFrom(sourceType)) && typeof(ICloneable).IsAssignableFrom(sourceType))
-            {
-                return source =>
-                {
-                    if (source is ICloneable cloneable)
-                    {
-                        return (TResult)cloneable.Clone();
-                    }
-
-                    return default;
-                };
-            }
-
-            return base.Create<TResult>(sourceType);
-        }
-
-        /// <summary>
-        /// 构建器。
-        /// </summary>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected override Func<object, object> Create(Type sourceType, Type conversionType)
-        {
-            if (sourceType is null)
-            {
-                throw new ArgumentNullException(nameof(sourceType));
-            }
-
-            if (conversionType is null)
-            {
-                throw new ArgumentNullException(nameof(conversionType));
-            }
-
-            if ((sourceType == conversionType || conversionType.IsAssignableFrom(sourceType)) && typeof(ICloneable).IsAssignableFrom(sourceType))
-            {
-                return source =>
-                {
-                    if (source is ICloneable cloneable)
-                    {
-                        return cloneable.Clone();
-                    }
-
-                    return null;
-                };
-            }
-
-            return base.Create(sourceType, conversionType);
-        }
-
-        /// <summary>
         /// 解决 相似对象的转换。
         /// </summary>
         /// <typeparam name="TResult">目标类型。</typeparam>
@@ -693,10 +631,27 @@ namespace CodeArts.Casting.Implements
             }
 
             if (sourceType == StringType)
+            {
                 return source => (TResult)source;
+            }
+
+            if (typeof(ICloneable).IsAssignableFrom(sourceType))
+            {
+                return source =>
+                {
+                    if (source is ICloneable cloneable)
+                    {
+                        return (TResult)cloneable.Clone();
+                    }
+
+                    return default;
+                };
+            }
 
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
+            {
                 return ByLikeEnumarable<TResult>(sourceType, conversionType);
+            }
 
             return ByLikeObject<TResult>(sourceType, conversionType);
         }
