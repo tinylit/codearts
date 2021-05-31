@@ -210,6 +210,9 @@ PM> Install-Package CodeArts
         [Naming(NamingType.CamelCase)] // 如果字段特殊，可单独为字段设置字段命名规则。
         [DateTimeToken] // 设置Token键（在更新时，将属性数据作为更新条件，并为属性创建新值；在插入时，如若属性值为类型默认值，会自动获取新值）
         public DateTime PasswordLastChanged { get; set; }
+
+        [Ignore]// 忽略，不会被生成SQL操作的字段。
+        public bool HasValue => Id > 0;
     }
 ```
 * 定义仓库。
