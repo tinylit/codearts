@@ -9,7 +9,14 @@
 ### “CodeArts”是什么？
 CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、实体复制、实体映射，以及基于Linq分析实现的、支持分表和读写分离的ORM框架）。
 
-NuGet包
+### 如何安装？
+First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). Then, install [CodeArts](https://www.nuget.org/packages/CodeArts/) from the package manager console:
+
+```
+PM> Install-Package CodeArts
+```
+
+NuGet 包
 --------
 
 | Package | NuGet | Downloads |
@@ -36,8 +43,18 @@ NuGet包
 | [CodeArts.Db.EntityFramework.SqlServer](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.SqlServer/) | [![CodeArts.Db.EntityFramework.SqlServer](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.SqlServer.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.SqlServer/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework.SqlServer) |
 | [CodeArts.Db.EntityFramework.Sqlite](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.Sqlite/) | [![CodeArts.Db.EntityFramework.Sqlite](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.Sqlite.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.Sqlite/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework.Sqlite) |
 
+### 引包即用？
+* 引包即用是指，安装 `NuGet` 包后，自动注入配置信息。
+* 在启动方法中添加如下代码即可：
+``` csharp
+    using (var startup = new XStartup())
+    {
+        startup.DoStartup();
+    }
+```
+
 ### 如何使用？
-在Object类型上做了扩展函数。使用非常简便，可以不做任何配置就能使用。
+使用非常简便，可以不做任何配置就能使用。
 
 * Mapper.Cast
     + 源类型可以隐式或显式地转换为目标类型,或任何一个公共构造函数的第一个参数的目标类型满足源类型,或者可以将源类型转换,这只有一个参数或其他参数是可选的。
@@ -184,13 +201,6 @@ NuGet包
     castTo.Map<string>(sourceType => sourceType.IsValueType, source => source.ToString());
 ```
 
-### 如何安装？
-First, [install NuGet](http://docs.nuget.org/docs/start-here/installing-nuget). Then, install [CodeArts](https://www.nuget.org/packages/CodeArts/) from the package manager console:
-
-```
-PM> Install-Package CodeArts
-```
-
 ### 如何使用ORM？
 * 定义实体。
 ``` csharp
@@ -332,6 +342,19 @@ UPDATE [fei_users]
 WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
 ```
 
+### 如何定义全局的 `System.ComponentModel.DataAnnotations.ValidationAttribute` 异常消息？
+``` csharp
+    DbValidator.CustomValidate<RequiredAttribute>((attr, context) =>
+    {
+        if (attr.AllowEmptyStrings)
+        {
+            return $"{context.DisplayName}不能为空!";
+        }
+
+        return $"{context.DisplayName}不能为null!";
+    });
+```
+
 * 介绍：
 > - 参数分析，当实体属性为值类型，且不为Nullable类型时，比较的参数为NULL时，自动忽略该条件。
 > - 由于“Take”和“Skip”参数的特殊性，在生成SQL语句时，将直接生成到SQL语句中，不会向参数字典中添加KeyValue。
@@ -365,6 +388,15 @@ WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
 
 * .NET40(基于反射的实现)！
 * .NET Web使用Startup类启动，放弃了传统的“Global.asax”启动模式，具有更强大的功能。
+* 生成JWT Token。
+    ```csharp
+    JwtTokenGen.Create(new Dictionary<string, object>
+            {
+                ["id"] = 1011,
+                ["name"] = "何远利",
+                ["role"] = "Administrator,Developer"
+            }, 120D);
+    ```
 
 ### 如何配置MVC？
 * .NETCore
@@ -407,7 +439,73 @@ WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
         </appSettings>
     </configuration>
     ```
+* 配置详见 `CodeArts.Consts` 说明。
 
+### 如何定义全局的 `System.ComponentModel.DataAnnotations.ValidationAttribute` 异常消息？
+``` csharp
+    ModelValidator.CustomValidate<RequiredAttribute>((attr, context) =>
+    {
+        if (attr.AllowEmptyStrings)
+        {
+            return $"{context.DisplayName}不能为空!";
+        }
+
+        return $"{context.DisplayName}不能为null!";
+    });
+```
+
+### 如何自定义异常捕获适配器？
+* 定义适配器。
+``` csharp
+    public class DivideByZeroExceptionAdapter : ExceptionAdapter<DivideByZeroException> {
+        // 定义异常返回的结果，接口调用抛出 DivideByZeroException 异常时，会触发该函数。
+        protected override DResult GetResult(DivideByZeroException error){
+            return DResult.Error($"除零异常:{error.Message}");
+        }
+    }
+```
+* 注册适配器。
+``` csharp
+    ExceptionHandler.Add(new DivideByZeroExceptionAdapter());
+```
+
+### 如何使用 NET?
+* `CodeArts.Net` 是针对接口请求，文件下载设计的轻量级框架。
+* 支持 `Uri` 或 `String` 转化获得接口请求能力。
+``` csharp
+    var requestable = uri.AsRequestable();
+```
+* 接口请求能力具有完善的API，可以根据API提示，任意组合完成接口调用。
+  + 例一：
+  ``` csharp
+  var value = uri.AsRequestable()
+                    .AppendQueryString("?account=hyl&password=!pwd2021&debug=true") //? 请求参数。
+                    .Get(); // 请求方式。
+  ```
+  + 例二：
+  ``` csharp
+  var value = await uri.AsRequestable()
+                        .Json(new
+                            {
+                                Date = DateTime.Now,
+                                TemperatureC = 1,
+                                Summary = 50
+                            }) // json 格式传递参数，需要引入 CodeArts.Json 包。              
+                        .AssignHeader("Token", "Bearer xxxxxxxx")
+                        .TryThenAsync(async (r,e)=>{
+                            //TODO: 刷新 Token。
+                        })
+                        .If(e=> e.Response is HttpWebResponse response && response.StatusCode == HttpStatusCode.Unauthorized) // Token 过期。
+                        .TryIf(e=> e.Status == WebExceptionStatus.Timeout) // 满足条件时，尝试接口重试。
+                        .RetryCount(2) // 重试次数。
+                        .RetryInterval(500) // 重试时间间隔。
+                        .JsonCast<DResult>() // 将数据自动转化为结果类型，需要引入 CodeArts.Json 包。
+                        .DataVerify(r => r.Success) // 数据是否有效。
+                        .ResendCount(1) // 数据无效时，重试次数。
+                        .ResendInterval(500) // 数据无效时，重试时间间隔。
+                        .PostAsync(); // 请求方式。
+
+  ```
 
 ### 性能比较。
 功能|框架|性能|说明
