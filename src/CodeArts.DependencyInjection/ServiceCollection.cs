@@ -1,13 +1,15 @@
-﻿#if NET40 || NET_NORMAL
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System.Collections;
 using System.Collections.Generic;
 
-namespace CodeArts.Mvc.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Default implementation of <see cref="IServiceCollection" />.
+    /// Default implementation of <see cref="IServiceCollection"/>.
     /// </summary>
-    public class ServiceCollection : IServiceCollection, IList<ServiceDescriptor>, ICollection<ServiceDescriptor>, IEnumerable<ServiceDescriptor>, IEnumerable
+    public class ServiceCollection : IServiceCollection
     {
         private readonly List<ServiceDescriptor> _descriptors = new List<ServiceDescriptor>();
 
@@ -89,4 +91,3 @@ namespace CodeArts.Mvc.DependencyInjection
         }
     }
 }
-#endif

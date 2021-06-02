@@ -234,7 +234,6 @@ namespace CodeArts.Mvc
 using Newtonsoft.Json.Serialization;
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.Converters;
-using CodeArts.Mvc.DependencyInjection;
 #if NET_NORMAL
 using Swashbuckle.Application;
 using System.IO;
@@ -244,6 +243,7 @@ using System.Web.Http;
 using System.Web.Http.Dependencies;
 using System.Web.Http.Metadata;
 using CodeArts.Mvc.Providers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeArts.Mvc
 {

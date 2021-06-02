@@ -1,6 +1,6 @@
-﻿#if NET_CORE
+﻿using CodeArts;
+#if NET_CORE
 using Microsoft.AspNetCore.Mvc;
-using CodeArts;
 #else
 using System.Web.Http;
 #endif
@@ -8,11 +8,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-#if NET_CORE
 namespace Microsoft.Extensions.DependencyInjection
-#else
-namespace CodeArts.Mvc.DependencyInjection
-#endif
 {
     /// <summary>
     /// 服务集合扩展。

@@ -16,6 +16,7 @@ namespace CodeArts.Emit
         private FieldBuilder builder;
         private object defaultValue;
         private bool hasDefaultValue = false;
+        private readonly bool isStatic;
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         /// <summary>
@@ -24,10 +25,17 @@ namespace CodeArts.Emit
         /// <param name="name">字段的名称。</param>
         /// <param name="returnType">字段的返回类型。</param>
         /// <param name="attributes">字段的属性。</param>
-        public FieldEmitter(string name, Type returnType, FieldAttributes attributes) : base(returnType, (attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        public FieldEmitter(string name, Type returnType, FieldAttributes attributes) : this(name, returnType, attributes, (attributes & FieldAttributes.Static) == FieldAttributes.Static)
         {
             Name = name;
             Attributes = attributes;
+        }
+
+        private FieldEmitter(string name, Type returnType, FieldAttributes attributes, bool isStatic) : base(returnType, isStatic)
+        {
+            Name = name;
+            Attributes = attributes;
+            this.isStatic = isStatic;
         }
 
         /// <summary>
@@ -39,11 +47,6 @@ namespace CodeArts.Emit
         /// 字段的属性。
         /// </summary>
         public FieldAttributes Attributes { get; }
-
-        /// <summary>
-        /// 字段构造器。
-        /// </summary>
-        public FieldBuilder Value => builder ?? throw new NotImplementedException();
 
         /// <summary>
         /// 设置默认值。
@@ -76,13 +79,13 @@ namespace CodeArts.Emit
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if ((Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+            if (isStatic)
             {
-                ilg.Emit(OpCodes.Ldsfld, Value);
+                ilg.Emit(OpCodes.Ldsfld, builder);
             }
             else
             {
-                ilg.Emit(OpCodes.Ldfld, Value);
+                ilg.Emit(OpCodes.Ldfld, builder);
             }
         }
 
@@ -92,13 +95,13 @@ namespace CodeArts.Emit
         /// <param name="ilg">指令。</param>
         public override void Assign(ILGenerator ilg)
         {
-            if ((Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+            if (isStatic)
             {
-                ilg.Emit(OpCodes.Stsfld, Value);
+                ilg.Emit(OpCodes.Stsfld, builder);
             }
             else
             {
-                ilg.Emit(OpCodes.Stfld, Value);
+                ilg.Emit(OpCodes.Stfld, builder);
             }
         }
 

@@ -51,11 +51,6 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 参数构造器。
-        /// </summary>
-        public ParameterBuilder Value => builder ?? throw new NotImplementedException();
-
-        /// <summary>
         /// 设置默认值。
         /// </summary>
         /// <param name="defaultValue">默认值。</param>
@@ -86,8 +81,6 @@ namespace CodeArts.Emit
         /// <param name="builder">构造器。</param>
         public virtual void Emit(ParameterBuilder builder)
         {
-            this.builder = builder ?? throw new ArgumentNullException(nameof(builder));
-
             if (hasDefaultValue)
             {
                 builder.SetConstant(defaultValue);

@@ -91,7 +91,7 @@ namespace CodeArts.Emit.Expressions
                     c = OpCodes.Ldc_I4_8;
                     break;
                 default:
-                    if (value >= -128 && value <= 127)
+                    if (value >= sbyte.MinValue && value <= sbyte.MaxValue)
                     {
                         ilg.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
                     }

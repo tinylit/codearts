@@ -17,10 +17,15 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="field">字段。</param>
-        public FieldAst(FieldInfo field) : base(field.FieldType, (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        public FieldAst(FieldInfo field) : this(field, (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        {
+
+        }
+
+        private FieldAst(FieldInfo field, bool isStatic) : base(field.FieldType, isStatic)
         {
             this.field = field;
-            isStatic = (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static;
+            this.isStatic = isStatic;
         }
 
         /// <summary>

@@ -76,6 +76,7 @@
 		<PackageReference Include="JWT">
 			<Version>3.0.1</Version>
 		</PackageReference>
+		<ProjectReference Include="..\CodeArts.DependencyInjection\CodeArts.DependencyInjection.csproj" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'">

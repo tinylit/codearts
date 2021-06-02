@@ -156,7 +156,7 @@ namespace CodeArts.Mvc
 #else
 using CodeArts.Mvc.Authentication;
 using CodeArts.Mvc.Builder;
-using CodeArts.Mvc.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 #if !NET40
 using Swashbuckle.Application;
 using System;

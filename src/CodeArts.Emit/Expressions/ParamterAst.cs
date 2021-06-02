@@ -27,6 +27,7 @@ namespace CodeArts.Emit.Expressions
             {
                 throw new ArgumentOutOfRangeException(nameof(position), "参数位置不能小于零。");
             }
+
             Position = position;
         }
 
@@ -44,7 +45,14 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Assign(ILGenerator ilg)
         {
-            ilg.Emit(OpCodes.Starg, Position);
+            if (Position < byte.MaxValue)
+            {
+                ilg.Emit(OpCodes.Starg_S, (byte)Position);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Starg, Position);
+            }
         }
 
         /// <summary>
@@ -68,7 +76,14 @@ namespace CodeArts.Emit.Expressions
                     ilg.Emit(OpCodes.Ldarg_3);
                     break;
                 default:
-                    ilg.Emit(OpCodes.Ldarg_S, Position);
+                    if (Position < byte.MaxValue)
+                    {
+                        ilg.Emit(OpCodes.Ldarg_S, (byte)Position);
+
+                        break;
+                    }
+
+                    ilg.Emit(OpCodes.Ldarg, Position);
                     break;
             }
         }

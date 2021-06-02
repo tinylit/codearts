@@ -47,9 +47,9 @@ namespace CodeArts.Emit.Expressions
         {
             if (parameters != null)
             {
-                foreach (var paramter in parameters)
+                foreach (var parameter in parameters)
                 {
-                    paramter.Load(ilg);
+                    parameter.Load(ilg);
                 }
             }
 
