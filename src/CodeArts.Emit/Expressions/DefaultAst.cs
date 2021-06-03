@@ -24,12 +24,23 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if (ReturnType.IsByRef)
+            if (ReturnType.IsValueType || ReturnType.IsGenericParameter)
+            {
+                EmitUtils.EmitDefaultValueOfType(ilg, ReturnType);
+            }
+            else if (ReturnType.IsByRef)
             {
                 var elementType = ReturnType.GetElementType();
 
-                EmitUtils.EmitDefaultValueOfType(ilg, elementType);
-                EmitUtils.EmitConvertToType(ilg, ReturnType, elementType);
+                if (elementType.IsGenericParameter || elementType.IsValueType)
+                {
+                    ilg.Emit(OpCodes.Initobj, elementType);
+                }
+                else
+                {
+                    EmitUtils.EmitDefaultValueOfType(ilg, elementType);
+                    EmitUtils.EmitAssignToType(ilg, elementType);
+                }
             }
             else
             {

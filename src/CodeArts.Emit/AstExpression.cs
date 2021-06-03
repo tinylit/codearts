@@ -24,6 +24,11 @@ namespace CodeArts.Emit
         public abstract void Load(ILGenerator ilg);
 
         /// <summary>
+        /// 空表达式数组。
+        /// </summary>
+        public static readonly AstExpression[] EmptyAsts = new AstExpression[0];
+
+        /// <summary>
         /// 类型。
         /// </summary>
         public Type ReturnType { get; private set; }
@@ -260,15 +265,32 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="method">方法。</param>
         /// <returns></returns>
-        public static MethodAst Call(MethodInfo method) => new MethodAst(method);
+        public static MethodCallAst Call(MethodInfo method) => new MethodCallAst(method);
 
         /// <summary>
         /// 调用方法。
         /// </summary>
         /// <param name="method">方法。</param>
-        /// <param name="parameters">方法参数。</param>
+        /// <param name="arguments">方法参数。</param>
         /// <returns></returns>
-        public static MethodAst Call(MethodInfo method, params AstExpression[] parameters) => new MethodAst(method, parameters);
+        public static MethodCallAst Call(MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(method, arguments);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="method">方法。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method) => new MethodCallAst(instanceAst, method);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="method">方法。</param>
+        /// <param name="arguments">方法参数。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(instanceAst, method, arguments);
 
         /// <summary>
         /// 抛出异常。

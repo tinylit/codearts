@@ -74,10 +74,10 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 发行。
+        /// 获取成员数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg)
+        protected override void MemberLoad(ILGenerator ilg)
         {
             if (isStatic)
             {

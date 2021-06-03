@@ -14,7 +14,6 @@ namespace CodeArts.Emit
     public class ParamterEmitter : ParamterAst
     {
         private object defaultValue;
-        private ParameterBuilder builder;
         private bool hasDefaultValue = false;
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 

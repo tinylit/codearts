@@ -15,8 +15,8 @@ namespace CodeArts.Emit
     {
         private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
 
-        private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
-        private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
+        internal static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
+        internal static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
         private static readonly List<object> Constants = new List<object>();
         private static readonly Dictionary<object, int> ConstantCache = new Dictionary<object, int>();
@@ -897,14 +897,14 @@ namespace CodeArts.Emit
                     case MethodInfo method:
                         ilg.Emit(OpCodes.Ldtoken, method);
 
-                        if (method.DeclaringType != null && method.DeclaringType.IsGenericType)
+                        if (method.DeclaringType is null)
                         {
-                            ilg.Emit(OpCodes.Ldtoken, method.DeclaringType);
-                            ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
+                            ilg.Emit(OpCodes.Call, GetMethodFromHandle);
                         }
                         else
                         {
-                            ilg.Emit(OpCodes.Call, GetMethodFromHandle);
+                            ilg.Emit(OpCodes.Ldtoken, method.DeclaringType);
+                            ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
                         }
 
                         ilg.Emit(OpCodes.Castclass, typeof(MethodInfo));
@@ -1028,33 +1028,28 @@ namespace CodeArts.Emit
         /// <param name="type">类型。</param>
         public static void EmitDefaultValueOfType(ILGenerator ilg, Type type)
         {
+            if (type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type.IsGenericParameter)
+            {
+                goto label_core;
+            }
+
             switch (Type.GetTypeCode(type))
             {
-                case TypeCode.Object:
                 case TypeCode.DateTime:
-                    if (type.IsValueType)
-                    {
-                        if (type.IsEnum)
-                        {
-                            goto case default;
-                        }
-                        LocalBuilder lb = ilg.DeclareLocal(type);
-                        ilg.Emit(OpCodes.Ldloca, lb);
-                        ilg.Emit(OpCodes.Initobj, type);
-                        ilg.Emit(OpCodes.Ldloc, lb);
-                    }
-                    else
-                    {
-                        ilg.Emit(OpCodes.Ldnull);
-                    }
+                    goto label_core;
+                case TypeCode.DBNull:
+                    ilg.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField(nameof(DBNull.Value)));
                     break;
-
                 case TypeCode.Empty:
                 case TypeCode.String:
-                case TypeCode.DBNull:
+                case TypeCode.Object:
                     ilg.Emit(OpCodes.Ldnull);
                     break;
-
                 case TypeCode.Boolean:
                 case TypeCode.Char:
                 case TypeCode.SByte:
@@ -1073,11 +1068,11 @@ namespace CodeArts.Emit
                     break;
 
                 case TypeCode.Single:
-                    ilg.Emit(OpCodes.Ldc_R4, default(float));
+                    ilg.Emit(OpCodes.Ldc_R4, 0F);
                     break;
 
                 case TypeCode.Double:
-                    ilg.Emit(OpCodes.Ldc_R8, default(double));
+                    ilg.Emit(OpCodes.Ldc_R8, 0D);
                     break;
 
                 case TypeCode.Decimal:
@@ -1086,7 +1081,176 @@ namespace CodeArts.Emit
                     break;
 
                 default:
+                    if (type.IsValueType)
+                    {
+                        goto label_core;
+                    }
+
                     throw new NotSupportedException();
+            }
+
+            label_core:
+            {
+                LocalBuilder lb = ilg.DeclareLocal(type);
+                ilg.Emit(OpCodes.Ldloca, lb);
+                ilg.Emit(OpCodes.Initobj, type);
+                ilg.Emit(OpCodes.Ldloc, lb);
+            }
+        }
+
+        /// <summary>
+        /// 加载指定类型的值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="type">类型。</param>
+        public static void EmitLoadToType(ILGenerator ilg, Type type)
+        {
+            if (type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type.IsByRef)
+            {
+                throw new NotSupportedException("Cannot store ByRef values");
+            }
+
+            if (type.IsGenericParameter)
+            {
+                goto label_core;
+            }
+
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Empty:
+                case TypeCode.String:
+                case TypeCode.Object:
+                    ilg.Emit(OpCodes.Ldind_Ref);
+                    break;
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                    ilg.Emit(OpCodes.Ldind_I1);
+                    break;
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                    ilg.Emit(OpCodes.Ldind_I2);
+                    break;
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                    ilg.Emit(OpCodes.Ldind_I4);
+                    break;
+
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    ilg.Emit(OpCodes.Ldind_I8);
+                    break;
+
+                case TypeCode.Single:
+                    ilg.Emit(OpCodes.Ldind_R4);
+                    break;
+
+                case TypeCode.Double:
+                    ilg.Emit(OpCodes.Ldind_R8);
+                    break;
+                case TypeCode.DBNull:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                    goto label_core;
+                default:
+                    if (type.IsValueType)
+                    {
+                        goto label_core;
+                    }
+                    else
+                    {
+                        ilg.Emit(OpCodes.Ldind_Ref);
+                    }
+                    break;
+            }
+
+            label_core:
+            {
+                ilg.Emit(OpCodes.Ldobj, type);
+            }
+        }
+
+        /// <summary>
+        /// 对指定类型赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="type">类型。</param>
+        public static void EmitAssignToType(ILGenerator ilg, Type type)
+        {
+            if (type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type.IsByRef)
+            {
+                throw new NotSupportedException("Cannot store ByRef values");
+            }
+
+            if (type.IsGenericParameter)
+            {
+                goto label_core;
+            }
+
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Empty:
+                case TypeCode.String:
+                case TypeCode.Object:
+                    ilg.Emit(OpCodes.Stind_Ref);
+                    break;
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                    ilg.Emit(OpCodes.Stind_I1);
+                    break;
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                    ilg.Emit(OpCodes.Stind_I2);
+                    break;
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                    ilg.Emit(OpCodes.Stind_I4);
+                    break;
+
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    ilg.Emit(OpCodes.Stind_I8);
+                    break;
+
+                case TypeCode.Single:
+                    ilg.Emit(OpCodes.Stind_R4);
+                    break;
+
+                case TypeCode.Double:
+                    ilg.Emit(OpCodes.Stind_R8);
+                    break;
+                case TypeCode.DBNull:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                    goto label_core;
+                default:
+                    if (type.IsValueType)
+                    {
+                        goto label_core;
+                    }
+                    else
+                    {
+                        ilg.Emit(OpCodes.Stind_Ref);
+                    }
+                    break;
+            }
+
+            label_core:
+            {
+                ilg.Emit(OpCodes.Stobj, type);
             }
         }
 

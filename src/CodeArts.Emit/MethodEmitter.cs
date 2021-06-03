@@ -30,7 +30,7 @@ namespace CodeArts.Emit
         public MethodEmitter(string name, MethodAttributes attributes, Type returnType) : base(returnType)
         {
             Name = name;
-            Attributes = attributes; 
+            Attributes = attributes;
         }
 
         /// <summary>
@@ -98,9 +98,9 @@ namespace CodeArts.Emit
         {
             this.builder = builder;
 
-            foreach (var item in parameters)
+            foreach (var paramter in parameters)
             {
-                item.Emit(builder.DefineParameter(item.Position, item.Attributes, item.ParameterName));
+                paramter.Emit(builder.DefineParameter(paramter.Position, paramter.Attributes, paramter.ParameterName));
             }
 
             foreach (var item in customAttributes)
