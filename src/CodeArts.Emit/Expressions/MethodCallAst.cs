@@ -11,30 +11,6 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public class MethodCallAst : AstExpression
     {
-        private class ParatemerRefAst : MemberAst
-        {
-            public ParatemerRefAst(AstExpression paramterAst) : base(paramterAst.ReturnType.GetElementType(), paramterAst)
-            {
-            }
-
-            public override void Assign(ILGenerator ilg)
-            {
-                EmitUtils.EmitAssignToType(ilg, ReturnType);
-            }
-
-            protected override void MemberLoad(ILGenerator ilg)
-            {
-                EmitUtils.EmitLoadToType(ilg, ReturnType);
-            }
-
-            protected override void AssignCore(ILGenerator ilg, AstExpression value)
-            {
-                value.Load(ilg);
-
-                Assign(ilg);
-            }
-        }
-
         private readonly MethodInfo method;
         private readonly AstExpression instanceAst;
         private readonly AstExpression[] arguments;
