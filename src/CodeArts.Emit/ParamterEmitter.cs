@@ -18,6 +18,11 @@ namespace CodeArts.Emit
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         /// <summary>
+        /// 获取一个值，该值指示 System.Type 是否由引用传递。
+        /// </summary>
+        public override bool IsByRef => base.IsByRef || (Attributes & ParameterAttributes.Out) == ParameterAttributes.Out || (Attributes & ParameterAttributes.Retval) == ParameterAttributes.Retval;
+
+        /// <summary>
         /// 标记。
         /// </summary>
         public ParameterAttributes Attributes { get; }
@@ -36,15 +41,6 @@ namespace CodeArts.Emit
         /// <param name="parameterName">名称。</param>
         public ParamterEmitter(Type parameterType, int position, ParameterAttributes attributes, string parameterName) : base(parameterType, position)
         {
-            if (parameterType is null)
-            {
-                throw new ArgumentNullException(nameof(parameterType));
-            }
-
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), "参数位置不能小于零。");
-            }
             Attributes = attributes;
             ParameterName = parameterName ?? throw new ArgumentNullException(nameof(parameterName));
         }

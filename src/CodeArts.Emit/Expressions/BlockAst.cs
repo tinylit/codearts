@@ -79,7 +79,9 @@ namespace CodeArts.Emit.Expressions
         /// 发行。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg)
+        /// <param name="variables">变量。</param>
+        /// <param name="codes">代码。</param>
+        protected virtual void Load(ILGenerator ilg, List<VariableAst> variables, List<AstExpression> codes)
         {
             foreach (var variable in variables)
             {
@@ -90,6 +92,15 @@ namespace CodeArts.Emit.Expressions
             {
                 code.Load(ilg);
             }
+        }
+
+        /// <summary>
+        /// 发行。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        public override void Load(ILGenerator ilg)
+        {
+            Load(ilg, variables, codes);
 
             if (isLastReturn)
             {

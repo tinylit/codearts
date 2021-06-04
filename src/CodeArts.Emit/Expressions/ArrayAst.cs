@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -9,30 +10,6 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public class ArrayAst : AstExpression
     {
-        private class ParatemerRefAst : MemberAst
-        {
-            private readonly AstExpression paramterAst;
-
-            public override bool CanWrite => paramterAst.CanWrite;
-
-            public ParatemerRefAst(AstExpression paramterAst) : base(paramterAst.ReturnType.GetElementType(), paramterAst)
-            {
-                this.paramterAst = paramterAst;
-            }
-
-            protected override void MemberLoad(ILGenerator ilg)
-            {
-                EmitUtils.EmitLoadToType(ilg, ReturnType);
-            }
-
-            protected override void AssignCore(ILGenerator ilg, AstExpression value)
-            {
-                value.Load(ilg);
-
-                EmitUtils.EmitAssignToType(ilg, ReturnType);
-            }
-        }
-
         private readonly Type elementType;
         private readonly AstExpression[] expressions;
 
@@ -87,15 +64,10 @@ namespace CodeArts.Emit.Expressions
 
             for (int i = 0; i < expressions.Length; i++)
             {
-                ilg.Emit(OpCodes.Dup);
-                ilg.Emit(OpCodes.Ldc_I4, i);
-
                 var expressionAst = expressions[i];
 
-                if (expressionAst.ReturnType.IsByRef)
-                {
-                    expressionAst = new ParatemerRefAst(expressionAst);
-                }
+                ilg.Emit(OpCodes.Dup);
+                ilg.Emit(OpCodes.Ldc_I4, i);
 
                 expressionAst.Load(ilg);
 

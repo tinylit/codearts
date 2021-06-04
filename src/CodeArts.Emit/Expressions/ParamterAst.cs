@@ -26,6 +26,11 @@ namespace CodeArts.Emit.Expressions
         public override bool CanWrite => canWrite;
 
         /// <summary>
+        /// 获取一个值，该值指示 System.Type 是否由引用传递。
+        /// </summary>
+        public virtual bool IsByRef => ReturnType.IsByRef;
+
+        /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="paramterType">参数类型。</param>
@@ -100,6 +105,11 @@ namespace CodeArts.Emit.Expressions
                     ilg.Emit(OpCodes.Ldarg, Position);
                     break;
             }
+
+            if (IsByRef)
+            {
+                EmitUtils.EmitLoadToType(ilg, ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType);
+            }
         }
 
         /// <summary>
@@ -119,6 +129,11 @@ namespace CodeArts.Emit.Expressions
             }
 
             value.Load(ilg);
+
+            if (IsByRef)
+            {
+                EmitUtils.EmitAssignToType(ilg, ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType);
+            }
         }
     }
 }

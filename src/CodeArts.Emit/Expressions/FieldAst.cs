@@ -37,7 +37,7 @@ namespace CodeArts.Emit.Expressions
         /// 获取成员数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        protected override void MemberLoad(ILGenerator ilg)
+        protected override void LoadCore(ILGenerator ilg)
         {
             if (isStatic)
             {

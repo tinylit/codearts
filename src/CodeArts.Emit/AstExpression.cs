@@ -33,19 +33,23 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        public void Assign(ILGenerator ilg, AstExpression value)
+        public virtual void Assign(ILGenerator ilg, AstExpression value)
         {
             if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (value.ReturnType == typeof(void))
+            var valueType = value.ReturnType;
+
+            if (valueType == typeof(void))
             {
                 throw new AstException("无返回值类型赋值不能用于赋值运算!");
             }
 
-            if (value.ReturnType != ReturnType)
+            var returnType = ReturnType;
+
+            if (valueType != returnType && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
             {
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }
@@ -350,6 +354,23 @@ namespace CodeArts.Emit
         /// <param name="arguments">方法参数。</param>
         /// <returns></returns>
         public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(instanceAst, method, arguments);
+
+        /// <summary>
+        /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="method">方法。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(MethodInfo method, AstExpression arguments) => new InvocationAst(method, arguments);
+
+        /// <summary>
+        /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="method">方法。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo method, AstExpression arguments) => new InvocationAst(instanceAst, method, arguments);
 
         /// <summary>
         /// 抛出异常。

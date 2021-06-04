@@ -11,9 +11,8 @@ namespace CodeArts.Emit
     /// </summary>
     public class ConstructorEmitter : BlockAst
     {
-        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
-        private ConstructorBuilder builder;
         private int parameterIndex = 0;
+        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
 
         private class ConstructorExpression : AstExpression
         {
@@ -67,11 +66,6 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 成员。
-        /// </summary>
-        public ConstructorBuilder Value => builder ?? throw new NotImplementedException();
-
-        /// <summary>
         /// 方法的名称。
         /// </summary>
         public string Name { get; }
@@ -104,18 +98,6 @@ namespace CodeArts.Emit
             return parameter;
         }
 
-        private bool ImplementedByRuntime
-        {
-            get
-            {
-#if NET40
-                var attributes = builder.GetMethodImplementationFlags();
-#else
-                var attributes = builder.MethodImplementationFlags;
-#endif
-                return (attributes & MethodImplAttributes.Runtime) != MethodImplAttributes.IL;
-            }
-        }
         /// <summary>
         /// 调用父类构造函数。
         /// </summary>
@@ -137,29 +119,27 @@ namespace CodeArts.Emit
         /// 调用父类构造函数。
         /// </summary>
         /// <param name="constructor">构造函数。</param>
-        public void InvokeBaseConstructor(ConstructorInfo constructor)
-        {
-            Append(new ConstructorExpression(constructor));
-        }
+        public void InvokeBaseConstructor(ConstructorInfo constructor) => Append(new ConstructorExpression(constructor));
 
         /// <summary>
         /// 调用父类构造函数。
         /// </summary>
         /// <param name="constructor">构造函数。</param>
-        /// <param name="paramters">参数。</param>
-        public void InvokeBaseConstructor(ConstructorInfo constructor, params ParamterEmitter[] paramters)
-        {
-            Append(new ConstructorExpression(constructor, paramters));
-        }
+        /// <param name="parameters">参数。</param>
+        public void InvokeBaseConstructor(ConstructorInfo constructor, params ParamterEmitter[] parameters) => Append(new ConstructorExpression(constructor, parameters));
 
         /// <summary>
         /// 发行。
         /// </summary>
         public void Emit(ConstructorBuilder builder)
         {
-            this.builder = builder;
+#if NET40
+            var attributes = builder.GetMethodImplementationFlags();
+#else
+            var attributes = builder.MethodImplementationFlags;
+#endif
 
-            if (ImplementedByRuntime)
+            if ((attributes & MethodImplAttributes.Runtime) != MethodImplAttributes.IL)
             {
                 return;
             }

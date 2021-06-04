@@ -16,6 +16,7 @@ namespace CodeArts.Emit
     {
         private MethodBuilder builder;
         private int parameterIndex = 0;
+        private readonly List<ArrayAst> arrayAsts = new List<ArrayAst>();
         private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
@@ -93,14 +94,33 @@ namespace CodeArts.Emit
         /// <summary>
         /// 发行。
         /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="variables">变量。</param>
+        /// <param name="codes">代码。</param>
+        protected override void Load(ILGenerator ilg, List<VariableAst> variables, List<AstExpression> codes)
+        {
+            foreach (var variable in variables)
+            {
+                variable.Declare(ilg);
+            }
+
+            foreach (var code in codes)
+            {
+                code.Load(ilg);
+            }
+        }
+
+        /// <summary>
+        /// 发行。
+        /// </summary>
         /// <param name="builder">构造器。</param>
         public virtual void Emit(MethodBuilder builder)
         {
             this.builder = builder;
 
-            foreach (var paramter in parameters)
+            foreach (var parameter in parameters)
             {
-                paramter.Emit(builder.DefineParameter(paramter.Position, paramter.Attributes, paramter.ParameterName));
+                parameter.Emit(builder.DefineParameter(parameter.Position, parameter.Attributes, parameter.ParameterName));
             }
 
             foreach (var item in customAttributes)
