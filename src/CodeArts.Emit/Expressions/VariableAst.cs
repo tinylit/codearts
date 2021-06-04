@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// 变量。
     /// </summary>
     [DebuggerDisplay("{ReturnType.Name} variable")]
-    public sealed class VariableAst : AssignAstExpression
+    public sealed class VariableAst : AstExpression
     {
         private LocalBuilder local;
 
@@ -38,21 +38,17 @@ namespace CodeArts.Emit.Expressions
         public LocalBuilder Value => local ?? throw new AstException("变量未声明!");
 
         /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => true;
+
+        /// <summary>
         /// 取值。
         /// </summary>
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
             ilg.Emit(OpCodes.Ldloc, Value);
-        }
-
-        /// <summary>
-        /// 将当前堆载顶部的数据赋值给变量。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
-        {
-            ilg.Emit(OpCodes.Stloc, Value);
         }
 
         /// <summary>

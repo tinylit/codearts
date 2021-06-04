@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeArts.Emit.Expressions
 {
@@ -14,13 +11,13 @@ namespace CodeArts.Emit.Expressions
     {
         private class ParatemerRefAst : MemberAst
         {
+            private readonly AstExpression paramterAst;
+
+            public override bool CanWrite => paramterAst.CanWrite;
+
             public ParatemerRefAst(AstExpression paramterAst) : base(paramterAst.ReturnType.GetElementType(), paramterAst)
             {
-            }
-
-            public override void Assign(ILGenerator ilg)
-            {
-                EmitUtils.EmitAssignToType(ilg, ReturnType);
+                this.paramterAst = paramterAst;
             }
 
             protected override void MemberLoad(ILGenerator ilg)
@@ -32,7 +29,7 @@ namespace CodeArts.Emit.Expressions
             {
                 value.Load(ilg);
 
-                Assign(ilg);
+                EmitUtils.EmitAssignToType(ilg, ReturnType);
             }
         }
 
@@ -49,7 +46,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="expressions">元素。</param>
 
-        public ArrayAst(AstExpression[] expressions) : this(expressions, typeof(object[]))
+        public ArrayAst(AstExpression[] expressions) : this(expressions, typeof(object))
         {
 
         }
@@ -58,21 +55,14 @@ namespace CodeArts.Emit.Expressions
         /// 元素集合。
         /// </summary>
         /// <param name="expressions">元素。</param>
-        /// <param name="arrayType">数组类型。</param>
+        /// <param name="elementType">数组类型。</param>
 
-        public ArrayAst(AstExpression[] expressions, Type arrayType) : base(arrayType)
+        public ArrayAst(AstExpression[] expressions, Type elementType) : base(elementType.MakeArrayType())
         {
-            if (arrayType is null)
+            if (elementType is null)
             {
-                throw new ArgumentNullException(nameof(arrayType));
+                throw new ArgumentNullException(nameof(elementType));
             }
-
-            if (!arrayType.IsArray)
-            {
-                throw new ArgumentException($"“{arrayType}”不是数组类型!", nameof(arrayType));
-            }
-
-            var elementType = arrayType.GetElementType();
 
             if (!IsValid(expressions ?? throw new ArgumentNullException(nameof(expressions)), elementType))
             {
@@ -80,7 +70,7 @@ namespace CodeArts.Emit.Expressions
             }
 
             this.expressions = expressions;
-            this.elementType = arrayType.GetElementType();
+            this.elementType = elementType;
 
         }
 
@@ -90,7 +80,35 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            throw new NotImplementedException();
+            bool isObjectElememt = elementType == typeof(object);
+
+            ilg.Emit(OpCodes.Ldc_I4, expressions.Length);
+            ilg.Emit(OpCodes.Newarr, elementType);
+
+            for (int i = 0; i < expressions.Length; i++)
+            {
+                ilg.Emit(OpCodes.Dup);
+                ilg.Emit(OpCodes.Ldc_I4, i);
+
+                var expressionAst = expressions[i];
+
+                if (expressionAst.ReturnType.IsByRef)
+                {
+                    expressionAst = new ParatemerRefAst(expressionAst);
+                }
+
+                expressionAst.Load(ilg);
+
+                if (isObjectElememt)
+                {
+                    if (expressionAst.ReturnType.IsValueType || expressionAst.ReturnType.IsGenericParameter)
+                    {
+                        ilg.Emit(OpCodes.Box, expressionAst.ReturnType);
+                    }
+                }
+
+                ilg.Emit(OpCodes.Stelem_Ref);
+            }
         }
     }
 }

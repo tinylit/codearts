@@ -103,14 +103,15 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            foreach (var item in arguments)
-            {
-                item.Load(ilg);
-            }
 
             if (!method.IsStatic)
             {
                 instanceAst.Load(ilg);
+            }
+
+            foreach (var item in arguments)
+            {
+                item.Load(ilg);
             }
 
             if (method.IsStatic || method.DeclaringType.IsValueType)

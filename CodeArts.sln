@@ -99,11 +99,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.EntityFramework
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Logging", "src\CodeArts.Logging\CodeArts.Logging.csproj", "{53D1FF4E-1C62-4A6E-81F1-2DBD7337C61C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.DependencyInjection", "src\CodeArts.Db.DependencyInjection\CodeArts.Db.DependencyInjection.csproj", "{F94EDEEC-17C7-4D07-8710-F14AC7D68B2F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.DependencyInjection", "src\CodeArts.Db.DependencyInjection\CodeArts.Db.DependencyInjection.csproj", "{F94EDEEC-17C7-4D07-8710-F14AC7D68B2F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.DependencyInjection.Abstractions", "src\CodeArts.DependencyInjection.Abstractions\CodeArts.DependencyInjection.Abstractions.csproj", "{DA18F111-40EB-4BC2-B98F-A1761AEB9935}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.DependencyInjection.Abstractions", "src\CodeArts.DependencyInjection.Abstractions\CodeArts.DependencyInjection.Abstractions.csproj", "{DA18F111-40EB-4BC2-B98F-A1761AEB9935}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.DependencyInjection", "src\CodeArts.DependencyInjection\CodeArts.DependencyInjection.csproj", "{03DA8EE8-6AAB-457D-9A3C-536D9BBCD8F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.DependencyInjection", "src\CodeArts.DependencyInjection\CodeArts.DependencyInjection.csproj", "{03DA8EE8-6AAB-457D-9A3C-536D9BBCD8F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -15,8 +15,8 @@ namespace CodeArts.Emit
     {
         private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
 
-        internal static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
-        internal static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
+        private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
+        private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
         private static readonly List<object> Constants = new List<object>();
         private static readonly Dictionary<object, int> ConstantCache = new Dictionary<object, int>();
@@ -508,12 +508,18 @@ namespace CodeArts.Emit
 
         #region Constants
 
-        private static void EmitString(ILGenerator ilg, string value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitString(ILGenerator ilg, string value)
         {
             ilg.Emit(OpCodes.Ldstr, value);
         }
 
-        private static void EmitBoolean(ILGenerator ilg, bool value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitBoolean(ILGenerator ilg, bool value)
         {
             if (value)
             {
@@ -525,37 +531,55 @@ namespace CodeArts.Emit
             }
         }
 
-        private static void EmitChar(ILGenerator ilg, char value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitChar(ILGenerator ilg, char value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U2);
         }
 
-        private static void EmitByte(ILGenerator ilg, byte value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitByte(ILGenerator ilg, byte value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U1);
         }
 
-        private static void EmitSByte(ILGenerator ilg, sbyte value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitSByte(ILGenerator ilg, sbyte value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_I1);
         }
 
-        private static void EmitShort(ILGenerator ilg, short value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitShort(ILGenerator ilg, short value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_I2);
         }
 
-        private static void EmitUShort(ILGenerator ilg, ushort value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitUShort(ILGenerator ilg, ushort value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U2);
         }
 
-        private static void EmitInt(ILGenerator ilg, int value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitInt(ILGenerator ilg, int value)
         {
             OpCode c;
             switch (value)
@@ -604,13 +628,19 @@ namespace CodeArts.Emit
             ilg.Emit(c);
         }
 
-        private static void EmitUInt(ILGenerator ilg, uint value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitUInt(ILGenerator ilg, uint value)
         {
             EmitInt(ilg, (int)value);
             ilg.Emit(OpCodes.Conv_U4);
         }
 
-        private static void EmitLong(ILGenerator ilg, long value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitLong(ILGenerator ilg, long value)
         {
             ilg.Emit(OpCodes.Ldc_I8, value);
 
@@ -623,23 +653,35 @@ namespace CodeArts.Emit
             ilg.Emit(OpCodes.Conv_I8);
         }
 
-        private static void EmitULong(ILGenerator ilg, ulong value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitULong(ILGenerator ilg, ulong value)
         {
             ilg.Emit(OpCodes.Ldc_I8, (long)value);
             ilg.Emit(OpCodes.Conv_U8);
         }
 
-        private static void EmitDouble(ILGenerator ilg, double value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitDouble(ILGenerator ilg, double value)
         {
             ilg.Emit(OpCodes.Ldc_R8, value);
         }
 
-        private static void EmitSingle(ILGenerator ilg, float value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitSingle(ILGenerator ilg, float value)
         {
             ilg.Emit(OpCodes.Ldc_R4, value);
         }
 
-        private static void EmitDecimal(ILGenerator ilg, decimal value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitDecimal(ILGenerator ilg, decimal value)
         {
             if (decimal.Truncate(value) == value)
             {
@@ -666,7 +708,10 @@ namespace CodeArts.Emit
             }
         }
 
-        private static void EmitDecimalBits(ILGenerator ilg, decimal value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitDecimalBits(ILGenerator ilg, decimal value)
         {
             int[] bits = decimal.GetBits(value);
             EmitInt(ilg, bits[0]);
@@ -677,7 +722,10 @@ namespace CodeArts.Emit
             EmitNew(ilg, typeof(decimal).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }));
         }
 
-        private static void EmitNew(ILGenerator ilg, ConstructorInfo ci)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitNew(ILGenerator ilg, ConstructorInfo ci)
         {
             if (ci.DeclaringType.ContainsGenericParameters)
             {
@@ -886,6 +934,11 @@ namespace CodeArts.Emit
             }
             else
             {
+                if(valueType is null)
+                {
+                    valueType = value.GetType();
+                }
+
                 switch (value)
                 {
                     case Type type:
@@ -907,7 +960,7 @@ namespace CodeArts.Emit
                             ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
                         }
 
-                        ilg.Emit(OpCodes.Castclass, typeof(MethodInfo));
+                        ilg.Emit(OpCodes.Castclass, valueType);
                         break;
                     case Array array:
                         if (!IsSimpleArray(valueType))
@@ -1005,6 +1058,7 @@ namespace CodeArts.Emit
                         }
 
                         EmitInt(ilg, key);
+
                         ilg.Emit(OpCodes.Call, GetConstantMethod);
 
                         if (valueType.IsValueType)

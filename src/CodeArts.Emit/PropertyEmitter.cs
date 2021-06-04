@@ -58,6 +58,11 @@ namespace CodeArts.Emit
         public Type[] ParameterTypes { get; }
 
         /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => !(_Setter is null);
+
+        /// <summary>
         /// 设置Get方法。
         /// </summary>
         /// <param name="getter">数据获取器。</param>
@@ -161,19 +166,6 @@ namespace CodeArts.Emit
             ilg.Emit(OpCodes.Callvirt, _Getter.Value);
         }
 
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
-        {
-            if (_Setter is null)
-            {
-                throw new AstException($"属性“{Name}”不可写!");
-            }
-
-            ilg.Emit(OpCodes.Call, _Setter.Value);
-        }
 
         /// <summary>
         /// 赋值。
@@ -182,11 +174,6 @@ namespace CodeArts.Emit
         /// <param name="value">值。</param>
         protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
-            if (_Setter is null)
-            {
-                throw new AstException($"属性“{Name}”不可写!");
-            }
-
             value.Load(ilg);
 
             ilg.Emit(OpCodes.Call, _Setter.Value);

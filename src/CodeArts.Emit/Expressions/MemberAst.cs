@@ -6,7 +6,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 成员。
     /// </summary>
-    public abstract class MemberAst : AssignAstExpression
+    public abstract class MemberAst : AstExpression
     {
         private static class AnyAssignable { }
 

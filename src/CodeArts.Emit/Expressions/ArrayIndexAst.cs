@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// 数组索引。
     /// </summary>
     [DebuggerDisplay("{array}[{index}]")]
-    public class ArrayIndexAst : AssignAstExpression
+    public class ArrayIndexAst : AstExpression
     {
         private readonly AstExpression array;
         private readonly int index = -1;
@@ -55,54 +55,10 @@ namespace CodeArts.Emit.Expressions
             }
         }
 
-        private static void EmitInt(ILGenerator ilg, int value)
-        {
-            OpCode c;
-            switch (value)
-            {
-                case -1:
-                    c = OpCodes.Ldc_I4_M1;
-                    break;
-                case 0:
-                    c = OpCodes.Ldc_I4_0;
-                    break;
-                case 1:
-                    c = OpCodes.Ldc_I4_1;
-                    break;
-                case 2:
-                    c = OpCodes.Ldc_I4_2;
-                    break;
-                case 3:
-                    c = OpCodes.Ldc_I4_3;
-                    break;
-                case 4:
-                    c = OpCodes.Ldc_I4_4;
-                    break;
-                case 5:
-                    c = OpCodes.Ldc_I4_5;
-                    break;
-                case 6:
-                    c = OpCodes.Ldc_I4_6;
-                    break;
-                case 7:
-                    c = OpCodes.Ldc_I4_7;
-                    break;
-                case 8:
-                    c = OpCodes.Ldc_I4_8;
-                    break;
-                default:
-                    if (value >= sbyte.MinValue && value <= sbyte.MaxValue)
-                    {
-                        ilg.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
-                    }
-                    else
-                    {
-                        ilg.Emit(OpCodes.Ldc_I4, value);
-                    }
-                    return;
-            }
-            ilg.Emit(c);
-        }
+        /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => true;
 
         /// <summary>
         /// 取值。
@@ -118,17 +74,11 @@ namespace CodeArts.Emit.Expressions
             }
             else
             {
-                EmitInt(ilg, index);
+                EmitUtils.EmitInt(ilg, index);
             }
 
             EmitEnsureArrayIndexLoadedSafely(ilg, ReturnType);
         }
-
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg) => throw new NotSupportedException();
 
         /// <summary>
         /// 赋值。
@@ -162,7 +112,7 @@ namespace CodeArts.Emit.Expressions
             {
                 array.Load(ilg);
 
-                EmitInt(ilg, index);
+                EmitUtils.EmitInt(ilg, index);
             }
 
             value.Load(ilg);

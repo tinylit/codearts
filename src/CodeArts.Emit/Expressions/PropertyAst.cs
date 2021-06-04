@@ -6,7 +6,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 属性。
     /// </summary>
-    public class PropertyAst : AssignAstExpression
+    public class PropertyAst : AstExpression
     {
         private readonly PropertyInfo property;
 
@@ -20,27 +20,9 @@ namespace CodeArts.Emit.Expressions
         }
 
         /// <summary>
-        /// 赋值。
+        /// 是否可写。
         /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
-        {
-            if (!property.CanWrite)
-            {
-                throw new AstException($"{property.Name}不可写!");
-            }
-
-            var method = property.GetSetMethod() ?? property.GetSetMethod(true);
-
-            if (method.IsStatic || method.DeclaringType.IsValueType)
-            {
-                ilg.Emit(OpCodes.Call, method);
-            }
-            else
-            {
-                ilg.Emit(OpCodes.Callvirt, method);
-            }
-        }
+        public override bool CanWrite => property.CanWrite;
 
         /// <summary>
         /// 加载数据。
@@ -74,7 +56,16 @@ namespace CodeArts.Emit.Expressions
         {
             value.Load(ilg);
 
-            Assign(ilg);
+            var method = property.GetSetMethod() ?? property.GetSetMethod(true);
+
+            if (method.IsStatic || method.DeclaringType.IsValueType)
+            {
+                ilg.Emit(OpCodes.Call, method);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Callvirt, method);
+            }
         }
     }
 }

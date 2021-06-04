@@ -18,10 +18,54 @@ namespace CodeArts.Emit
         protected AstExpression(Type returnType) => ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
 
         /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public virtual bool CanWrite => false;
+
+        /// <summary>
         /// 加载数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
         public abstract void Load(ILGenerator ilg);
+
+        /// <summary>
+        /// 赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
+        public void Assign(ILGenerator ilg, AstExpression value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            if (value.ReturnType == typeof(void))
+            {
+                throw new AstException("无返回值类型赋值不能用于赋值运算!");
+            }
+
+            if (value.ReturnType != ReturnType)
+            {
+                throw new AstException("值表达式类型和当前表达式类型不相同!");
+            }
+
+            if (CanWrite)
+            {
+                AssignCore(ilg, value);
+            }
+            else
+            {
+                throw new AstException("当前表达式不可写!");
+            }
+        }
+
+        /// <summary>
+        /// 赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
+        protected virtual void AssignCore(ILGenerator ilg, AstExpression value) => throw new NotImplementedException();
 
         /// <summary>
         /// 空表达式数组。
@@ -117,12 +161,27 @@ namespace CodeArts.Emit
         public static NewArrayAst NewArray(int size) => new NewArrayAst(size);
 
         /// <summary>
-        /// 创建 object[]。
+        /// 创建 <paramref name="elementType"/>[]。
         /// </summary>
         /// <param name="size">数组大小。</param>
         /// <param name="elementType">数组元素类型。</param>
         /// <returns></returns>
         public static NewArrayAst NewArray(int size, Type elementType) => new NewArrayAst(size, elementType);
+
+        /// <summary>
+        /// 创建 object[]。
+        /// </summary>
+        /// <param name="arguments">元素。</param>
+        /// <returns></returns>
+        public static ArrayAst Array(params AstExpression[] arguments) => new ArrayAst(arguments);
+
+        /// <summary>
+        /// 创建 object[]。
+        /// </summary>
+        /// <param name="elementType">元素类型。</param>
+        /// <param name="arguments">元素。</param>
+        /// <returns></returns>
+        public static ArrayAst Array(Type elementType, params AstExpression[] arguments) => new ArrayAst(arguments, elementType);
 
         /// <summary>
         /// 数组索引。
@@ -153,7 +212,7 @@ namespace CodeArts.Emit
         /// <param name="left">左表达式。</param>
         /// <param name="right">右表达式。</param>
         /// <returns></returns>
-        public static AssignAst Assign(AssignAstExpression left, AstExpression right) => new AssignAst(left, right);
+        public static AssignAst Assign(AstExpression left, AstExpression right) => new AssignAst(left, right);
 
         /// <summary>
         /// 空合并运算符。

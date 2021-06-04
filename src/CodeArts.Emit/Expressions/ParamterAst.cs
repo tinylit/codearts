@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 namespace CodeArts.Emit.Expressions
 {
@@ -9,12 +11,19 @@ namespace CodeArts.Emit.Expressions
     /// 参数。
     /// </summary>
     [DebuggerDisplay("{ReturnType.Name} ({position})")]
-    public class ParamterAst : AssignAstExpression
+    public class ParamterAst : AstExpression
     {
+        private readonly bool canWrite = true;
+
         /// <summary>
         /// 参数位置。
         /// </summary>
         public int Position { get; }
+
+        /// <summary>
+        /// 可写。
+        /// </summary>
+        public override bool CanWrite => canWrite;
 
         /// <summary>
         /// 构造函数。
@@ -37,22 +46,27 @@ namespace CodeArts.Emit.Expressions
         /// <param name="parameter">参数。</param>
         public ParamterAst(ParameterInfo parameter) : this(parameter.ParameterType, parameter.Position + 1)
         {
+            canWrite = !IsReadOnly(parameter);
         }
 
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
+        private static bool IsReadOnly(ParameterInfo parameter)
         {
-            if (Position < byte.MaxValue)
+            if ((parameter.Attributes & (ParameterAttributes.In | ParameterAttributes.Out)) != ParameterAttributes.In)
             {
-                ilg.Emit(OpCodes.Starg_S, (byte)Position);
+                return false;
             }
-            else
+
+            if (parameter.GetRequiredCustomModifiers().Any(x => x == typeof(InAttribute)))
             {
-                ilg.Emit(OpCodes.Starg, Position);
+                return true;
             }
+
+            if (parameter.GetCustomAttributes(false).Any(x => x.GetType().FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute"))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -95,7 +109,14 @@ namespace CodeArts.Emit.Expressions
         /// <param name="value">值。</param>
         protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
-            Assign(ilg);
+            if (Position < byte.MaxValue)
+            {
+                ilg.Emit(OpCodes.Starg_S, (byte)Position);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Starg, Position);
+            }
 
             value.Load(ilg);
         }

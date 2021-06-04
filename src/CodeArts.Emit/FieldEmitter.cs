@@ -27,8 +27,6 @@ namespace CodeArts.Emit
         /// <param name="attributes">字段的属性。</param>
         public FieldEmitter(string name, Type returnType, FieldAttributes attributes) : this(name, returnType, attributes, (attributes & FieldAttributes.Static) == FieldAttributes.Static)
         {
-            Name = name;
-            Attributes = attributes;
         }
 
         private FieldEmitter(string name, Type returnType, FieldAttributes attributes, bool isStatic) : base(returnType, isStatic)
@@ -47,6 +45,11 @@ namespace CodeArts.Emit
         /// 字段的属性。
         /// </summary>
         public FieldAttributes Attributes { get; }
+
+        /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => !isStatic && (Attributes & FieldAttributes.InitOnly) != FieldAttributes.InitOnly;
 
         /// <summary>
         /// 设置默认值。
@@ -93,8 +96,11 @@ namespace CodeArts.Emit
         /// 赋值。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
+        /// <param name="value">值。</param>
+        protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
+            value.Load(ilg);
+
             if (isStatic)
             {
                 ilg.Emit(OpCodes.Stsfld, builder);
@@ -103,18 +109,6 @@ namespace CodeArts.Emit
             {
                 ilg.Emit(OpCodes.Stfld, builder);
             }
-        }
-
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
-        {
-            value.Load(ilg);
-
-            Assign(ilg);
         }
 
         /// <summary>

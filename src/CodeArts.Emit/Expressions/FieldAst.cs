@@ -14,6 +14,11 @@ namespace CodeArts.Emit.Expressions
         private readonly bool isStatic;
 
         /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => !(field.IsStatic || field.IsInitOnly);
+
+        /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="field">字段。</param>
@@ -48,7 +53,8 @@ namespace CodeArts.Emit.Expressions
         /// 赋值。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
+        /// <param name="value">值。</param>
+        protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
             if (isStatic)
             {
@@ -58,16 +64,6 @@ namespace CodeArts.Emit.Expressions
             {
                 ilg.Emit(OpCodes.Stfld, field);
             }
-        }
-
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
-        {
-            Assign(ilg);
 
             value.Load(ilg);
         }
