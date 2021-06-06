@@ -13,10 +13,13 @@ namespace CodeArts.Emit
     {
         private readonly TypeBuilder builder;
         private readonly List<MethodEmitter> methods = new List<MethodEmitter>();
+        private readonly List<AbstractTypeEmitter> abstracts = new List<AbstractTypeEmitter>();
         private readonly List<ConstructorEmitter> constructors = new List<ConstructorEmitter>();
         private readonly Dictionary<MethodEmitter, MethodInfo> overrides = new Dictionary<MethodEmitter, MethodInfo>();
         private readonly Dictionary<string, FieldEmitter> fields = new Dictionary<string, FieldEmitter>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, PropertyEmitter> properties = new Dictionary<string, PropertyEmitter>(StringComparer.OrdinalIgnoreCase);
+
+
         /// <summary>
         /// 构造函数。
         /// </summary>
@@ -24,6 +27,81 @@ namespace CodeArts.Emit
         protected AbstractTypeEmitter(TypeBuilder builder)
         {
             this.builder = builder;
+        }
+
+        /// <summary>
+        /// 创建匿名类型的构造函数。
+        /// </summary>
+        /// <param name="typeEmitter">匿名类型的所属类型。</param>
+        /// <param name="name">匿名类型名称。</param>
+        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name)
+        {
+            if (typeEmitter is null)
+            {
+                throw new ArgumentNullException(nameof(typeEmitter));
+            }
+
+            builder = typeEmitter.builder.DefineNestedType(name);
+
+            typeEmitter.abstracts.Add(this);
+        }
+
+        /// <summary>
+        /// 创建匿名类型的构造函数。
+        /// </summary>
+        /// <param name="typeEmitter">匿名类型的所属类型。</param>
+        /// <param name="name">匿名类型名称。</param>
+        /// <param name="attributes">匿名函数类型。</param>
+        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes)
+        {
+            if (typeEmitter is null)
+            {
+                throw new ArgumentNullException(nameof(typeEmitter));
+            }
+
+            builder = typeEmitter.builder.DefineNestedType(name, attributes);
+
+            typeEmitter.abstracts.Add(this);
+        }
+
+        /// <summary>
+        /// 创建匿名类型的构造函数。
+        /// </summary>
+        /// <param name="typeEmitter">匿名类型的所属类型。</param>
+        /// <param name="name">匿名类型名称。</param>
+        /// <param name="attributes">匿名函数类型。</param>
+        /// <param name="baseType">匿名函数基类。</param>
+        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType)
+        {
+            if (typeEmitter is null)
+            {
+                throw new ArgumentNullException(nameof(typeEmitter));
+            }
+
+            builder = typeEmitter.builder.DefineNestedType(name, attributes, baseType);
+
+            typeEmitter.abstracts.Add(this);
+        }
+
+        /// <summary>
+        /// 创建匿名类型的构造函数。
+        /// </summary>
+        /// <param name="typeEmitter">匿名类型的所属类型。</param>
+        /// <param name="name">匿名类型名称。</param>
+        /// <param name="attributes">匿名函数类型。</param>
+        /// <param name="baseType">匿名函数基类。</param>
+        /// <param name="interfaces">匿名函数实现接口。</param>
+        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType,
+                                  Type[] interfaces)
+        {
+            if (typeEmitter is null)
+            {
+                throw new ArgumentNullException(nameof(typeEmitter));
+            }
+
+            builder = typeEmitter.builder.DefineNestedType(name, attributes, baseType, interfaces);
+
+            typeEmitter.abstracts.Add(this);
         }
 
         /// <summary>
@@ -206,6 +284,11 @@ namespace CodeArts.Emit
                 DefineDefaultConstructor();
             }
 
+            foreach (var emitter in abstracts)
+            {
+                emitter.Emit();
+            }
+
             foreach (FieldEmitter emitter in fields.Values)
             {
                 emitter.Emit(builder.DefineField(emitter.Name, emitter.ReturnType, emitter.Attributes));
@@ -277,10 +360,12 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public bool IsCreated() => builder.IsCreated();
 
+        private Type emitType;
+
         /// <summary>
         /// 创建类型。
         /// </summary>
         /// <returns></returns>
-        public virtual Type CreateType() => Emit();
+        public Type CreateType() => builder.IsCreated() ? emitType : (emitType = Emit());
     }
 }

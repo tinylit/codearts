@@ -24,6 +24,8 @@ namespace CodeArts.Emit
 
         private static object GetConstant(int index) => Constants[index];
 
+        private static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+
         #region Convert
 
         private static bool IsConvertible(Type type)
@@ -934,7 +936,7 @@ namespace CodeArts.Emit
             }
             else
             {
-                if(valueType is null)
+                if (valueType is null)
                 {
                     valueType = value.GetType();
                 }
@@ -1143,7 +1145,7 @@ namespace CodeArts.Emit
                     throw new NotSupportedException();
             }
 
-            label_core:
+        label_core:
             {
                 LocalBuilder lb = ilg.DeclareLocal(type);
                 ilg.Emit(OpCodes.Ldloca, lb);
@@ -1224,7 +1226,7 @@ namespace CodeArts.Emit
                     break;
             }
 
-            label_core:
+        label_core:
             {
                 ilg.Emit(OpCodes.Ldobj, type);
             }
@@ -1302,7 +1304,7 @@ namespace CodeArts.Emit
                     break;
             }
 
-            label_core:
+        label_core:
             {
                 ilg.Emit(OpCodes.Stobj, type);
             }

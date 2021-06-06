@@ -11,6 +11,8 @@ namespace CodeArts.Emit.Expressions
     [DebuggerDisplay("{body} is {isType.Name}")]
     public class TypeIsAst : AstExpression
     {
+        private static bool IsNullable(Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+
         private enum AnalyzeTypeIsResult
         {
             KnownFalse,
@@ -60,7 +62,7 @@ namespace CodeArts.Emit.Expressions
 
             if (result == AnalyzeTypeIsResult.KnownAssignable)
             {
-                if (type.IsNullable())
+                if (IsNullable(type))
                 {
                     body.Load(ilg);
 
@@ -100,12 +102,12 @@ namespace CodeArts.Emit.Expressions
                 return AnalyzeTypeIsResult.KnownFalse;
             }
 
-            Type nnOperandType = operandType.IsNullable() ? Nullable.GetUnderlyingType(operandType) : operandType;
-            Type nnTestType = testType.IsNullable() ? Nullable.GetUnderlyingType(testType) : testType;
+            Type nnOperandType = IsNullable(operandType) ? Nullable.GetUnderlyingType(operandType) : operandType;
+            Type nnTestType = IsNullable(testType) ? Nullable.GetUnderlyingType(testType) : testType;
 
             if (nnTestType.IsAssignableFrom(nnOperandType))
             {
-                if (operandType.IsValueType && !operandType.IsNullable())
+                if (operandType.IsValueType && !IsNullable(operandType))
                 {
                     return AnalyzeTypeIsResult.KnownTrue;
                 }

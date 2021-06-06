@@ -59,9 +59,7 @@ namespace CodeArts.Emit.Expressions
         {
             ilg.BeginCatchBlock(exceptionType);
 
-            variable?.Assign(ilg);
-
-            body.Load(ilg);
+            variable?.Assign(ilg, body);
         }
     }
 }
