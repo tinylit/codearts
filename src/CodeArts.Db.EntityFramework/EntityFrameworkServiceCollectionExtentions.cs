@@ -22,9 +22,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <typeparam name="TContext">数据库上下文。</typeparam>
         /// <param name="services">服务集合。</param>
-        /// <param name="lifetime">声明周期。</param>
+        /// <param name="lifetime">在容器中注册仓库和DbContext服务的生存期。</param>
+        /// <param name="optionsLifetime">在容器中注册DbContextOptions服务的生存期。</param>
         /// <returns></returns>
-        public static IServiceCollection AddDefaultRepositories<TContext>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped) where TContext : DbContext
+        public static IServiceCollection AddDefaultRepositories<TContext>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped, ServiceLifetime optionsLifetime = ServiceLifetime.Scoped) where TContext : DbContext
         {
             var contextType = typeof(TContext);
 
@@ -85,7 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     services.Add(new ServiceDescriptor(typeof(ILinqRepository<>).MakeGenericType(entityType), CreateNewInstance(repositoryType, contextType), lifetime));
                 });
 
-            return services.AddDbContext<TContext>();
+            return services.AddDbContext<TContext>(lifetime, optionsLifetime);
         }
 
         private readonly static MethodInfo GetServiceMtd = typeof(IServiceProvider).GetMethod(nameof(IServiceProvider.GetService));

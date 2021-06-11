@@ -222,14 +222,14 @@ namespace CodeArts.Emit
             }
             else
             {
-                var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
+                var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+
                 return assemblyBuilder.DefineDynamicModule(moduleName);
             }
 #else
             var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
 
-            var module = assemblyBuilder.DefineDynamicModule(moduleName);
-            return module;
+            return assemblyBuilder.DefineDynamicModule(moduleName);
 #endif
         }
 
