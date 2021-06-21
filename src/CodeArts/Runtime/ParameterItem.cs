@@ -36,7 +36,7 @@ namespace CodeArts.Runtime
         /// </summary>
         public bool IsOptional => Info.IsOptional;
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 是否有默认值。
         /// </summary>

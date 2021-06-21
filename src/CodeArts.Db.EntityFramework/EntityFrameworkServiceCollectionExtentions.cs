@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using CodeArts.Db;
 using CodeArts.Db.EntityFramework;
 using Microsoft.EntityFrameworkCore;

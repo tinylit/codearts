@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 #else
@@ -39,7 +39,7 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         /// <param name="entity">实体。</param>
         /// <returns></returns>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         EntityEntry<TEntity> Entry(TEntity entity);
 #else
         DbEntityEntry<TEntity> Entry(TEntity entity);
@@ -49,7 +49,7 @@ namespace CodeArts.Db.EntityFramework
         /// Inserts a new entity synchronously.
         /// </summary>
         /// <param name="entity">The entity to insert.</param>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         EntityEntry<TEntity> Insert(TEntity entity);
 #else
         TEntity Insert(TEntity entity);
@@ -67,7 +67,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="entities">The entities to insert.</param>
         void Insert(IEnumerable<TEntity> entities);
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// Inserts a new entity asynchronously.
         /// </summary>
@@ -225,7 +225,7 @@ namespace CodeArts.Db.EntityFramework
         /// <returns></returns>
         TEntity FirstOrDefault(TKey id);
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 是否存在数据。
         /// </summary>

@@ -213,7 +213,7 @@ namespace CodeArts.Db.Lts
             }
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
         {
             private readonly IDbContext context;
@@ -230,7 +230,7 @@ namespace CodeArts.Db.Lts
             }
 
             public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                 => enumerator ??= new AsyncEnumerator<T>(context, readyParam, commandSql, cancellationToken);
 #else
                 => enumerator ?? (enumerator = new AsyncEnumerator<T>(context, readyParam, commandSql, cancellationToken));
@@ -264,7 +264,7 @@ namespace CodeArts.Db.Lts
 
             public T Current => Mapper.ThrowsMap<T>(dbDataReader);
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             public async ValueTask<bool> MoveNextAsync()
 #else
             public async Task<bool> MoveNextAsync()
@@ -319,7 +319,7 @@ namespace CodeArts.Db.Lts
                 return await dbDataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
             }
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             public async ValueTask DisposeAsync()
             {
                 if (isAsyncEnumeratorDisposed)

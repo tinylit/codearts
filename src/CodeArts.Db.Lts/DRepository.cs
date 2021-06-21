@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -15,7 +15,7 @@ namespace CodeArts.Db.Lts
     /// 数据仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
     public class DRepository<TEntity> : Repository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IAsyncEnumerable<TEntity>, IEnumerable<TEntity>, IRepository, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #else
     public class DRepository<TEntity> : Repository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IRepository, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
@@ -128,7 +128,7 @@ namespace CodeArts.Db.Lts
             return DbContext.Execute(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }));
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 更新数据。
         /// </summary>

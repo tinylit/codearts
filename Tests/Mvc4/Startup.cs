@@ -1,6 +1,7 @@
 ﻿using CodeArts;
 using CodeArts.Mvc;
 using CodeArts.Mvc.Builder;
+using System;
 
 namespace Mvc4
 {
@@ -13,7 +14,7 @@ namespace Mvc4
                 startup.DoStartup();
             }
         }
-        public override void Configure(IApplicationBuilder builder)
+        public void Configure(IApplicationBuilder builder, IServiceProvider serviceProvider)
         {
             base.Configure(builder.MapPost("/test", "/api/values/test"));
         }

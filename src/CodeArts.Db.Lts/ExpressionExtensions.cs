@@ -189,8 +189,38 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 case LambdaExpression lambda:
                     return lambda.Compile().DynamicInvoke();
+                case UnaryExpression unary when unary.NodeType == ExpressionType.Quote:
+                    return unary.Operand.GetValueFromExpression();
                 default:
-                    return Expression.Lambda(node).Compile().DynamicInvoke();
+                    throw new NotSupportedException();
+            }
+        }
+
+        /// <summary>
+        /// 获取表达式值。
+        /// </summary>
+        /// <param name="node">表达式。</param>
+        /// <param name="args">表达式执行参数。</param>
+        /// <returns></returns>
+        internal static object GetValueFromExpression(this Expression node, params object[] args)
+        {
+            if (node is null)
+            {
+                return null;
+            }
+
+            switch (node)
+            {
+                case ConstantExpression constant:
+                    return constant.Value;
+                case LambdaExpression lambda when lambda.Body is ConstantExpression constant:
+                    return constant.Value;
+                case LambdaExpression lambda when lambda.Parameters.Count == args?.Length:
+                    return lambda.Compile().DynamicInvoke(args);
+                case UnaryExpression unary when unary.NodeType == ExpressionType.Quote:
+                    return unary.Operand.GetValueFromExpression(args);
+                default:
+                    throw new NotSupportedException();
             }
         }
 

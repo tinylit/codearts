@@ -125,7 +125,7 @@ namespace CodeArts
             }
 
             if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>)
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
                         || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>)
 #endif
                         )
@@ -134,7 +134,7 @@ namespace CodeArts
             }
 
             if (typeDefinition == typeof(IDictionary<,>)
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
                         || typeDefinition == typeof(IReadOnlyDictionary<,>)
 #endif
                         )

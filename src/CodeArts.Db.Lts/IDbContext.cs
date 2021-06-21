@@ -84,7 +84,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IEnumerable<T> Query<T>(SQL sql, object param = null, int? commandTimeout = null);
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
         /// <summary>
         /// 使用事务。
@@ -154,7 +154,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         int Execute(Expression expression);
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 执行命令。
         /// </summary>
@@ -174,7 +174,7 @@ namespace CodeArts.Db.Lts
         /// <remarks>校验数据表</remarks>
         int Execute<T>(SQL sql, object param = null, int? commandTimeout = null) where T : class, IEntiy;
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 执行增删改功能。
         /// </summary>

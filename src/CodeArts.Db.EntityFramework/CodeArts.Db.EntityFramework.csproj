@@ -18,7 +18,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
-		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
+		<DefineConstants>$(DefineConstants);NET45_OR_GREATER</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
@@ -35,11 +35,6 @@
 		<Reference Include="System.Transactions" />
 		<PackageReference Include="EntityFramework" Version="6.4.4" />
 	</ItemGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
-		<DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\CodeArts.Db\CodeArts.Db.csproj" />

@@ -182,7 +182,7 @@ namespace CodeArts.Db.Dapper
 
             var sb = new StringBuilder();
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             sb.Append(sqlStr[..colsGrp.Index])
 #else
             sb.Append(sqlStr.Substring(0, colsGrp.Index))
@@ -193,7 +193,7 @@ namespace CodeArts.Db.Dapper
 
             if (orderByMt.Success)
             {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                 sb.Append(sqlStr[subIndex..orderByMt.Index]);
 #else
                 sb.Append(sqlStr.Substring(subIndex, orderByMt.Index - subIndex));
@@ -201,7 +201,7 @@ namespace CodeArts.Db.Dapper
             }
             else
             {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                 sb.Append(sqlStr[subIndex..]);
 #else
                 sb.Append(sqlStr.Substring(subIndex));
@@ -210,7 +210,7 @@ namespace CodeArts.Db.Dapper
 
             return sb.Append(";")
                  .Append(orderByMt.Success
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                  ? settings.ToSQL(sqlStr[..orderByMt.Index], pageSize, pageSize * pageIndex, sqlStr[orderByMt.Index..])
 #else
                  ? settings.ToSQL(sqlStr.Substring(0, orderByMt.Index), pageSize, pageSize * pageIndex, sqlStr.Substring(orderByMt.Index))
@@ -261,7 +261,7 @@ namespace CodeArts.Db.Dapper
             }
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
         /// <summary>
         /// 查询第一行第一列结果。

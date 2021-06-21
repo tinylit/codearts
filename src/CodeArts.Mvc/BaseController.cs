@@ -1,7 +1,7 @@
 ﻿using CodeArts.Mvc.Filters;
 using System.Collections.Generic;
 using System;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,7 +17,7 @@ namespace CodeArts.Mvc
     /// 控制器基类（数据注解验证）。
     /// </summary>
     [ValidateModel]
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
     public abstract class BaseController : ControllerBase
 
 #else
@@ -25,7 +25,7 @@ namespace CodeArts.Mvc
     public abstract class BaseController : ApiController
 #endif
     {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 成功。
         /// </summary>
@@ -153,7 +153,7 @@ namespace CodeArts.Mvc
         [NonAction]
         protected virtual TUser GetUser()
         {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
             var authorize = HttpContext.Request.Headers[HeaderNames.Authorization];
             var tokenHandler = new JwtSecurityTokenHandler();
             var value = authorize.ToString();
@@ -169,7 +169,7 @@ namespace CodeArts.Mvc
             var provider = new UtcDateTimeProvider();
             var validator = new JwtValidator(serializer, provider);
             var urlEncoder = new JwtBase64UrlEncoder();
-#if NET461
+#if NET461_OR_GREATER
             var decoder = new JwtDecoder(serializer, validator, urlEncoder, JwtAlgorithmGen.Create());
 #else
             var decoder = new JwtDecoder(serializer, validator, urlEncoder);

@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using System.IO;
@@ -17,7 +17,7 @@ namespace CodeArts.Mvc
     /// </summary>
     public static class ResponseExtensions
     {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 返回json。
         /// </summary>
@@ -47,7 +47,7 @@ namespace CodeArts.Mvc
         }
 #endif
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 返回json。
         /// </summary>
@@ -75,7 +75,7 @@ namespace CodeArts.Mvc
         }
 #endif
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 返回json。
         /// </summary>

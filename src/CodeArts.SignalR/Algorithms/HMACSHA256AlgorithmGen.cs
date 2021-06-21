@@ -1,5 +1,5 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
-#if !NET461
+﻿#if NET40_OR_GREATER
+#if NET40 || NET45 || NET451 || NET452
 using JWT;
 #endif
 using JWT.Algorithms;

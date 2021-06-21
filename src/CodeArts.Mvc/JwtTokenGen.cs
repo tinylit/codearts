@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
@@ -17,7 +17,7 @@ namespace CodeArts.Mvc
     /// </summary>
     public static class JwtTokenGen
     {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 生成令牌。
         /// </summary>

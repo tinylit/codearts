@@ -1,4 +1,4 @@
-﻿#if NET40 || NET45 || NET451 || NET452 || NET461
+﻿#if NET40_OR_GREATER
 using CodeArts.SignalR.Algorithms;
 #if NET461
 using JWT.Algorithms;

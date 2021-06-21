@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +36,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IEnumerable<T> Query<T>(IDbContext context, CommandSql commandSql);
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 查询第一个结果。
         /// </summary>

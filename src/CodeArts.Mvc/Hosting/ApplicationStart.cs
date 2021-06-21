@@ -1,4 +1,4 @@
-﻿#if NET40 || NET_NORMAL
+﻿#if NET40_OR_GREATER
 using CodeArts.Mvc.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-#if NET_NORMAL
+#if NET45_OR_GREATER
 using System.Threading.Tasks;
 #endif
 using System.Web;
@@ -28,6 +28,8 @@ namespace CodeArts.Mvc.Hosting
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class ApplicationStart
     {
+        private static readonly Type ResolverType = typeof(IDependencyResolver);
+        private static readonly Type ScopeType = typeof(IDependencyScope);
         private class ApplicationBuilder : IApplicationBuilder
         {
             private Func<RequestDelegate, RequestDelegate> _middleware = next => next;
@@ -54,11 +56,44 @@ namespace CodeArts.Mvc.Hosting
                 return _middleware.Invoke(request);
             }
         }
+
+        private class DefaultScope : IDependencyScope, IDisposable
+        {
+            private readonly IServiceScope serviceScope;
+
+            public DefaultScope(IServiceScope serviceScope)
+            {
+                this.serviceScope = serviceScope;
+            }
+
+            public void Dispose() => serviceScope.Dispose();
+
+            public object GetService(Type serviceType)
+            {
+                var serviceObj = serviceScope.ServiceProvider.GetService(serviceType);
+
+                if (serviceObj is null)
+                {
+                    if (serviceType == ResolverType)
+                    {
+                        return new DefaultResolver(serviceScope.ServiceProvider);
+                    }
+
+                    if (serviceType == ScopeType)
+                    {
+                        return this;
+                    }
+                }
+
+                return serviceObj;
+            }
+
+            public IEnumerable<object> GetServices(Type serviceType) => serviceScope.ServiceProvider.GetServices(serviceType);
+        }
         private class DefaultResolver : IDependencyResolver, IDependencyScope, IDisposable
         {
             private readonly IServiceProvider provider;
-
-            public IDependencyScope BeginScope() => this;
+            public IDependencyScope BeginScope() => new DefaultScope(provider.CreateScope());
 
             public DefaultResolver(IServiceProvider provider)
             {
@@ -67,48 +102,27 @@ namespace CodeArts.Mvc.Hosting
 
             public void Dispose() => GC.SuppressFinalize(this);
 
-            public object GetService(Type serviceType) => provider.GetService(serviceType);
+            public object GetService(Type serviceType)
+            {
+                var serviceObj = provider.GetService(serviceType);
+
+                if (serviceObj is null)
+                {
+                    if (serviceType == ResolverType)
+                    {
+                        return this;
+                    }
+
+                    if (serviceType == ScopeType)
+                    {
+                        return this;
+                    }
+                }
+
+                return serviceObj;
+            }
 
             public IEnumerable<object> GetServices(Type serviceType) => provider.GetServices(serviceType);
-        }
-        private class MultiResolver : IDependencyResolver, IServiceProvider, IDependencyScope, IDisposable
-        {
-            private readonly IServiceProvider provider;
-            private readonly IDependencyResolver dependencyResolver;
-            public MultiResolver(IServiceProvider provider, IDependencyResolver dependencyResolver)
-            {
-                this.provider = provider;
-                this.dependencyResolver = dependencyResolver;
-            }
-
-            /// <summary>
-            /// Gets the service object of the specified type.
-            /// </summary>
-            /// <param name="serviceType">服务类型。</param>
-            /// <returns></returns>
-            public object GetService(Type serviceType) => provider.GetService(serviceType) ?? dependencyResolver.GetService(serviceType);
-
-            public IDependencyScope BeginScope() => this;
-
-            public IEnumerable<object> GetServices(Type serviceType)
-            {
-                foreach (var item in provider.GetServices(serviceType))
-                {
-                    yield return item;
-                }
-
-                foreach (var item in dependencyResolver.GetServices(serviceType))
-                {
-                    yield return item;
-                }
-            }
-
-            public void Dispose()
-            {
-                dependencyResolver.Dispose();
-
-                GC.SuppressFinalize(this);
-            }
         }
 
         private class Loader
@@ -208,7 +222,7 @@ namespace CodeArts.Mvc.Hosting
                                 }
                                 else
                                 {
-                                    config.DependencyResolver = new MultiResolver(services.BuildServiceProvider(), config.DependencyResolver);
+                                    throw new NotSupportedException("不支持多次定义“HttpConfiguration.DependencyResolver”的实现!");
                                 }
                             }
                         }
@@ -397,7 +411,7 @@ namespace CodeArts.Mvc.Hosting
 
             public void Initialize(HttpApplication context)
             {
-#if !NET40
+#if NET45_OR_GREATER
                 pipeline.Configuration.EnsureInitialized();
 #endif
 

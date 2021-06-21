@@ -27,7 +27,7 @@ namespace CodeArts.Emit
 
         // Used to lock the module builder creation
         private readonly object moduleLocker = new object();
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
         // Specified whether the generated assemblies are intended to be saved
         private readonly bool savePhysicalAssembly;
 
@@ -177,7 +177,7 @@ namespace CodeArts.Emit
             get { return Path.GetFileName(assemblyPath); }
         }
 
-#if NET_NORMAL
+#if NET45_OR_GREATER
         /// <summary>
         /// 程序集文件地址。
         /// </summary>
@@ -212,7 +212,7 @@ namespace CodeArts.Emit
                 AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
                 return assemblyBuilder.DefineDynamicModule(moduleName);
             }
-#elif NET_NORMAL
+#elif NET45_OR_GREATER
             if (savePhysicalAssembly)
             {
                 AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
@@ -234,7 +234,7 @@ namespace CodeArts.Emit
         }
 
 
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
         /// <summary>
         /// 保存程序集。
         /// </summary>

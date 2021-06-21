@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
@@ -234,7 +234,7 @@ namespace CodeArts.Mvc
 using Newtonsoft.Json.Serialization;
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.Converters;
-#if NET_NORMAL
+#if NET45_OR_GREATER
 using Swashbuckle.Application;
 using System.IO;
 #endif
@@ -315,7 +315,7 @@ namespace CodeArts.Mvc
         /// <param name="config">配置。</param>
         public virtual void Configuration(HttpConfiguration config)
         {
-#if !NET40
+#if NET45_OR_GREATER
             // Web API 路由
             config.MapHttpAttributeRoutes();
 
@@ -360,7 +360,7 @@ namespace CodeArts.Mvc
 
             config.Services.Replace(typeof(ModelMetadataProvider), new DataAnnotationsModelMetadataProvider(config.Services.GetService(typeof(ModelMetadataProvider)) as System.Web.Http.Metadata.Providers.DataAnnotationsModelMetadataProvider));
 
-#if !NET40
+#if NET45_OR_GREATER
             if (useSwaggerUi)
             {
                 //? SwaggerUi
@@ -373,7 +373,7 @@ namespace CodeArts.Mvc
             config.Filters.Add(new DExceptionFilterAttribute());
         }
 
-#if !NET40
+#if NET45_OR_GREATER
         /// <summary>
         /// 配置Swagger。
         /// </summary>

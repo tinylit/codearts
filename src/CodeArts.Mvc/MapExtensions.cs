@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 #else
@@ -141,7 +141,7 @@ namespace CodeArts.Mvc
                 throw new ArgumentNullException(nameof(destinationPath));
             }
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
             return app.Map(path, builder => builder.Run(async context =>
             {
                 string method = context.Request.Method;
@@ -158,7 +158,7 @@ namespace CodeArts.Mvc
                 if (!Enum.TryParse(method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
                 {
                     context.Response.StatusCode = 404;
-                    
+
                     return;
                 }
 
@@ -171,7 +171,7 @@ namespace CodeArts.Mvc
                     return;
                 }
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 
                 if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
                 {
@@ -204,7 +204,7 @@ namespace CodeArts.Mvc
                 }
                 else if (contentType.IsNotEmpty())
                 {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
                     if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
                     {
                         var length = context.Request.ContentLength.Value;
@@ -226,7 +226,7 @@ namespace CodeArts.Mvc
 #endif
                 }
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
                 try
                 {
                     await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)).ConfigureAwait(false));

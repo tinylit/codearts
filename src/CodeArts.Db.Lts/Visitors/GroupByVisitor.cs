@@ -314,23 +314,7 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (node.Expression.IsGrouping())
             {
-                bool flag = false;
-
-                foreach (var kv in groupByExpressions)
-                {
-                    if (flag)
-                    {
-                        writer.Delimiter();
-                    }
-                    else
-                    {
-                        flag = true;
-                    }
-
-                    Visit(kv.Value);
-
-                    writer.As("__key____" + kv.Key.Name.ToLower());
-                }
+                throw new DSyntaxErrorException("不支持导航属性!");
             }
             else
             {

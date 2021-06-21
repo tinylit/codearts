@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 #else
@@ -8,10 +8,9 @@ using System.Data.Entity.Infrastructure;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Linq.Expressions;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -43,7 +42,7 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         /// <param name="entity">实体。</param>
         /// <returns></returns>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         public virtual EntityEntry<TEntity> Entry(TEntity entity) => _dbContext.Entry(entity);
 #else
         public virtual DbEntityEntry<TEntity> Entry(TEntity entity) => _dbContext.Entry(entity);
@@ -72,7 +71,7 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         /// <param name="entity">实体。</param>
         /// <returns></returns>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         public virtual EntityEntry<TEntity> Insert(TEntity entity) => _dbSet.Add(entity);
 #else
         public virtual TEntity Insert(TEntity entity) => _dbSet.Add(entity);
@@ -90,7 +89,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="entities">实体集合。</param>
         public virtual void Insert(IEnumerable<TEntity> entities) => _dbSet.AddRange(entities);
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 插入数据。
         /// </summary>
@@ -250,7 +249,7 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         IEnumerator IEnumerable.GetEnumerator() => _dbQueryable.GetEnumerator();
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         #region ForEach
         #region ToList/Array
 
@@ -383,7 +382,7 @@ namespace CodeArts.Db.EntityFramework
         /// <returns></returns>
         public virtual TEntity FirstOrDefault(TKey id) => this.FirstOrDefault(x => x.Id.Equals(id));
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 是否存在数据。
         /// </summary>

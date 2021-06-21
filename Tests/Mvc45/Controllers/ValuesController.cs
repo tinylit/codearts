@@ -1,6 +1,7 @@
 ﻿using CodeArts;
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Web.Http;
 
@@ -19,11 +20,10 @@ namespace Mvc45.Controllers
 
     /// <inheritdoc />
     public class ValuesController : BaseController
-    { 
+    {
         /// <inheritdoc />
         public ValuesController(IDependency dependency)
         {
-
         }
 
         /// <inheritdoc />
@@ -34,22 +34,14 @@ namespace Mvc45.Controllers
         }
 
         /// <inheritdoc />
-        // GET api/values/5
-        [HttpGet]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        /// <inheritdoc />
         [HttpPost]
-        public void Post([FromBody]string value)
+        public void Post([FromBody] string value)
         {
         }
 
         /// <inheritdoc />
         [HttpPut]
-        public void Put(int id, [FromBody]string value)
+        public void Put(int id, [FromBody] string value)
         {
         }
 
@@ -59,17 +51,6 @@ namespace Mvc45.Controllers
         public void Delete(int id)
         {
             throw new BusiException("认证测试成功");
-        }
-        /// <inheritdoc />
-        [HttpGet]
-        [ActionName("login")]
-        public DResult Login(string account, string password)
-        {
-            return DResult.Ok(new
-            {
-                id = 100000,
-                name = account
-            });
         }
     }
 }

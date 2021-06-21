@@ -109,6 +109,14 @@
       <Project>{2fe5dea1-f628-476b-bacf-0fa220537a29}</Project>
       <Name>CodeArts.Configuration</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.DependencyInjection.Abstractions\CodeArts.DependencyInjection.Abstractions.csproj">
+      <Project>{da18f111-40eb-4bc2-b98f-a1761aeb9935}</Project>
+      <Name>CodeArts.DependencyInjection.Abstractions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.DependencyInjection\CodeArts.DependencyInjection.csproj">
+      <Project>{03da8ee8-6aab-457d-9a3c-536d9bbcd8f6}</Project>
+      <Name>CodeArts.DependencyInjection</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj">
       <Project>{9b087ff3-37b9-4477-a2cb-c44f1388758d}</Project>
       <Name>CodeArts.Mvc</Name>

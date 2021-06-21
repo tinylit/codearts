@@ -1,4 +1,4 @@
-﻿#if !NET40
+﻿#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;

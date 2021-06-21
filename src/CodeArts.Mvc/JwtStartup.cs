@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -157,7 +157,7 @@ namespace CodeArts.Mvc
 using CodeArts.Mvc.Authentication;
 using CodeArts.Mvc.Builder;
 using Microsoft.Extensions.DependencyInjection;
-#if !NET40
+#if NET45_OR_GREATER
 using Swashbuckle.Application;
 using System;
 #endif

@@ -57,7 +57,7 @@ namespace CodeArts
         /// </summary>
         public void DoStartup()
         {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             startups ??= types
                 .Select(x => (IStartup)Activator.CreateInstance(x, true))
                 .ToList();

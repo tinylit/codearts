@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     {
         public static ResultCache None { get; } = new ResultCache(CallSiteResultCacheLocation.None, ServiceCacheKey.Empty);
 
-        internal ResultCache(CallSiteResultCacheLocation lifetime, ServiceCacheKey cacheKey)
+        private ResultCache(CallSiteResultCacheLocation lifetime, ServiceCacheKey cacheKey)
         {
             Location = lifetime;
             Key = cacheKey;

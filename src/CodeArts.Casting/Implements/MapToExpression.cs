@@ -489,13 +489,14 @@ namespace CodeArts.Casting.Implements
             {
                 var typeDefinition = conversionType.GetGenericTypeDefinition();
 
-                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-                    return ByDataTableToList<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
-
-#if !NET40
-                if (typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-                    return ByDataTableToList<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                   || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>)
 #endif
+                    )
+                {
+                    return ByDataTableToList<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+                }
 
                 return ByDataTableToUnknownInterface<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
             }
@@ -708,19 +709,20 @@ namespace CodeArts.Casting.Implements
 
                 var typeArguments = conversionType.GetGenericArguments();
 
-                if (typeDefinition == typeof(IDictionary<,>))
-                {
-                    return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArguments);
-                }
-
-#if !NET40
-                if (typeDefinition == typeof(IReadOnlyDictionary<,>))
-                {
-                    return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArguments);
-                }
+                if (typeDefinition == typeof(IDictionary<,>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyDictionary<,>)
 #endif
+                    )
+                {
+                    return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
 
-                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>)
+#endif
+                    )
                 {
                     var typeArgument = typeArguments.First();
 
@@ -729,18 +731,6 @@ namespace CodeArts.Casting.Implements
                         return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
                     }
                 }
-
-#if !NET40
-                else if (typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-                {
-                    var typeArgument = typeArguments.First();
-
-                    if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                    {
-                        return ByDataRowToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
-                    }
-                }
-#endif
             }
 
             throw new InvalidCastException();
@@ -1146,19 +1136,20 @@ namespace CodeArts.Casting.Implements
 
                 var typeArguments = conversionType.GetGenericArguments();
 
-                if (typeDefinition == typeof(IDictionary<,>))
-                {
-                    return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArguments);
-                }
-
-#if !NET40
-                if (typeDefinition == typeof(IReadOnlyDictionary<,>))
-                {
-                    return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArguments);
-                }
+                if (typeDefinition == typeof(IDictionary<,>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyDictionary<,>)
 #endif
+                    )
+                {
+                    return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
 
-                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>)
+#endif
+                    )
                 {
                     var typeArgument = typeArguments.First();
 
@@ -1167,18 +1158,6 @@ namespace CodeArts.Casting.Implements
                         return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
                     }
                 }
-
-#if !NET40
-                else if (typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-                {
-                    var typeArgument = typeArguments.First();
-
-                    if (typeArgument.IsGenericType && typeArgument.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                    {
-                        return ByIDataRecordToDictionary<TResult>(sourceType, conversionType, typeArgument.GetGenericArguments());
-                    }
-                }
-#endif
             }
 
             throw new InvalidCastException();

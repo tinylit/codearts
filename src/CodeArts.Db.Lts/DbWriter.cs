@@ -225,7 +225,7 @@ namespace CodeArts.Db.Lts
                         var typeDefinition = type.GetGenericTypeDefinition();
 
                         if (typeDefinition == typeof(IList<>)
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
                             || typeDefinition == typeof(IReadOnlyCollection<>)
 #endif
                             || typeDefinition == typeof(ICollection<>)
@@ -694,7 +694,7 @@ namespace CodeArts.Db.Lts
             /// <returns></returns>
             public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public Task<int> ExecuteCommandAsync(CancellationToken cancellationToken = default) => ExecuteCommandAsync(null, cancellationToken);
 
             public Task<int> ExecuteCommandAsync(int? commandTimeout, CancellationToken cancellationToken = default)

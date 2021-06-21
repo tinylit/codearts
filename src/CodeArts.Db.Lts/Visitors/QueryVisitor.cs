@@ -91,15 +91,16 @@ namespace CodeArts.Db.Lts.Visitors
                             var parameterExp = Expression.Parameter(argType);
 
                             //? 获取表达式值。
-                            var lambdaEx = (LambdaExpression)(new LambdaExpressionVisitor(parameterExp).Visit(node.Arguments[1]));
+                            var expression = new MyExpressionVisitor(parameterExp)
+                                        .Visit(node.Arguments[1]);
 
                             if (argType == defaultType || defaultType.IsAssignableFrom(argType))
                             {
-                                DefaultValue = lambdaEx.Compile().DynamicInvoke(DefaultValue);
+                                DefaultValue = expression.GetValueFromExpression(DefaultValue);
                             }
                             else
                             {
-                                DefaultValue = lambdaEx.Compile().DynamicInvoke(Mapper.ThrowsMap(DefaultValue, argType));
+                                DefaultValue = expression.GetValueFromExpression(Mapper.ThrowsMap(DefaultValue, argType));
                             }
                         }
                     }
@@ -187,23 +188,13 @@ namespace CodeArts.Db.Lts.Visitors
         /// <returns></returns>
         protected override IEnumerable<ICustomVisitor> GetCustomVisitors() => visitors;
 
-        private class LambdaExpressionVisitor : ExpressionVisitor
+        private class MyExpressionVisitor : ExpressionVisitor
         {
             private readonly ParameterExpression parameter;
 
-            public LambdaExpressionVisitor(ParameterExpression parameter)
+            public MyExpressionVisitor(ParameterExpression parameter)
             {
                 this.parameter = parameter;
-            }
-
-            protected override Expression VisitUnary(UnaryExpression node)
-            {
-                if (node.Operand.NodeType == ExpressionType.Lambda)
-                {
-                    return base.Visit(node.Operand);
-                }
-
-                return base.VisitUnary(node);
             }
 
             protected override Expression VisitLambda<T>(Expression<T> node)

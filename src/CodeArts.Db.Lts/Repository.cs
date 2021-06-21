@@ -14,7 +14,7 @@ namespace CodeArts.Db.Lts
     /// 数据仓储。
     /// </summary>
     /// <typeparam name="T">实体类型。</typeparam>
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
     public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IRepository, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
 #else
     public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IRepository, IQueryable, IQueryProvider, IEnumerable
@@ -192,7 +192,7 @@ namespace CodeArts.Db.Lts
         /// 表达式。
         /// </summary>
         public Expression Expression
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             => expression ?? (_ContextExpression ??= Expression.Constant(this));
 #else
             => expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
@@ -212,7 +212,7 @@ namespace CodeArts.Db.Lts
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 异步消息。
         /// </summary>

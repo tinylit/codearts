@@ -43,7 +43,7 @@ namespace System
             }
             public abstract T RequestImplement(string method, int timeout = 5000);
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public Task<T> GetAsync(int timeout = 5000) => RequestAsync("GET", timeout);
 
 
@@ -108,7 +108,7 @@ namespace System
 
             void DownloadFile(string fileName, int timeout = 5000);
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000);
 
             Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000);
@@ -221,7 +221,7 @@ namespace System
 
                 } while (true);
             }
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             IVerifyRequestableExtendAsync<T> IVerifyRequestableExtendAsync<T>.And(Predicate<T> predicate)
             {
                 if (predicate is null)
@@ -335,7 +335,7 @@ namespace System
                 return new VerifyRequestableExtend<T>(this, predicate);
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             IVerifyRequestableExtendAsync<T> IRequestableExtendAsync<T>.DataVerify(Predicate<T> predicate)
             {
                 if (predicate is null)
@@ -350,7 +350,7 @@ namespace System
 
         #region 补充
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         private class ThenRequestableAsync : CastRequestable, IThenConditionRequestableAsync, IThenAndConditionRequestableAsync, IDisposableFileRequestable
         {
             private volatile bool isAllocated = false;
@@ -437,7 +437,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 if (isAllocated)
@@ -590,7 +590,7 @@ namespace System
 
             public IXmlRequestable<T> XmlCast<T>(T _) where T : class => XmlCast<T>();
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             IJsonRequestableAsync<T> ICastRequestableAsync.JsonCast<T>(NamingType namingType) => new JsonRequestable<T>(this, namingType);
 
             IJsonRequestableAsync<T> ICastRequestableAsync.JsonCast<T>(T _, NamingType namingType) => new JsonRequestable<T>(this, namingType);
@@ -715,7 +715,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             ICatchRequestableAsync ICatchRequestableAsync.WebCatch(Action<WebException> log)
             {
                 if (log is null)
@@ -921,7 +921,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -1218,7 +1218,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
 
             IThenRequestableAsync IThenRequestableAsync.Or(Predicate<WebException> predicate)
@@ -1626,7 +1626,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IThenAndConditionRequestableAsync IThenConditionRequestableAsync.If(Predicate<WebException> predicate)
             {
@@ -1828,7 +1828,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -1937,7 +1937,7 @@ namespace System
                 return false;
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IResultCatchRequestableAsync<T> IJsonCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
@@ -2050,7 +2050,7 @@ namespace System
                 return false;
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IResultCatchRequestableAsync<T> IJsonResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
@@ -2143,7 +2143,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IResultCatchRequestableAsync<T> IXmlCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
@@ -2236,7 +2236,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IResultCatchRequestableAsync<T> IXmlResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
@@ -2295,7 +2295,7 @@ namespace System
                     log.Invoke();
                 }
             }
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -2347,7 +2347,7 @@ namespace System
                     log.Invoke();
                 }
             }
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -2776,7 +2776,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 using (var client = new WebCoreClient
@@ -2928,7 +2928,7 @@ namespace System
                 }
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             IFinallyStringRequestableAsync IResultStringCatchRequestableAsync.Finally(Action log) => new FinallyStringRequestable(this, log);
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -2977,7 +2977,7 @@ namespace System
                 return JsonHelper.Json<T>(requestable.RequestImplement(method, timeout), NamingType);
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IJsonResultCatchRequestableAsync<T> IJsonRequestableAsync<T>.JsonCatch(Action<string, Exception> log) => new JsonCatchRequestable<T>(requestable, log, NamingType);
 
@@ -3031,7 +3031,7 @@ namespace System
                 return XmlHelper.XmlDeserialize<T>(requestable.RequestImplement(method, timeout));
             }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IXmlCatchRequestableAsync<T> IXmlRequestableAsync<T>.XmlCatch(Action<string, XmlException> log) => new XmlCatchRequestable<T>(requestable, log);
 

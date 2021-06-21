@@ -29,16 +29,6 @@
 		<PackageReference Include="Dapper" Version="2.0.78" />
 	</ItemGroup>
 
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
-		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
-		<DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<ProjectReference Include="..\CodeArts.Db\CodeArts.Db.csproj" />
 	</ItemGroup>

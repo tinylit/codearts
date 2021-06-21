@@ -198,7 +198,7 @@ namespace CodeArts.Runtime
         /// 属性标记集合。
         /// </summary>
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         public IEnumerable<Attribute> Attributes => attributes ??= invokeAttr.Invoke();
 #else
         public IEnumerable<Attribute> Attributes => attributes ?? (attributes = invokeAttr.Invoke());

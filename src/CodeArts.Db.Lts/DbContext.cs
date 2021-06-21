@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db.Exceptions;
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -103,7 +104,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 数据供应器。
         /// </summary>
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         protected IDbRepositoryProvider DbProvider => repositoryProvider ??= CreateDbProvider();
 #else
         protected IDbRepositoryProvider DbProvider => repositoryProvider ?? (repositoryProvider = CreateDbProvider());
@@ -120,7 +121,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 执行器。
         /// </summary>
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         protected IDbRepositoryExecuter DbExecuter => repositoryExecuter ??= CreateDbExecuter();
 #else
         protected IDbRepositoryExecuter DbExecuter => repositoryExecuter ?? (repositoryExecuter = CreateDbExecuter());
@@ -186,7 +187,7 @@ namespace CodeArts.Db.Lts
         /// <param name="inTransactionExecution">事务中执行。</param>
         /// <param name="isolationLevel">事务隔离级别。</param>
         /// <returns></returns>
-        public T Transaction<T>(Func<IDbCommandFactory, T> inTransactionExecution, System.Data.IsolationLevel isolationLevel)
+        public T Transaction<T>(Func<IDbCommandFactory, T> inTransactionExecution, IsolationLevel isolationLevel)
         {
             if (inTransactionExecution is null)
             {
@@ -381,7 +382,7 @@ namespace CodeArts.Db.Lts
             return DbProvider.Query<T>(this, commandSql);
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
         /// <summary>
         /// 使用事务。
@@ -401,7 +402,7 @@ namespace CodeArts.Db.Lts
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                 await using (var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
 #else
                 using (var transaction = connection.BeginTransaction())
@@ -413,7 +414,7 @@ namespace CodeArts.Db.Lts
                     {
                         var result = await inTransactionExecution.Invoke(commandFactory);
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 #else
                         transaction.Commit();
@@ -423,7 +424,7 @@ namespace CodeArts.Db.Lts
                     }
                     catch (Exception)
                     {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                         await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
 #else
                         transaction.Rollback();
@@ -454,7 +455,7 @@ namespace CodeArts.Db.Lts
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                 await using (var transaction = await connection.BeginTransactionAsync(isolationLevel, cancellationToken).ConfigureAwait(false))
 #else
                 using (var transaction = connection.BeginTransaction(isolationLevel))
@@ -466,7 +467,7 @@ namespace CodeArts.Db.Lts
                     {
                         var result = await inTransactionExecution.Invoke(commandFactory);
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 #else
                         transaction.Commit();
@@ -476,7 +477,7 @@ namespace CodeArts.Db.Lts
                     }
                     catch (Exception)
                     {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                         await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
 #else
                         transaction.Rollback();
@@ -661,7 +662,7 @@ namespace CodeArts.Db.Lts
             return Execute(sql, param, commandTimeout);
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 执行命令。
         /// </summary>

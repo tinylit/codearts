@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 #else
@@ -7,7 +7,7 @@ using System.Data.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -150,7 +150,7 @@ namespace CodeArts.Db.EntityFramework
             return contexts.ToArray();
         }
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// Saves all changes made in this context to the database.
         /// </summary>
@@ -166,7 +166,7 @@ namespace CodeArts.Db.EntityFramework
 #endif
         {
             int count = 0;
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
             var list = new List<IDbContextTransaction>();
 #else
             var list = new List<DbContextTransaction>();
@@ -177,7 +177,7 @@ namespace CodeArts.Db.EntityFramework
                 {
                     list.Add(context.Database.BeginTransaction());
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
                     count += context.SaveChanges(acceptAllChangesOnSuccess);
 #else
                     count += context.SaveChanges();
@@ -208,7 +208,7 @@ namespace CodeArts.Db.EntityFramework
             return count;
         }
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// Saves all changes made in this context to the database with distributed transaction.
         /// </summary>
@@ -253,7 +253,7 @@ namespace CodeArts.Db.EntityFramework
         }
 #endif
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// Saves all changes made in this context to the database with distributed transaction.
         /// </summary>
@@ -262,7 +262,7 @@ namespace CodeArts.Db.EntityFramework
         public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
         {
             int count = 0;
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
             var list = new List<IDbContextTransaction>();
 #else
             var list = new List<DbContextTransaction>();
@@ -271,7 +271,7 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var context in dbContexts)
                 {
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
                     list.Add(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false));
 #else
                     list.Add(context.Database.BeginTransaction());
@@ -282,7 +282,7 @@ namespace CodeArts.Db.EntityFramework
 
                 foreach (var item in list)
                 {
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
                     await item.CommitAsync().ConfigureAwait(false);
 #else
                     item.Commit();
@@ -293,7 +293,7 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var item in list)
                 {
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
                     await item.RollbackAsync().ConfigureAwait(false);
 #else
                     item.Rollback();
@@ -306,7 +306,7 @@ namespace CodeArts.Db.EntityFramework
             {
                 foreach (var item in list)
                 {
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
                     await item.DisposeAsync().ConfigureAwait(false);
 #else
                     item.Dispose();

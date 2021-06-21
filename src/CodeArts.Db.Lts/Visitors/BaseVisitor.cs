@@ -1671,7 +1671,7 @@ namespace CodeArts.Db.Lts.Visitors
         /// </summary>
         protected virtual void VisitToCaseConversion(MethodCallExpression node)
         {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             writer.Write(node.Method.Name[2..]);
 #else
             writer.Write(node.Method.Name.Substring(2));

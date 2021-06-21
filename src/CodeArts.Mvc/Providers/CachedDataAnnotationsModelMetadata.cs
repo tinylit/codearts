@@ -1,6 +1,5 @@
-﻿#if NET40 || NET_NORMAL
+﻿#if NET40_OR_GREATER
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Web.Http.Metadata.Providers;
 using System.Web.Http.Validation;

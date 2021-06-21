@@ -1,5 +1,5 @@
-﻿#if NET40 || NET_NORMAL
-#if !NET461
+﻿#if NET40_OR_GREATER
+#if !NET461_OR_GREATER
 using JWT;
 #endif
 using JWT.Algorithms;

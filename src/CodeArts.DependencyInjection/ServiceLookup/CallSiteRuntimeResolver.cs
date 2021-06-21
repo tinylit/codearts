@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
             catch (Exception ex) when (ex.InnerException != null)
             {
-#if !NET40
+#if NET45_OR_GREATER
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
 #endif
                 // The above line will always throw, but the compiler requires we throw explicitly.

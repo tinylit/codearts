@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 #else
 using System.Web.Http.Metadata;
@@ -47,7 +47,7 @@ namespace CodeArts.Mvc
 
             ValidationCache[typeof(T)] = (attr, context, value) => validator.Invoke((T)attr, context, value);
         }
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 数据验证。
         /// </summary>
@@ -79,7 +79,7 @@ namespace CodeArts.Mvc
             {
                 var metadata = validationContext.ModelMetadata;
 #if NETCOREAPP3_1
-var memberName =metadata.Name;
+                var memberName =metadata.Name;
 #else
                 var memberName = metadata.MetadataKind == Microsoft.AspNetCore.Mvc.ModelBinding.Metadata.ModelMetadataKind.Property
                     ? metadata.PropertyName
@@ -115,14 +115,14 @@ var memberName =metadata.Name;
             }
         }
 #else
-                /// <summary>
-                /// 数据验证。
-                /// </summary>
-                /// <param name="validator">验证器。</param>
-                /// <param name="metadata">模型数据。</param>
-                /// <param name="validationAttribute">验证属性。</param>
-                /// <param name="container">数据。</param>
-                public static IEnumerable<ModelValidationResult> Validate(System.Web.Http.Validation.ModelValidator validator, ModelMetadata metadata, ValidationAttribute validationAttribute, object container)
+        /// <summary>
+        /// 数据验证。
+        /// </summary>
+        /// <param name="validator">验证器。</param>
+        /// <param name="metadata">模型数据。</param>
+        /// <param name="validationAttribute">验证属性。</param>
+        /// <param name="container">数据。</param>
+        public static IEnumerable<ModelValidationResult> Validate(System.Web.Http.Validation.ModelValidator validator, ModelMetadata metadata, ValidationAttribute validationAttribute, object container)
         {
             if (validator is null)
             {

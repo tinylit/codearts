@@ -1,5 +1,5 @@
 ﻿using CodeArts;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc;
 #else
 using System.Web.Http;
@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class DependencyInjectionServiceCollectionExtentions
     {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，也会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】）。
         /// </summary>
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
         public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
         {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
             string pattern = "di:pattern".Config("*");
 #else
             string pattern = "di-pattern".Config("*");
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .Where(x => x.IsClass || x.IsInterface)
                 .ToList();
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
             var controllerBaseType = typeof(ControllerBase);
 #else
             var controllerBaseType = typeof(ApiController);
@@ -53,12 +53,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 .Where(x => x.IsClass && !x.IsAbstract && controllerBaseType.IsAssignableFrom(x))
                 .ToList();
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
             int maxDepth = "di:depth".Config(5);
-            ServiceLifetime lifetime = "di:lifetime".Config(ServiceLifetime.Transient);
+            ServiceLifetime lifetime = "di:lifetime".Config(ServiceLifetime.Scoped);
 #else
             int maxDepth = "di-depth".Config(5);
-            ServiceLifetime lifetime = "di-lifetime".Config(ServiceLifetime.Transient);
+            ServiceLifetime lifetime = "di-lifetime".Config(ServiceLifetime.Scoped);
 #endif
 
             if (!Enum.IsDefined(typeof(ServiceLifetime), lifetime))
@@ -88,6 +88,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (flag)
                     {
+#if NET40_OR_GREATER
+                        services.AddTransient(controllerType);
+#endif
+
                         break;
                     }
                 }
@@ -106,6 +110,11 @@ namespace Microsoft.Extensions.DependencyInjection
         private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, ServiceLifetime lifetime)
         {
             if (services.Any(x => x.ServiceType == serviceType))
+            {
+                return true;
+            }
+
+            if (serviceType == typeof(IServiceProvider))
             {
                 return true;
             }
@@ -153,7 +162,7 @@ namespace Microsoft.Extensions.DependencyInjection
                                 case ServiceLifetime.Singleton:
                                     services.AddSingleton(serviceType, implementationType);
                                     break;
-#if !NET40
+#if NET45_OR_GREATER
                                 case ServiceLifetime.Scoped:
                                     services.AddScoped(serviceType, implementationType);
                                     break;
@@ -185,11 +194,9 @@ namespace Microsoft.Extensions.DependencyInjection
                         case ServiceLifetime.Singleton:
                             services.AddSingleton(serviceType, implementationType);
                             break;
-#if !NET40
                         case ServiceLifetime.Scoped:
                             services.AddScoped(serviceType, implementationType);
                             break;
-#endif
                         case ServiceLifetime.Transient:
                         default:
                             services.AddTransient(serviceType, implementationType);

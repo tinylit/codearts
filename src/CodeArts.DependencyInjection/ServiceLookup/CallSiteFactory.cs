@@ -324,12 +324,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 var callSite = GetCallSite(item.ParameterType, callSiteChain);
 
-                if (callSite == null && TryGetDefaultValue(item, out var defaultValue))
+                if (callSite is null && TryGetDefaultValue(item, out var defaultValue))
                 {
                     callSite = new ConstantCallSite(serviceType, defaultValue);
                 }
 
-                if (callSite == null)
+                if (callSite is null)
                 {
                     if (throwIfCallSiteNotFound)
                     {

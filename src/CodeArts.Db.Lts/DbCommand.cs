@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.Common;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -16,7 +16,7 @@ namespace CodeArts.Db.Lts
         private readonly IDbCommand command;
         private readonly ISQLCorrectSettings settings;
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         private readonly System.Data.Common.DbCommand dbCommand;
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace CodeArts.Db.Lts
 
         /// <inheritdoc />
         public IDataParameterCollection Parameters
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             => parameters ??= new DbParameterCollection(command.Parameters, settings);
 #else
             => parameters ?? (parameters = new DbParameterCollection(command.Parameters, settings));
@@ -146,7 +146,7 @@ namespace CodeArts.Db.Lts
                 {
                     transaction = null;
                 }
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                 else if (value is System.Data.Common.DbTransaction dbTransaction)
                 {
                     transaction = new DbTransactionAsync(dbTransaction);
@@ -197,7 +197,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public object ExecuteScalar() => command.ExecuteScalar();
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <inheritdoc />
         public Task<int> ExecuteNonQueryAsyc(CancellationToken cancellationToken = default)
         {
@@ -260,7 +260,7 @@ namespace CodeArts.Db.Lts
         }
 #endif
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         /// <inheritdoc />
         public ValueTask DisposeAsync()
         {

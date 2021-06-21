@@ -770,7 +770,11 @@ namespace CodeArts.Db.Lts.Visitors
                     case UnaryExpression unary:
                         return Join(unary.Operand, isJoin);
                     case LambdaExpression lambda when lambda.Parameters.Count == 1 || lambda.Parameters.Count == 2:
+#if NETSTANDARD2_1_OR_GREATER
+                        var parameter = lambda.Parameters[^1];
+#else
                         var parameter = lambda.Parameters[lambda.Parameters.Count - 1];
+#endif
 
                         if (isJoin)
                         {
@@ -947,26 +951,7 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (node.Expression.IsGrouping())
             {
-                bool flag = false;
-
-                foreach (var kv in groupByExpressions)
-                {
-                    if (flag)
-                    {
-                        writer.Delimiter();
-                    }
-                    else
-                    {
-                        flag = true;
-                    }
-
-                    byVisitor.Visit(kv.Value);
-
-                    if (inSelect)
-                    {
-                        writer.As("__key____" + kv.Key.Name.ToLower());
-                    }
-                }
+                throw new DSyntaxErrorException("不支持导航属性!");
             }
             else
             {
@@ -1204,7 +1189,7 @@ namespace CodeArts.Db.Lts.Visitors
             }
         }
 
-        #region SELECT
+#region SELECT
         /// <summary>
         /// Select。
         /// </summary>
@@ -1261,15 +1246,15 @@ namespace CodeArts.Db.Lts.Visitors
 
             return node;
         }
-        #endregion
+#endregion
 
-        #region SQL
+#region SQL
         /// <summary>
         /// SQL
         /// </summary>
         /// <returns></returns>
         public override string ToSQL() => writer.ToSQL(take, skip);
-        #endregion
+#endregion
 
         /// <inheritdoc />
         protected override void Dispose(bool disposing)

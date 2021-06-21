@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -7,7 +7,7 @@ using System;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 #endif
-#if NET_CORE || NET_NORMAL
+#if NETSTANDARD2_0_OR_GREATER || NET45_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -23,7 +23,7 @@ namespace CodeArts.Db.EntityFramework
         private readonly IReadOnlyConnectionConfig connectionConfig;
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// inheritdoc
         /// </summary>
@@ -86,7 +86,7 @@ namespace CodeArts.Db.EntityFramework
         /// </summary>
         public ISQLCorrectSettings Settings => DbAdapter.Settings;
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         private IDbConnectionLinqAdapter connectionAdapter;
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace CodeArts.Db.EntityFramework
         protected virtual IDbConnectionAdapter CreateDbAdapter(string providerName) => LinqConnectionManager.Get(providerName);
 #endif
 
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// inheritdoc
         /// </summary>
@@ -156,7 +156,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="sql">SQL。</param>
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         public virtual IQueryable<TEntity> FromSql<TEntity>(SQL sql, params object[] parameters) where TEntity : class
             => Set<TEntity>().FromSqlRaw(sql.ToString(Settings), parameters);
 
@@ -172,13 +172,13 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public virtual int ExecuteCommand(SQL sql, params object[] parameters)
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
             => Database.ExecuteSqlRaw(sql.ToString(Settings), parameters);
 #else
             => Database.ExecuteSqlCommand(sql.ToString(Settings), parameters);
 #endif
 
-#if NET_CORE || NET_NORMAL
+#if NETSTANDARD2_0_OR_GREATER || NET45_OR_GREATER
 
         /// <summary>
         /// 执行语句。
@@ -187,7 +187,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public virtual Task<int> ExecuteCommandAsync(SQL sql, params object[] parameters)
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
             => Database.ExecuteSqlRawAsync(sql.ToString(Settings), parameters);
 #else
             => Database.ExecuteSqlCommandAsync(sql.ToString(Settings), parameters);
@@ -201,7 +201,7 @@ namespace CodeArts.Db.EntityFramework
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public virtual Task<int> ExecuteCommandAsync(SQL sql, CancellationToken cancellationToken, params object[] parameters)
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
             => Database.ExecuteSqlRawAsync(sql.ToString(Settings), parameters ?? Enumerable.Empty<object>(), cancellationToken);
 #else
             => Database.ExecuteSqlCommandAsync(sql.ToString(Settings), cancellationToken, parameters);

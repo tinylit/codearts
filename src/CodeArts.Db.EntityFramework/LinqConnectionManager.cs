@@ -9,7 +9,7 @@ namespace CodeArts.Db.EntityFramework
     /// </summary>
     public static class LinqConnectionManager
     {
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         private static readonly Dictionary<string, IDbConnectionLinqAdapter> Adapters;
 #else
         private static readonly Dictionary<string, IDbConnectionAdapter> Adapters;
@@ -18,7 +18,7 @@ namespace CodeArts.Db.EntityFramework
         /// <summary>
         /// 静态构造函数。
         /// </summary>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         static LinqConnectionManager() => Adapters = new Dictionary<string, IDbConnectionLinqAdapter>();
 #else
         static LinqConnectionManager() => Adapters = new Dictionary<string, IDbConnectionAdapter>();
@@ -26,7 +26,7 @@ namespace CodeArts.Db.EntityFramework
 
         /// <summary> 注册适配器。</summary>
         /// <param name="adapter">适配器。</param>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         public static void RegisterAdapter(IDbConnectionLinqAdapter adapter)
 #else
         public static void RegisterAdapter(IDbConnectionAdapter adapter)
@@ -48,7 +48,7 @@ namespace CodeArts.Db.EntityFramework
         /// <summary> 创建数据库适配器。</summary>
         /// <param name="providerName">供应商名称。</param>
         /// <returns></returns>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         public static IDbConnectionLinqAdapter Get(string providerName)
 #else
         public static IDbConnectionAdapter Get(string providerName)

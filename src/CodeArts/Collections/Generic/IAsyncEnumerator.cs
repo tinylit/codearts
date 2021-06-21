@@ -1,4 +1,4 @@
-﻿#if NET_NORMAL || NETSTANDARD2_0
+﻿#if NET45_OR_GREATER || NETSTANDARD2_0
 using System.Threading.Tasks;
 
 namespace System.Collections.Generic

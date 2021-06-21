@@ -52,7 +52,7 @@ namespace System
 
                     if (char.IsUpper(name[0]))
                     {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                         string value = name[1..];
 #else
                         string value = name.Substring(1);

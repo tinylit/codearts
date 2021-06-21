@@ -13,7 +13,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 默认数据库连接配置。
         /// </summary>
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
         public const string DefaultConfigName = "connectionStrings:default";
 #else
         public const string DefaultConfigName = "connectionStrings/default";
