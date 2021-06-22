@@ -41,9 +41,7 @@ namespace CodeArts.Db.Lts
                 throw new ArgumentNullException(nameof(connectionConfig));
             }
 
-            this.connectionConfig = connectionConfig;
-
-            DbContext = Create(connectionConfig);
+            DbContext = Create(this.connectionConfig = connectionConfig);
         }
 
         /// <summary>
@@ -97,10 +95,10 @@ namespace CodeArts.Db.Lts
             {
                 var attr = DbConfigCache.GetOrAdd(GetType(), type =>
                 {
-                    return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbReadConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
                 }) ?? DbConfigCache.GetOrAdd(ElementType, type =>
                 {
-                    return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbReadConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
                 });
 
                 return attr.GetConfig();

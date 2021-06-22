@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Data.SqlClient;
 
 namespace CodeArts.Db
@@ -25,6 +26,11 @@ namespace CodeArts.Db
         /// 心跳。
         /// </summary>
         public virtual double ConnectionHeartbeat { get; set; } = 5D;
+
+        /// <summary>
+        /// typeof(<see cref="SqlConnection"/>)
+        /// </summary>
+        public Type DbConnectionType => typeof(SqlConnection);
 
         /// <summary> 创建数据库连接。 </summary>
         /// <returns></returns>

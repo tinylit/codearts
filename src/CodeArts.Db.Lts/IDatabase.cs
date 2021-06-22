@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Threading;
@@ -74,7 +73,7 @@ namespace CodeArts.Db.Lts
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
         Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default);
-        #endif
+#endif
 
     }
 }

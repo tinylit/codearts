@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using System;
 using System.Data;
 
 namespace CodeArts.Db
@@ -27,6 +28,11 @@ namespace CodeArts.Db
         /// 心跳。
         /// </summary>
         public virtual double ConnectionHeartbeat { get; set; } = 5D;
+
+        /// <summary>
+        /// typeof(<see cref="MySqlConnection"/>)
+        /// </summary>
+        public Type DbConnectionType => typeof(MySqlConnection);
 
         /// <summary>
         /// 创建数据库连接。

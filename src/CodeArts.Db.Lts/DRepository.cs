@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -21,6 +22,9 @@ namespace CodeArts.Db.Lts
     public class DRepository<TEntity> : Repository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IRepository, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #endif
     {
+        private readonly IReadOnlyConnectionConfig connectionConfig;
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+
         private static readonly Type TypeSelfEntity = typeof(TEntity);
 
         private static readonly MethodInfo FromMethod = QueryableMethods.From.MakeGenericMethod(TypeSelfEntity);
@@ -40,7 +44,10 @@ namespace CodeArts.Db.Lts
         /// 构造函数。
         /// </summary>
         /// <param name="connectionConfig">链接配置。</param>
-        public DRepository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig) { }
+        public DRepository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig)
+        {
+            this.connectionConfig = connectionConfig;
+        }
 
         /// <summary>
         /// 构造函数。
@@ -57,6 +64,28 @@ namespace CodeArts.Db.Lts
         /// <param name="expression">表达式。</param>
         private DRepository(IDbContext context, Expression expression) : base(context, expression)
         {
+        }
+
+        /// <summary>
+        /// 获取数据库配置。
+        /// </summary>
+        /// <returns></returns>
+        protected override IReadOnlyConnectionConfig GetDbConfig()
+        {
+            if (connectionConfig is null)
+            {
+                var attr = DbConfigCache.GetOrAdd(GetType(), type =>
+                {
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbWriteConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
+                }) ?? DbConfigCache.GetOrAdd(ElementType, type =>
+                {
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbWriteConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
+                });
+
+                return attr.GetConfig();
+            }
+
+            return connectionConfig;
         }
 
         /// <summary>
