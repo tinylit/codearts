@@ -836,7 +836,7 @@ namespace UnitTest
                          where x.Id > 0 && c.Id < y
                          group x by new { x.Id, x.Bcid, GroupId = c.Id, c.Registertime, x.CreatedTime } into g
                          orderby g.Key.Registertime descending
-                         select new { g.Key };
+                         select new { g.Key.Id, g.Key.Bcid, g.Key.GroupId, g.Key.Registertime, g.Key.CreatedTime };
 
 
             var list = result.ToList();
@@ -2015,28 +2015,6 @@ namespace UnitTest
         /// 分组测试。
         /// </summary>
         [TestMethod]
-        public void GroupByMultiFieldAnonymousKeyPropertyTest()
-        {
-            var user = new UserRepository();
-
-            var linq = from x in user
-                       where x.Id > 0
-                       group x by new { x.Mobile, x.Bcid } into g
-                       where g.Key.Mobile == ""
-                       orderby g.Count()
-                       select new
-                       {
-                           g.Key,
-                           CreatedTime = g.Max(x => x.CreatedTime)
-                       };
-
-            var results = linq.ToList();
-        }
-
-        /// <summary>
-        /// 分组测试。
-        /// </summary>
-        [TestMethod]
         public void GroupByMultiFieldClassKeyPropertyTest()
         {
             var user = new UserRepository();
@@ -2048,29 +2026,7 @@ namespace UnitTest
                        orderby g.Count()
                        select new
                        {
-                           g.Key,
-                           CreatedTime = g.Max(x => x.CreatedTime)
-                       };
-
-            var results = linq.ToList();
-        }
-
-        /// <summary>
-        /// 分组测试。
-        /// </summary>
-        [TestMethod]
-        public void GroupByMultiFieldClassKeyWithClassPropertyTest()
-        {
-            var user = new UserRepository();
-
-            var linq = from x in user
-                       where x.Id > 0
-                       group x by new FeiUsers { Mobile = x.Mobile, Bcid = x.Bcid } into g
-                       where g.Key.Mobile == ""
-                       orderby g.Count()
-                       select new GroupByTest
-                       {
-                           Key = g.Key,
+                           g.Key.Bcid,
                            CreatedTime = g.Max(x => x.CreatedTime)
                        };
 
@@ -2092,7 +2048,8 @@ namespace UnitTest
                        orderby g.Count()
                        select new
                        {
-                           g.Key,
+                           g.Key.Bcid,
+                           g.Key.Mobile,
                            CreatedTime = g.Max(x => x.CreatedTime)
                        };
 
@@ -2114,7 +2071,8 @@ namespace UnitTest
                        orderby g.Count()
                        select new
                        {
-                           g.Key,
+                           g.Key.Bcid,
+                           g.Key.Mobile,
                            CreatedTime = g.Max(x => x.CreatedTime)
                        };
 

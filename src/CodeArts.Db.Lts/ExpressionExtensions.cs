@@ -192,7 +192,7 @@ namespace CodeArts.Db.Lts
                 case UnaryExpression unary when unary.NodeType == ExpressionType.Quote:
                     return unary.Operand.GetValueFromExpression();
                 default:
-                    throw new NotSupportedException();
+                    return Expression.Lambda(node).Compile().DynamicInvoke();
             }
         }
 
@@ -204,6 +204,11 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         internal static object GetValueFromExpression(this Expression node, params object[] args)
         {
+            if (args is null || args.Length == 0)
+            {
+                return node.GetValueFromExpression();
+            }
+
             if (node is null)
             {
                 return null;
@@ -215,7 +220,7 @@ namespace CodeArts.Db.Lts
                     return constant.Value;
                 case LambdaExpression lambda when lambda.Body is ConstantExpression constant:
                     return constant.Value;
-                case LambdaExpression lambda when lambda.Parameters.Count == args?.Length:
+                case LambdaExpression lambda when lambda.Parameters.Count == args.Length:
                     return lambda.Compile().DynamicInvoke(args);
                 case UnaryExpression unary when unary.NodeType == ExpressionType.Quote:
                     return unary.Operand.GetValueFromExpression(args);

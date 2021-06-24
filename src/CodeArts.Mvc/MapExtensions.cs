@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 #if NETCOREAPP2_0_OR_GREATER
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 #else

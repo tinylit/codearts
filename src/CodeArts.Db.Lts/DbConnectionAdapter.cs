@@ -44,6 +44,10 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 格式化。
         /// </summary>
+        #if NETSTANDARD2_1_OR_GREATER
+        public ICustomVisitorList Visitors => visitters ??= new CustomVisitorList();
+#else
         public ICustomVisitorList Visitors => visitters ?? (visitters = new CustomVisitorList());
+#endif
     }
 }

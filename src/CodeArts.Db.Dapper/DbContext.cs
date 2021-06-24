@@ -182,11 +182,7 @@ namespace CodeArts.Db.Dapper
 
             var sb = new StringBuilder();
 
-#if NETSTANDARD2_1_OR_GREATER
-            sb.Append(sqlStr[..colsGrp.Index])
-#else
             sb.Append(sqlStr.Substring(0, colsGrp.Index))
-#endif
                 .Append("COUNT(1)");
 
             int subIndex = colsGrp.Index + colsGrp.Value.Length;

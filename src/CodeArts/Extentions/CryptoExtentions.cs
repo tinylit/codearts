@@ -329,10 +329,8 @@ namespace System
                 rsa.FromXmlString(privateKey);
 
 #if NET40 || NET45
-
                 return Encoding.UTF8.GetString(rsa.DecryptValue(Convert.FromBase64String(data)));
 #else
-
                 return Encoding.UTF8.GetString(rsa.Decrypt(Convert.FromBase64String(data), RSAEncryptionPadding.OaepSHA512));
 #endif
             }
@@ -360,9 +358,10 @@ namespace System
             }
 
             var sb = new StringBuilder();
-            for (int i = 0; i < buffer.Length; i++)
+
+            foreach (var item in buffer)
             {
-                sb.Append(buffer[i].ToString(toUpperCase ? "X2" : "x2"));
+                sb.Append(item.ToString(toUpperCase ? "X2" : "x2"));
             }
 
             return sb.ToString();

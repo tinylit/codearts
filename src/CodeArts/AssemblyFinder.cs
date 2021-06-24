@@ -51,7 +51,33 @@ namespace CodeArts
                 pattern += ".dll";
             }
 
-            return AssemblyCache.GetOrAdd(pattern, searchPattern => Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, Assembly.LoadFrom)).ToList());
+            return AssemblyCache.GetOrAdd(pattern, searchPattern =>
+            {
+                Assembly[] assemblies = null;
+
+                return Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, y =>
+                {
+                    if (assemblies is null)
+                    {
+                        assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    }
+
+                    foreach (var assembly in assemblies)
+                    {
+                        if (assembly.IsDynamic)
+                        {
+                            continue;
+                        }
+
+                        if (string.Equals(y, assembly.Location, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return assembly;
+                        }
+                    }
+
+                    return Assembly.LoadFrom(y);
+                })).ToList();
+            });
         }
     }
 }

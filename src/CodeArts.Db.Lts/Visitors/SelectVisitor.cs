@@ -951,7 +951,26 @@ namespace CodeArts.Db.Lts.Visitors
         {
             if (node.Expression.IsGrouping())
             {
-                throw new DSyntaxErrorException("不支持导航属性!");
+                if (inSelect)
+                {
+                    throw new DSyntaxErrorException("查询结果不支持导航属性!");
+                }
+
+                bool flag = false;
+
+                foreach (var kv in groupByExpressions)
+                {
+                    if (flag)
+                    {
+                        writer.Delimiter();
+                    }
+                    else
+                    {
+                        flag = true;
+                    }
+
+                    byVisitor.Visit(kv.Value);
+                }
             }
             else
             {

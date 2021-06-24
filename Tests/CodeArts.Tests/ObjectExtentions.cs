@@ -299,7 +299,12 @@ namespace CodeArts.Tests
         [TestInitialize]
         public void Init()
         {
-            RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
+            //RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
+
+            using (var startup = new XStartup())
+            {
+                startup.DoStartup();
+            }
         }
 
         [TestMethod]

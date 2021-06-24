@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,7 +11,7 @@ namespace CodeArts.Db.Lts
     /// <summary>
     /// 仓储提供者。
     /// </summary>
-    public abstract class RepositoryProvider : IDbRepositoryProvider, IDbRepositoryExecuter
+    public abstract class RepositoryProvider : IDbRepositoryProvider, IDbRepositoryExecuter, IDatabaseFor
     {
         private readonly ISQLCorrectSettings settings;
         private readonly ICustomVisitorList visitors;
@@ -116,6 +117,36 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令SQL。</param>
         /// <returns></returns>
         public abstract IAsyncEnumerable<T> QueryAsync<T>(IDbContext context, CommandSql commandSql);
+
+        public T Read<T>(Expression expression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<T> Query<T>(Expression expression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<T> ReadAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int Execute(Expression expression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 #endif
     }
 }
