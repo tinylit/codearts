@@ -184,6 +184,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         protected abstract Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken);
 #endif
+
         /// <summary>
         /// 查询访问器。
         /// </summary>

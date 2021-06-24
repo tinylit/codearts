@@ -28,7 +28,7 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public Repository() => DbContext = Create(GetDbConfig());
+        public Repository() => Database = Create(GetDbConfig());
 
         /// <summary>
         /// 构造函数。
@@ -41,21 +41,21 @@ namespace CodeArts.Db.Lts
                 throw new ArgumentNullException(nameof(connectionConfig));
             }
 
-            DbContext = Create(this.connectionConfig = connectionConfig);
+            Database = Create(this.connectionConfig = connectionConfig);
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">数据库上下文。</param>
-        public Repository(IDbContext context) => DbContext = context ?? throw new ArgumentNullException(nameof(context));
+        /// <param name="database">数据库。</param>
+        public Repository(IDatabase database) => Database = database ?? throw new ArgumentNullException(nameof(database));
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">链接配置。</param>
+        /// <param name="database">链接配置。</param>
         /// <param name="expression">表达式。</param>
-        protected Repository(IDbContext context, Expression expression) : this(context)
+        protected Repository(IDatabase database, Expression expression) : this(database)
         {
             isEmpty = false;
 
@@ -81,9 +81,9 @@ namespace CodeArts.Db.Lts
         protected IEnumerable<T> Enumerable { private set; get; }
 
         /// <summary>
-        /// 数据上下文。
+        /// 数据库。
         /// </summary>
-        protected IDbContext DbContext { get; }
+        protected IDatabase Database { get; }
 
         /// <summary>
         /// 获取数据库配置。
@@ -108,11 +108,11 @@ namespace CodeArts.Db.Lts
         }
 
         /// <summary>
-        /// 创建上下文。
+        /// 创建数据库。
         /// </summary>
         /// <param name="connectionConfig">链接配置。</param>
         /// <returns></returns>
-        protected virtual IDbContext Create(IReadOnlyConnectionConfig connectionConfig) => new DbContext(connectionConfig);
+        protected virtual IDatabase Create(IReadOnlyConnectionConfig connectionConfig) => DatabaseFactory.Create(connectionConfig);
 
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
@@ -132,7 +132,7 @@ namespace CodeArts.Db.Lts
 
             return (IQueryable)Activator.CreateInstance(type2, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[2]
             {
-                DbContext,
+                Database,
                 expression
             }, null);
         }
@@ -143,14 +143,14 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="TElement">泛型类型。</typeparam>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(DbContext, expression);
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(Database, expression);
 
         /// <summary>
         /// 执行表达式。
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        object IQueryProvider.Execute(Expression expression) => DbContext.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
+        object IQueryProvider.Execute(Expression expression) => Database.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
 
         /// <summary>
         /// 执行结果。
@@ -175,7 +175,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return DbContext.Read<TResult>(expression);
+            return Database.Read<TResult>(expression);
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace CodeArts.Db.Lts
         {
             if (isEmpty || Enumerable is null)
             {
-                Enumerable = DbContext.Query<T>(Expression);
+                Enumerable = Database.Query<T>(Expression);
             }
 
             return Enumerable.GetEnumerator();
@@ -235,7 +235,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return DbContext.ReadAsync<TResult>(expression);
+            return Database.ReadAsync<TResult>(expression);
         }
 
         private IAsyncEnumerable<T> AsyncEnumerable;
@@ -249,7 +249,7 @@ namespace CodeArts.Db.Lts
         {
             if (isEmpty || AsyncEnumerable is null)
             {
-                AsyncEnumerable = DbContext.QueryAsync<T>(Expression);
+                AsyncEnumerable = Database.QueryAsync<T>(Expression);
             }
 
             return AsyncEnumerable.GetAsyncEnumerator(cancellationToken);

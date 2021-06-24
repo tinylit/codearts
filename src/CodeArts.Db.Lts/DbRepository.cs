@@ -29,8 +29,8 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">数据上下文。</param>
-        public DbRepository(IDbContext context) : base(context)
+        /// <param name="database">数据库。</param>
+        public DbRepository(IDatabase database) : base(database)
         {
         }
 
@@ -54,14 +54,14 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IInsertable<TEntity> AsInsertable(List<TEntity> entries) => DbWriter<TEntity>.AsInsertable(DbContext, entries);
+        public IInsertable<TEntity> AsInsertable(List<TEntity> entries) => DbWriter<TEntity>.AsInsertable(Database, entries);
 
         /// <summary>
         /// 插入路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IInsertable<TEntity> AsInsertable(TEntity[] entries) => DbWriter<TEntity>.AsInsertable(DbContext, entries);
+        public IInsertable<TEntity> AsInsertable(TEntity[] entries) => DbWriter<TEntity>.AsInsertable(Database, entries);
 
         /// <summary>
         /// 更新路由执行器。
@@ -83,14 +83,14 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IUpdateable<TEntity> AsUpdateable(List<TEntity> entries) => DbWriter<TEntity>.AsUpdateable(DbContext, entries);
+        public IUpdateable<TEntity> AsUpdateable(List<TEntity> entries) => DbWriter<TEntity>.AsUpdateable(Database, entries);
 
         /// <summary>
         /// 更新路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IUpdateable<TEntity> AsUpdateable(TEntity[] entries) => DbWriter<TEntity>.AsUpdateable(DbContext, entries);
+        public IUpdateable<TEntity> AsUpdateable(TEntity[] entries) => DbWriter<TEntity>.AsUpdateable(Database, entries);
 
         /// <summary>
         /// 删除路由执行器。
@@ -112,13 +112,13 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IDeleteable<TEntity> AsDeleteable(List<TEntity> entries) => DbWriter<TEntity>.AsDeleteable(DbContext, entries);
+        public IDeleteable<TEntity> AsDeleteable(List<TEntity> entries) => DbWriter<TEntity>.AsDeleteable(Database, entries);
 
         /// <summary>
         /// 删除路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IDeleteable<TEntity> AsDeleteable(TEntity[] entries) => DbWriter<TEntity>.AsDeleteable(DbContext, entries);
+        public IDeleteable<TEntity> AsDeleteable(TEntity[] entries) => DbWriter<TEntity>.AsDeleteable(Database, entries);
     }
 }

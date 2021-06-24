@@ -43,7 +43,7 @@ namespace UnitTest
             };
 
             DbConnectionManager.RegisterAdapter(adapter);
-            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
             RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
 

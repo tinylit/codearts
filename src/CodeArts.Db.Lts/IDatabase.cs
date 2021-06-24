@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace CodeArts.Db.Lts
 {
     /// <summary>
-    /// 数据库。
+    /// 数据库（开启事务后，创建的<see cref="IDbCommand"/>会自动设置事务。）。
     /// </summary>
     public interface IDatabase : IDbConnection
     {

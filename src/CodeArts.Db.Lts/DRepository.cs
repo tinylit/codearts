@@ -52,17 +52,17 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">数据上下文。</param>
-        public DRepository(IDbContext context) : base(context)
+        /// <param name="database">数据库。</param>
+        public DRepository(IDatabase database) : base(database)
         {
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">链接配置。</param>
+        /// <param name="database">链接配置。</param>
         /// <param name="expression">表达式。</param>
-        private DRepository(IDbContext context, Expression expression) : base(context, expression)
+        private DRepository(IDatabase database, Expression expression) : base(database, expression)
         {
         }
 
@@ -95,7 +95,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> From(Func<ITableInfo, string> table)
         {
-            return new DRepository<TEntity>(DbContext, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table ?? throw new ArgumentNullException(nameof(table))) }));
+            return new DRepository<TEntity>(Database, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table ?? throw new ArgumentNullException(nameof(table))) }));
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> Where(Expression<Func<TEntity, bool>> expression)
         {
-            return new DRepository<TEntity>(DbContext, Expression.Call(null, WhereMethod, new Expression[2] { Expression, Expression.Quote(expression) }));
+            return new DRepository<TEntity>(Database, Expression.Call(null, WhereMethod, new Expression[2] { Expression, Expression.Quote(expression) }));
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> TimeOut(int commandTimeout)
         {
-            return new DRepository<TEntity>(DbContext, Expression.Call(null, TimeOutMethod, new Expression[2] { Expression, Expression.Constant(commandTimeout) }));
+            return new DRepository<TEntity>(Database, Expression.Call(null, TimeOutMethod, new Expression[2] { Expression, Expression.Constant(commandTimeout) }));
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Update(Expression<Func<TEntity, TEntity>> updateExp)
         {
-            return DbContext.Execute(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }));
+            return Database.Execute(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }));
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Delete()
         {
-            return DbContext.Execute(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }));
+            return Database.Execute(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }));
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Delete(Expression<Func<TEntity, bool>> whereExp)
         {
-            return DbContext.Execute(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }));
+            return Database.Execute(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }));
         }
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Insert(IQueryable<TEntity> querable)
         {
-            return DbContext.Execute(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }));
+            return Database.Execute(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }));
         }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
@@ -166,7 +166,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> UpdateAsync(Expression<Func<TEntity, TEntity>> updateExp, CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }), cancellationToken);
         }
 
         /// <summary>
@@ -176,7 +176,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> DeleteAsync(CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }), cancellationToken);
         }
 
         /// <summary>
@@ -187,7 +187,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> DeleteAsync(Expression<Func<TEntity, bool>> whereExp, CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }), cancellationToken);
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> InsertAsync(IQueryable<TEntity> querable, CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }), cancellationToken);
         }
 #endif
     }
