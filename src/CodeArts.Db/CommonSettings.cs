@@ -89,7 +89,14 @@ namespace CodeArts.Db
             //? 不包含左括号
             if (leftIndex == -1) return index;
 
-            return ParameterAnalysis(value, leftIndex + 1, 1, 0);
+            int rightIndex = ParameterAnalysis(value, leftIndex + 1, 1, 0);
+
+            if (rightIndex == -1)
+            {
+                throw new DSyntaxErrorException($"“{value.Substring(startIndex)}”附近有语法错误！");
+            }
+
+            return ParameterAnalysis(value, rightIndex + 1);
         }
 
         /// <summary>
@@ -136,7 +143,7 @@ namespace CodeArts.Db
 
             Group group = match.Groups["cols"];
 
-            return new Tuple<string, int>(group.Value, group.Index);
+            return new Tuple<string, int>(group.Value.TrimEnd('\r', '\n'), group.Index);
         }
     }
 }

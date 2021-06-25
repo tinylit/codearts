@@ -3,7 +3,6 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -137,31 +136,17 @@ namespace CodeArts.Db.Lts
         {
             var type = typeof(T);
 
-            if (commandSql.HasDefaultValue)
+            var value = connection.QuerySingleOrDefault(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, commandSql.Parameters, null, commandSql.CommandTimeout);
+
+            if (value is null)
             {
-                var value = connection.QuerySingleOrDefault(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, commandSql.Parameters, null, commandSql.CommandTimeout);
-
-                if (value is null)
-                {
-                    return commandSql.DefaultValue;
-                }
-
-                return (T)value;
+                return commandSql.HasDefaultValue ? commandSql.DefaultValue : throw new DRequiredException(commandSql.MissingMsg);
             }
-            else
-            {
-                var value = connection.QuerySingleOrDefault(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, commandSql.Parameters, null, commandSql.CommandTimeout);
 
-                if (value is null)
-                {
-                    throw new DRequiredException(commandSql.MissingMsg);
-                }
-
-                return (T)value;
-            }
+            return (T)value;
         }
 
-        #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 读取数据。
         /// </summary>
@@ -174,28 +159,14 @@ namespace CodeArts.Db.Lts
         {
             var type = typeof(T);
 
-            if (commandSql.HasDefaultValue)
+            var value = await connection.QuerySingleOrDefaultAsync(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, commandSql.Parameters, null, commandSql.CommandTimeout);
+
+            if (value is null)
             {
-                var value = await connection.QuerySingleOrDefaultAsync(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, commandSql.Parameters, null, commandSql.CommandTimeout);
-
-                if (value is null)
-                {
-                    return commandSql.DefaultValue;
-                }
-
-                return (T)value;
+                return commandSql.HasDefaultValue ? commandSql.DefaultValue : throw new DRequiredException(commandSql.MissingMsg);
             }
-            else
-            {
-                var value = await connection.QuerySingleOrDefaultAsync(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, commandSql.Parameters, null, commandSql.CommandTimeout);
 
-                if (value is null)
-                {
-                    throw new DRequiredException(commandSql.MissingMsg);
-                }
-
-                return (T)value;
-            }
+            return (T)value;
         }
 #endif
     }

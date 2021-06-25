@@ -28,7 +28,12 @@ namespace CodeArts.Db
         /// <summary>
         /// 多余的换行符。
         /// </summary>
-        private static readonly Regex PatternLineBreak = new Regex(@"(^[\r\n][\x20\t\r\n\f]*[\r\n]|(?<=[\r\n]{2})[\x20\t\r\n\f]*[\r\n]|(?<=[\r\n]{2})[\r\n]{2,})", RegexOptions.Compiled);
+        private static readonly Regex PatternLineBreak = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\r\n]{2})[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=[\r\n]{2})|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
+
+        /// <summary>
+        /// 空白符。
+        /// </summary>
+        private static readonly Regex PatternWhitespace = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\x20\t\f])[\x20\t\r\n\f]+|(?<=\()[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=\))|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
 
         /// <summary>
         /// 移除所有前导空白字符和尾部空白字符函数修复。
@@ -115,6 +120,19 @@ namespace CodeArts.Db
         /// </summary>
         private static readonly Regex PatternDeclare = new Regex(@"\bdeclare[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
+        /// <summary>
+        /// 查询语句所有字段。
+        /// </summary>
+        private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        /// <summary>
+        /// 查询语句排序内容。
+        /// </summary>
+        private static readonly Regex PatternOrderBy = new Regex(@"[\x20\t\r\n\f]+order[\x20\t\r\n\f]+by[\x20\t\r\n\f]+((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Compiled);
+
+        /// <summary>
+        /// 分页。
+        /// </summary>
+        private static readonly Regex PatternPaging = new Regex("PAGING\\(`(?<main>(?:\\\\.|[^\\\\])*?)`,(?<index>\\d+),(?<size>\\d+)(,`(?<orderby>(?:\\\\.|[^\\\\])*?)`)?\\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         #region UseSettings
 
         /// <summary>
@@ -440,6 +458,9 @@ namespace CodeArts.Db
             //? 去除多余的换行。
             sql = PatternLineBreak.Replace(sql, string.Empty);
 
+            //? 去除多余的空白符。
+            sql = PatternWhitespace.Replace(sql, string.Empty);
+
             //? Trim
             sql = PatternTrim.Replace(sql, item =>
             {
@@ -763,6 +784,161 @@ namespace CodeArts.Db
         }
 
         /// <summary>
+        /// 获取符合条件的条数。
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <example>SELECT * FROM Users WHERE Id > 100 => SELECT COUNT(1) FROM Users WHERE Id > 100</example>
+        /// <example>SELECT * FROM Users WHERE Id > 100 ORDER BY Id DESC => SELECT COUNT(1) FROM Users WHERE Id > 100</example>
+        /// <returns></returns>
+        public string ToCountSQL(string sql)
+        {
+            var formatSql = Format(sql);
+
+            var colsMt = PatternColumn.Match(formatSql);
+
+            if (!colsMt.Success)
+            {
+                throw new NotSupportedException();
+            }
+
+            var colsGrp = colsMt.Groups["cols"];
+
+            var orderByMt = PatternOrderBy.Match(formatSql);
+
+            var sb = new StringBuilder();
+
+            sb.Append(formatSql.Substring(0, colsGrp.Index))
+                .Append("COUNT(1)");
+
+            int subIndex = colsGrp.Index + colsGrp.Length;
+
+            //? 补充 \r\n 换行符处理。
+            if (formatSql[subIndex] == '\n')
+            {
+                subIndex--;
+            }
+
+            if (orderByMt.Success)
+            {
+#if NETSTANDARD2_1_OR_GREATER
+                sb.Append(formatSql[subIndex..orderByMt.Index]);
+#else
+                sb.Append(formatSql.Substring(subIndex, orderByMt.Index - subIndex));
+#endif
+            }
+            else
+            {
+#if NETSTANDARD2_1_OR_GREATER
+                sb.Append(formatSql[subIndex..]);
+#else
+                sb.Append(formatSql.Substring(subIndex));
+#endif
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 生成分页SQL。
+        /// </summary>
+        /// <param name="sql">SQL</param>
+        /// <param name="pageIndex">页码（从“0”开始）</param>
+        /// <param name="pageSize">分页条数</param>
+        /// <example>SELECT * FROM Users WHERE Id > 100 => PAGING(`SELECT * FROM Users WHERE Id > 100`,<paramref name="pageIndex"/>,<paramref name="pageSize"/>)</example>
+        /// <example>SELECT * FROM Users WHERE Id > 100 ORDER BY Id DESC => PAGING(`SELECT * FROM Users WHERE Id > 100`,<paramref name="pageIndex"/>,<paramref name="pageSize"/>,`ORDER BY Id DESC`)</example>
+        /// <returns></returns>
+        public string ToSQL(string sql, int pageIndex, int pageSize)
+        {
+            var sb = new StringBuilder();
+
+            var formatSql = Format(sql);
+
+            var match = PatternPaging.Match(formatSql);
+
+            if (match.Success)
+            {
+                var mainSql = match.Groups["main"].Value;
+                var orderBySql = match.Groups["orderby"];
+
+                sb.Append(formatSql.Substring(0, match.Index))
+                    .Append("PAGING(`")
+                    .Append(mainSql)
+                    .Append('`')
+                    .Append(',')
+                    .Append(pageIndex)
+                    .Append(',')
+                    .Append(pageSize);
+
+                if (orderBySql.Success)
+                {
+                    sb.Append(',')
+                        .Append('`')
+                        .Append(orderBySql.Value)
+                        .Append('`');
+                }
+
+                sb.Append(')')
+                    .Append(formatSql.Substring(match.Index + match.Length));
+
+                match = match.NextMatch();
+
+                if (match.Success)
+                {
+                    throw new NotSupportedException("一条语句中不支持多个“PAGING”函数！");
+                }
+
+                return sb.ToString();
+            }
+
+            var colsMt = PatternColumn.Match(formatSql);
+
+            if (!colsMt.Success)
+            {
+                throw new NotSupportedException();
+            }
+
+            var colsGrp = colsMt.Groups["cols"];
+
+            var orderByMt = PatternOrderBy.Match(formatSql);
+
+            sb.Append("PAGING(`");
+
+            if (orderByMt.Success)
+            {
+#if NETSTANDARD2_1_OR_GREATER
+                sb.Append(formatSql[..orderByMt.Index])
+#else
+                sb.Append(formatSql.Substring(0, orderByMt.Index))
+#endif
+                    .Append('`')
+                    .Append(',')
+                    .Append(pageIndex)
+                    .Append(',')
+                    .Append(pageSize)
+                    .Append(',')
+                    .Append('`')
+#if NETSTANDARD2_1_OR_GREATER
+                    .Append(formatSql[orderByMt.Index..])
+#else
+                    .Append(formatSql.Substring(orderByMt.Index))
+#endif
+                    .Append('`');
+            }
+            else
+            {
+                sb.Append(formatSql)
+                    .Append('`')
+                    .Append(',')
+                    .Append(pageIndex)
+                    .Append(',')
+                    .Append(pageSize);
+            }
+
+            return sb.Append(')')
+                .ToString();
+        }
+
+        /// <summary>
         /// SQL 格式化。
         /// </summary>
         /// <param name="sql">语句。</param>
@@ -806,6 +982,17 @@ namespace CodeArts.Db
             }
 
             bool flag = CharacterCache.TryGetValue(sql, out List<string> characters);
+
+            //? 分页。
+            sql = PatternPaging.Replace(sql, match =>
+            {
+                var mainSql = match.Groups["main"].Value;
+                var pageIndex = Convert.ToInt32(match.Groups["index"].Value);
+                var pageSize = Convert.ToInt32(match.Groups["size"].Value);
+                var orderBySql = match.Groups["orderby"].Value;
+
+                return settings.ToSQL(mainSql, pageSize, pageIndex * pageSize, orderBySql);
+            });
 
             //? 检查 IndexOf 函数，参数处理。
             if (settings.IndexOfSwapPlaces)
