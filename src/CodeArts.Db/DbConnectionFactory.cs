@@ -9,8 +9,6 @@ namespace CodeArts.Db
     /// </summary>
     public class DbConnectionFactory : IDbConnectionFactory
     {
-        private bool initDbConnectionType = true;
-
         private readonly DbProviderFactory dbProvider;
 
         /// <summary>

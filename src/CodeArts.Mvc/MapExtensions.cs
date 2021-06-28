@@ -176,7 +176,11 @@ namespace CodeArts.Mvc
         /// <returns></returns>
         public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, RequestDelegate handler)
         {
+#if NETCOREAPP3_1_OR_GREATER
+            if (path.HasValue && path.Value[^1] == '/')
+#else
             if (path.HasValue && path.Value[path.Value.Length - 1] == '/')
+#endif
             {
                 path = new PathString(path.Value.TrimEnd('/'));
             }

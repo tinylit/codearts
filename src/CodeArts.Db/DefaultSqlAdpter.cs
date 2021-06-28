@@ -370,7 +370,11 @@ namespace CodeArts.Db
 
                         if (commaIndex < rightIndex)
                         {
+#if NETSTANDARD2_1_OR_GREATER
+                            list.Add(value[dataIndex..commaIndex]);
+#else
                             list.Add(value.Substring(dataIndex, commaIndex - dataIndex));
+#endif
 
                             startIndex = dataIndex = commaIndex + 1;
                         }
@@ -394,7 +398,11 @@ namespace CodeArts.Db
 
             } while (leftCount > rightCount);
 
+#if NETSTANDARD2_1_OR_GREATER
+            list.Add(value[dataIndex..rightIndex]);
+#else
             list.Add(value.Substring(dataIndex, rightIndex - dataIndex));
+#endif
 
             return Tuple.Create(rightIndex, list.ToArray());
         }
@@ -468,7 +476,13 @@ namespace CodeArts.Db
 
                 string name = nameGrp.Value;
 
-                return string.Concat("L", name, "(R", name, item.Value.Substring(nameGrp.Length), ")");
+                return string.Concat("L", name, "(R", name,
+#if NETSTANDARD2_1_OR_GREATER
+                    item.Value[nameGrp.Length..],
+#else
+                    item.Value.Substring(nameGrp.Length),
+#endif
+                    ")");
             });
 
             //? 创建表指令。
@@ -485,7 +499,11 @@ namespace CodeArts.Db
                  .Append("[")
                  .Append(nameGrp.Value)
                  .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                 .Append(PatternFieldCreate.Replace(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..], match =>
+#else
                  .Append(PatternFieldCreate.Replace(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length), match =>
+#endif
                  {
                      Group nameGrp2 = match.Groups["name"];
 
@@ -494,7 +512,13 @@ namespace CodeArts.Db
                      if (nameGrp2.Index == item.Index && nameGrp2.Length == match.Length)
                          return value2;
 
-                     return string.Concat(match.Value.Substring(0, nameGrp2.Index - match.Index), value2, match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length));
+                     return string.Concat(match.Value.Substring(0, nameGrp2.Index - match.Index), value2,
+#if NETSTANDARD2_1_OR_GREATER
+                         match.Value[(nameGrp2.Index - match.Index + nameGrp2.Length)..]
+#else
+                         match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length)
+#endif
+                         );
                  }))
                  .ToString();
             });
@@ -513,7 +537,11 @@ namespace CodeArts.Db
                  .Append("[")
                  .Append(nameGrp.Value)
                  .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                 .Append(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..])
+#else
                  .Append(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length))
+#endif
                  .ToString();
             });
 
@@ -562,7 +590,11 @@ namespace CodeArts.Db
                 .Append(nameGrp.Value)
                 .Append("]");
 
+#if NETSTANDARD2_1_OR_GREATER
+                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
+#else
                 value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
+#endif
 
                 var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
 
@@ -589,7 +621,11 @@ namespace CodeArts.Db
                 .Append(nameGrp.Value)
                 .Append("]");
 
+#if NETSTANDARD2_1_OR_GREATER
+                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
+#else
                 value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
+#endif
 
                 var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
 
@@ -627,12 +663,20 @@ namespace CodeArts.Db
                 }
                 else
                 {
+#if NETSTANDARD2_1_OR_GREATER
+                    sb.Append(value[(tableGrp.Index + tableGrp.Length - item.Index)..]);
+#else
                     sb.Append(value.Substring(tableGrp.Index + tableGrp.Length - item.Index));
+#endif
                 }
 
                 if (followGrp.Success)
                 {
+#if NETSTANDARD2_1_OR_GREATER
+                    sb.Append(PatternFormFollow.Replace(value[(followGrp.Index - item.Index)..], match => Form(match, type)));
+#else
                     sb.Append(PatternFormFollow.Replace(value.Substring(followGrp.Index - item.Index), match => Form(match, type)));
+#endif
                 }
 
                 return sb.ToString();
@@ -681,7 +725,11 @@ namespace CodeArts.Db
                     .Append("[")
                     .Append(nameGrp.Value)
                     .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                    .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
+#else
                     .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
+#endif
                     .ToString();
             });
 
@@ -696,7 +744,11 @@ namespace CodeArts.Db
                         .Append("[")
                         .Append(nameGrp.Value)
                         .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                        .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
+#else
                         .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
+#endif
                         .ToString();
             });
 
@@ -710,7 +762,13 @@ namespace CodeArts.Db
                 if (nameGrp.Index == item.Index && nameGrp.Length == item.Length)
                     return value;
 
-                return item.Value.Substring(0, nameGrp.Index - item.Index) + value + item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
+                return item.Value.Substring(0, nameGrp.Index - item.Index) + 
+                value +
+#if NETSTANDARD2_1_OR_GREATER
+                item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..];
+#else
+                item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
+#endif
             });
 
             //? 字段别名。
@@ -813,7 +871,7 @@ namespace CodeArts.Db
             int subIndex = colsGrp.Index + colsGrp.Length;
 
             //? 补充 \r\n 换行符处理。
-            if (formatSql[subIndex] == '\n')
+            while (formatSql[subIndex] == '\n' || formatSql[subIndex] == '\r')
             {
                 subIndex--;
             }
@@ -878,7 +936,11 @@ namespace CodeArts.Db
                 }
 
                 sb.Append(')')
+#if NETSTANDARD2_1_OR_GREATER
+                    .Append(formatSql[(match.Index + match.Length)..]);
+#else
                     .Append(formatSql.Substring(match.Index + match.Length));
+#endif
 
                 match = match.NextMatch();
 
@@ -905,11 +967,7 @@ namespace CodeArts.Db
 
             if (orderByMt.Success)
             {
-#if NETSTANDARD2_1_OR_GREATER
-                sb.Append(formatSql[..orderByMt.Index])
-#else
                 sb.Append(formatSql.Substring(0, orderByMt.Index))
-#endif
                     .Append('`')
                     .Append(',')
                     .Append(pageIndex)
@@ -1010,7 +1068,12 @@ namespace CodeArts.Db
                          tuple.Item2.Length > 2 ?
                          string.Concat(tuple.Item2[1], ",", tuple.Item2[0], ",", tuple.Item2[2]) :
                          string.Concat(tuple.Item2[1], ",", tuple.Item2[0])
-                     ) + sql.Substring(tuple.Item1);
+                     ) +
+#if NETSTANDARD2_1_OR_GREATER
+                     sql[tuple.Item1..];
+#else
+                     sql.Substring(tuple.Item1);
+#endif
 
                     match = PatternIndexOf.Match(sql, match.Index + 7);
                 }

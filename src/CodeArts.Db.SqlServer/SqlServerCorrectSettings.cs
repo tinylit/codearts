@@ -48,7 +48,11 @@ namespace CodeArts.Db
         /// <summary>
         /// 格式化集合。
         /// </summary>
+        #if NETSTANDARD2_1_OR_GREATER
+        public ICollection<IFormatter> Formatters => formatters ??= new List<IFormatter>();
+#else
         public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
+#endif
 
         /// <summary>
         /// 字段。
@@ -154,7 +158,11 @@ namespace CodeArts.Db
                  .Append(orderBy)
                  .Append(") AS ")
                  .Append(row_name)
+#if NETSTANDARD2_1_OR_GREATER
+                 .Append(sql[startIndex..]);
+#else
                  .Append(sql.Substring(startIndex));
+#endif
             }
             else
             {

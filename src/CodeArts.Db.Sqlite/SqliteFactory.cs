@@ -1,4 +1,4 @@
-﻿#if NETSTANDARD2_0
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.Data.Sqlite;
 #endif
 using System;

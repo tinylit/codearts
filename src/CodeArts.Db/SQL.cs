@@ -64,12 +64,20 @@ namespace CodeArts.Db
         /// <summary>
         /// 操作的表。
         /// </summary>
+        #if NETSTANDARD2_1_OR_GREATER
+        public IReadOnlyCollection<TableToken> Tables => tables ??= adpter.AnalyzeTables(sql);
+#else
         public IReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
+#endif
 
         /// <summary>
         /// 参数。
         /// </summary>
+        #if NETSTANDARD2_1_OR_GREATER
+        public IReadOnlyCollection<string> Parameters => parameters ??= adpter.AnalyzeParameters(sql);
+#else
         public IReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
+#endif
 #endif
 
         /// <summary>
