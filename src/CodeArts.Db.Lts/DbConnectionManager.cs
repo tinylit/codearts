@@ -170,7 +170,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="adapter">适配器。</param>
         /// <returns></returns>
-        public static IDatabaseFor Create(IDbConnectionLtsAdapter adapter)
+        public static IDatabaseFor GetOrCreate(IDbConnectionLtsAdapter adapter)
         {
             if (adapter is null)
             {

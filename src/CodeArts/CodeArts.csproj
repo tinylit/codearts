@@ -16,8 +16,4 @@
 		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <Compile Remove="AssemblyFinder - 副本.cs" />
-	</ItemGroup>
 </Project>

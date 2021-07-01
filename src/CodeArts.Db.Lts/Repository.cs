@@ -114,6 +114,38 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         protected virtual IDatabase Create(IReadOnlyConnectionConfig connectionConfig) => DatabaseFactory.Create(connectionConfig);
 
+        /// <summary>
+        /// 查找指定类型。
+        /// </summary>
+        /// <returns></returns>
+        private static Type FindGenericType(Type type, Type definition)
+        {
+            while (type != null && type != typeof(object))
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == definition)
+                {
+                    return type;
+                }
+
+                if (definition.IsInterface)
+                {
+                    Type[] interfaces = type.GetInterfaces();
+
+                    foreach (Type type2 in interfaces)
+                    {
+                        Type type3 = FindGenericType(type2, definition);
+
+                        if (type3 is null) continue;
+
+                        return type3;
+                    }
+                }
+
+                type = type.BaseType;
+            }
+            return null;
+        }
+
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
             if (expression is null)
@@ -121,7 +153,7 @@ namespace CodeArts.Db.Lts
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            Type type = expression.Type.FindGenericType(typeof(IQueryable<>));
+            Type type = FindGenericType(expression.Type, typeof(IQueryable<>));
 
             if (type is null)
             {
@@ -150,7 +182,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        object IQueryProvider.Execute(Expression expression) => Database.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
+        object IQueryProvider.Execute(Expression expression) => Database.Single<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
 
         /// <summary>
         /// 执行结果。
@@ -175,7 +207,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return Database.Read<TResult>(expression);
+            return Database.Single<TResult>(expression);
         }
 
         /// <summary>
@@ -235,7 +267,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return Database.ReadAsync<TResult>(expression);
+            return Database.SingleAsync<TResult>(expression);
         }
 
         private IAsyncEnumerable<T> AsyncEnumerable;

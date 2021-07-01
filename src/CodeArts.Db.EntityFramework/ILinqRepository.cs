@@ -9,7 +9,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+#if NETSTANDARD2_0_OR_GREATER
 using System.Linq.Expressions;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -144,8 +146,8 @@ namespace CodeArts.Db.EntityFramework
         void Delete(IEnumerable<TEntity> entities);
 
 #if NETSTANDARD2_0
-        #region ForEach
-        #region ToList/Array
+#region ForEach
+#region ToList/Array
 
         /// <summary>
         ///     Asynchronously creates a <see cref="List{T}" /> from an <see cref="IQueryable{T}" /> by enumerating it
@@ -178,7 +180,7 @@ namespace CodeArts.Db.EntityFramework
         /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
         Task<TEntity[]> ToArrayAsync(CancellationToken cancellationToken = default);
 
-        #endregion
+#endregion
 
         /// <summary>
         ///     Asynchronously enumerates the query results and performs the specified action on each element.
@@ -193,7 +195,7 @@ namespace CodeArts.Db.EntityFramework
         /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
         Task ForEachAsync(Action<TEntity> action, CancellationToken cancellationToken = default);
 
-        #endregion
+#endregion
 #endif
     }
 

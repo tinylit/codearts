@@ -24,7 +24,7 @@ namespace Mvc.Core2_1
         public override void ConfigureServices(IServiceCollection services)
         {
             DbConnectionManager.RegisterAdapter(new MySqlLtsAdapter());
-            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             services.AddTransient(typeof(IDbRepository<>), typeof(DbRepository<>));

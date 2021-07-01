@@ -676,7 +676,7 @@ namespace CodeArts.Db.Tests
 
             var adapter = DbConnectionManager.Get(config.ProviderName);
             var connection = adapter.Create(config.ConnectionString);
-            var provider = DbConnectionManager.Create(adapter);
+            var provider = DbConnectionManager.GetOrCreate(adapter);
 
             var sql = new SQL(@"select 
                 replace(max(gmfmc),' ','') as gmfmc,

@@ -1,5 +1,5 @@
 ﻿using CodeArts.Db.Exceptions;
-using CodeArts.Db.Lts.Visitors;
+using CodeArts.Db.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -34,43 +34,11 @@ namespace CodeArts.Db.Lts
         /// 执行命令。
         /// </summary>
         /// <param name="connection">数据库链接。</param>
-        /// <param name="expression">表达式。</param>
-        /// <returns></returns>
-        public int Execute(IDbConnection connection, Expression expression)
-        {
-            var commandSql = CreateWriteCommandSql(expression);
-
-            SqlCapture.Current?.Capture(commandSql);
-
-            return Execute(connection, commandSql);
-
-        }
-
-        /// <summary>
-        /// 执行命令。
-        /// </summary>
-        /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        protected abstract int Execute(IDbConnection connection, CommandSql commandSql);
+        public abstract int Execute(IDbConnection connection, CommandSql commandSql);
 
-        #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-        /// <summary>
-        /// 执行命令。
-        /// </summary>
-        /// <param name="connection">数据库链接。</param>
-        /// <param name="expression">表达式。</param>
-        /// <param name="cancellationToken">取消。</param>
-        /// <returns></returns>
-        public Task<int> ExecuteAsync(IDbConnection connection, Expression expression, CancellationToken cancellationToken = default)
-        {
-            var commandSql = CreateWriteCommandSql(expression);
-
-            SqlCapture.Current?.Capture(commandSql);
-
-            return ExecuteAsync(connection, commandSql, cancellationToken);
-        }
-
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 执行命令。
         /// </summary>
@@ -78,23 +46,8 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        protected abstract Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken);
+        public abstract Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken);
 #endif
-        /// <summary>
-        /// 读取数据。
-        /// </summary>
-        /// <typeparam name="T">返回类型。</typeparam>
-        /// <param name="connection">数据库链接。</param>
-        /// <param name="expression">表达式。</param>
-        /// <returns></returns>
-        public IEnumerable<T> Query<T>(IDbConnection connection, Expression expression)
-        {
-            var commandSql = CreateReadCommandSql<T>(expression);
-
-            SqlCapture.Current?.Capture(commandSql);
-
-            return Query<T>(connection, commandSql);
-        }
 
         /// <summary>
         /// 读取数据。
@@ -103,25 +56,9 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        protected abstract IEnumerable<T> Query<T>(IDbConnection connection, CommandSql commandSql);
+        public abstract IEnumerable<T> Query<T>(IDbConnection connection, CommandSql commandSql);
 
-        #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-        /// <summary>
-        /// 读取数据。
-        /// </summary>
-        /// <typeparam name="T">返回类型。</typeparam>
-        /// <param name="connection">数据库链接。</param>
-        /// <param name="expression">表达式。</param>
-        /// <returns></returns>
-        public IAsyncEnumerable<T> QueryAsync<T>(IDbConnection connection, Expression expression)
-        {
-            var commandSql = CreateReadCommandSql<T>(expression);
-
-            SqlCapture.Current?.Capture(commandSql);
-
-            return QueryAsync<T>(connection, expression);
-        }
-
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 读取数据。
         /// </summary>
@@ -129,24 +66,9 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        protected abstract IAsyncEnumerable<T> QueryAsync<T>(IDbConnection connection, CommandSql commandSql);
+        public abstract IAsyncEnumerable<T> QueryAsync<T>(IDbConnection connection, CommandSql commandSql);
 #endif
-        /// <summary>
-        /// 读取数据。
-        /// </summary>
-        /// <typeparam name="T">返回类型。</typeparam>
-        /// <param name="connection">数据库链接。</param>
-        /// <param name="expression">表达式。</param>
-        /// <returns></returns>
-        public T Read<T>(IDbConnection connection, Expression expression)
-        {
-            var commandSql = CreateReadCommandSql<T>(expression);
 
-            SqlCapture.Current?.Capture(commandSql);
-
-            return Read<T>(connection, commandSql);
-        }
-        
         /// <summary>
         /// 读取数据。
         /// </summary>
@@ -154,25 +76,9 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        protected abstract T Read<T>(IDbConnection connection, CommandSql<T> commandSql);
+        public abstract T Single<T>(IDbConnection connection, CommandSql<T> commandSql);
 
-        #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-        /// <summary>
-        /// 读取数据。
-        /// </summary>
-        /// <typeparam name="T">返回类型。</typeparam>
-        /// <param name="connection">数据库链接。</param>
-        /// <param name="expression">表达式。</param>
-        /// <param name="cancellationToken">取消。</param>
-        /// <returns></returns>
-        public Task<T> ReadAsync<T>(IDbConnection connection, Expression expression, CancellationToken cancellationToken = default)
-        {
-            var commandSql = CreateReadCommandSql<T>(expression);
-
-            SqlCapture.Current?.Capture(commandSql);
-
-            return ReadAsync<T>(connection, commandSql, cancellationToken);
-        }
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
         /// <summary>
         /// 读取数据。
@@ -182,7 +88,7 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        protected abstract Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken);
+        public abstract Task<T> SingleAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken);
 #endif
 
         /// <summary>
@@ -203,7 +109,7 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="T">结果类型。</typeparam>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        protected virtual CommandSql<T> CreateReadCommandSql<T>(Expression expression)
+        public virtual CommandSql<T> Read<T>(Expression expression)
         {
             using (var visitor = Create())
             {
@@ -217,7 +123,7 @@ namespace CodeArts.Db.Lts
                     {
                         defaultValue = value;
                     }
-                    else if (!(visitor.DefaultValue is null))
+                    else if (visitor.DefaultValue != null)
                     {
                         throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({visitor.DefaultValue.GetType()})无法进行默认转换!");
                     }
@@ -239,7 +145,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        protected virtual CommandSql CreateWriteCommandSql(Expression expression)
+        public virtual CommandSql Execute(Expression expression)
         {
             using (var visitor = CreateExe())
             {

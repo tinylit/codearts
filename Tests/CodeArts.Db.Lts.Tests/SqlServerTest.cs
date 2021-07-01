@@ -1115,7 +1115,6 @@ namespace UnitTest
         [TestMethod]
         public void InsertTest()
         {
-
             var user = new UserRepository();
 
             var entry = new FeiUsers

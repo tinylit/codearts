@@ -28,7 +28,7 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="T">返回类型。</typeparam>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        T Read<T>(Expression expression);
+        T Single<T>(Expression expression);
 
         /// <summary>
         /// 读取数据。
@@ -46,7 +46,7 @@ namespace CodeArts.Db.Lts
         /// <param name="expression">表达式。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        Task<T> ReadAsync<T>(Expression expression, CancellationToken cancellationToken = default);
+        Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// 读取数据。

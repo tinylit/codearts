@@ -10,26 +10,6 @@ namespace CodeArts.Db.Lts
     internal static class Types
     {
         /// <summary>
-        /// <see cref="System.Linq.Enumerable"/>
-        /// </summary>
-        public static readonly Type Enumerable = typeof(Enumerable);
-
-        /// <summary>
-        /// <see cref="System.Linq.Queryable"/>
-        /// </summary>
-        public static readonly Type Queryable = typeof(Queryable);
-
-        /// <summary>
-        /// <see cref="System.Linq.IQueryable"/>
-        /// </summary>
-        public static readonly Type IQueryable = typeof(IQueryable);
-
-        /// <summary>
-        /// <see cref="System.Linq.RepositoryExtentions"/>
-        /// </summary>
-        public static readonly Type RepositoryExtentions = typeof(RepositoryExtentions);
-
-        /// <summary>
         /// <see cref="string"/>
         /// </summary>
         public static readonly Type String = typeof(string);

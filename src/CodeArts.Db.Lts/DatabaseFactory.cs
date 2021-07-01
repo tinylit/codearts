@@ -1,6 +1,7 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Linq.Expressions;
 using System.Threading;
@@ -53,36 +54,38 @@ namespace CodeArts.Db.Lts
 
             public IDbTransaction DbTransaction { get; }
 
-            public void Commit()
-            {
-                database.ResetTransaction();
-                DbTransaction.Commit();
-            }
+            public void Commit() => DbTransaction.Commit();
+
+            private bool isDisposed = false;
 
             public void Dispose()
             {
-                database.ResetTransaction();
-                DbTransaction.Dispose();
+                if (!isDisposed)
+                {
+                    database.CheckTransaction(this);
+
+                    DbTransaction.Dispose();
+
+                    isDisposed = true;
+                }
             }
 
-            public void Rollback()
-            {
-                database.ResetTransaction();
-                DbTransaction.Rollback();
-            }
+            public void Rollback() => DbTransaction.Rollback();
         }
 
         private class Database : IDatabase
         {
-            private Transaction transaction;
             private IDbConnection connection;
+            private readonly IDatabaseFor databaseFor;
             private readonly IDbConnectionLtsAdapter adapter;
             private readonly IReadOnlyConnectionConfig connectionConfig;
+            private readonly Stack<Transaction> transactions = new Stack<Transaction>();
 
             public Database(IReadOnlyConnectionConfig connectionConfig, IDbConnectionLtsAdapter adapter)
             {
                 this.connectionConfig = connectionConfig;
                 this.adapter = adapter;
+                this.databaseFor = DbConnectionManager.GetOrCreate(adapter);
             }
 
             public string Name => connectionConfig.Name;
@@ -105,23 +108,30 @@ namespace CodeArts.Db.Lts
             private IDbConnection Connection => connection ?? (connection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true));
 #endif
 
-            public void ResetTransaction() => transaction = null;
+            public void CheckTransaction(Transaction transaction)
+            {
+                if (transactions.Count == 0 || !ReferenceEquals(transactions.Pop(), transaction))
+                {
+                    throw new DException("事务未有序释放！");
+                }
+            }
 
-            public IDbTransaction BeginTransaction() => BeginTransaction(IsolationLevel.ReadCommitted);
+            public IDbTransaction BeginTransaction()
+            {
+                var transaction = new Transaction(this, Connection.BeginTransaction());
+
+                transactions.Push(transaction);
+
+                return transaction;
+            }
 
             public IDbTransaction BeginTransaction(IsolationLevel il)
             {
-                if (transaction is null)
-                {
-                    return transaction = new Transaction(this, Connection.BeginTransaction(il));
-                }
+                var transaction = new Transaction(this, Connection.BeginTransaction(il));
 
-                if (transaction.IsolationLevel == il)
-                {
-                    return transaction;
-                }
+                transactions.Push(transaction);
 
-                throw new NotSupportedException("尚有未提交的事务！");
+                return transaction;
             }
 
             public void Close() => Connection.Close();
@@ -132,7 +142,12 @@ namespace CodeArts.Db.Lts
             {
                 var command = Connection.CreateCommand();
 
-                command.Transaction = transaction?.DbTransaction;
+                if (transactions.Count > 0)
+                {
+                    var transaction = transactions.Pop();
+
+                    command.Transaction = transaction.DbTransaction;
+                }
 
                 return command;
             }
@@ -141,35 +156,107 @@ namespace CodeArts.Db.Lts
 
             public void Dispose() => Connection.Dispose();
 
-            public T Read<T>(Expression expression)
+            public T Single<T>(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).Read<T>(this, expression);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Single(dbConnection, commandSql);
+                    }
+                }
+
+                return databaseFor.Single(this, commandSql);
             }
 
             public IEnumerable<T> Query<T>(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).Query<T>(this, expression);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Query<T>(dbConnection, commandSql);
+                    }
+                }
+
+                return databaseFor.Query<T>(this, commandSql);
             }
 
             public int Execute(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).Execute(this, expression);
+                var commandSql = databaseFor.Execute(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Execute(dbConnection, commandSql);
+                    }
+                }
+
+                return databaseFor.Execute(this, commandSql);
             }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public Task<T> ReadAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
             {
-                return DbConnectionManager.Create(adapter).ReadAsync<T>(this, expression, cancellationToken);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.SingleAsync(dbConnection, commandSql, cancellationToken);
+                    }
+                }
+
+                return databaseFor.SingleAsync(this, commandSql, cancellationToken);
             }
 
             public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).QueryAsync<T>(this, expression);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.QueryAsync<T>(dbConnection, commandSql);
+                    }
+                }
+
+                return databaseFor.QueryAsync<T>(this, commandSql);
             }
 
             public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
             {
-                return DbConnectionManager.Create(adapter).ExecuteAsync(this, expression, cancellationToken);
+                var commandSql = databaseFor.Execute(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.ExecuteAsync(dbConnection, commandSql, cancellationToken);
+                    }
+                }
+
+                return databaseFor.ExecuteAsync(this, commandSql, cancellationToken);
             }
 #endif
         }
@@ -190,27 +277,22 @@ namespace CodeArts.Db.Lts
 
             protected override System.Data.Common.DbConnection DbConnection => database;
 
-            public override void Commit()
-            {
-                database.ResetTransaction();
+            public override void Commit() => Transaction.Commit();
 
-                Transaction.Commit();
-            }
+            public override void Rollback() => Transaction.Rollback();
 
-            public override void Rollback()
-            {
-                database.ResetTransaction();
+            private bool isDisposed = false;
 
-                Transaction.Rollback();
-            }
             protected override void Dispose(bool disposing)
             {
-                database.ResetTransaction();
-
-                if (disposing)
+                if (disposing && !isDisposed)
                 {
-                    Transaction.Dispose();
+                    database.CheckTransaction(this);
+
+                    isDisposed = true;
                 }
+
+                Transaction.Dispose();
 
                 base.Dispose(disposing);
             }
@@ -218,22 +300,23 @@ namespace CodeArts.Db.Lts
 #if NETSTANDARD2_1_OR_GREATER
             public override Task CommitAsync(CancellationToken cancellationToken = default)
             {
-                database.ResetTransaction();
-
                 return base.CommitAsync(cancellationToken);
             }
             public override Task RollbackAsync(CancellationToken cancellationToken = default)
             {
-                database.ResetTransaction();
-
                 return base.RollbackAsync(cancellationToken);
             }
 
             public override ValueTask DisposeAsync()
             {
-                database.ResetTransaction();
+                if (!isDisposed)
+                {
+                    database.CheckTransaction(this);
 
-                return base.DisposeAsync();
+                    isDisposed = true;
+                }
+
+                return Transaction.DisposeAsync();
             }
 #endif
         }
@@ -241,14 +324,16 @@ namespace CodeArts.Db.Lts
         private class DbDatabase : System.Data.Common.DbConnection, IDatabase
         {
             private System.Data.Common.DbConnection connection;
-            private DbTransaction transaction;
+            private readonly IDatabaseFor databaseFor;
             private readonly IDbConnectionLtsAdapter adapter;
             private readonly IReadOnlyConnectionConfig connectionConfig;
+            private readonly Stack<DbTransaction> transactions = new Stack<DbTransaction>();
 
             public DbDatabase(IReadOnlyConnectionConfig connectionConfig, IDbConnectionLtsAdapter adapter)
             {
                 this.connectionConfig = connectionConfig;
                 this.adapter = adapter;
+                this.databaseFor = DbConnectionManager.GetOrCreate(adapter);
             }
 
             public string Name => connectionConfig.Name;
@@ -267,6 +352,8 @@ namespace CodeArts.Db.Lts
 
             public override ConnectionState State => Connection.State;
 
+            public override ISite Site { get => Connection.Site; set => Connection.Site = value; }
+
 #if NETSTANDARD2_1_OR_GREATER
             private System.Data.Common.DbConnection Connection => connection ??= (System.Data.Common.DbConnection)(TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true));
 #else
@@ -279,47 +366,60 @@ namespace CodeArts.Db.Lts
 
             public override void Open() => Connection.Open();
 
-            public void ResetTransaction() => transaction = null;
+            public void CheckTransaction(DbTransaction transaction)
+            {
+                if (transactions.Count == 0 || !ReferenceEquals(transactions.Pop(), transaction))
+                {
+                    throw new DException("事务未有序释放！");
+                }
+            }
 
             protected override System.Data.Common.DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
             {
-                if (transaction is null)
-                {
-                    return transaction = new DbTransaction(this, connection.BeginTransaction(isolationLevel));
-                }
+                var transaction = new DbTransaction(this, connection.BeginTransaction(isolationLevel));
 
-                if (transaction.IsolationLevel == isolationLevel)
-                {
-                    return transaction;
-                }
+                transactions.Push(transaction);
 
-                throw new NotSupportedException("尚有未提交的事务！");
+                return transaction;
             }
 
             protected override System.Data.Common.DbCommand CreateDbCommand()
             {
                 var command = Connection.CreateCommand();
 
-                command.Transaction = transaction?.Transaction;
+                if (transactions.Count > 0)
+                {
+                    var transaction = transactions.Peek();
+
+                    command.Transaction = transaction.Transaction;
+                }
 
                 return command;
             }
 
-            public override DataTable GetSchema(string collectionName)
-            {
-                return Connection.GetSchema(collectionName);
-            }
+            public override DataTable GetSchema(string collectionName) => Connection.GetSchema(collectionName);
 
-            public override DataTable GetSchema(string collectionName, string[] restrictionValues)
-            {
-                return Connection.GetSchema(collectionName, restrictionValues);
-            }
+            public override DataTable GetSchema(string collectionName, string[] restrictionValues) => Connection.GetSchema(collectionName, restrictionValues);
 
-            public override DataTable GetSchema()
-            {
-                return Connection.GetSchema();
-            }
+            public override DataTable GetSchema() => Connection.GetSchema();
 
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+            public override Task OpenAsync(CancellationToken cancellationToken) => Connection.OpenAsync(cancellationToken);
+#endif
+
+#if NETSTANDARD2_1_OR_GREATER
+            public override ValueTask DisposeAsync() => connection?.DisposeAsync() ?? new ValueTask();
+            public override Task CloseAsync() => Connection.CloseAsync();
+            public override Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default) => Connection.ChangeDatabaseAsync(databaseName, cancellationToken);
+            protected override async ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken)
+            {
+                var transaction = new DbTransaction(this, await Connection.BeginTransactionAsync(isolationLevel, cancellationToken).ConfigureAwait(false));
+
+                transactions.Push(transaction);
+
+                return transaction;
+            }
+#endif
 
             public override event StateChangeEventHandler StateChange
             {
@@ -327,10 +427,7 @@ namespace CodeArts.Db.Lts
                 remove { Connection.StateChange -= value; }
             }
 
-            public override void EnlistTransaction(System.Transactions.Transaction transaction)
-            {
-                Connection.EnlistTransaction(transaction);
-            }
+            public override void EnlistTransaction(System.Transactions.Transaction transaction) => Connection.EnlistTransaction(transaction);
 
             protected override void Dispose(bool disposing)
             {
@@ -341,36 +438,60 @@ namespace CodeArts.Db.Lts
 
                 base.Dispose(disposing);
             }
-            
-            public T Read<T>(Expression expression)
+
+            public T Single<T>(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).Read<T>(this, expression);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                return databaseFor.Single(this, commandSql);
             }
 
             public IEnumerable<T> Query<T>(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).Query<T>(this, expression);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                return databaseFor.Query<T>(this, commandSql);
             }
 
             public int Execute(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).Execute(this, expression);
+                var commandSql = databaseFor.Execute(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                return databaseFor.Execute(this, commandSql);
             }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public Task<T> ReadAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
             {
-                return DbConnectionManager.Create(adapter).ReadAsync<T>(this, expression, cancellationToken);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                return databaseFor.SingleAsync(this, commandSql, cancellationToken);
             }
 
             public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
             {
-                return DbConnectionManager.Create(adapter).QueryAsync<T>(this, expression);
+                var commandSql = databaseFor.Read<T>(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                return databaseFor.QueryAsync<T>(this, commandSql);
             }
 
             public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
             {
-                return DbConnectionManager.Create(adapter).ExecuteAsync(this, expression, cancellationToken);
+                var commandSql = databaseFor.Execute(expression);
+
+                SqlCapture.Current?.Capture(commandSql);
+
+                return databaseFor.ExecuteAsync(this, commandSql, cancellationToken);
             }
 #endif
         }

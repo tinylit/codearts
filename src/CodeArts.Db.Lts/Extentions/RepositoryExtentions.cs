@@ -1,4 +1,5 @@
-﻿using CodeArts.Db.Lts;
+﻿using CodeArts.Db;
+using CodeArts.Db.Lts;
 using System.Linq.Expressions;
 
 namespace System.Linq
@@ -26,7 +27,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">资源类型。</typeparam>
         /// <param name="source">查询器。</param>
-        /// <param name="commandTimeout">超时时间，单位：秒。<see cref="System.Data.IDbCommand.CommandTimeout"/></param>
+        /// <param name="commandTimeout">超时时间，单位：秒。<see cref="Data.IDbCommand.CommandTimeout"/></param>
         /// <returns></returns>
         public static IQueryable<TSource> TimeOut<TSource>(this IQueryable<TSource> source, int commandTimeout)
         => source.Provider.CreateQuery<TSource>(Expression.Call(null, QueryableMethods.TimeOut.MakeGenericMethod(typeof(TSource)), new Expression[2] {
@@ -53,32 +54,5 @@ namespace System.Linq
             source.Expression,
             Expression.Constant(errMsg)
         }));
-
-        #region 仅用作反射使用。
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        internal static int Update<T>(IQueryable<T> _, Expression<Func<T, T>> _2)
-            => throw new NotImplementedException();
-
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        internal static int Delete<T>(IQueryable<T> _)
-            => throw new NotImplementedException();
-
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        internal static int Delete<T>(IQueryable<T> _, Expression<Func<T, bool>> _2)
-            => throw new NotImplementedException();
-
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        internal static int Insert<T>(IQueryable<T> _, IQueryable<T> _2)
-            => throw new NotImplementedException();
-        #endregion
-
     }
 }

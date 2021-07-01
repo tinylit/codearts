@@ -11,411 +11,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
 
 namespace CodeArts.Db.Lts
 {
-    /// <summary>
-    /// 数据写入器。
-    /// </summary>
-    public class DbWriter
-    {
-        // look for ? / @ / :
-        private static readonly Regex smellsLikeOleDb = new Regex(@"(?<![\p{L}\p{N}@_])[?:@]([\p{L}\p{N}_][\p{L}\p{N}@_]*)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-        private static readonly Dictionary<Type, DbType> typeMap;
-
-        static DbWriter()
-        {
-            typeMap = new Dictionary<Type, DbType>
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = DbType.Time,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(object)] = DbType.Object
-            };
-        }
-
-        private static DbType LookupDbType(Type dataType)
-        {
-            if (dataType.IsNullable())
-            {
-                dataType = Nullable.GetUnderlyingType(dataType);
-            }
-
-            if (dataType.IsEnum)
-            {
-                dataType = Enum.GetUnderlyingType(dataType);
-            }
-
-            if (typeMap.TryGetValue(dataType, out DbType dbType))
-            {
-                return dbType;
-            }
-
-            if (dataType.FullName == "System.Data.Linq.Binary")
-            {
-                return DbType.Binary;
-            }
-
-            return DbType.Object;
-        }
-
-        /// <summary>
-        /// 参数适配。
-        /// </summary>
-        /// <param name="command">命令。</param>
-        /// <param name="param">参数。</param>
-        public static void AddParameterAuto(IDbCommand command, object param = null)
-        {
-            switch (param)
-            {
-                case IEnumerable<KeyValuePair<string, ParameterValue>> parameters:
-                    foreach (var kv in parameters)
-                    {
-                        AddParameterAuto(command, kv.Key, kv.Value);
-                    }
-                    break;
-                case IEnumerable<KeyValuePair<string, object>> dic:
-                    foreach (var kv in dic)
-                    {
-                        if (kv.Value is ParameterValue parameterValue)
-                        {
-                            AddParameterAuto(command, kv.Key, parameterValue);
-                        }
-                        else
-                        {
-                            AddParameterAuto(command, kv.Key, kv.Value);
-                        }
-                    }
-                    break;
-                default:
-                    var matches = smellsLikeOleDb.Matches(command.CommandText);
-
-                    if (matches.Count == 0)
-                    {
-                        return;
-                    }
-
-                    if (param is null)
-                    {
-                        throw new NotSupportedException();
-                    }
-
-                    var tokens = new List<string>(matches.Count);
-
-                    foreach (Match item in matches)
-                    {
-                        tokens.Add(item.Groups[1].Value);
-                    }
-
-                    var paramType = param.GetType();
-
-                    if (paramType.IsValueType || paramType == typeof(string))
-                    {
-                        if (matches.Count == 1)
-                        {
-                            AddParameterAuto(command, tokens[0], param);
-
-                            break;
-                        }
-
-                        throw new NotSupportedException();
-                    }
-
-                    var storeItem = TypeItem.Get(paramType);
-
-                    storeItem.PropertyStores
-                        .Where(x => x.CanRead && tokens.Contains(x.Name))
-                        .ForEach(x =>
-                        {
-                            var value = x.Member.GetValue(param, null);
-
-                            if (value is null)
-                            {
-                                AddParameterAuto(command, x.Name, new ParameterValue(x.MemberType));
-                            }
-                            else if (value is ParameterValue parameterValue)
-                            {
-                                AddParameterAuto(command, x.Name, parameterValue);
-                            }
-                            else
-                            {
-                                AddParameterAuto(command, x.Name, value);
-                            }
-                        });
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 参数适配。
-        /// </summary>
-        /// <param name="command">命令。</param>
-        /// <param name="key">参数名称。</param>
-        /// <param name="value">参数值。</param>
-        public static void AddParameterAuto(IDbCommand command, string key, ParameterValue value)
-        {
-            var dbParameter = command.CreateParameter();
-
-            dbParameter.Value = value.IsNull ? DBNull.Value : value.Value;
-            dbParameter.ParameterName = key;
-            dbParameter.Direction = ParameterDirection.Input;
-            dbParameter.DbType = LookupDbType(value.ValueType);
-
-            command.Parameters.Add(dbParameter);
-        }
-
-        /// <summary>
-        /// 参数适配。
-        /// </summary>
-        /// <param name="command">命令。</param>
-        /// <param name="key">参数名称。</param>
-        /// <param name="value">参数值。</param>
-        public static void AddParameterAuto(IDbCommand command, string key, object value)
-        {
-            if (value is string)
-            {
-                Private_AddParameterAuto(command, key, value);
-            }
-            else if (value is IEnumerable list)
-            {
-                bool flag = false;
-
-                var listType = list.GetType();
-
-                if (listType.IsArray)
-                {
-                    if (Done(listType.GetElementType()))
-                    {
-                        value = DBNull.Value;
-                    }
-                    else
-                    {
-                        flag = true;
-                    }
-                }
-                else
-                {
-                    foreach (var type in listType.GetInterfaces())
-                    {
-                        if (!type.IsGenericType)
-                        {
-                            continue;
-                        }
-
-                        var typeDefinition = type.GetGenericTypeDefinition();
-
-                        if (typeDefinition == typeof(IList<>)
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-                            || typeDefinition == typeof(IReadOnlyCollection<>)
-#endif
-                            || typeDefinition == typeof(ICollection<>)
-                            || typeDefinition == typeof(IEnumerable<>))
-                        {
-                            var valueType = type.GetGenericArguments()[0];
-
-                            if (Done(valueType))
-                            {
-                                value = null;
-                            }
-                            else
-                            {
-                                flag = true;
-                            }
-
-                            break;
-                        }
-                    }
-                }
-
-                bool Done(Type valueType)
-                {
-                    int count = 0;
-
-                    foreach (var item in list)
-                    {
-                        if (item is null)
-                        {
-                            Private_AddParameterAuto(command, string.Concat(key, count.ToString()), new ParameterValue(valueType));
-                        }
-                        else
-                        {
-                            Private_AddParameterAuto(command, string.Concat(key, count.ToString()), item);
-                        }
-
-                        count++;
-                    }
-
-                    string pattern = string.Concat("([?@:]", Regex.Escape(key), @")(?!\w)(\s+(?i)unknown(?-i))?");
-
-                    if (count == 0)
-                    {
-                        command.CommandText = Regex.Replace(command.CommandText, pattern, match =>
-                        {
-                            var variableName = match.Groups[1].Value;
-
-                            if (match.Groups[2].Success)
-                            {
-                                // looks like an optimize hint; leave it alone!
-                                return match.Value;
-                            }
-                            else
-                            {
-                                return "(SELECT " + variableName + " WHERE 1 = 0)";
-                            }
-                        }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
-
-
-                        return true;
-                    }
-
-                    command.CommandText = Regex.Replace(command.CommandText, pattern, match =>
-                    {
-                        var sb = new StringBuilder();
-
-                        var variableName = match.Groups[1].Value;
-
-                        if (match.Groups[2].Success)
-                        {
-                            var suffix = match.Groups[2].Value;
-
-                            sb.Append(variableName)
-                            .Append(0)
-                            .Append(suffix);
-
-                            for (int i = 1; i < count; i++)
-                            {
-                                sb.Append(',')
-                                .Append(variableName)
-                                .Append(i)
-                                .Append(suffix);
-                            }
-
-                            return sb.ToString();
-                        }
-                        else
-                        {
-                            sb.Append('(')
-                            .Append(variableName)
-                            .Append(0);
-
-                            for (int i = 1; i < count; i++)
-                            {
-                                sb.Append(',')
-                                .Append(variableName)
-                                .Append(i);
-                            }
-                            return sb
-                            .Append(')')
-                            .ToString();
-                        }
-                    }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
-
-                    return false;
-                }
-
-                if (!flag)
-                {
-                    Private_AddParameterAuto(command, key, value);
-                }
-            }
-            else
-            {
-                Private_AddParameterAuto(command, key, value);
-            }
-        }
-
-        private static void Private_AddParameterAuto(IDbCommand command, string key, object value)
-        {
-            var dbParameter = command.CreateParameter();
-
-            switch (value)
-            {
-                case IDbDataParameter dbDataParameter:
-
-                    dbParameter.Value = dbDataParameter.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = dbDataParameter.Direction;
-                    dbParameter.DbType = dbDataParameter.DbType;
-                    dbParameter.SourceColumn = dbDataParameter.SourceColumn;
-                    dbParameter.SourceVersion = dbDataParameter.SourceVersion;
-
-                    if (dbParameter is System.Data.Common.DbParameter myParameter)
-                    {
-                        myParameter.IsNullable = dbDataParameter.IsNullable;
-                    }
-
-                    dbParameter.Scale = dbDataParameter.Scale;
-                    dbParameter.Size = dbDataParameter.Size;
-                    dbParameter.Precision = dbDataParameter.Precision;
-
-                    break;
-                case IDataParameter dataParameter:
-
-                    dbParameter.Value = dataParameter.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = dataParameter.Direction;
-                    dbParameter.DbType = dataParameter.DbType;
-                    dbParameter.SourceColumn = dataParameter.SourceColumn;
-                    dbParameter.SourceVersion = dataParameter.SourceVersion;
-
-                    break;
-                case ParameterValue parameterValue:
-
-                    dbParameter.Value = parameterValue.IsNull ? DBNull.Value : parameterValue.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = ParameterDirection.Input;
-                    dbParameter.DbType = LookupDbType(parameterValue.ValueType);
-
-                    break;
-                case string text:
-                    dbParameter.Value = text;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = ParameterDirection.Input;
-                    dbParameter.DbType = DbType.String;
-                    if (text.Length > 4000)
-                    {
-                        dbParameter.Size = -1;
-                    }
-                    else
-                    {
-                        dbParameter.Size = 4000;
-                    }
-                    break;
-                default:
-
-                    dbParameter.Value = value ?? DBNull.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = ParameterDirection.Input;
-                    dbParameter.DbType = value is null ? DbType.Object : LookupDbType(value.GetType());
-
-                    break;
-            }
-
-            command.Parameters.Add(dbParameter);
-        }
-    }
-
     /// <summary>
     /// 数据写入器。
     /// </summary>
@@ -433,6 +33,7 @@ namespace CodeArts.Db.Lts
         /// 最大参数长度。
         /// </summary>
         public const int MAX_PARAMETERS_COUNT = 1000;
+
         /// <summary>
         /// 最大IN SQL 参数长度（取自 Oracle 9I）。
         /// </summary>
@@ -462,10 +63,12 @@ namespace CodeArts.Db.Lts
         /// </summary>
         private abstract class DbRouteExecuter : IDbRouteExecuter<TEntity>
         {
+            private readonly IDatabaseFor databaseFor;
             public DbRouteExecuter(IDatabase database, ICollection<TEntity> entries)
             {
                 this.Entries = entries ?? throw new ArgumentNullException(nameof(entries));
                 this.database = database ?? throw new ArgumentNullException(nameof(database));
+                this.databaseFor = DbConnectionManager.GetOrCreate(DbConnectionManager.Get(database.ProviderName));
             }
 
             static DbRouteExecuter()
@@ -482,17 +85,17 @@ namespace CodeArts.Db.Lts
             protected static readonly string[] defaultWhere;
 
             private readonly IDatabase database;
-            private System.Data.IsolationLevel? isolationLevel = null;
+            private IsolationLevel? isolationLevel = null;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
 
             public IDbRouteExecuter<TEntity> UseTransaction()
             {
-                isolationLevel = System.Data.IsolationLevel.ReadCommitted;
+                isolationLevel = IsolationLevel.ReadCommitted;
 
                 return this;
             }
 
-            public IDbRouteExecuter<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel)
+            public IDbRouteExecuter<TEntity> UseTransaction(IsolationLevel isolationLevel)
             {
                 this.isolationLevel = isolationLevel;
 
@@ -550,11 +153,13 @@ namespace CodeArts.Db.Lts
                         {
                             int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                            capture?.Capture(new CommandSql(x.Item1, x.Item2, timeOut));
+                            var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                            capture?.Capture(commandSql);
 
                             stopwatch.Start();
 
-                            influenceLine += database.Execute(x.Item1, x.Item2, null, timeOut);
+                            influenceLine += databaseFor.Execute(database, commandSql);
 
                             stopwatch.Stop();
                         });
@@ -563,9 +168,11 @@ namespace CodeArts.Db.Lts
                     {
                         results.ForEach(x =>
                         {
-                            capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
 
-                            influenceLine += database.Execute(x.Item1, x.Item2, null, commandTimeout);
+                            capture?.Capture(commandSql);
+
+                            influenceLine += databaseFor.Execute(database, commandSql);
                         });
                     }
 
@@ -607,11 +214,13 @@ namespace CodeArts.Db.Lts
                                 {
                                     int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, timeOut));
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                                    capture?.Capture(commandSql);
 
                                     stopwatch.Start();
 
-                                    influenceLine += database.Execute(x.Item1, x.Item2, transaction, timeOut);
+                                    influenceLine += databaseFor.Execute(database, commandSql);
 
                                     stopwatch.Stop();
                                 });
@@ -620,9 +229,9 @@ namespace CodeArts.Db.Lts
                             {
                                 results.ForEach(x =>
                                 {
-                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
 
-                                    influenceLine += database.Execute(x.Item1, x.Item2, transaction, commandTimeout);
+                                    influenceLine += databaseFor.Execute(database, commandSql);
                                 });
                             }
 
@@ -647,10 +256,6 @@ namespace CodeArts.Db.Lts
                 }
             }
 
-            /// <summary>
-            /// 准备命令。
-            /// </summary>
-            /// <returns></returns>
             public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
@@ -708,11 +313,13 @@ namespace CodeArts.Db.Lts
                         {
                             int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                            capture?.Capture(new CommandSql(x.Item1, x.Item2, timeOut));
+                            var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                            capture?.Capture(commandSql);
 
                             stopwatch.Start();
 
-                            influenceLine += await database.ExecuteAsync(x.Item1, x.Item2, null, timeOut);
+                            influenceLine += await databaseFor.ExecuteAsync(database, commandSql);
 
                             stopwatch.Stop();
                         }
@@ -721,9 +328,11 @@ namespace CodeArts.Db.Lts
                     {
                         foreach (var x in results)
                         {
-                            capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
 
-                            influenceLine += await database.ExecuteAsync(x.Item1, x.Item2, null, commandTimeout);
+                            capture?.Capture(commandSql);
+
+                            influenceLine += await databaseFor.ExecuteAsync(database, commandSql);
                         }
                     }
 
@@ -778,17 +387,17 @@ namespace CodeArts.Db.Lts
                                 {
                                     Stopwatch stopwatch = new Stopwatch();
 
-                                    int remainingTime = commandTimeout.Value;
-
                                     foreach (var x in results)
                                     {
                                         int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                                        capture?.Capture(new CommandSql(x.Item1, x.Item2, timeOut));
+                                        var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                                        capture?.Capture(commandSql);
 
                                         stopwatch.Start();
 
-                                        influenceLine += await connection.ExecuteAsync(x.Item1, x.Item2, transaction, timeOut);
+                                        influenceLine += await databaseFor.ExecuteAsync(connection, commandSql);
 
                                         stopwatch.Stop();
                                     }
@@ -797,9 +406,11 @@ namespace CodeArts.Db.Lts
                                 {
                                     foreach (var x in results)
                                     {
-                                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
 
-                                        influenceLine += await connection.ExecuteAsync(x.Item1, x.Item2, transaction, commandTimeout);
+                                        capture?.Capture(commandSql);
+
+                                        influenceLine += await databaseFor.ExecuteAsync(connection, commandSql);
                                     }
                                 }
 
@@ -848,17 +459,17 @@ namespace CodeArts.Db.Lts
                             {
                                 Stopwatch stopwatch = new Stopwatch();
 
-                                int remainingTime = commandTimeout.Value;
-
                                 foreach (var x in results)
                                 {
                                     int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, timeOut));
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                                    capture?.Capture(commandSql);
 
                                     stopwatch.Start();
 
-                                    influenceLine += database.Execute(x.Item1, x.Item2, transaction, timeOut);
+                                    influenceLine += databaseFor.Execute(database, commandSql);
 
                                     stopwatch.Stop();
                                 }
@@ -867,9 +478,11 @@ namespace CodeArts.Db.Lts
                             {
                                 foreach (var x in results)
                                 {
-                                    capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
 
-                                    influenceLine += database.Execute(x.Item1, x.Item2, transaction, commandTimeout);
+                                    capture?.Capture(commandSql);
+
+                                    influenceLine += databaseFor.Execute(database, commandSql);
                                 }
                             }
 
@@ -944,7 +557,7 @@ namespace CodeArts.Db.Lts
 
                 foreach (var kv in typeRegions.ReadOrWrites)
                 {
-                    if (kv.Key == value || kv.Value == value)
+                    if (string.Equals(kv.Key, value, StringComparison.OrdinalIgnoreCase) || string.Equals(kv.Value, value, StringComparison.OrdinalIgnoreCase))
                     {
                         flag = false;
 
@@ -981,7 +594,7 @@ namespace CodeArts.Db.Lts
                 List<Tuple<string, Dictionary<string, ParameterValue>>> results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
 
                 var columns = typeRegions.ReadOrWrites
-                        .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
+                        .Where(x => wheres.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase)) || wheres.Any(y => string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)))
                         .ToList();
 
                 if (Entries.Count * columns.Count <= MAX_PARAMETERS_COUNT)
@@ -1331,6 +944,8 @@ namespace CodeArts.Db.Lts
                     return results;
                 }
 
+                bool flag = false;
+
                 int groupIndex = 0;
 
                 parameterCount = 0;
@@ -1347,27 +962,33 @@ namespace CodeArts.Db.Lts
 
                         sb.Clear();
 
+                        flag = false;
+
                         groupIndex = 0;
 
-                        parameters.Clear();
+                        parameters = new Dictionary<string, ParameterValue>();
 
                         parameterCount = item.Key.Length;
                     }
 
-                    if (sb.Length > 0)
+                    if (flag)
                     {
                         sb.Append(';');
                     }
-
-                    if (item.Key.Length > 1)
-                    {
-                        sb.Append(Complex(TableInfo.ReadOrWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
-                    }
                     else
+                    {
+                        flag = true;
+                    }
+
+                    if (item.Key.Length == 1)
                     {
                         string key = item.Key[0];
 
                         sb.Append(Simple(TableInfo.ReadOrWrites.First(x => x.Key == key), item, groupIndex, parameters));
+                    }
+                    else
+                    {
+                        sb.Append(Complex(TableInfo.ReadOrWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
                     }
 
                     groupIndex++;
@@ -1437,8 +1058,6 @@ namespace CodeArts.Db.Lts
                                     {
                                         throw new NoNullAllowedException("令牌不允许为空!");
                                     }
-
-                                    storeItem.Member.SetValue(item, value, null);
                                 }
                                 else if (storeItem.MemberType == Types.DateTime)
                                 {
@@ -1456,7 +1075,15 @@ namespace CodeArts.Db.Lts
                                 {
                                     value = new Version(1, 0, 0, 0);
                                 }
+                                else
+                                {
+                                    goto label_valid;
+                                }
+
+                                storeItem.Member.SetValue(item, value, null); //? 刷新数据。
                             }
+
+                            label_valid:
 
                             context.MemberName = storeItem.Member.Name;
 
@@ -1499,12 +1126,12 @@ namespace CodeArts.Db.Lts
 
                 if (!(limits is null))
                 {
-                    columns = columns.Where(x => limits.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => limits.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!(excepts is null))
                 {
-                    columns = columns.Where(x => !excepts.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => !excepts.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!columns.Any())
@@ -1641,15 +1268,6 @@ namespace CodeArts.Db.Lts
                         .Append(" SET ")
                         .Append(string.Join(",", columns.Select(kv =>
                         {
-                            var name = typeRegions.Tokens.ContainsKey(kv.Key)
-                            ? $"__token_{kv.Value}"
-                            : kv.Value;
-
-                            string parameterKey = index == 0
-                            ? name
-                            :
-                            $"{name}_{index}";
-
                             var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
                             var value = storeItem.Member.GetValue(entry, null);
@@ -1662,6 +1280,15 @@ namespace CodeArts.Db.Lts
                             {
                                 ValidateValue(value, context, attrs);
                             }
+
+                            var name = typeRegions.Tokens.ContainsKey(kv.Key)
+                            ? $"__token_{kv.Value}"
+                            : kv.Value;
+
+                            string parameterKey = index == 0
+                            ? name
+                            :
+                            $"{name}_{index}";
 
                             parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
@@ -1732,12 +1359,12 @@ namespace CodeArts.Db.Lts
 
                 if (!(limits is null))
                 {
-                    columns = columns.Where(x => limits.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => limits.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!(excepts is null))
                 {
-                    columns = columns.Where(x => !excepts.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => !excepts.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!columns.Any())
@@ -1755,7 +1382,7 @@ namespace CodeArts.Db.Lts
                         throw new DException("未指定更新条件");
 
                     var whereColumns = typeRegions.ReadOrWrites
-                            .Where(x => typeRegions.Keys.Contains(x.Key) || wheres.Any(y => y == x.Key || y == x.Value))
+                            .Where(x => typeRegions.Keys.Contains(x.Key) || wheres.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)))
                             .Select(x => x.Key)
                             .ToArray();
 
