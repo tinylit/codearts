@@ -53,8 +53,9 @@ namespace CodeArts.Db.Lts
                 else
                 {
                     parameter.Value = Convert.ChangeType(value, typeof(double));
-                    parameter.DbType = DbType.Double;
                 }
+
+                parameter.DbType = DbType.Double;
             }
         }
 

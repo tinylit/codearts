@@ -15,15 +15,13 @@ namespace CodeArts.Db.Lts
     /// </summary>
     /// <typeparam name="T">实体类型。</typeparam>
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-    public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IRepository, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
+    public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IRepository, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable, IDisposable
 #else
     public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IRepository, IQueryable, IQueryProvider, IEnumerable
 #endif
     {
         private readonly IReadOnlyConnectionConfig connectionConfig;
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
-
-        private readonly bool isEmpty = true;
 
         /// <summary>
         /// 构造函数。
@@ -57,8 +55,6 @@ namespace CodeArts.Db.Lts
         /// <param name="expression">表达式。</param>
         protected Repository(IDatabase database, Expression expression) : this(database)
         {
-            isEmpty = false;
-
             this.expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
@@ -230,7 +226,7 @@ namespace CodeArts.Db.Lts
 
         private IEnumerator<T> GetEnumerator()
         {
-            if (isEmpty || Enumerable is null)
+            if (Enumerable is null)
             {
                 Enumerable = Database.Query<T>(Expression);
             }
@@ -279,13 +275,40 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator(CancellationToken cancellationToken)
         {
-            if (isEmpty || AsyncEnumerable is null)
+            if (AsyncEnumerable is null)
             {
                 AsyncEnumerable = Database.QueryAsync<T>(Expression);
             }
 
             return AsyncEnumerable.GetAsyncEnumerator(cancellationToken);
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // 要检测冗余调用
+
+        /// <inheritdoc />
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    Database.Dispose();
+
+                    GC.SuppressFinalize(this);
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            // 请勿更改此代码。将清理代码放入以上 Dispose(bool disposing) 中。
+            Dispose(true);
+        }
+        #endregion
 #endif
     }
 }

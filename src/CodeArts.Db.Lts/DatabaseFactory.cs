@@ -55,22 +55,21 @@ namespace CodeArts.Db.Lts
             public IDbTransaction DbTransaction { get; }
 
             public void Commit() => DbTransaction.Commit();
+            public void Rollback() => DbTransaction.Rollback();
 
-            private bool isDisposed = false;
+            private bool disposedValue = false;
 
             public void Dispose()
             {
-                if (!isDisposed)
+                if (!disposedValue)
                 {
                     database.CheckTransaction(this);
 
-                    DbTransaction.Dispose();
-
-                    isDisposed = true;
+                    disposedValue = true;
                 }
-            }
 
-            public void Rollback() => DbTransaction.Rollback();
+                DbTransaction.Dispose();
+            }
         }
 
         private class Database : IDatabase
@@ -134,7 +133,7 @@ namespace CodeArts.Db.Lts
                 return transaction;
             }
 
-            public void Close() => Connection.Close();
+            public void Close() => connection.Close();
 
             public void ChangeDatabase(string databaseName) => Connection.ChangeDatabase(databaseName);
 
@@ -154,7 +153,7 @@ namespace CodeArts.Db.Lts
 
             public void Open() => Connection.Open();
 
-            public void Dispose() => Connection.Dispose();
+            public void Dispose() => connection?.Dispose();
 
             public T Single<T>(Expression expression)
             {
@@ -281,39 +280,34 @@ namespace CodeArts.Db.Lts
 
             public override void Rollback() => Transaction.Rollback();
 
-            private bool isDisposed = false;
+            private bool disposedValue = false;
 
             protected override void Dispose(bool disposing)
             {
-                if (disposing && !isDisposed)
+                if (!disposedValue)
                 {
-                    database.CheckTransaction(this);
+                    if (disposing)
+                    {
+                        database.CheckTransaction(this);
+                    }
 
-                    isDisposed = true;
+                    disposedValue = true;
                 }
 
                 Transaction.Dispose();
-
-                base.Dispose(disposing);
             }
 
 #if NETSTANDARD2_1_OR_GREATER
-            public override Task CommitAsync(CancellationToken cancellationToken = default)
-            {
-                return base.CommitAsync(cancellationToken);
-            }
-            public override Task RollbackAsync(CancellationToken cancellationToken = default)
-            {
-                return base.RollbackAsync(cancellationToken);
-            }
+            public override Task CommitAsync(CancellationToken cancellationToken = default) => Transaction.CommitAsync(cancellationToken);
+            public override Task RollbackAsync(CancellationToken cancellationToken = default) => Transaction.RollbackAsync(cancellationToken);
 
             public override ValueTask DisposeAsync()
             {
-                if (!isDisposed)
+                if (!disposedValue)
                 {
                     database.CheckTransaction(this);
 
-                    isDisposed = true;
+                    disposedValue = true;
                 }
 
                 return Transaction.DisposeAsync();
@@ -362,7 +356,7 @@ namespace CodeArts.Db.Lts
 
             public override void ChangeDatabase(string databaseName) => Connection.ChangeDatabase(databaseName);
 
-            public override void Close() => Connection.Close();
+            public override void Close() => connection.Close();
 
             public override void Open() => Connection.Open();
 
@@ -409,7 +403,7 @@ namespace CodeArts.Db.Lts
 
 #if NETSTANDARD2_1_OR_GREATER
             public override ValueTask DisposeAsync() => connection?.DisposeAsync() ?? new ValueTask();
-            public override Task CloseAsync() => Connection.CloseAsync();
+            public override Task CloseAsync() => connection.CloseAsync();
             public override Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default) => Connection.ChangeDatabaseAsync(databaseName, cancellationToken);
             protected override async ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken)
             {
@@ -445,6 +439,14 @@ namespace CodeArts.Db.Lts
 
                 SqlCapture.Current?.Capture(commandSql);
 
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Single(dbConnection, commandSql);
+                    }
+                }
+
                 return databaseFor.Single(this, commandSql);
             }
 
@@ -454,6 +456,14 @@ namespace CodeArts.Db.Lts
 
                 SqlCapture.Current?.Capture(commandSql);
 
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Query<T>(dbConnection, commandSql);
+                    }
+                }
+
                 return databaseFor.Query<T>(this, commandSql);
             }
 
@@ -462,6 +472,14 @@ namespace CodeArts.Db.Lts
                 var commandSql = databaseFor.Execute(expression);
 
                 SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Execute(dbConnection, commandSql);
+                    }
+                }
 
                 return databaseFor.Execute(this, commandSql);
             }
@@ -473,6 +491,14 @@ namespace CodeArts.Db.Lts
 
                 SqlCapture.Current?.Capture(commandSql);
 
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.SingleAsync(dbConnection, commandSql, cancellationToken);
+                    }
+                }
+
                 return databaseFor.SingleAsync(this, commandSql, cancellationToken);
             }
 
@@ -482,6 +508,14 @@ namespace CodeArts.Db.Lts
 
                 SqlCapture.Current?.Capture(commandSql);
 
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.QueryAsync<T>(dbConnection, commandSql);
+                    }
+                }
+
                 return databaseFor.QueryAsync<T>(this, commandSql);
             }
 
@@ -490,6 +524,14 @@ namespace CodeArts.Db.Lts
                 var commandSql = databaseFor.Execute(expression);
 
                 SqlCapture.Current?.Capture(commandSql);
+
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.ExecuteAsync(dbConnection, commandSql, cancellationToken);
+                    }
+                }
 
                 return databaseFor.ExecuteAsync(this, commandSql, cancellationToken);
             }

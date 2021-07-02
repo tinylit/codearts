@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace CodeArts.Interceptor
+namespace CodeArts.AOP
 {
     /// <summary>
     /// 中间件拦截方法。

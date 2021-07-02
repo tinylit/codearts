@@ -17,7 +17,7 @@ namespace CodeArts
         /// </summary>
         /// <param name="services">服务集合。</param>
         /// <returns></returns>
-        public static IServiceCollection UseInterceptor(this IServiceCollection services)
+        public static IServiceCollection UseAOP(this IServiceCollection services)
         {
             if (services is null)
             {

@@ -1,10 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Linq;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CodeArts.Tests
 {

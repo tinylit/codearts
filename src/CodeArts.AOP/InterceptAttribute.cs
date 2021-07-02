@@ -1,4 +1,4 @@
-﻿using CodeArts.Interceptor;
+﻿using CodeArts.AOP;
 using System;
 using System.Threading.Tasks;
 
@@ -7,7 +7,7 @@ namespace CodeArts
     /// <summary>
     /// 拦截属性。
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
     public abstract class InterceptAttribute : Attribute
     {
         /// <summary>

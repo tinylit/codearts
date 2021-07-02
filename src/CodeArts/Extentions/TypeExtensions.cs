@@ -10,7 +10,7 @@ namespace System
         static readonly Type Nullable_T_Type = typeof(Nullable<>);
         static readonly Type KeyValuePair_TKey_TValue_Type = typeof(KeyValuePair<,>);
 
-        private static readonly List<Type> _simpleTypes = new List<Type>
+        private static readonly HashSet<Type> _simpleTypes = new HashSet<Type>
         {
             typeof(byte),
             typeof(sbyte),
@@ -38,7 +38,7 @@ namespace System
         /// </summary>
         /// <param name="type">类型。</param>
         /// <returns></returns>
-        public static bool IsSimpleType(this Type type) => _simpleTypes.Contains(type);
+        public static bool IsSimpleType(this Type type) => type.IsEnum || _simpleTypes.Contains(type);
 
         /// <summary>
         /// 判断类型是否为Nullable类型。

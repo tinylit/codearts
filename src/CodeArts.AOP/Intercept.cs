@@ -1,4 +1,4 @@
-﻿namespace CodeArts.Interceptor
+﻿namespace CodeArts.AOP
 {
     /// <summary>
     /// 拦截执行方法。
