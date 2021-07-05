@@ -54,6 +54,31 @@ namespace CodeArts.Emit
         /// </summary>
         public ParamterEmitter[] Parameters => parameters.ToArray();
 
+        /// <summary>
+        /// 声明参数。
+        /// </summary>
+        /// <param name="parameterInfo">参数。</param>
+        /// <returns></returns>
+        public ParamterEmitter DefineParameter(ParameterInfo parameterInfo)
+        {
+            var parameter = DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
+
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+            if (parameterInfo.HasDefaultValue)
+#else
+            if (parameterInfo.IsOptional)
+#endif
+            {
+                parameter.SetConstant(parameterInfo.DefaultValue);
+            }
+
+            foreach (var customAttribute in parameterInfo.GetCustomAttributesData())
+            {
+                parameter.SetCustomAttribute(customAttribute);
+            }
+
+            return parameter;
+        }
 
         /// <summary>
         /// 声明参数。
@@ -75,6 +100,20 @@ namespace CodeArts.Emit
             var parameter = new ParamterEmitter(parameterType, ++parameterIndex, attributes, strParamName);
             parameters.Add(parameter);
             return parameter;
+        }
+
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="attributeData">属性。</param>
+        public void SetCustomAttribute(CustomAttributeData attributeData)
+        {
+            if (attributeData is null)
+            {
+                throw new ArgumentNullException(nameof(attributeData));
+            }
+
+            customAttributes.Add(AttributeUtil.Create(attributeData));
         }
 
         /// <summary>

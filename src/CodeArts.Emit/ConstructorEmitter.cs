@@ -59,8 +59,9 @@ namespace CodeArts.Emit
         /// <param name="baseType">父类型。</param>
         /// <param name="attributes">属性。</param>
         /// <param name="conventions">调用约定。</param>
-        public ConstructorEmitter(Type baseType, MethodAttributes attributes, CallingConventions conventions) : base(baseType)
+        public ConstructorEmitter(Type baseType, MethodAttributes attributes, CallingConventions conventions) : base(typeof(void))
         {
+            BaseType = baseType;
             Attributes = attributes;
             Conventions = conventions;
         }
@@ -69,6 +70,12 @@ namespace CodeArts.Emit
         /// 方法的名称。
         /// </summary>
         public string Name { get; }
+
+        /// <summary>
+        /// 基础类型。
+        /// </summary>
+        public Type BaseType { get; }
+
         /// <summary>
         /// 方法的属性。
         /// </summary>
@@ -83,6 +90,32 @@ namespace CodeArts.Emit
         /// 参数。
         /// </summary>
         public ParamterEmitter[] Parameters => parameters.ToArray();
+
+        /// <summary>
+        /// 声明参数。
+        /// </summary>
+        /// <param name="parameterInfo">参数。</param>
+        /// <returns></returns>
+        public ParamterEmitter DefineParameter(ParameterInfo parameterInfo)
+        {
+            var parameter = DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
+
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+            if (parameterInfo.HasDefaultValue)
+#else
+            if (parameterInfo.IsOptional)
+#endif
+            {
+                parameter.SetConstant(parameterInfo.DefaultValue);
+            }
+
+            foreach (var customAttribute in parameterInfo.GetCustomAttributesData())
+            {
+                parameter.SetCustomAttribute(customAttribute);
+            }
+
+            return parameter;
+        }
 
         /// <summary>
         /// 声明参数。
@@ -105,7 +138,7 @@ namespace CodeArts.Emit
         {
             var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-            var type = ReturnType;
+            var type = BaseType;
 
             if (type.IsGenericParameter)
             {

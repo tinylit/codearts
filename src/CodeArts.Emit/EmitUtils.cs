@@ -13,6 +13,8 @@ namespace CodeArts.Emit
     /// </summary>
     public static class EmitUtils
     {
+        private static readonly ConstructorInfo GuidConstructorInfo = typeof(Guid).GetConstructor(new Type[1] { typeof(string) });
+
         private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
 
         private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
@@ -964,6 +966,10 @@ namespace CodeArts.Emit
 
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;
+                    case Guid guid:
+                        ilg.Emit(OpCodes.Ldstr, guid.ToString("D"));
+                        ilg.Emit(OpCodes.Newobj, GuidConstructorInfo);
+                        break;
                     case Array array:
                         if (!IsSimpleArray(valueType))
                         {
@@ -1145,7 +1151,7 @@ namespace CodeArts.Emit
                     throw new NotSupportedException();
             }
 
-        label_core:
+            label_core:
             {
                 LocalBuilder lb = ilg.DeclareLocal(type);
                 ilg.Emit(OpCodes.Ldloca, lb);
@@ -1226,7 +1232,7 @@ namespace CodeArts.Emit
                     break;
             }
 
-        label_core:
+            label_core:
             {
                 ilg.Emit(OpCodes.Ldobj, type);
             }
@@ -1304,7 +1310,7 @@ namespace CodeArts.Emit
                     break;
             }
 
-        label_core:
+            label_core:
             {
                 ilg.Emit(OpCodes.Stobj, type);
             }

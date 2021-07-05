@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CodeArts.Proxies;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 
@@ -13,7 +14,7 @@ namespace CodeArts
 
         /// <summary>
         /// 使用拦截器。
-        /// 为标记了 <see cref="InterceptAttribute"/> 的接口或方法生成代理类。
+        /// 为标记了 <see cref="InterceptAttribute"/> 的接口、类或方法生成代理类。
         /// </summary>
         /// <param name="services">服务集合。</param>
         /// <returns></returns>
@@ -28,75 +29,76 @@ namespace CodeArts
             {
                 ServiceDescriptor descriptor = services[i];
 
-                if (IsIntercepted(descriptor.ServiceType))
-                {
-                    goto label_core;
-                }
-
-                if (descriptor.ImplementationType is null)
+                if (!Intercept(descriptor))
                 {
                     continue;
                 }
 
-                if (IsIntercepted(descriptor.ImplementationType))
-                {
-                    goto label_implementation;
-                }
+                IProxyByPattern byPattern;
 
-                continue;
-
-                label_core:
+                if (descriptor.ImplementationInstance is null)
                 {
-                    if (descriptor.ImplementationType != null && IsIntercepted(descriptor.ImplementationType))
+                    if (descriptor.ImplementationType is null)
                     {
-                        goto label_double;
+                        byPattern = new ProxyByFactory(descriptor.ServiceType, descriptor.ImplementationFactory, descriptor.Lifetime);
                     }
+                    else
+                    {
+                        byPattern = new ProxyByType(descriptor.ServiceType, descriptor.ImplementationType, descriptor.Lifetime);
 
-                    continue;
+                    }
                 }
-
-                label_double:
+                else
                 {
-                    MakeInterceptType(descriptor.ServiceType, descriptor.ImplementationType);
-
-                    continue;
+                    byPattern = new ProxyByInstance(descriptor.ServiceType, descriptor.ImplementationInstance);
                 }
 
-                label_implementation:
-                {
-                    continue;
-                }
+                services[i] = byPattern.Resolve();
             }
 
             return services;
         }
 
-        /// <summary>
-        /// 拦截到。
-        /// </summary>
-        /// <param name="interceptType">拦截类型。</param>
-        /// <returns></returns>
-        private static bool IsIntercepted(Type interceptType)
+        private static bool Intercept(ServiceDescriptor descriptor)
         {
-            if (interceptType.IsDefined(InterceptAttributeType, true))
+            bool inherit = descriptor.ServiceType.IsInterface;
+
+            if (descriptor.ServiceType.IsDefined(InterceptAttributeType, inherit))
             {
                 return true;
             }
 
-            foreach (var methodInfo in interceptType.GetMethods())
+            var implementationType = descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType();
+
+            if (implementationType is null || implementationType.IsNested)
             {
-                if (methodInfo.IsDefined(InterceptAttributeType, true))
+                goto label_methods;
+            }
+
+            if (implementationType.IsDefined(InterceptAttributeType, false))
+            {
+                return true;
+            }
+
+            foreach (var methodInfo in implementationType.GetMethods())
+            {
+                if (methodInfo.IsDefined(InterceptAttributeType, false))
+                {
+                    return true;
+                }
+            }
+
+            label_methods:
+
+            foreach (var methodInfo in descriptor.ServiceType.GetMethods())
+            {
+                if (methodInfo.IsDefined(InterceptAttributeType, inherit))
                 {
                     return true;
                 }
             }
 
             return false;
-        }
-
-        private static Type MakeInterceptType(Type serviceType, Type implementationType)
-        {
-            return null;
         }
     }
 }

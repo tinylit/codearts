@@ -123,6 +123,28 @@ namespace CodeArts.Emit
         /// <summary>
         /// 创建字段。
         /// </summary>
+        /// <param name="fieldInfo">字段。</param>
+        /// <returns></returns>
+        public FieldEmitter DefineField(FieldInfo fieldInfo)
+        {
+            var fieldEmitter = DefineField(fieldInfo.Name, fieldInfo.FieldType, fieldInfo.Attributes);
+
+            if ((fieldInfo.Attributes & FieldAttributes.HasDefault) == FieldAttributes.HasDefault)
+            {
+                fieldEmitter.SetConstant(fieldInfo.GetRawConstantValue());
+            }
+
+            foreach (var attributeData in fieldInfo.GetCustomAttributesData())
+            {
+                fieldEmitter.SetCustomAttribute(attributeData);
+            }
+
+            return fieldEmitter;
+        }
+
+        /// <summary>
+        /// 创建字段。
+        /// </summary>
         /// <param name="name">名称。</param>
         /// <param name="fieldType">类型。</param>
         /// <returns></returns>
@@ -159,11 +181,11 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public FieldEmitter DefineField(string name, Type fieldType, FieldAttributes atts)
         {
-            var reference = new FieldEmitter(name, fieldType, atts);
+            var fieldEmitter = new FieldEmitter(name, fieldType, atts);
 
-            fields.Add(name, reference);
+            fields.Add(name, fieldEmitter);
 
-            return reference;
+            return fieldEmitter;
         }
 
         /// <summary>
@@ -254,6 +276,20 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="attributeData">属性。</param>
+        public void SetCustomAttribute(CustomAttributeData attributeData)
+        {
+            if (attributeData is null)
+            {
+                throw new ArgumentNullException(nameof(attributeData));
+            }
+
+            builder.SetCustomAttribute(AttributeUtil.Create(attributeData));
+        }
+
+        /// <summary>
         /// 自定义标记。
         /// </summary>
         /// <param name="attribute">标记。</param>
@@ -286,7 +322,7 @@ namespace CodeArts.Emit
 
             foreach (var emitter in abstracts)
             {
-                emitter.Emit();
+                emitter.CreateType();
             }
 
             foreach (FieldEmitter emitter in fields.Values)

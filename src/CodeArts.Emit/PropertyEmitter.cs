@@ -109,6 +109,20 @@ namespace CodeArts.Emit
         /// <summary>
         /// 设置属性标记。
         /// </summary>
+        /// <param name="attributeData">属性。</param>
+        public void SetCustomAttribute(CustomAttributeData attributeData)
+        {
+            if (attributeData is null)
+            {
+                throw new ArgumentNullException(nameof(attributeData));
+            }
+
+            customAttributes.Add(AttributeUtil.Create(attributeData));
+        }
+
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
         /// <param name="customBuilder">属性。</param>
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {

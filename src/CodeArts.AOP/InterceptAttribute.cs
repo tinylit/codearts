@@ -7,7 +7,7 @@ namespace CodeArts
     /// <summary>
     /// 拦截属性。
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     public abstract class InterceptAttribute : Attribute
     {
         /// <summary>

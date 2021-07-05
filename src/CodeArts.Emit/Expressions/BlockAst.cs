@@ -107,7 +107,7 @@ namespace CodeArts.Emit.Expressions
                 return;
             }
 
-            if (ReturnType == typeof(void))
+            if (!IsEmpty && ReturnType == typeof(void))
             {
                 ilg.Emit(OpCodes.Nop);
             }
