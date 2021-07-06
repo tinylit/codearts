@@ -261,7 +261,7 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public ConstructorEmitter DefineConstructor(MethodAttributes attributes, CallingConventions conventions)
         {
-            var member = new ConstructorEmitter(BaseType, attributes, conventions);
+            var member = new ConstructorEmitter(this, attributes, conventions);
             constructors.Add(member);
             return member;
         }
@@ -272,7 +272,7 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public void DefineDefaultConstructor()
         {
-            constructors.Add(new ConstructorEmitter(BaseType, MethodAttributes.Public));
+            constructors.Add(new ConstructorEmitter(this, MethodAttributes.Public));
         }
 
         /// <summary>

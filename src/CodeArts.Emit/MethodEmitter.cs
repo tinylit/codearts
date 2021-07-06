@@ -16,7 +16,6 @@ namespace CodeArts.Emit
     {
         private MethodBuilder builder;
         private int parameterIndex = 0;
-        private readonly List<ArrayAst> arrayAsts = new List<ArrayAst>();
         private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
@@ -97,7 +96,7 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
         {
-            var parameter = new ParamterEmitter(parameterType, ++parameterIndex, attributes, strParamName);
+            var parameter = new ParamterEmitter(parameterType, parameterIndex++, attributes, strParamName);
             parameters.Add(parameter);
             return parameter;
         }

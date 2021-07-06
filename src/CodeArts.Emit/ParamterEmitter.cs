@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -51,6 +52,11 @@ namespace CodeArts.Emit
         /// <param name="defaultValue">默认值。</param>
         public void SetConstant(object defaultValue)
         {
+            if (defaultValue is Missing)
+            {
+                return;
+            }
+
             hasDefaultValue = true;
 
             this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, ReturnType);
@@ -92,8 +98,48 @@ namespace CodeArts.Emit
         {
             if (hasDefaultValue)
             {
-                builder.SetConstant(defaultValue);
+                try
+                {
+                    builder.SetConstant(defaultValue);
+                }
+                catch (ArgumentException)
+                {
+                    var parameterType = ReturnType;
+                    var parameterNonNullableType = parameterType;
+
+                    if (defaultValue == null)
+                    {
+                        if (parameterType.IsValueType)
+                        {
+                            goto label_core;
+                        }
+                    }
+                    else if (parameterType.IsNullable())
+                    {
+                        parameterNonNullableType = parameterType.GetGenericArguments()[0];
+
+                        if (parameterNonNullableType.IsEnum || parameterNonNullableType.IsAssignableFrom(defaultValue.GetType()))
+                        {
+                            goto label_core;
+                        }
+                    }
+
+                    try
+                    {
+                        builder.SetConstant(System.Convert.ChangeType(defaultValue, parameterNonNullableType, CultureInfo.InvariantCulture));
+
+                        goto label_core;
+                    }
+                    catch
+                    {
+                        // We don't care about the error thrown by an unsuccessful type coercion.
+                    }
+
+                    throw;
+                }
             }
+
+            label_core:
 
             foreach (var item in customAttributes)
             {

@@ -56,18 +56,11 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(code));
             }
 
-            if (code is ReturnAst)
-            {
-                if (ReturnType != code.ReturnType)
-                {
-                    throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
-                }
+            isLastReturn = code is ReturnAst;
 
-                isLastReturn = true;
-            }
-            else
+            if (isLastReturn && ReturnType != code.ReturnType)
             {
-                isLastReturn = false;
+                throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
             }
 
             codes.Add(code);

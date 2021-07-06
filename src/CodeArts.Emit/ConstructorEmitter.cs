@@ -13,28 +13,29 @@ namespace CodeArts.Emit
     {
         private int parameterIndex = 0;
         private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
+        private readonly AbstractTypeEmitter typeEmitter;
 
         private class ConstructorExpression : AstExpression
         {
             private readonly ConstructorInfo constructor;
-            private readonly ParamterEmitter[] paramters;
+            private readonly ParamterEmitter[] parameters;
 
             public ConstructorExpression(ConstructorInfo constructor) : base(constructor.DeclaringType)
             {
                 this.constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
             }
-            public ConstructorExpression(ConstructorInfo constructor, ParamterEmitter[] paramters) : this(constructor)
+            public ConstructorExpression(ConstructorInfo constructor, ParamterEmitter[] parameters) : this(constructor)
             {
-                this.paramters = paramters;
+                this.parameters = parameters;
             }
 
             public override void Load(ILGenerator ilg)
             {
                 ilg.Emit(OpCodes.Ldarg_0);
 
-                if (paramters != null)
+                if (parameters != null)
                 {
-                    foreach (var exp in paramters)
+                    foreach (var exp in parameters)
                     {
                         exp.Load(ilg);
                     }
@@ -47,21 +48,21 @@ namespace CodeArts.Emit
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="baseType">父类型。</param>
+        /// <param name="typeEmitter">父类型。</param>
         /// <param name="attributes">属性。</param>
-        public ConstructorEmitter(Type baseType, MethodAttributes attributes) : this(baseType, attributes, CallingConventions.Standard)
+        public ConstructorEmitter(AbstractTypeEmitter typeEmitter, MethodAttributes attributes) : this(typeEmitter, attributes, CallingConventions.Standard)
         {
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="baseType">父类型。</param>
+        /// <param name="typeEmitter">父类型。</param>
         /// <param name="attributes">属性。</param>
         /// <param name="conventions">调用约定。</param>
-        public ConstructorEmitter(Type baseType, MethodAttributes attributes, CallingConventions conventions) : base(typeof(void))
+        public ConstructorEmitter(AbstractTypeEmitter typeEmitter, MethodAttributes attributes, CallingConventions conventions) : base(typeof(void))
         {
-            BaseType = baseType;
+            this.typeEmitter = typeEmitter;
             Attributes = attributes;
             Conventions = conventions;
         }
@@ -70,11 +71,6 @@ namespace CodeArts.Emit
         /// 方法的名称。
         /// </summary>
         public string Name { get; }
-
-        /// <summary>
-        /// 基础类型。
-        /// </summary>
-        public Type BaseType { get; }
 
         /// <summary>
         /// 方法的属性。
@@ -138,7 +134,7 @@ namespace CodeArts.Emit
         {
             var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-            var type = BaseType;
+            var type = typeEmitter.BaseType;
 
             if (type.IsGenericParameter)
             {

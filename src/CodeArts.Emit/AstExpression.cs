@@ -40,6 +40,18 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(value));
             }
 
+            var returnType = ReturnType;
+
+            if (returnType == typeof(void))
+            {
+                throw new AstException("不能对无返回值类型进行赋值运算!");
+            }
+
+            if (value is ThisAst)
+            {
+                goto label_core;
+            }
+
             var valueType = value.ReturnType;
 
             if (valueType == typeof(void))
@@ -47,12 +59,12 @@ namespace CodeArts.Emit
                 throw new AstException("无返回值类型赋值不能用于赋值运算!");
             }
 
-            var returnType = ReturnType;
-
             if (valueType != returnType && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
             {
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }
+
+            label_core:
 
             if (CanWrite)
             {
@@ -80,6 +92,11 @@ namespace CodeArts.Emit
         /// 类型。
         /// </summary>
         public Type ReturnType { get; private set; }
+
+        /// <summary>
+        /// 当前上下文。
+        /// </summary>
+        public static ThisAst This => ThisAst.Instance;
 
         /// <summary>
         /// 类型转换。
@@ -135,27 +152,20 @@ namespace CodeArts.Emit
         public static TypeAsAst TypeAs(AstExpression body, Type bodyAsType) => new TypeAsAst(body, bodyAsType);
 
         /// <summary>
-        /// 成员本身。
-        /// </summary>
-        /// <param name="instanceType">实例类型。</param>
-        /// <returns></returns>
-        public static ThisAst This(Type instanceType) => new ThisAst(instanceType);
-
-        /// <summary>
         /// 创建实例。
         /// </summary>
         /// <param name="instanceType">实例类型。</param>
-        /// <param name="paramters">参数。</param>
+        /// <param name="parameters">参数。</param>
         /// <returns></returns>
-        public static NewInstanceAst New(Type instanceType, params AstExpression[] paramters) => new NewInstanceAst(instanceType, paramters);
+        public static NewInstanceAst New(Type instanceType, params AstExpression[] parameters) => new NewInstanceAst(instanceType, parameters);
 
         /// <summary>
         /// 创建实例。
         /// </summary>
         /// <param name="constructor">构造函数。</param>
-        /// <param name="paramters">参数。</param>
+        /// <param name="parameters">参数。</param>
         /// <returns></returns>
-        public static NewInstanceAst New(ConstructorInfo constructor, params AstExpression[] paramters) => new NewInstanceAst(constructor, paramters);
+        public static NewInstanceAst New(ConstructorInfo constructor, params AstExpression[] parameters) => new NewInstanceAst(constructor, parameters);
 
         /// <summary>
         /// 创建 object[]。

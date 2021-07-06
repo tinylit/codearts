@@ -26,7 +26,7 @@ namespace CodeArts.Emit
 
         private static object GetConstant(int index) => Constants[index];
 
-        private static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        internal static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
         #region Convert
 

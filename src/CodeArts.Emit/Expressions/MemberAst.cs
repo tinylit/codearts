@@ -8,22 +8,10 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public abstract class MemberAst : AstExpression
     {
-        private static class AnyAssignable { }
-
-        /// <summary>
-        /// 暂不确定的类型。
-        /// </summary>
-        private static readonly Type AnyAssignableType = typeof(AnyAssignable);
-
-        /// <summary>
-        /// 当前上下文对象。
-        /// </summary>
-        private static readonly ThisAst Instance = new ThisAst(AnyAssignableType);
-
         /// <summary>
         /// 引用。
         /// </summary>
-        public AstExpression Expression { set; get; } = Instance;
+        public AstExpression Expression { set; get; } = ThisAst.Instance;
 
         /// <summary>
         /// 构造函数。
@@ -80,6 +68,18 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(value));
             }
 
+            var returnType = ReturnType;
+
+            if (returnType == typeof(void))
+            {
+                 throw new AstException("不能对无返回值类型进行赋值运算!");
+            }
+
+            if (value is ThisAst)
+            {
+                goto label_core;
+            }
+
             var valueType = value.ReturnType;
 
             if (valueType == typeof(void))
@@ -87,12 +87,12 @@ namespace CodeArts.Emit.Expressions
                 throw new AstException("无返回值类型赋值不能用于赋值运算!");
             }
 
-            var returnType = ReturnType;
-
             if (valueType != returnType && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
             {
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }
+
+            label_core:
 
             if (CanWrite)
             {

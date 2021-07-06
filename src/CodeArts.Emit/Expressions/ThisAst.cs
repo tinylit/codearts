@@ -11,10 +11,14 @@ namespace CodeArts.Emit.Expressions
     public class ThisAst : AstExpression
     {
         /// <summary>
+        /// 单例。
+        /// </summary>
+        public static ThisAst Instance = new ThisAst();
+
+        /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="instanceType">实例类型。</param>
-        public ThisAst(Type instanceType) : base(instanceType)
+        private ThisAst() : base(typeof(object))
         {
         }
 
