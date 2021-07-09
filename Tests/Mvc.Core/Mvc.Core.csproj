@@ -23,6 +23,7 @@
   </ItemGroup>
   
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.AOP\CodeArts.AOP.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Casting\CodeArts.Casting.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Db.EntityFramework.SqlServer\CodeArts.Db.EntityFramework.SqlServer.csproj" />

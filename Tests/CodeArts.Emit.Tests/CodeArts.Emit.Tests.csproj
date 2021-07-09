@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.AOP\CodeArts.AOP.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Emit\CodeArts.Emit.csproj" />
   </ItemGroup>
 

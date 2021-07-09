@@ -8,7 +8,7 @@ using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts.Proxies
 {
-    class ProxyByType : IProxyByPattern
+    public class ProxyByType : IProxyByPattern
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
@@ -32,34 +32,6 @@ namespace CodeArts.Proxies
 
             if (serviceType.IsInterface)
             {
-                if (implementationType.IsDefined(InterceptAttributeType, false))
-                {
-                    if (implementationType.IsNested)
-                    {
-                        throw new NotSupportedException($"代理“{implementationType.FullName}”类是密封类!");
-                    }
-
-                    return ResolveIsInterfaceByClass();
-                }
-
-                foreach (var methodInfo in implementationType.GetMethods())
-                {
-                    if (methodInfo.IsDefined(InterceptAttributeType, false))
-                    {
-                        if (implementationType.IsNested)
-                        {
-                            throw new NotSupportedException($"代理“{implementationType.FullName}”类是密封类!");
-                        }
-
-                        if (!methodInfo.IsVirtual)
-                        {
-                            throw new NotSupportedException($"代理“{implementationType.FullName}”类的“{methodInfo.Name}({string.Join(",", methodInfo.GetParameters().Select(x => string.Concat(x.ParameterType.Name, " ", x.Name)))})”不是虚方法!");
-                        }
-
-                        return ResolveIsInterfaceByClass();
-                    }
-                }
-
                 return ResolveIsInterface();
             }
             else if (implementationType.IsNested)
@@ -84,17 +56,23 @@ namespace CodeArts.Proxies
             }
         }
 
-
         private ServiceDescriptor ResolveIsInterface()
         {
+#if NET40_OR_GREATER
+            var moduleEmitter = new ModuleEmitter(true);
+#else
             var moduleEmitter = new ModuleEmitter();
+#endif
+
             string name = string.Concat(serviceType.Name, "Proxy");
 
-            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Sealed, null, serviceType.GetAllInterfaces());
+            var interfaces = serviceType.GetAllInterfaces();
 
-            var target = classEmitter.DefineField("____target__", serviceType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
+            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Sealed, null, interfaces);
 
-            foreach (var constructorInfo in implementationType.GetConstructors())
+            var instanceAst = classEmitter.DefineField("____instance__", serviceType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
+
+            foreach (var constructorInfo in implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
             {
                 var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
 
@@ -106,83 +84,81 @@ namespace CodeArts.Proxies
                     parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
                 }
 
-                constructorEmitter.Append(Assign(target, Convert(New(constructorInfo, parameterEmiters), serviceType)));
+                constructorEmitter.Append(Assign(instanceAst, Convert(New(constructorInfo, parameterEmiters), serviceType)));
             }
 
-            bool flag = implementationType.IsDefined(InterceptAttributeType, false);
+            var interceptMethods = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
 
-            var attributes = (InterceptAttribute[])implementationType.GetCustomAttributes(InterceptAttributeType, false);
-
-            foreach (var methodInfo in implementationType.GetMethods())
+            foreach (var type in interfaces)
             {
-                if (methodInfo.IsDefined(InterceptAttributeType, false))
+                bool flag = type.IsDefined(InterceptAttributeType, false);
+
+                var attributes = flag
+                    ? (InterceptAttribute[])implementationType.GetCustomAttributes(InterceptAttributeType, false)
+                    : new InterceptAttribute[0];
+
+                foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
-                    if (!methodInfo.IsVirtual || methodInfo.IsStatic)
+                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
+                        ? Merge(attributes, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
+                        : attributes;
+
+                    if (interceptAttributes.Length == 0)
                     {
-                        throw new NotSupportedException($"代理“{implementationType.FullName}”类的“{methodInfo.Name}({string.Join(",", methodInfo.GetParameters().Select(x => string.Concat(x.ParameterType.Name, " ", x.Name)))})”不是虚方法!");
+                        continue;
                     }
 
-                    var interceptAttributes = (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false);
-
-                    if (flag && methodInfo.DeclaringType == implementationType)
+                    if (interceptMethods.ContainsKey(methodInfo))
                     {
-                        DefineMethodOverride(classEmitter, methodInfo, attributes.Union(interceptAttributes).ToArray());
+                        throw new NotSupportedException($"{methodInfo.ReturnType.Name} “{methodInfo.Name}({string.Join(",", methodInfo.GetParameters().Select(x => string.Concat(x.ParameterType.Name, " ", x.Name)))})”重复定义!");
                     }
                     else
                     {
-                        DefineMethodOverride(classEmitter, methodInfo, interceptAttributes);
+                        interceptMethods.Add(methodInfo, interceptAttributes);
                     }
-
-                    continue;
                 }
-
-                if (flag && methodInfo.DeclaringType == implementationType)
-                {
-                    DefineMethodOverride(classEmitter, methodInfo, attributes);
-
-                    continue;
-                }
-
-                continue;
             }
 
-            throw new NotImplementedException();
+            foreach (var methodInfo in serviceType.GetMethods())
+            {
+                if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
+                {
+                    InterceptCaching.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
+                }
+                else
+                {
+                    InterceptCaching.DefineMethodOverride(instanceAst, classEmitter, methodInfo, null);
+                }
+            }
+
+            var typeNew = classEmitter.CreateType();
+
+#if NET40_OR_GREATER
+            moduleEmitter.SaveAssembly();
+#endif
+
+            return new ServiceDescriptor(serviceType, typeNew, lifetime);
         }
 
-
-        private static void DefineMethodOverride(ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
+        private static T[] Merge<T>(T[] arrays, T[] arrays2)
         {
-            var methodEmitter = classEmitter.DefineMethod(methodInfo.Name, methodInfo.Attributes, methodInfo.ReturnType);
-
-            foreach (var parameterInfo in methodInfo.GetParameters())
+            if (arrays.Length == 0)
             {
-                methodEmitter.DefineParameter(parameterInfo);
-            }
-        }
-
-        private ServiceDescriptor ResolveIsInterfaceByClass()
-        {
-            var moduleEmitter = new ModuleEmitter();
-            string name = string.Concat(serviceType.Name, "Proxy");
-
-            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Sealed, implementationType, implementationType.GetInterfaces());
-
-            foreach (var constructorInfo in implementationType.GetConstructors())
-            {
-                var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
-
-                var parameterInfos = constructorInfo.GetParameters();
-                var parameterEmiters = new ParamterEmitter[parameterInfos.Length];
-
-                for (int i = 0; i < parameterInfos.Length; i++)
-                {
-                    parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
-                }
-
-                constructorEmitter.InvokeBaseConstructor(constructorInfo, parameterEmiters);
+                return arrays2;
             }
 
-            throw new NotImplementedException();
+            if (arrays2.Length == 0)
+            {
+                return arrays;
+            }
+
+            var results = new T[arrays.Length + arrays2.Length];
+
+            System.Array.Copy(arrays, results, arrays.Length);
+
+            System.Array.Copy(arrays2, 0, results, arrays.Length, arrays2.Length);
+
+            return arrays;
         }
 
         private ServiceDescriptor ResolveIsClass()

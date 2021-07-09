@@ -72,7 +72,7 @@ namespace CodeArts.Emit.Expressions
 
             if (returnType == typeof(void))
             {
-                 throw new AstException("不能对无返回值类型进行赋值运算!");
+                throw new AstException("不能对无返回值类型进行赋值运算!");
             }
 
             if (value is ThisAst)
@@ -87,7 +87,7 @@ namespace CodeArts.Emit.Expressions
                 throw new AstException("无返回值类型赋值不能用于赋值运算!");
             }
 
-            if (valueType != returnType && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
+            if (valueType != returnType && !returnType.IsAssignableFrom(valueType) && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
             {
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }

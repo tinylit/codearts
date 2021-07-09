@@ -60,38 +60,14 @@ namespace CodeArts
 
         private static bool Intercept(ServiceDescriptor descriptor)
         {
-            bool inherit = descriptor.ServiceType.IsInterface;
-
-            if (descriptor.ServiceType.IsDefined(InterceptAttributeType, inherit))
+            if (descriptor.ServiceType.IsDefined(InterceptAttributeType, true))
             {
                 return true;
             }
-
-            var implementationType = descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType();
-
-            if (implementationType is null || implementationType.IsNested)
-            {
-                goto label_methods;
-            }
-
-            if (implementationType.IsDefined(InterceptAttributeType, false))
-            {
-                return true;
-            }
-
-            foreach (var methodInfo in implementationType.GetMethods())
-            {
-                if (methodInfo.IsDefined(InterceptAttributeType, false))
-                {
-                    return true;
-                }
-            }
-
-            label_methods:
 
             foreach (var methodInfo in descriptor.ServiceType.GetMethods())
             {
-                if (methodInfo.IsDefined(InterceptAttributeType, inherit))
+                if (methodInfo.IsDefined(InterceptAttributeType, true))
                 {
                     return true;
                 }

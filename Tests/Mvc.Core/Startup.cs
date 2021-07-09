@@ -35,6 +35,8 @@ namespace Mvc.Core
             });
 
             base.ConfigureServices(services);
+
+            services.UseAOP();
         }
     }
 }

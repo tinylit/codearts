@@ -11,6 +11,8 @@ namespace CodeArts
 {
     static class InterceptCaching
     {
+        private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
+
         private static readonly Dictionary<MethodInfo, InterceptAttribute[]> InterceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>();
 
         private static readonly Type[] ContextTypes = new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) };
@@ -80,7 +82,7 @@ namespace CodeArts
             return intercept.RunAsync(context);
         }
 
-        public static void DefineMethodOverride(ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
+        public static void DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
         {
             var methodEmitter = classEmitter.DefineMethod(methodInfo.Name, methodInfo.Attributes, methodInfo.ReturnType);
 
@@ -93,29 +95,96 @@ namespace CodeArts
                 paramterEmitters[i] = methodEmitter.DefineParameter(parameterInfos[i]);
             }
 
-            var variable = methodEmitter.DeclareVariable(typeof(object[]));
+            if (attributes is null || attributes.Length == 0)
+            {
+                methodEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
 
-            AstExpression[] arguments = new AstExpression[] { This, Constant(methodInfo), variable };
+                goto label_core;
+            }
 
-            methodEmitter.Append(Assign(variable, Array(paramterEmitters)));
+            var blockAst = Block(methodInfo.ReturnType);
+
+            var variable = blockAst.DeclareVariable(typeof(object[]));
+
+            blockAst.Append(Assign(variable, Array(paramterEmitters)));
+
+            AstExpression[] arguments;
+
+            if (methodInfo.IsGenericMethod)
+            {
+                arguments = new AstExpression[] { instanceAst, Constant(methodInfo), variable };
+            }
+            else
+            {
+                var fieldEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+                classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodInfo)));
+
+                arguments = new AstExpression[] { instanceAst, fieldEmitter, variable };
+            }
 
             if (methodInfo.ReturnType.IsClass && typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
             {
                 if (methodInfo.ReturnType.IsGenericType)
                 {
-                    methodEmitter.Append(Return(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments))));
+                    blockAst.Append(Return(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments))));
                 }
                 else
                 {
-                    methodEmitter.Append(Return(Call(InterceptAsyncMethodCall, New(InterceptAsyncContextCtor, arguments))));
+                    blockAst.Append(Return(Call(InterceptAsyncMethodCall, New(InterceptAsyncContextCtor, arguments))));
                 }
+            }
+            else if (methodInfo.ReturnType == typeof(void))
+            {
+                blockAst.Append(Call(InterceptMethodCall, New(InterceptContextCtor, arguments)));
             }
             else
             {
-                var value = methodEmitter.DeclareVariable(typeof(object));
+                var value = blockAst.DeclareVariable(typeof(object));
 
-                methodEmitter.Append(Assign(value, Call(InterceptMethodCall, New(InterceptContextCtor, arguments))));
+                blockAst.Append(Assign(value, Call(InterceptMethodCall, New(InterceptContextCtor, arguments))));
+
+                blockAst.Append(Return(Condition(Equal(value, Constant(null)), Default(methodInfo.ReturnType), Convert(value, methodInfo.ReturnType))));
             }
+
+            if (parameterInfos.Any(x => x.ParameterType.IsByRef))
+            {
+                var blockAst1 = Block(typeof(void));
+
+                for (int i = 0; i < paramterEmitters.Length; i++)
+                {
+                    var paramterEmitter = paramterEmitters[i];
+
+                    if (!paramterEmitter.IsByRef)
+                    {
+                        continue;
+                    }
+
+                    blockAst1.Append(Assign(paramterEmitter, Convert(ArrayIndex(variable, i), paramterEmitter.ReturnType)));
+                }
+
+                methodEmitter.Append(Try(blockAst, Finally(blockAst1)));
+            }
+            else
+            {
+                methodEmitter.Append(blockAst);
+            }
+
+            InterceptCache.Add(methodInfo, attributes);
+
+            label_core:
+
+            foreach (var attributeData in methodInfo.GetCustomAttributesData())
+            {
+                if (InterceptAttributeType.IsAssignableFrom(attributeData.Constructor.ReflectedType))
+                {
+                    continue;
+                }
+
+                methodEmitter.SetCustomAttribute(attributeData);
+            }
+
+            classEmitter.DefineMethodOverride(methodEmitter, methodInfo);
         }
     }
 }

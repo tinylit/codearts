@@ -49,7 +49,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 是否可写。
         /// </summary>
-        public override bool CanWrite => !isStatic && (Attributes & FieldAttributes.InitOnly) != FieldAttributes.InitOnly;
+        public override bool CanWrite => true;
 
         /// <summary>
         /// 设置默认值。

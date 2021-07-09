@@ -28,7 +28,7 @@ namespace CodeArts.Emit.Expressions
             }
 
 
-            if (method.IsStatic ^ !(instanceAst is null))
+            if (method.IsStatic ^ (instanceAst is null))
             {
                 if (method.IsStatic)
                 {
@@ -92,7 +92,10 @@ namespace CodeArts.Emit.Expressions
         /// <param name="arguments">参数。</param>
         public MethodCallAst(AstExpression instanceAst, MethodInfo method, AstExpression[] arguments) : base(GetReturnType(instanceAst, method, arguments))
         {
-            this.instanceAst = instanceAst;
+            this.instanceAst = instanceAst is null || method.DeclaringType == instanceAst.ReturnType
+                ? instanceAst
+                : Convert(instanceAst, method.DeclaringType);
+
             this.method = method;
             this.arguments = arguments;
         }
@@ -103,7 +106,6 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-
             if (!method.IsStatic)
             {
                 instanceAst.Load(ilg);

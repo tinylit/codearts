@@ -857,16 +857,16 @@ namespace CodeArts.Emit
             foreach (var argument in namedArguments)
             {
 #if NET40
-				if (argument.MemberInfo.MemberType == MemberTypes.Field)
-				{
-					fieldList.Add(argument.MemberInfo as FieldInfo);
-					fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-				}
-				else
-				{
-					propertyList.Add(argument.MemberInfo as PropertyInfo);
-					propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-				}
+                if (argument.MemberInfo.MemberType == MemberTypes.Field)
+                {
+                    fieldList.Add(argument.MemberInfo as FieldInfo);
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(argument.MemberInfo as PropertyInfo);
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
 #else
                 if (argument.IsField)
                 {
@@ -945,13 +945,13 @@ namespace CodeArts.Emit
 
                 switch (value)
                 {
-                    case Type type:
+                    case Type type when valueType == typeof(Type):
                         ilg.Emit(OpCodes.Ldtoken, type);
                         ilg.Emit(OpCodes.Call, GetTypeFromHandle);
 
-                        ilg.Emit(OpCodes.Castclass, typeof(Type));
+                        ilg.Emit(OpCodes.Castclass, valueType);
                         break;
-                    case MethodInfo method:
+                    case MethodInfo method when valueType == typeof(MethodInfo):
                         ilg.Emit(OpCodes.Ldtoken, method);
 
                         if (method.DeclaringType is null)
@@ -1382,7 +1382,7 @@ namespace CodeArts.Emit
             GetArguments(attributeData.ConstructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs);
 
 #if NET40
-			var constructor = attributeData.Constructor;
+            var constructor = attributeData.Constructor;
 #else
             var constructor = attributeData.AttributeType.GetConstructor(constructorArgTypes);
 #endif

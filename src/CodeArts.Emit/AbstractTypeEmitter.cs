@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Emit.Expressions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -19,6 +20,34 @@ namespace CodeArts.Emit
         private readonly Dictionary<string, FieldEmitter> fields = new Dictionary<string, FieldEmitter>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, PropertyEmitter> properties = new Dictionary<string, PropertyEmitter>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// 静态构造函数。
+        /// </summary>
+        public class TypeInitializerEmitter : BlockAst
+        {
+            internal TypeInitializerEmitter() : base(typeof(void))
+            {
+            }
+
+            /// <summary>
+            /// 发行。
+            /// </summary>
+            internal void Emit(ConstructorBuilder builder)
+            {
+#if NET40
+                var attributes = builder.GetMethodImplementationFlags();
+#else
+                var attributes = builder.MethodImplementationFlags;
+#endif
+
+                if ((attributes & MethodImplAttributes.Runtime) != MethodImplAttributes.IL)
+                {
+                    return;
+                }
+
+                base.Load(builder.GetILGenerator());
+            }
+        }
 
         /// <summary>
         /// 构造函数。
@@ -103,6 +132,11 @@ namespace CodeArts.Emit
 
             typeEmitter.abstracts.Add(this);
         }
+
+        /// <summary>
+        /// 静态构造函数。
+        /// </summary>
+        public TypeInitializerEmitter TypeInitializer = new TypeInitializerEmitter();
 
         /// <summary>
         /// 父类型。
@@ -315,6 +349,13 @@ namespace CodeArts.Emit
         /// </summary>
         protected virtual Type Emit()
         {
+            foreach (FieldEmitter emitter in fields.Values)
+            {
+                emitter.Emit(builder.DefineField(emitter.Name, emitter.ReturnType, emitter.Attributes));
+            }
+
+            TypeInitializer.Emit(builder.DefineTypeInitializer());
+
             if (!builder.IsInterface && constructors.Count == 0)
             {
                 DefineDefaultConstructor();
@@ -323,11 +364,6 @@ namespace CodeArts.Emit
             foreach (var emitter in abstracts)
             {
                 emitter.CreateType();
-            }
-
-            foreach (FieldEmitter emitter in fields.Values)
-            {
-                emitter.Emit(builder.DefineField(emitter.Name, emitter.ReturnType, emitter.Attributes));
             }
 
             foreach (ConstructorEmitter emitter in constructors)
@@ -342,7 +378,7 @@ namespace CodeArts.Emit
                     var parameters = methodInfo.GetParameters();
                     var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
 
-                    var method = builder.DefineMethod(emitter.Name, emitter.Attributes | MethodAttributes.NewSlot | MethodAttributes.HideBySig, CallingConventions.Standard);
+                    var method = builder.DefineMethod(emitter.Name, emitter.Attributes ^ MethodAttributes.Abstract | MethodAttributes.NewSlot | MethodAttributes.HideBySig, CallingConventions.Standard);
 
                     if (methodInfo.IsGenericMethod)
                     {

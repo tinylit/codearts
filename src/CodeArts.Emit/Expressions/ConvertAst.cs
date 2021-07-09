@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 类型转换。
     /// </summary>
-    [DebuggerDisplay("({type.Name}){body}")]
+    [DebuggerDisplay("({convertToType.Name}){body}")]
     public class ConvertAst : AstExpression
     {
         private readonly Type convertToType;

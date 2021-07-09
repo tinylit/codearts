@@ -27,9 +27,15 @@ namespace CodeArts.Emit
 
             var constructorArguments = GetArguments(attribute.ConstructorArguments);
 
+#if NET40            
+            var namedArguments = GetSettersAndFields(attribute.Constructor.DeclaringType, attribute.NamedArguments);
+
+            return new CustomAttributeBuilder(attribute.Constructor.DeclaringType.GetConstructor(constructorArguments.Item1), constructorArguments.Item2, namedArguments.Item1, namedArguments.Item2, namedArguments.Item3, namedArguments.Item4);
+#else
             var namedArguments = GetSettersAndFields(attribute.AttributeType, attribute.NamedArguments);
 
             return new CustomAttributeBuilder(attribute.AttributeType.GetConstructor(constructorArguments.Item1), constructorArguments.Item2, namedArguments.Item1, namedArguments.Item2, namedArguments.Item3, namedArguments.Item4);
+#endif
         }
 
         private static Tuple<Type[], object[]> GetArguments(IList<CustomAttributeTypedArgument> constructorArguments)

@@ -157,22 +157,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
                         if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, lifetime))
                         {
-                            switch (lifetime)
-                            {
-                                case ServiceLifetime.Singleton:
-                                    services.AddSingleton(serviceType, implementationType);
-                                    break;
-#if NET45_OR_GREATER
-                                case ServiceLifetime.Scoped:
-                                    services.AddScoped(serviceType, implementationType);
-                                    break;
-#endif
-                                case ServiceLifetime.Transient:
-                                default:
-                                    services.AddTransient(serviceType, implementationType);
-                                    break;
-                            }
-
                             continue;
                         }
 

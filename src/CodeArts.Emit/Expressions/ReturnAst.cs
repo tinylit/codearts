@@ -21,7 +21,15 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="body">返回结果的表达式。</param>
-        public ReturnAst(AstExpression body) : base(body.ReturnType) => this.body = body;
+        public ReturnAst(AstExpression body) : base(body.ReturnType)
+        {
+            this.body = body;
+
+            if (body.ReturnType == typeof(void))
+            {
+                throw new ArgumentException("不能返回无返回值类型!", nameof(body));
+            }
+        }
 
         /// <summary>
         /// 生成。

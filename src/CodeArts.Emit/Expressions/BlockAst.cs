@@ -56,7 +56,7 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(code));
             }
 
-            isLastReturn = code is ReturnAst;
+            isLastReturn = code is ReturnAst || code is BlockAst || code is ConditionAst;
 
             if (isLastReturn && ReturnType != code.ReturnType)
             {

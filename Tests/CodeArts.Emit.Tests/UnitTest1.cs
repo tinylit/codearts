@@ -1,10 +1,13 @@
+using CodeArts.AOP;
 using CodeArts.Emit.Expressions;
+using CodeArts.Proxies;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace CodeArts.Emit.Tests
 {
@@ -126,6 +129,51 @@ namespace CodeArts.Emit.Tests
 	            }, body: Expression.Equal(left, Expression.Constant(i)));
             }
              */
+        }
+
+        public class DependencyInterceptAttribute : InterceptAttribute
+        {
+            public override void Run(InterceptContext context, Intercept intercept)
+            {
+                intercept.Run(context);
+            }
+
+            public override Task RunAsync(InterceptAsyncContext context, InterceptAsync intercept)
+            {
+                return intercept.RunAsync(context);
+            }
+
+            public override Task<T> RunAsync<T>(InterceptAsyncContext context, InterceptAsync<T> intercept)
+            {
+                return intercept.RunAsync(context);
+            }
+        }
+
+        /// <inheritdoc />
+        public interface IDependency
+        {
+            /// <inheritdoc />
+            [DependencyIntercept]
+            bool AopTest();
+        }
+
+        /// <inheritdoc />
+        public class Dependency : IDependency
+        {
+            /// <inheritdoc />
+            public bool AopTest() => true;
+        }
+
+        [TestMethod]
+        public void AopTest()
+        {
+            var pattern = new ProxyByType(typeof(IDependency), typeof(Dependency), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient);
+
+            var descriptor = pattern.Resolve();
+
+            IDependency dependency = (IDependency)Activator.CreateInstance(descriptor.ImplementationType);
+
+            dependency.AopTest();
         }
     }
 }

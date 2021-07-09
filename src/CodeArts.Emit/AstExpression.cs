@@ -59,7 +59,7 @@ namespace CodeArts.Emit
                 throw new AstException("无返回值类型赋值不能用于赋值运算!");
             }
 
-            if (valueType != returnType && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
+            if (valueType != returnType && !returnType.IsAssignableFrom(valueType) && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
             {
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }
@@ -334,6 +334,25 @@ namespace CodeArts.Emit
         public static IfThenElseAst IfThenElse(AstExpression test, AstExpression ifTrue, AstExpression ifFalse) => new IfThenElseAst(test, ifTrue, ifFalse);
 
         /// <summary>
+        /// 三目运算。
+        /// </summary>
+        /// <param name="test">条件。</param>
+        /// <param name="ifTrue">为真时，执行的代码。</param>
+        /// <param name="ifFalse">为假时，执行的代码。</param>
+        /// <returns></returns>
+        public static ConditionAst Condition(AstExpression test, AstExpression ifTrue, AstExpression ifFalse) => new ConditionAst(test, ifTrue, ifFalse);
+
+        /// <summary>
+        /// 三目运算。
+        /// </summary>
+        /// <param name="test">条件。</param>
+        /// <param name="ifTrue">为真时，执行的代码。</param>
+        /// <param name="ifFalse">为假时，执行的代码。</param>
+        /// <param name="returnType">返回类型。</param>
+        /// <returns></returns>
+        public static ConditionAst Condition(AstExpression test, AstExpression ifTrue, AstExpression ifFalse, Type returnType) => new ConditionAst(test, ifTrue, ifFalse, returnType);
+
+        /// <summary>
         /// 调用方法。
         /// </summary>
         /// <param name="method">方法。</param>
@@ -381,6 +400,13 @@ namespace CodeArts.Emit
         /// <param name="arguments">参数<see cref="object"/>[]。</param>
         /// <returns></returns>
         public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo method, AstExpression arguments) => new InvocationAst(instanceAst, method, arguments);
+
+        /// <summary>
+        /// 代码块。
+        /// </summary>
+        /// <param name="returnType">返回值。</param>
+        /// <returns></returns>
+        public static BlockAst Block(Type returnType) => new BlockAst(returnType);
 
         /// <summary>
         /// 抛出异常。

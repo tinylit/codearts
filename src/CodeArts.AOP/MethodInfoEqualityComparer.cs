@@ -6,6 +6,9 @@ namespace CodeArts
 {
     class MethodInfoEqualityComparer : IEqualityComparer<MethodInfo>
     {
+        private MethodInfoEqualityComparer() { }
+
+        public static MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
         public bool Equals(MethodInfo x, MethodInfo y)
         {
             if (x is null)

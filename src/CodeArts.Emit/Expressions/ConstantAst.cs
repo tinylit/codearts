@@ -17,7 +17,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="value">值。</param>
-        public ConstantAst(object value) : this(value, null)
+        public ConstantAst(object value) : this(value, value is MethodInfo ? typeof(MethodInfo) : value is Type ? typeof(Type) : null)
         {
         }
 
