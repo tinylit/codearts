@@ -183,7 +183,21 @@ namespace CodeArts.Emit
                 item.Emit(builder.DefineParameter(item.Position, item.Attributes, item.ParameterName));
             }
 
-            base.Load(builder.GetILGenerator());
+            var ilg = builder.GetILGenerator();
+
+            base.Load(ilg);
+
+            if (IsLastReturn)
+            {
+                return;
+            }
+
+            if (!IsEmpty && ReturnType == typeof(void))
+            {
+                ilg.Emit(OpCodes.Nop);
+            }
+
+            ilg.Emit(OpCodes.Ret);
         }
     }
 }

@@ -64,7 +64,7 @@ namespace CodeArts.Emit
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }
 
-            label_core:
+        label_core:
 
             if (CanWrite)
             {
@@ -418,27 +418,9 @@ namespace CodeArts.Emit
         /// <summary>
         /// 异常处理。
         /// </summary>
-        /// <param name="body">代码。</param>
-        /// <param name="catchs">异常捕获。</param>
-        /// <param name="finally">始终会执行的代码。</param>
+        /// <param name="returnType">返回值。</param>
         /// <returns></returns>
-        public static TryAst Try(AstExpression body, CatchAst[] catchs, FinallyAst @finally) => new TryAst(body, catchs, @finally);
-
-        /// <summary>
-        /// 异常处理。
-        /// </summary>
-        /// <param name="body">代码。</param>
-        /// <param name="catchs">异常捕获。</param>
-        /// <returns></returns>
-        public static TryAst Try(AstExpression body, params CatchAst[] catchs) => new TryAst(body, catchs);
-
-        /// <summary>
-        /// 异常处理。
-        /// </summary>
-        /// <param name="body">代码。</param>
-        /// <param name="finally">始终会执行的代码。</param>
-        /// <returns></returns>
-        public static TryAst Try(AstExpression body, FinallyAst @finally) => new TryAst(body, @finally);
+        public static TryAst Try(Type returnType) => new TryAst(returnType);
 
         /// <summary>
         /// 捕获任意异常。
@@ -475,7 +457,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 始终执行的代码。
         /// </summary>
-        /// <param name="body">代码块。</param>
+        /// <param name="body">代码。</param>
         /// <returns></returns>
         public static FinallyAst Finally(AstExpression body) => new FinallyAst(body);
 

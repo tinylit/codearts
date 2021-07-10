@@ -13,6 +13,7 @@ namespace CodeArts.Emit
     public abstract class AbstractTypeEmitter
     {
         private readonly TypeBuilder builder;
+        private readonly INamingProvider namingProvider;
         private readonly List<MethodEmitter> methods = new List<MethodEmitter>();
         private readonly List<AbstractTypeEmitter> abstracts = new List<AbstractTypeEmitter>();
         private readonly List<ConstructorEmitter> constructors = new List<ConstructorEmitter>();
@@ -45,7 +46,21 @@ namespace CodeArts.Emit
                     return;
                 }
 
-                base.Load(builder.GetILGenerator());
+                var ilg = builder.GetILGenerator();
+
+                base.Load(ilg);
+
+                if (IsLastReturn)
+                {
+                    return;
+                }
+
+                if (!IsEmpty && ReturnType == typeof(void))
+                {
+                    ilg.Emit(OpCodes.Nop);
+                }
+
+                ilg.Emit(OpCodes.Ret);
             }
         }
 
@@ -53,9 +68,11 @@ namespace CodeArts.Emit
         /// 构造函数。
         /// </summary>
         /// <param name="builder">类型构造器。</param>
-        protected AbstractTypeEmitter(TypeBuilder builder)
+        /// <param name="namingProvider">命名。</param>
+        protected AbstractTypeEmitter(TypeBuilder builder, INamingProvider namingProvider)
         {
-            this.builder = builder;
+            this.builder = builder ?? throw new ArgumentNullException(nameof(builder));
+            this.namingProvider = namingProvider ?? throw new ArgumentNullException(nameof(namingProvider));
         }
 
         /// <summary>
@@ -73,6 +90,8 @@ namespace CodeArts.Emit
             builder = typeEmitter.builder.DefineNestedType(name);
 
             typeEmitter.abstracts.Add(this);
+
+            this.namingProvider = typeEmitter.namingProvider;
         }
 
         /// <summary>
@@ -91,6 +110,8 @@ namespace CodeArts.Emit
             builder = typeEmitter.builder.DefineNestedType(name, attributes);
 
             typeEmitter.abstracts.Add(this);
+
+            this.namingProvider = typeEmitter.namingProvider;
         }
 
         /// <summary>
@@ -110,6 +131,8 @@ namespace CodeArts.Emit
             builder = typeEmitter.builder.DefineNestedType(name, attributes, baseType);
 
             typeEmitter.abstracts.Add(this);
+
+            this.namingProvider = typeEmitter.namingProvider;
         }
 
         /// <summary>
@@ -131,6 +154,8 @@ namespace CodeArts.Emit
             builder = typeEmitter.builder.DefineNestedType(name, attributes, baseType, interfaces);
 
             typeEmitter.abstracts.Add(this);
+
+            this.namingProvider = typeEmitter.namingProvider;
         }
 
         /// <summary>
@@ -215,6 +240,8 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public FieldEmitter DefineField(string name, Type fieldType, FieldAttributes atts)
         {
+            name = namingProvider.GetUniqueName(name);
+
             var fieldEmitter = new FieldEmitter(name, fieldType, atts);
 
             fields.Add(name, fieldEmitter);

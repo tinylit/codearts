@@ -1106,12 +1106,12 @@ namespace CodeArts.Emit
                     goto label_core;
                 case TypeCode.DBNull:
                     ilg.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField(nameof(DBNull.Value)));
-                    break;
+                    return;
                 case TypeCode.Empty:
                 case TypeCode.String:
                 case TypeCode.Object:
                     ilg.Emit(OpCodes.Ldnull);
-                    break;
+                    return;
                 case TypeCode.Boolean:
                 case TypeCode.Char:
                 case TypeCode.SByte:
@@ -1121,26 +1121,26 @@ namespace CodeArts.Emit
                 case TypeCode.Int32:
                 case TypeCode.UInt32:
                     ilg.Emit(OpCodes.Ldc_I4_0);
-                    break;
+                    return;
 
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     ilg.Emit(OpCodes.Ldc_I4_0);
                     ilg.Emit(OpCodes.Conv_I8);
-                    break;
+                    return;
 
                 case TypeCode.Single:
                     ilg.Emit(OpCodes.Ldc_R4, 0F);
-                    break;
+                    return;
 
                 case TypeCode.Double:
                     ilg.Emit(OpCodes.Ldc_R8, 0D);
-                    break;
+                    return;
 
                 case TypeCode.Decimal:
                     ilg.Emit(OpCodes.Ldc_I4_0);
-                    ilg.Emit(OpCodes.Newobj, typeof(decimal).GetConstructor(new Type[] { typeof(int) }));
-                    break;
+                    ilg.Emit(OpCodes.Newobj, typeof(decimal).GetConstructor(new Type[] { typeof(int) }));                    
+                    return;
 
                 default:
                     if (type.IsValueType)
@@ -1151,7 +1151,7 @@ namespace CodeArts.Emit
                     throw new NotSupportedException();
             }
 
-            label_core:
+        label_core:
             {
                 LocalBuilder lb = ilg.DeclareLocal(type);
                 ilg.Emit(OpCodes.Ldloca, lb);
@@ -1232,7 +1232,7 @@ namespace CodeArts.Emit
                     break;
             }
 
-            label_core:
+        label_core:
             {
                 ilg.Emit(OpCodes.Ldobj, type);
             }
@@ -1310,7 +1310,7 @@ namespace CodeArts.Emit
                     break;
             }
 
-            label_core:
+        label_core:
             {
                 ilg.Emit(OpCodes.Stobj, type);
             }

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 
 namespace CodeArts.Emit.Expressions
 {
@@ -11,25 +9,6 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public class InvocationAst : AstExpression
     {
-        private class ParatemerRefAst : MemberAst
-        {
-            public ParatemerRefAst(AstExpression paramterAst) : base(paramterAst.ReturnType.GetElementType(), paramterAst)
-            {
-            }
-
-            protected override void LoadCore(ILGenerator ilg)
-            {
-                EmitUtils.EmitLoadToType(ilg, ReturnType);
-            }
-
-            protected override void AssignCore(ILGenerator ilg, AstExpression value)
-            {
-                value.Load(ilg);
-
-                EmitUtils.EmitAssignToType(ilg, ReturnType);
-            }
-        }
-
         private readonly AstExpression instanceAst;
         private readonly MethodInfo method;
         private readonly AstExpression arguments;

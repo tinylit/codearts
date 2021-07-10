@@ -26,14 +26,11 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            ilg.BeginFinallyBlock();
+            ilg.Emit(OpCodes.Nop);
 
             body.Load(ilg);
 
-            if (body.ReturnType != typeof(void))
-            {
-                ilg.Emit(OpCodes.Pop);
-            }
+            ilg.Emit(OpCodes.Nop);
         }
     }
 }

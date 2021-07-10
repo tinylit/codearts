@@ -39,6 +39,11 @@ namespace CodeArts.Emit.Expressions
         }
 
         /// <summary>
+        /// 空的。
+        /// </summary>
+        public bool IsNull => value is null;
+
+        /// <summary>
         /// 生成。
         /// </summary>
         /// <param name="ilg">指令。</param>

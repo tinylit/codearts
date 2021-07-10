@@ -20,19 +20,9 @@ namespace CodeArts.Emit.Expressions
         /// <param name="test">条件。</param>
         /// <param name="ifTrue">为真的代码块。</param>
         /// <param name="ifFalse">为假的代码块。</param>
-        public ConditionAst(AstExpression test, AstExpression ifTrue, AstExpression ifFalse) : base(AnalysisReturnType(ifTrue, ifFalse))
+        public ConditionAst(AstExpression test, AstExpression ifTrue, AstExpression ifFalse) : this(test, ifTrue, ifFalse, AnalysisReturnType(ifTrue, ifFalse))
         {
-            this.test = test ?? throw new ArgumentNullException(nameof(test));
 
-            if (test.ReturnType == typeof(bool))
-            {
-                this.ifTrue = ifTrue ?? throw new ArgumentNullException(nameof(ifTrue));
-                this.ifFalse = ifFalse ?? throw new ArgumentNullException(nameof(ifFalse));
-            }
-            else
-            {
-                throw new ArgumentException("不是有效的条件语句!", nameof(test));
-            }
         }
 
         /// <summary>
@@ -58,15 +48,31 @@ namespace CodeArts.Emit.Expressions
 
             if (returnType == typeof(void))
             {
-                throw new NotSupportedException("不支持无返回值类型!");
+                return;
             }
 
-            if (!returnType.IsAssignableFrom(ifTrue.ReturnType))
+            if (returnType == ifTrue.ReturnType)
+            {
+
+            }
+            else if (returnType.IsAssignableFrom(ifTrue.ReturnType))
+            {
+                this.ifTrue = new ConvertAst(ifTrue, returnType);
+            }
+            else
             {
                 throw new ArgumentException($"表达式类型“{ifTrue.ReturnType}”不能默认转换为“{returnType}”!", nameof(ifTrue));
             }
 
-            if (!returnType.IsAssignableFrom(ifFalse.ReturnType))
+            if (returnType == ifFalse.ReturnType)
+            {
+
+            }
+            else if (returnType.IsAssignableFrom(ifTrue.ReturnType))
+            {
+                this.ifFalse = new ConvertAst(ifFalse, returnType);
+            }
+            else
             {
                 throw new ArgumentException($"表达式类型“{ifFalse.ReturnType}”不能默认转换为“{returnType}”!", nameof(ifFalse));
             }
@@ -87,7 +93,7 @@ namespace CodeArts.Emit.Expressions
 
             if (ifTrue.ReturnType == typeof(void) || ifFalse.ReturnType == typeof(void))
             {
-                throw new NotSupportedException("不支持无返回值类型!");
+                return typeof(void);
             }
 
             if (ifTrue.ReturnType == ifFalse.ReturnType)
@@ -105,7 +111,7 @@ namespace CodeArts.Emit.Expressions
                 return ifFalse.ReturnType;
             }
 
-            throw new NotSupportedException("不能进行类型转换!");
+            return typeof(void);
         }
 
         /// <summary>
@@ -120,44 +126,37 @@ namespace CodeArts.Emit.Expressions
             }
             else
             {
-                Emit(ilg, ReturnType);
+                Emit(ilg);
             }
         }
 
-        private void Emit(ILGenerator ilg, Type returnType)
+        private void Emit(ILGenerator ilg)
         {
             var label = ilg.DefineLabel();
             var leave = ilg.DefineLabel();
+            var variable = ilg.DeclareLocal(ReturnType);
 
             test.Load(ilg);
 
             ilg.Emit(OpCodes.Brfalse_S, label);
 
-            if (returnType == ifTrue.ReturnType)
-            {
-                ifTrue.Load(ilg);
-            }
-            else
-            {
-                new ConvertAst(ifTrue, returnType)
-                    .Load(ilg);
-            }
+            ilg.Emit(OpCodes.Nop);
 
-            ilg.Emit(OpCodes.Br_S, leave);
+            ifTrue.Load(ilg);
+
+            ilg.Emit(OpCodes.Stloc, variable);
+
+            ilg.Emit(OpCodes.Leave_S, leave);
 
             ilg.MarkLabel(label);
 
-            if (returnType == ifFalse.ReturnType)
-            {
-                ifFalse.Load(ilg);
-            }
-            else
-            {
-                new ConvertAst(ifFalse, returnType)
-                    .Load(ilg);
-            }
+            ifFalse.Load(ilg);
+
+            ilg.Emit(OpCodes.Stloc, variable);
 
             ilg.MarkLabel(leave);
+
+            ilg.Emit(OpCodes.Ldloc, variable);
         }
 
         private void EmitVoid(ILGenerator ilg)
@@ -169,20 +168,24 @@ namespace CodeArts.Emit.Expressions
 
             ilg.Emit(OpCodes.Brfalse_S, label);
 
+            ilg.Emit(OpCodes.Nop);
+
             ifTrue.Load(ilg);
 
-            if (ifTrue.ReturnType != typeof(void))
+            if (ifFalse.ReturnType != typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
             }
 
-            ilg.Emit(OpCodes.Br, leave);
+            ilg.MarkLabel(label);
+
+            ilg.Emit(OpCodes.Leave_S, leave);
 
             ilg.MarkLabel(label);
 
             ifFalse.Load(ilg);
 
-            if (ifFalse.ReturnType != typeof(void))
+            if (ifTrue.ReturnType != typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
             }

@@ -9,7 +9,7 @@ using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts
 {
-    static class InterceptCaching
+    public static class InterceptCaching
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
@@ -102,13 +102,11 @@ namespace CodeArts
                 goto label_core;
             }
 
-            var blockAst = Block(methodInfo.ReturnType);
-
-            var variable = blockAst.DeclareVariable(typeof(object[]));
-
-            blockAst.Append(Assign(variable, Array(paramterEmitters)));
-
             AstExpression[] arguments;
+
+            var variable = methodEmitter.DeclareVariable(typeof(object[]));
+
+            methodEmitter.Append(Assign(variable, Array(paramterEmitters)));
 
             if (methodInfo.IsGenericMethod)
             {
@@ -123,15 +121,19 @@ namespace CodeArts
                 arguments = new AstExpression[] { instanceAst, fieldEmitter, variable };
             }
 
+            bool hasByRef = parameterInfos.Any(x => x.ParameterType.IsByRef);
+
+            var blockAst = hasByRef ? Try(methodInfo.ReturnType) : Block(methodInfo.ReturnType);
+
             if (methodInfo.ReturnType.IsClass && typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
             {
                 if (methodInfo.ReturnType.IsGenericType)
                 {
-                    blockAst.Append(Return(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments))));
+                    blockAst.Append(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments)));
                 }
                 else
                 {
-                    blockAst.Append(Return(Call(InterceptAsyncMethodCall, New(InterceptAsyncContextCtor, arguments))));
+                    blockAst.Append(Call(InterceptAsyncMethodCall, New(InterceptAsyncContextCtor, arguments)));
                 }
             }
             else if (methodInfo.ReturnType == typeof(void))
@@ -144,12 +146,12 @@ namespace CodeArts
 
                 blockAst.Append(Assign(value, Call(InterceptMethodCall, New(InterceptContextCtor, arguments))));
 
-                blockAst.Append(Return(Condition(Equal(value, Constant(null)), Default(methodInfo.ReturnType), Convert(value, methodInfo.ReturnType))));
+                blockAst.Append(Condition(Equal(value, Constant(null)), Default(methodInfo.ReturnType), Convert(value, methodInfo.ReturnType)));
             }
 
-            if (parameterInfos.Any(x => x.ParameterType.IsByRef))
+            if (hasByRef)
             {
-                var blockAst1 = Block(typeof(void));
+                var finallyAst = Block(typeof(void));
 
                 for (int i = 0; i < paramterEmitters.Length; i++)
                 {
@@ -160,19 +162,17 @@ namespace CodeArts
                         continue;
                     }
 
-                    blockAst1.Append(Assign(paramterEmitter, Convert(ArrayIndex(variable, i), paramterEmitter.ReturnType)));
+                    finallyAst.Append(Assign(paramterEmitter, Convert(ArrayIndex(variable, i), paramterEmitter.ReturnType)));
                 }
 
-                methodEmitter.Append(Try(blockAst, Finally(blockAst1)));
+                blockAst.Append(Finally(finallyAst));
             }
-            else
-            {
-                methodEmitter.Append(blockAst);
-            }
+
+            methodEmitter.Append(blockAst);
 
             InterceptCache.Add(methodInfo, attributes);
 
-            label_core:
+        label_core:
 
             foreach (var attributeData in methodInfo.GetCustomAttributesData())
             {

@@ -108,7 +108,74 @@ namespace CodeArts.Emit.Expressions
 
             if (IsByRef)
             {
-                EmitUtils.EmitLoadToType(ilg, ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType);
+                var type = ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType;
+
+                if (type.IsEnum)
+                {
+                    type = Enum.GetUnderlyingType(type);
+                }
+
+                if (type.IsPrimitive)
+                {
+                    switch (Type.GetTypeCode(type))
+                    {
+                        case TypeCode.Boolean:
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                            ilg.Emit(OpCodes.Ldind_I1);
+                            break;
+                        case TypeCode.Char:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                            ilg.Emit(OpCodes.Ldind_I2);
+                            break;
+                        case TypeCode.Int32:
+                        case TypeCode.UInt32:
+                            ilg.Emit(OpCodes.Ldind_I4);
+                            break;
+
+                        case TypeCode.Int64:
+                        case TypeCode.UInt64:
+                            ilg.Emit(OpCodes.Ldind_I8);
+                            break;
+
+                        case TypeCode.Single:
+                            ilg.Emit(OpCodes.Ldind_R4);
+                            break;
+
+                        case TypeCode.Double:
+                            ilg.Emit(OpCodes.Ldind_R8);
+                            break;
+                        case TypeCode.Empty:
+                        case TypeCode.DBNull:
+                        case TypeCode.Decimal:
+                        case TypeCode.DateTime:
+                        case TypeCode.String:
+                        case TypeCode.Object:
+                        default:
+                            if (type.IsValueType)
+                            {
+                                ilg.Emit(OpCodes.Ldobj, type);
+                            }
+                            else
+                            {
+                                ilg.Emit(OpCodes.Ldind_Ref);
+                            }
+                            break;
+                    }
+                }
+                else if (type.IsValueType)
+                {
+                    ilg.Emit(OpCodes.Ldobj, type);
+                }
+                else if (type.IsGenericParameter)
+                {
+                    ilg.Emit(OpCodes.Ldobj, type);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Ldind_Ref);
+                }
             }
         }
 
@@ -119,7 +186,36 @@ namespace CodeArts.Emit.Expressions
         /// <param name="value">值。</param>
         protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
-            if (Position < byte.MaxValue)
+
+            if (IsByRef)
+            {
+                switch (Position)
+                {
+                    case 0:
+                        ilg.Emit(OpCodes.Ldarg_0);
+                        break;
+                    case 1:
+                        ilg.Emit(OpCodes.Ldarg_1);
+                        break;
+                    case 2:
+                        ilg.Emit(OpCodes.Ldarg_2);
+                        break;
+                    case 3:
+                        ilg.Emit(OpCodes.Ldarg_3);
+                        break;
+                    default:
+                        if (Position < byte.MaxValue)
+                        {
+                            ilg.Emit(OpCodes.Ldarg_S, (byte)Position);
+
+                            break;
+                        }
+
+                        ilg.Emit(OpCodes.Ldarg, Position);
+                        break;
+                }
+            }
+            else if (Position < byte.MaxValue)
             {
                 ilg.Emit(OpCodes.Starg_S, (byte)Position);
             }
@@ -132,7 +228,74 @@ namespace CodeArts.Emit.Expressions
 
             if (IsByRef)
             {
-                EmitUtils.EmitAssignToType(ilg, ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType);
+                var type = ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType;
+
+                if (type.IsEnum)
+                {
+                    type = Enum.GetUnderlyingType(type);
+                }
+
+                if (type.IsPrimitive)
+                {
+                    switch (Type.GetTypeCode(type))
+                    {
+                        case TypeCode.Boolean:
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                            ilg.Emit(OpCodes.Stind_I1);
+                            break;
+                        case TypeCode.Char:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                            ilg.Emit(OpCodes.Stind_I2);
+                            break;
+                        case TypeCode.Int32:
+                        case TypeCode.UInt32:
+                            ilg.Emit(OpCodes.Stind_I4);
+                            break;
+
+                        case TypeCode.Int64:
+                        case TypeCode.UInt64:
+                            ilg.Emit(OpCodes.Stind_I8);
+                            break;
+
+                        case TypeCode.Single:
+                            ilg.Emit(OpCodes.Stind_R4);
+                            break;
+
+                        case TypeCode.Double:
+                            ilg.Emit(OpCodes.Stind_R8);
+                            break;
+                        case TypeCode.Empty:
+                        case TypeCode.DBNull:
+                        case TypeCode.Decimal:
+                        case TypeCode.DateTime:
+                        case TypeCode.String:
+                        case TypeCode.Object:
+                        default:
+                            if (type.IsValueType)
+                            {
+                                ilg.Emit(OpCodes.Stobj, type);
+                            }
+                            else
+                            {
+                                ilg.Emit(OpCodes.Stind_Ref);
+                            }
+                            break;
+                    }
+                }
+                else if (type.IsValueType)
+                {
+                    ilg.Emit(OpCodes.Stobj, type);
+                }
+                else if (type.IsGenericParameter)
+                {
+                    ilg.Emit(OpCodes.Stobj, type);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Stind_Ref);
+                }
             }
         }
     }

@@ -155,12 +155,21 @@ namespace CodeArts.Emit.Tests
             /// <inheritdoc />
             [DependencyIntercept]
             bool AopTest();
+            [DependencyIntercept]
+            bool AopTest(int i, ref int j);
         }
 
         /// <inheritdoc />
         public class Dependency : IDependency
         {
             /// <inheritdoc />
+            public bool AopTest(int i, ref int j)
+            {
+                j = i * 5;
+
+                return (i & 1) == 0;
+            }
+
             public bool AopTest() => true;
         }
 
@@ -173,7 +182,9 @@ namespace CodeArts.Emit.Tests
 
             IDependency dependency = (IDependency)Activator.CreateInstance(descriptor.ImplementationType);
 
-            dependency.AopTest();
+            int j = 10;
+
+            var k = dependency.AopTest(3, ref j);
         }
     }
 }

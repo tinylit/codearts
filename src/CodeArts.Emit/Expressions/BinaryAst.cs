@@ -64,9 +64,23 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">命令。</param>
         public override void Load(ILGenerator ilg)
         {
-            left.Load(ilg);
+            if (left is ConstantAst constantAst && constantAst.IsNull)
+            {
+                ilg.Emit(OpCodes.Ldnull);
+            }
+            else
+            {
+                left.Load(ilg);
+            }
 
-            right.Load(ilg);
+            if (right is ConstantAst constantAst2 && constantAst2.IsNull)
+            {
+                ilg.Emit(OpCodes.Ldnull);
+            }
+            else
+            {
+                right.Load(ilg);
+            }
 
             switch (expressionType)
             {

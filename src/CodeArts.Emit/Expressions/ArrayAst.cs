@@ -59,7 +59,8 @@ namespace CodeArts.Emit.Expressions
         {
             bool isObjectElememt = elementType == typeof(object);
 
-            ilg.Emit(OpCodes.Ldc_I4, expressions.Length);
+            EmitUtils.EmitInt(ilg, expressions.Length);
+
             ilg.Emit(OpCodes.Newarr, elementType);
 
             for (int i = 0; i < expressions.Length; i++)
@@ -67,15 +68,28 @@ namespace CodeArts.Emit.Expressions
                 var expressionAst = expressions[i];
 
                 ilg.Emit(OpCodes.Dup);
-                ilg.Emit(OpCodes.Ldc_I4, i);
+
+                EmitUtils.EmitInt(ilg, i);
 
                 expressionAst.Load(ilg);
 
                 if (isObjectElememt)
                 {
-                    if (expressionAst.ReturnType.IsValueType || expressionAst.ReturnType.IsGenericParameter)
+                    var type = expressionAst.ReturnType;
+
+                    if (type.IsByRef)
                     {
-                        ilg.Emit(OpCodes.Box, expressionAst.ReturnType);
+                        type = type.GetElementType();
+                    }
+
+                    if (type.IsEnum)
+                    {
+                        type = Enum.GetUnderlyingType(type);
+                    }
+
+                    if (type.IsValueType || type.IsGenericParameter)
+                    {
+                        ilg.Emit(OpCodes.Box, type);
                     }
                 }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -11,8 +12,6 @@ namespace CodeArts.Emit.Expressions
     {
         private readonly List<AstExpression> codes = new List<AstExpression>();
         private readonly List<VariableAst> variables = new List<VariableAst>();
-
-        private bool isLastReturn = false;
 
         /// <summary>
         /// 构造函数。
@@ -26,6 +25,20 @@ namespace CodeArts.Emit.Expressions
         /// 是否为空。
         /// </summary>
         public bool IsEmpty => codes.Count == 0;
+
+        private bool hasReturn = false;
+
+        /// <summary>
+        /// 最后一个是返回。
+        /// </summary>
+        protected bool HasReturn => hasReturn || codes.OfType<BlockAst>().Any(x => x.HasReturn);
+
+        private bool isLastReturn = false;
+
+        /// <summary>
+        /// 有返回。
+        /// </summary>
+        protected bool IsLastReturn => isLastReturn || codes.Count > 0 && codes[codes.Count - 1] is BlockAst blockAst && blockAst.IsLastReturn;
 
         /// <summary>
         /// 声明变量。
@@ -49,18 +62,27 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="code">代码。</param>
         /// <returns></returns>
-        public BlockAst Append(AstExpression code)
+        public virtual BlockAst Append(AstExpression code)
         {
             if (code is null)
             {
                 throw new ArgumentNullException(nameof(code));
             }
 
-            isLastReturn = code is ReturnAst || code is BlockAst || code is ConditionAst;
-
-            if (isLastReturn && ReturnType != code.ReturnType)
+            if (code is ReturnAst)
             {
-                throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
+                hasReturn = true;
+
+                isLastReturn = true;
+
+                if (ReturnType != code.ReturnType)
+                {
+                    throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
+                }
+            }
+            else
+            {
+                isLastReturn = false;
             }
 
             codes.Add(code);
@@ -72,9 +94,7 @@ namespace CodeArts.Emit.Expressions
         /// 发行。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        /// <param name="variables">变量。</param>
-        /// <param name="codes">代码。</param>
-        protected virtual void Load(ILGenerator ilg, List<VariableAst> variables, List<AstExpression> codes)
+        public override void Load(ILGenerator ilg)
         {
             foreach (var variable in variables)
             {
@@ -85,27 +105,6 @@ namespace CodeArts.Emit.Expressions
             {
                 code.Load(ilg);
             }
-        }
-
-        /// <summary>
-        /// 发行。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg)
-        {
-            Load(ilg, variables, codes);
-
-            if (isLastReturn)
-            {
-                return;
-            }
-
-            if (!IsEmpty && ReturnType == typeof(void))
-            {
-                ilg.Emit(OpCodes.Nop);
-            }
-
-            ilg.Emit(OpCodes.Ret);
         }
     }
 }

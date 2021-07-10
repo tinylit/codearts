@@ -68,7 +68,7 @@ namespace CodeArts.Proxies
 
             var interfaces = serviceType.GetAllInterfaces();
 
-            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Sealed, null, interfaces);
+            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Class, null, interfaces);
 
             var instanceAst = classEmitter.DefineField("____instance__", serviceType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
 
