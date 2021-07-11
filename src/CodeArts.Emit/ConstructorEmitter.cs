@@ -12,19 +12,19 @@ namespace CodeArts.Emit
     public class ConstructorEmitter : BlockAst
     {
         private int parameterIndex = 0;
-        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
+        private readonly List<ParameterEmitter> parameters = new List<ParameterEmitter>();
         private readonly AbstractTypeEmitter typeEmitter;
 
         private class ConstructorExpression : AstExpression
         {
             private readonly ConstructorInfo constructor;
-            private readonly ParamterEmitter[] parameters;
+            private readonly ParameterEmitter[] parameters;
 
             public ConstructorExpression(ConstructorInfo constructor) : base(constructor.DeclaringType)
             {
                 this.constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
             }
-            public ConstructorExpression(ConstructorInfo constructor, ParamterEmitter[] parameters) : this(constructor)
+            public ConstructorExpression(ConstructorInfo constructor, ParameterEmitter[] parameters) : this(constructor)
             {
                 this.parameters = parameters;
             }
@@ -85,14 +85,14 @@ namespace CodeArts.Emit
         /// <summary>
         /// 参数。
         /// </summary>
-        public ParamterEmitter[] Parameters => parameters.ToArray();
+        public ParameterEmitter[] Parameters => parameters.ToArray();
 
         /// <summary>
         /// 声明参数。
         /// </summary>
         /// <param name="parameterInfo">参数。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(ParameterInfo parameterInfo)
+        public ParameterEmitter DefineParameter(ParameterInfo parameterInfo)
         {
             var parameter = DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
 
@@ -120,9 +120,9 @@ namespace CodeArts.Emit
         /// <param name="attributes">属性。</param>
         /// <param name="strParamName">名称。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
+        public ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
         {
-            var parameter = new ParamterEmitter(parameterType, ++parameterIndex, attributes, strParamName);
+            var parameter = new ParameterEmitter(parameterType, ++parameterIndex, attributes, strParamName);
             parameters.Add(parameter);
             return parameter;
         }
@@ -155,7 +155,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="constructor">构造函数。</param>
         /// <param name="parameters">参数。</param>
-        public void InvokeBaseConstructor(ConstructorInfo constructor, params ParamterEmitter[] parameters) => Append(new ConstructorExpression(constructor, parameters));
+        public void InvokeBaseConstructor(ConstructorInfo constructor, params ParameterEmitter[] parameters) => Append(new ConstructorExpression(constructor, parameters));
 
         /// <summary>
         /// 发行。

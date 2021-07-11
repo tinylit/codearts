@@ -12,7 +12,7 @@ namespace CodeArts.Emit
     /// 参数成员。
     /// </summary>
     [DebuggerDisplay("{ReturnType.Name} {ParameterName}")]
-    public class ParamterEmitter : ParamterAst
+    public class ParameterEmitter : ParameterAst
     {
         private object defaultValue;
         private bool hasDefaultValue = false;
@@ -40,7 +40,7 @@ namespace CodeArts.Emit
         /// <param name="position">位置。</param>
         /// <param name="attributes">标记。</param>
         /// <param name="parameterName">名称。</param>
-        public ParamterEmitter(Type parameterType, int position, ParameterAttributes attributes, string parameterName) : base(parameterType, position)
+        public ParameterEmitter(Type parameterType, int position, ParameterAttributes attributes, string parameterName) : base(parameterType, position)
         {
             Attributes = attributes;
             ParameterName = parameterName ?? throw new ArgumentNullException(nameof(parameterName));
@@ -73,7 +73,7 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(attributeData));
             }
 
-            customAttributes.Add(AttributeUtil.Create(attributeData));
+            customAttributes.Add(EmitUtils.CreateCustomAttribute(attributeData));
         }
 
         /// <summary>

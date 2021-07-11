@@ -32,7 +32,7 @@ namespace CodeArts.Emit.Tests
 
         bool IDependency.AopTest() => AopTest();
 
-        bool IDependency.AopTest(int i, ref int j) => AopTest(i, ref j);
+        bool IDependency.AopTestByRef(int i, ref int j) => AopTest(i, ref j);
 
         public virtual bool AopTest(int i, ref int j)
         {
@@ -51,5 +51,24 @@ namespace CodeArts.Emit.Tests
                 j = (int)inputs[1];
             }
         }
+
+        /// <inheritdoc />
+        public bool AopTestByOut(int i, out int j)
+        {
+            try
+            {
+                j = 0;
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                j = 1;
+
+                return false;
+            }
+        }
+
+        public T Get<T>() where T : struct => default;
     }
 }

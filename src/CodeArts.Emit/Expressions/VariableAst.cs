@@ -35,7 +35,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 变量。
         /// </summary>
-        public LocalBuilder Value => local ?? throw new AstException("变量未声明!");
+        internal LocalBuilder Value => local ?? throw new AstException("变量未声明!");
 
         /// <summary>
         /// 是否可写。

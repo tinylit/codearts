@@ -11,7 +11,7 @@ namespace CodeArts.Emit.Expressions
     [DebuggerDisplay("throw new {exceptionType.Name}({errorMsg})")]
     public class ThrowAst : AstExpression
     {
-        private readonly NewInstanceAst exception;
+        private readonly AstExpression exception;
 
         /// <summary>
         /// 构造函数。
@@ -34,7 +34,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="exception">异常。</param>
-        public ThrowAst(NewInstanceAst exception) : base(exception.ReturnType)
+        public ThrowAst(AstExpression exception) : base(exception.ReturnType)
         {
             this.exception = exception ?? throw new ArgumentNullException(nameof(exception));
 

@@ -88,7 +88,7 @@ namespace CodeArts
 
             var parameterInfos = methodInfo.GetParameters();
 
-            var paramterEmitters = new ParamterEmitter[parameterInfos.Length];
+            var paramterEmitters = new ParameterEmitter[parameterInfos.Length];
 
             for (int i = 0; i < parameterInfos.Length; i++)
             {
@@ -102,24 +102,13 @@ namespace CodeArts
                 goto label_core;
             }
 
-            AstExpression[] arguments;
+            var overrideAst = classEmitter.DefineMethodOverride(methodEmitter, methodInfo);
 
             var variable = methodEmitter.DeclareVariable(typeof(object[]));
 
             methodEmitter.Append(Assign(variable, Array(paramterEmitters)));
 
-            if (methodInfo.IsGenericMethod)
-            {
-                arguments = new AstExpression[] { instanceAst, Constant(methodInfo), variable };
-            }
-            else
-            {
-                var fieldEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
-
-                classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodInfo)));
-
-                arguments = new AstExpression[] { instanceAst, fieldEmitter, variable };
-            }
+            var arguments = new AstExpression[] { instanceAst, overrideAst, variable };
 
             bool hasByRef = parameterInfos.Any(x => x.ParameterType.IsByRef);
 
@@ -183,8 +172,6 @@ namespace CodeArts
 
                 methodEmitter.SetCustomAttribute(attributeData);
             }
-
-            classEmitter.DefineMethodOverride(methodEmitter, methodInfo);
         }
     }
 }

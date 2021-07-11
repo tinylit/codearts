@@ -73,7 +73,7 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(attributeData));
             }
 
-            customAttributes.Add(AttributeUtil.Create(attributeData));
+            customAttributes.Add(EmitUtils.CreateCustomAttribute(attributeData));
         }
 
         /// <summary>

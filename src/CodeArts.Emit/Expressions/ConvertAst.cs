@@ -8,10 +8,9 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 类型转换。
     /// </summary>
-    [DebuggerDisplay("({convertToType.Name}){body}")]
+    [DebuggerDisplay("({ReturnType.Name}){body}")]
     public class ConvertAst : AstExpression
     {
-        private readonly Type convertToType;
         private readonly AstExpression body;
 
         /// <summary>
@@ -21,7 +20,6 @@ namespace CodeArts.Emit.Expressions
         /// <param name="convertToType">转换类型。</param>
         public ConvertAst(AstExpression body, Type convertToType) : base(convertToType)
         {
-            this.convertToType = convertToType ?? throw new ArgumentNullException(nameof(convertToType));
             this.body = body ?? throw new ArgumentNullException(nameof(body));
         }
 
@@ -35,19 +33,19 @@ namespace CodeArts.Emit.Expressions
 
             Type typeFrom = body.ReturnType;
 
-            if (typeFrom == convertToType)
+            if (typeFrom == ReturnType)
             {
                 return;
             }
 
-            if (convertToType == typeof(void))
+            if (ReturnType == typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
 
                 return;
             }
 
-            EmitUtils.EmitConvertToType(ilg, typeFrom, convertToType.IsByRef ? convertToType.GetElementType() : convertToType, true);
+            EmitUtils.EmitConvertToType(ilg, typeFrom, ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType, true);
         }
     }
 }

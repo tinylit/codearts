@@ -150,20 +150,34 @@ namespace CodeArts.Emit.Tests
         }
 
         /// <inheritdoc />
+        [DependencyIntercept]
         public interface IDependency
         {
             /// <inheritdoc />
-            [DependencyIntercept]
             bool AopTest();
+
+            //[DependencyIntercept]
+            bool AopTestByRef(int i, ref int j);
+
             [DependencyIntercept]
-            bool AopTest(int i, ref int j);
+            bool AopTestByOut(int i, out int j);
+
+            T Get<T>() where T : struct;
         }
 
         /// <inheritdoc />
         public class Dependency : IDependency
         {
             /// <inheritdoc />
-            public bool AopTest(int i, ref int j)
+            public bool AopTestByRef(int i, ref int j)
+            {
+                j = i * 5;
+
+                return (i & 1) == 0;
+            }
+
+            /// <inheritdoc />
+            public bool AopTestByOut(int i, out int j)
             {
                 j = i * 5;
 
@@ -171,6 +185,8 @@ namespace CodeArts.Emit.Tests
             }
 
             public bool AopTest() => true;
+
+            public T Get<T>() where T : struct => default;
         }
 
         [TestMethod]
@@ -184,7 +200,11 @@ namespace CodeArts.Emit.Tests
 
             int j = 10;
 
-            var k = dependency.AopTest(3, ref j);
+            var k = dependency.AopTestByRef(3, ref j);
+
+            var k2 = dependency.AopTestByOut(4, out j);
+
+            var k3 = dependency.Get<long>();
         }
     }
 }

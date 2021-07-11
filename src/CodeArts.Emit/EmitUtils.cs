@@ -803,92 +803,6 @@ namespace CodeArts.Emit
         }
         #endregion
 
-        #region CreateCustomAttribute
-        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
-        {
-            var value = argument.Value;
-
-            if (value is IEnumerable<CustomAttributeTypedArgument> values)
-            {
-                //special case for handling arrays in attributes
-                var arguments = GetArguments(values);
-
-                var array = new object[arguments.Length];
-                arguments.CopyTo(array, 0);
-                return array;
-            }
-
-            return value;
-        }
-
-        private static object[] GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments)
-        {
-            var arguments = new List<object>();
-
-            foreach (var item in constructorArguments)
-            {
-                arguments.Add(ReadAttributeValue(item));
-            }
-
-            return arguments.ToArray();
-        }
-
-        private static void GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs)
-        {
-            var types = new List<Type>();
-            var args = new List<object>();
-
-            foreach (var item in constructorArguments)
-            {
-                types.Add(item.ArgumentType);
-                args.Add(ReadAttributeValue(item));
-            }
-
-            constructorArgTypes = types.ToArray();
-            constructorArgs = args.ToArray();
-        }
-
-        private static void GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues)
-        {
-            var propertyList = new List<PropertyInfo>();
-            var propertyValuesList = new List<object>();
-            var fieldList = new List<FieldInfo>();
-            var fieldValuesList = new List<object>();
-            foreach (var argument in namedArguments)
-            {
-#if NET40
-                if (argument.MemberInfo.MemberType == MemberTypes.Field)
-                {
-                    fieldList.Add(argument.MemberInfo as FieldInfo);
-                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-                else
-                {
-                    propertyList.Add(argument.MemberInfo as PropertyInfo);
-                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-#else
-                if (argument.IsField)
-                {
-                    fieldList.Add(attributeType.GetField(argument.MemberName));
-                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-                else
-                {
-                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
-                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-#endif
-            }
-
-            properties = propertyList.ToArray();
-            propertyValues = propertyValuesList.ToArray();
-            fields = fieldList.ToArray();
-            fieldValues = fieldValuesList.ToArray();
-        }
-
-        #endregion
-
         /// <summary>
         /// 设置指定类型的常量。
         /// </summary>
@@ -934,7 +848,7 @@ namespace CodeArts.Emit
         {
             if (value is null)
             {
-                EmitDefaultValueOfType(ilg, valueType);
+                ilg.Emit(OpCodes.Ldnull);
             }
             else
             {
@@ -945,13 +859,13 @@ namespace CodeArts.Emit
 
                 switch (value)
                 {
-                    case Type type when valueType == typeof(Type):
+                    case Type type:
                         ilg.Emit(OpCodes.Ldtoken, type);
                         ilg.Emit(OpCodes.Call, GetTypeFromHandle);
 
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;
-                    case MethodInfo method when valueType == typeof(MethodInfo):
+                    case MethodInfo method:
                         ilg.Emit(OpCodes.Ldtoken, method);
 
                         if (method.DeclaringType is null)
@@ -1084,239 +998,6 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 发行指定类型的默认值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="type">类型。</param>
-        public static void EmitDefaultValueOfType(ILGenerator ilg, Type type)
-        {
-            if (type.IsEnum)
-            {
-                type = Enum.GetUnderlyingType(type);
-            }
-
-            if (type.IsGenericParameter)
-            {
-                goto label_core;
-            }
-
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.DateTime:
-                    goto label_core;
-                case TypeCode.DBNull:
-                    ilg.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField(nameof(DBNull.Value)));
-                    return;
-                case TypeCode.Empty:
-                case TypeCode.String:
-                case TypeCode.Object:
-                    ilg.Emit(OpCodes.Ldnull);
-                    return;
-                case TypeCode.Boolean:
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                    ilg.Emit(OpCodes.Ldc_I4_0);
-                    return;
-
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    ilg.Emit(OpCodes.Ldc_I4_0);
-                    ilg.Emit(OpCodes.Conv_I8);
-                    return;
-
-                case TypeCode.Single:
-                    ilg.Emit(OpCodes.Ldc_R4, 0F);
-                    return;
-
-                case TypeCode.Double:
-                    ilg.Emit(OpCodes.Ldc_R8, 0D);
-                    return;
-
-                case TypeCode.Decimal:
-                    ilg.Emit(OpCodes.Ldc_I4_0);
-                    ilg.Emit(OpCodes.Newobj, typeof(decimal).GetConstructor(new Type[] { typeof(int) }));                    
-                    return;
-
-                default:
-                    if (type.IsValueType)
-                    {
-                        goto label_core;
-                    }
-
-                    throw new NotSupportedException();
-            }
-
-        label_core:
-            {
-                LocalBuilder lb = ilg.DeclareLocal(type);
-                ilg.Emit(OpCodes.Ldloca, lb);
-                ilg.Emit(OpCodes.Initobj, type);
-                ilg.Emit(OpCodes.Ldloc, lb);
-            }
-        }
-
-        /// <summary>
-        /// 加载指定类型的值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="type">类型。</param>
-        public static void EmitLoadToType(ILGenerator ilg, Type type)
-        {
-            if (type.IsEnum)
-            {
-                type = Enum.GetUnderlyingType(type);
-            }
-
-            if (type.IsByRef)
-            {
-                throw new NotSupportedException("Cannot store ByRef values");
-            }
-
-            if (type.IsGenericParameter)
-            {
-                goto label_core;
-            }
-
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Empty:
-                case TypeCode.String:
-                case TypeCode.Object:
-                    ilg.Emit(OpCodes.Ldind_Ref);
-                    break;
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.SByte:
-                    ilg.Emit(OpCodes.Ldind_I1);
-                    break;
-                case TypeCode.Char:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                    ilg.Emit(OpCodes.Ldind_I2);
-                    break;
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                    ilg.Emit(OpCodes.Ldind_I4);
-                    break;
-
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    ilg.Emit(OpCodes.Ldind_I8);
-                    break;
-
-                case TypeCode.Single:
-                    ilg.Emit(OpCodes.Ldind_R4);
-                    break;
-
-                case TypeCode.Double:
-                    ilg.Emit(OpCodes.Ldind_R8);
-                    break;
-                case TypeCode.DBNull:
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                    goto label_core;
-                default:
-                    if (type.IsValueType)
-                    {
-                        goto label_core;
-                    }
-                    else
-                    {
-                        ilg.Emit(OpCodes.Ldind_Ref);
-                    }
-                    break;
-            }
-
-        label_core:
-            {
-                ilg.Emit(OpCodes.Ldobj, type);
-            }
-        }
-
-        /// <summary>
-        /// 对指定类型赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="type">类型。</param>
-        public static void EmitAssignToType(ILGenerator ilg, Type type)
-        {
-            if (type.IsEnum)
-            {
-                type = Enum.GetUnderlyingType(type);
-            }
-
-            if (type.IsByRef)
-            {
-                throw new NotSupportedException("Cannot store ByRef values");
-            }
-
-            if (type.IsGenericParameter)
-            {
-                goto label_core;
-            }
-
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Empty:
-                case TypeCode.String:
-                case TypeCode.Object:
-                    ilg.Emit(OpCodes.Stind_Ref);
-                    break;
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.SByte:
-                    ilg.Emit(OpCodes.Stind_I1);
-                    break;
-                case TypeCode.Char:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                    ilg.Emit(OpCodes.Stind_I2);
-                    break;
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                    ilg.Emit(OpCodes.Stind_I4);
-                    break;
-
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    ilg.Emit(OpCodes.Stind_I8);
-                    break;
-
-                case TypeCode.Single:
-                    ilg.Emit(OpCodes.Stind_R4);
-                    break;
-
-                case TypeCode.Double:
-                    ilg.Emit(OpCodes.Stind_R8);
-                    break;
-                case TypeCode.DBNull:
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                    goto label_core;
-                default:
-                    if (type.IsValueType)
-                    {
-                        goto label_core;
-                    }
-                    else
-                    {
-                        ilg.Emit(OpCodes.Stind_Ref);
-                    }
-                    break;
-            }
-
-        label_core:
-            {
-                ilg.Emit(OpCodes.Stobj, type);
-            }
-        }
-
-        /// <summary>
         /// 类型转换。
         /// </summary>
         /// <param name="ilg">指令。</param>
@@ -1365,6 +1046,7 @@ namespace CodeArts.Emit
             }
         }
 
+        #region Attribute
         /// <summary>
         /// 创建自定义标记。
         /// </summary>
@@ -1372,35 +1054,104 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public static CustomAttributeBuilder CreateCustomAttribute<TAttribute>() where TAttribute : Attribute, new() => new CustomAttributeBuilder(typeof(TAttribute).GetConstructor(Type.EmptyTypes), new object[0]);
 
+
         /// <summary>
-        /// 创建自定义标记。
+        /// 创建自定义属性构造器。
         /// </summary>
-        /// <param name="attributeData">属性数据。</param>
+        /// <param name="attribute">属性。</param>
         /// <returns></returns>
-        public static CustomAttributeBuilder CreateCustomAttribute(CustomAttributeData attributeData)
+        public static CustomAttributeBuilder CreateCustomAttribute(CustomAttributeData attribute)
         {
-            GetArguments(attributeData.ConstructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs);
+            if (attribute is null)
+            {
+                throw new ArgumentNullException(nameof(attribute));
+            }
 
-#if NET40
-            var constructor = attributeData.Constructor;
+            var constructorArguments = GetArguments(attribute.ConstructorArguments);
+
+#if NET40            
+            var namedArguments = GetSettersAndFields(attribute.Constructor.DeclaringType, attribute.NamedArguments);
+
+            return new CustomAttributeBuilder(attribute.Constructor.DeclaringType.GetConstructor(constructorArguments.Item1), constructorArguments.Item2, namedArguments.Item1, namedArguments.Item2, namedArguments.Item3, namedArguments.Item4);
 #else
-            var constructor = attributeData.AttributeType.GetConstructor(constructorArgTypes);
-#endif
+            var namedArguments = GetSettersAndFields(attribute.AttributeType, attribute.NamedArguments);
 
-            GetSettersAndFields(
-#if NET40
-                null,
-#else
-                attributeData.AttributeType,
+            return new CustomAttributeBuilder(attribute.AttributeType.GetConstructor(constructorArguments.Item1), constructorArguments.Item2, namedArguments.Item1, namedArguments.Item2, namedArguments.Item3, namedArguments.Item4);
 #endif
-                attributeData.NamedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues);
-
-            return new CustomAttributeBuilder(constructor,
-                                             constructorArgs,
-                                             properties,
-                                             propertyValues,
-                                             fields,
-                                             fieldValues);
         }
+
+        private static Tuple<Type[], object[]> GetArguments(IList<CustomAttributeTypedArgument> constructorArguments)
+        {
+            var constructorArgTypes = new Type[constructorArguments.Count];
+            var constructorArgs = new object[constructorArguments.Count];
+            for (var i = 0; i < constructorArguments.Count; i++)
+            {
+                constructorArgTypes[i] = constructorArguments[i].ArgumentType;
+                constructorArgs[i] = ReadAttributeValue(constructorArguments[i]);
+            }
+
+            return Tuple.Create(constructorArgTypes, constructorArgs);
+        }
+
+        private static Tuple<PropertyInfo[], object[], FieldInfo[], object[]> GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments)
+        {
+            var propertyList = new List<PropertyInfo>();
+            var propertyValuesList = new List<object>();
+            var fieldList = new List<FieldInfo>();
+            var fieldValuesList = new List<object>();
+            foreach (var argument in namedArguments)
+            {
+#if NET40
+                if (argument.MemberInfo is FieldInfo)
+                {
+                    fieldList.Add(attributeType.GetField(argument.MemberInfo.Name));
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(attributeType.GetProperty(argument.MemberInfo.Name));
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+#else
+                if (argument.IsField)
+                {
+                    fieldList.Add(attributeType.GetField(argument.MemberName));
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+#endif
+            }
+
+            return Tuple.Create(propertyList.ToArray(), propertyValuesList.ToArray(), fieldList.ToArray(), fieldValuesList.ToArray());
+        }
+
+        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
+        {
+            var value = argument.Value;
+            if (argument.ArgumentType.IsArray && value is IList<CustomAttributeTypedArgument> arrays)
+            {
+                //special case for handling arrays in attributes
+                return GetNestedArguments(arrays);
+            }
+
+            return value;
+        }
+
+        private static object[] GetNestedArguments(IList<CustomAttributeTypedArgument> constructorArguments)
+        {
+            var arguments = new object[constructorArguments.Count];
+
+            for (var i = 0; i < constructorArguments.Count; i++)
+            {
+                arguments[i] = ReadAttributeValue(constructorArguments[i]);
+            }
+
+            return arguments;
+        }
+        #endregion
     }
 }

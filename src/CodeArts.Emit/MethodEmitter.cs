@@ -16,7 +16,7 @@ namespace CodeArts.Emit
     {
         private MethodBuilder builder;
         private int parameterIndex = 0;
-        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
+        private readonly List<ParameterEmitter> parameters = new List<ParameterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         private string ParemetersNames => string.Join(",", Parameters.Select(x => string.Concat(x.ReturnType.Name, " ", x.ParameterName)));
@@ -36,7 +36,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 成员。
         /// </summary>
-        public MethodBuilder Value => builder ?? throw new NotImplementedException();
+        internal MethodBuilder Value => builder ?? throw new NotImplementedException();
 
         /// <summary>
         /// 方法的名称。
@@ -51,14 +51,14 @@ namespace CodeArts.Emit
         /// <summary>
         /// 参数。
         /// </summary>
-        public ParamterEmitter[] Parameters => parameters.ToArray();
+        public ParameterEmitter[] Parameters => parameters.ToArray();
 
         /// <summary>
         /// 声明参数。
         /// </summary>
         /// <param name="parameterInfo">参数。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(ParameterInfo parameterInfo)
+        public ParameterEmitter DefineParameter(ParameterInfo parameterInfo)
         {
             var parameter = DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
 
@@ -85,7 +85,7 @@ namespace CodeArts.Emit
         /// <param name="parameterType">参数类型。</param>
         /// <param name="strParamName">名称。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(Type parameterType, string strParamName) => DefineParameter(parameterType, ParameterAttributes.None, strParamName);
+        public ParameterEmitter DefineParameter(Type parameterType, string strParamName) => DefineParameter(parameterType, ParameterAttributes.None, strParamName);
 
         /// <summary>
         /// 声明参数。
@@ -94,9 +94,9 @@ namespace CodeArts.Emit
         /// <param name="attributes">属性。</param>
         /// <param name="name">名称。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
+        public ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
         {
-            var parameter = new ParamterEmitter(parameterType, ++parameterIndex, attributes, name);
+            var parameter = new ParameterEmitter(parameterType, ++parameterIndex, attributes, name);
             parameters.Add(parameter);
             return parameter;
         }
@@ -112,7 +112,7 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(attributeData));
             }
 
-            customAttributes.Add(AttributeUtil.Create(attributeData));
+            customAttributes.Add(EmitUtils.CreateCustomAttribute(attributeData));
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -12,6 +11,8 @@ namespace CodeArts.Emit.Expressions
     {
         private readonly List<AstExpression> codes = new List<AstExpression>();
         private readonly List<VariableAst> variables = new List<VariableAst>();
+
+        private bool isReadOnly = false;
 
         /// <summary>
         /// 构造函数。
@@ -26,19 +27,15 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         public bool IsEmpty => codes.Count == 0;
 
-        private bool hasReturn = false;
-
         /// <summary>
         /// 最后一个是返回。
         /// </summary>
-        protected bool HasReturn => hasReturn || codes.OfType<BlockAst>().Any(x => x.HasReturn);
-
-        private bool isLastReturn = false;
+        protected internal bool HasReturn { private set; get; }
 
         /// <summary>
         /// 有返回。
         /// </summary>
-        protected bool IsLastReturn => isLastReturn || codes.Count > 0 && codes[codes.Count - 1] is BlockAst blockAst && blockAst.IsLastReturn;
+        protected bool IsLastReturn { private set; get; }
 
         /// <summary>
         /// 声明变量。
@@ -69,20 +66,31 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(code));
             }
 
+            if (isReadOnly)
+            {
+                throw new AstException("当前代码块已作为其它代码块的一部分，不能进行修改!");
+            }
+
             if (code is ReturnAst)
             {
-                hasReturn = true;
+                HasReturn = true;
 
-                isLastReturn = true;
+                IsLastReturn = true;
 
                 if (ReturnType != code.ReturnType)
                 {
                     throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
                 }
             }
+            else if (code is BlockAst blockAst)
+            {
+                IsLastReturn = false;
+
+                blockAst.isReadOnly = true;
+            }
             else
             {
-                isLastReturn = false;
+                IsLastReturn = false;
             }
 
             codes.Add(code);

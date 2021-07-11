@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -8,6 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 数组。
     /// </summary>
+    [DebuggerDisplay("{elementType.Name}[{expressions.Length}]")]
     public class ArrayAst : AstExpression
     {
         private readonly Type elementType;

@@ -385,6 +385,38 @@ namespace CodeArts.Emit
         public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(instanceAst, method, arguments);
 
         /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="overrideAst">重写方法。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(OverrideAst overrideAst) => new MethodCallAst(overrideAst);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="overrideAst">重写方法。</param>
+        /// <param name="arguments">方法参数。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(OverrideAst overrideAst, params AstExpression[] arguments) => new MethodCallAst(overrideAst, arguments);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="overrideAst">重写方法。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(AstExpression instanceAst, OverrideAst overrideAst) => new MethodCallAst(instanceAst, overrideAst);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="overrideAst">重写方法。</param>
+        /// <param name="arguments">方法参数。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(AstExpression instanceAst, OverrideAst overrideAst, params AstExpression[] arguments) => new MethodCallAst(instanceAst, overrideAst, arguments);
+
+        /// <summary>
         /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
         /// </summary>
         /// <param name="method">方法。</param>
@@ -414,6 +446,21 @@ namespace CodeArts.Emit
         /// <param name="exceptionType">异常类型。</param>
         /// <returns></returns>
         public static ThrowAst Throw(Type exceptionType) => new ThrowAst(exceptionType);
+
+        /// <summary>
+        /// 抛出异常。
+        /// </summary>
+        /// <param name="exceptionType">异常类型。</param>
+        /// <param name="errorMsg">异常消息。</param>
+        /// <returns></returns>
+        public static ThrowAst Throw(Type exceptionType, string errorMsg) => new ThrowAst(exceptionType, errorMsg);
+
+        /// <summary>
+        /// 抛出异常。
+        /// </summary>
+        /// <param name="expression">异常表达式。</param>
+        /// <returns></returns>
+        public static ThrowAst Throw(AstExpression expression) => new ThrowAst(expression);
 
         /// <summary>
         /// 异常处理。
@@ -480,7 +527,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="parameter">参数。</param>
         /// <returns></returns>
-        public static ParamterAst Paramter(ParameterInfo parameter) => new ParamterAst(parameter);
+        public static ParameterAst Paramter(ParameterInfo parameter) => new ParameterAst(parameter);
 
         /// <summary>
         /// 参数。
@@ -488,7 +535,7 @@ namespace CodeArts.Emit
         /// <param name="paramterType">参数类型。</param>
         /// <param name="position">参数位置。</param>
         /// <returns></returns>
-        public static ParamterAst Paramter(Type paramterType, int position) => new ParamterAst(paramterType, position);
+        public static ParameterAst Paramter(Type paramterType, int position) => new ParameterAst(paramterType, position);
 
         /// <summary>
         /// 清除当前堆载顶部的数据。

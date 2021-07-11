@@ -11,7 +11,7 @@ namespace CodeArts.Emit.Expressions
     /// 参数。
     /// </summary>
     [DebuggerDisplay("{ReturnType.Name} ({position})")]
-    public class ParamterAst : AstExpression
+    public class ParameterAst : AstExpression
     {
         private readonly bool canWrite = true;
 
@@ -35,7 +35,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="paramterType">参数类型。</param>
         /// <param name="position">参数位置。</param>
-        public ParamterAst(Type paramterType, int position) : base(paramterType)
+        public ParameterAst(Type paramterType, int position) : base(paramterType)
         {
             if (position < 0)
             {
@@ -49,7 +49,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="parameter">参数。</param>
-        public ParamterAst(ParameterInfo parameter) : this(parameter.ParameterType, parameter.Position + 1)
+        public ParameterAst(ParameterInfo parameter) : this(parameter.ParameterType, parameter.Position + 1)
         {
             canWrite = !IsReadOnly(parameter);
         }
@@ -115,7 +115,7 @@ namespace CodeArts.Emit.Expressions
                     type = Enum.GetUnderlyingType(type);
                 }
 
-                if (type.IsPrimitive)
+                if (type.IsPrimitive && type != typeof(IntPtr) && type != typeof(UIntPtr))
                 {
                     switch (Type.GetTypeCode(type))
                     {
@@ -164,11 +164,7 @@ namespace CodeArts.Emit.Expressions
                             break;
                     }
                 }
-                else if (type.IsValueType)
-                {
-                    ilg.Emit(OpCodes.Ldobj, type);
-                }
-                else if (type.IsGenericParameter)
+                else if (type.IsValueType || type.IsGenericParameter)
                 {
                     ilg.Emit(OpCodes.Ldobj, type);
                 }

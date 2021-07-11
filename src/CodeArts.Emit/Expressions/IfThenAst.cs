@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 判断。
     /// </summary>
-    [DebuggerDisplay("if({testExp}){ {ifTrue} }")]
+    [DebuggerDisplay("if({testExp})\\{ {ifTrue} \\}")]
     public class IfThenAst : AstExpression
     {
         private readonly AstExpression test;

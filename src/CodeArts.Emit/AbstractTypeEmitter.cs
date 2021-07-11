@@ -292,7 +292,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="methodEmitter">方法。</param>
         /// <param name="methodInfoDeclaration">被重写或实现的方法。</param>
-        public void DefineMethodOverride(MethodEmitter methodEmitter, MethodInfo methodInfoDeclaration)
+        public OverrideAst DefineMethodOverride(MethodEmitter methodEmitter, MethodInfo methodInfoDeclaration)
         {
             if (methodEmitter is null)
             {
@@ -305,6 +305,17 @@ namespace CodeArts.Emit
             }
 
             overrides.Add(methodEmitter, methodInfoDeclaration);
+
+            if (methodInfoDeclaration.IsGenericMethod)
+            {
+                return new OverrideAst(methodEmitter, methodInfoDeclaration);
+            }
+
+            var fieldEmitter = DefineField($"____token__{methodInfoDeclaration.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+            TypeInitializer.Append(AstExpression.Assign(fieldEmitter, AstExpression.Constant(methodInfoDeclaration)));
+
+            return new OverrideAst(fieldEmitter, methodInfoDeclaration);
         }
 
         /// <summary>
@@ -347,7 +358,7 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(attributeData));
             }
 
-            builder.SetCustomAttribute(AttributeUtil.Create(attributeData));
+            builder.SetCustomAttribute(EmitUtils.CreateCustomAttribute(attributeData));
         }
 
         /// <summary>

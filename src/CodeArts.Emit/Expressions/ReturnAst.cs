@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 返回。
     /// </summary>
-    [DebuggerDisplay("return {ReturnType}")]
+    [DebuggerDisplay("return {ReturnType.Name}")]
     public class ReturnAst : AstExpression
     {
         private readonly AstExpression body;

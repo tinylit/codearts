@@ -94,7 +94,7 @@ namespace CodeArts.Proxies
                 bool flag = type.IsDefined(InterceptAttributeType, false);
 
                 var attributes = flag
-                    ? (InterceptAttribute[])implementationType.GetCustomAttributes(InterceptAttributeType, false)
+                    ? (InterceptAttribute[])type.GetCustomAttributes(InterceptAttributeType, false)
                     : new InterceptAttribute[0];
 
                 foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
@@ -158,7 +158,7 @@ namespace CodeArts.Proxies
 
             System.Array.Copy(arrays2, 0, results, arrays.Length, arrays2.Length);
 
-            return arrays;
+            return results;
         }
 
         private ServiceDescriptor ResolveIsClass()
@@ -212,7 +212,7 @@ namespace CodeArts.Proxies
                     var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
 
                     var parameterInfos = constructorInfo.GetParameters();
-                    var parameterEmiters = new ParamterEmitter[parameterInfos.Length];
+                    var parameterEmiters = new ParameterEmitter[parameterInfos.Length];
 
                     for (int i = 0; i < parameterInfos.Length; i++)
                     {
