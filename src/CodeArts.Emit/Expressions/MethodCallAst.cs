@@ -50,7 +50,7 @@ namespace CodeArts.Emit.Expressions
 
             if (parameterInfos.Zip(arguments, (x, y) =>
              {
-                 return x.ParameterType == y.ReturnType || x.ParameterType.IsAssignableFrom(y.ReturnType);
+                 return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType);
              }).All(x => x))
             {
                 return method.ReturnType;
@@ -93,7 +93,7 @@ namespace CodeArts.Emit.Expressions
         /// <param name="arguments">参数。</param>
         public MethodCallAst(AstExpression instanceAst, MethodInfo method, AstExpression[] arguments) : base(GetReturnType(instanceAst, method, arguments))
         {
-            this.instanceAst = instanceAst is null || method.DeclaringType == instanceAst.ReturnType
+            this.instanceAst = instanceAst is null || method.DeclaringType == instanceAst.RuntimeType
                 ? instanceAst
                 : Convert(instanceAst, method.DeclaringType);
 
@@ -133,16 +133,11 @@ namespace CodeArts.Emit.Expressions
         /// <param name="instanceAst">实例。</param>
         /// <param name="overrideAst">重写方法。</param>
         /// <param name="arguments">参数。</param>
-        public MethodCallAst(AstExpression instanceAst, OverrideAst overrideAst, AstExpression[] arguments) : base(GetReturnType(instanceAst, overrideAst.Value, arguments))
+        public MethodCallAst(AstExpression instanceAst, OverrideAst overrideAst, AstExpression[] arguments) : this(instanceAst, overrideAst.Value, arguments)
         {
             isOverrideAst = true;
 
-            this.instanceAst = instanceAst is null || method.DeclaringType == instanceAst.ReturnType
-                ? instanceAst
-                : Convert(instanceAst, method.DeclaringType);
-
             this.overrideAst = overrideAst;
-            this.arguments = arguments;
         }
 
         /// <summary>

@@ -28,7 +28,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 获取一个值，该值指示 System.Type 是否由引用传递。
         /// </summary>
-        public virtual bool IsByRef => ReturnType.IsByRef;
+        public virtual bool IsByRef => RuntimeType.IsByRef;
 
         /// <summary>
         /// 构造函数。
@@ -108,7 +108,7 @@ namespace CodeArts.Emit.Expressions
 
             if (IsByRef)
             {
-                var type = ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType;
+                var type = RuntimeType.IsByRef ? RuntimeType.GetElementType() : RuntimeType;
 
                 if (type.IsEnum)
                 {
@@ -224,7 +224,7 @@ namespace CodeArts.Emit.Expressions
 
             if (IsByRef)
             {
-                var type = ReturnType.IsByRef ? ReturnType.GetElementType() : ReturnType;
+                var type = RuntimeType.IsByRef ? RuntimeType.GetElementType() : RuntimeType;
 
                 if (type.IsEnum)
                 {

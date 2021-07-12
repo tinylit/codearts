@@ -30,7 +30,7 @@ namespace CodeArts.Emit.Expressions
 
         private static Type AnalysisType(AstExpression left, ExpressionType expressionType, AstExpression right)
         {
-            if (left.ReturnType != right.ReturnType)
+            if (left.RuntimeType != right.RuntimeType)
             {
                 throw new AstException("左右表达式类型不相同!");
             }
@@ -41,11 +41,11 @@ namespace CodeArts.Emit.Expressions
                 case ExpressionType.Subtract:
                 case ExpressionType.Multiply:
                 case ExpressionType.Divide:
-                    if (left.ReturnType.IsValueType && left.ReturnType.IsPrimitive)
+                    if (left.RuntimeType.IsValueType && left.RuntimeType.IsPrimitive)
                     {
-                        return left.ReturnType;
+                        return left.RuntimeType;
                     }
-                    throw new AstException($"{left.ReturnType}类型不支持“{expressionType}”运算!");
+                    throw new AstException($"{left.RuntimeType}类型不支持“{expressionType}”运算!");
                 case ExpressionType.LessThan:
                 case ExpressionType.LessThanOrEqual:
                 case ExpressionType.Equal:

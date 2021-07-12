@@ -177,6 +177,7 @@ namespace CodeArts.Emit.Tests
             }
 
             /// <inheritdoc />
+            [DependencyIntercept]
             public bool AopTestByOut(int i, out int j)
             {
                 j = i * 5;
@@ -192,7 +193,7 @@ namespace CodeArts.Emit.Tests
         [TestMethod]
         public void AopTest()
         {
-            var pattern = new ProxyByType(typeof(IDependency), typeof(Dependency), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient);
+            var pattern = new ProxyByType(typeof(Dependency), typeof(Dependency), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient);
 
             var descriptor = pattern.Resolve();
 

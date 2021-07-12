@@ -41,7 +41,7 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            var type = body.ReturnType;
+            var type = body.RuntimeType;
 
             AnalyzeTypeIsResult result = AnalyzeTypeIs(type, isType);
 

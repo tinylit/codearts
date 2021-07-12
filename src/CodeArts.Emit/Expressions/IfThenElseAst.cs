@@ -24,7 +24,7 @@ namespace CodeArts.Emit.Expressions
         {
             this.test = test ?? throw new ArgumentNullException(nameof(test));
 
-            if (test.ReturnType == typeof(bool))
+            if (test.RuntimeType == typeof(bool))
             {
                 this.ifTrue = ifTrue ?? throw new ArgumentNullException(nameof(ifTrue));
                 this.ifFalse = ifFalse ?? throw new ArgumentNullException(nameof(ifFalse));
@@ -50,7 +50,7 @@ namespace CodeArts.Emit.Expressions
 
             ifTrue.Load(ilg);
 
-            if (ifTrue.ReturnType != typeof(void))
+            if (ifTrue.RuntimeType != typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
             }
@@ -61,7 +61,7 @@ namespace CodeArts.Emit.Expressions
 
             ifFalse.Load(ilg);
 
-            if (ifFalse.ReturnType != typeof(void))
+            if (ifFalse.RuntimeType != typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
             }

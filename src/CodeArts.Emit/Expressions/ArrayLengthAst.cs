@@ -20,7 +20,7 @@ namespace CodeArts.Emit.Expressions
         {
             this.array = array ?? throw new ArgumentNullException(nameof(array));
 
-            if (!array.ReturnType.IsArray || !typeof(Array).IsAssignableFrom(array.ReturnType) || array.ReturnType.GetArrayRank() > 1)
+            if (!array.RuntimeType.IsArray || !typeof(Array).IsAssignableFrom(array.RuntimeType) || array.RuntimeType.GetArrayRank() > 1)
             {
                 throw new ArgumentException("不是数组，或不是一维数组!", nameof(array));
             }

@@ -17,7 +17,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="left">成员。</param>
         /// <param name="right">表达式。</param>
-        public AssignAst(AstExpression left, AstExpression right) : base(right.ReturnType)
+        public AssignAst(AstExpression left, AstExpression right) : base(right.RuntimeType)
         {
             this.left = left ?? throw new System.ArgumentNullException(nameof(left));
             this.right = right ?? throw new System.ArgumentNullException(nameof(right));

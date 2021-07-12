@@ -59,7 +59,7 @@ namespace CodeArts.Emit.Expressions
         {
             if (fieldEmitter is null)
             {
-                EmitUtils.EmitConstantOfType(ilg, Value, ReturnType);
+                EmitUtils.EmitConstantOfType(ilg, Value, RuntimeType);
             }
             else
             {

@@ -192,7 +192,7 @@ namespace CodeArts.Emit
                 return;
             }
 
-            if (!IsEmpty && ReturnType == typeof(void))
+            if (!IsEmpty && RuntimeType == typeof(void))
             {
                 ilg.Emit(OpCodes.Nop);
             }

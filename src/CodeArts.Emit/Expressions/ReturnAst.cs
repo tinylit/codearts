@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 返回。
     /// </summary>
-    [DebuggerDisplay("return {ReturnType.Name}")]
+    [DebuggerDisplay("return {body}")]
     public class ReturnAst : AstExpression
     {
         private readonly AstExpression body;
@@ -21,11 +21,11 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="body">返回结果的表达式。</param>
-        public ReturnAst(AstExpression body) : base(body.ReturnType)
+        public ReturnAst(AstExpression body) : base(body.RuntimeType)
         {
             this.body = body;
 
-            if (body.ReturnType == typeof(void))
+            if (body.RuntimeType == typeof(void))
             {
                 throw new ArgumentException("不能返回无返回值类型!", nameof(body));
             }

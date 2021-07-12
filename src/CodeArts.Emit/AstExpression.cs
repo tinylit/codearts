@@ -15,7 +15,7 @@ namespace CodeArts.Emit
         /// 构造函数。
         /// </summary>
         /// <param name="returnType">返回类型。</param>
-        protected AstExpression(Type returnType) => ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
+        protected AstExpression(Type returnType) => RuntimeType = returnType ?? throw new ArgumentNullException(nameof(returnType));
 
         /// <summary>
         /// 是否可写。
@@ -40,7 +40,7 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(value));
             }
 
-            var returnType = ReturnType;
+            var returnType = RuntimeType;
 
             if (returnType == typeof(void))
             {
@@ -52,7 +52,7 @@ namespace CodeArts.Emit
                 goto label_core;
             }
 
-            var valueType = value.ReturnType;
+            var valueType = value.RuntimeType;
 
             if (valueType == typeof(void))
             {
@@ -91,7 +91,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 类型。
         /// </summary>
-        public Type ReturnType { get; private set; }
+        public Type RuntimeType { get; private set; }
 
         /// <summary>
         /// 当前上下文。
@@ -432,6 +432,23 @@ namespace CodeArts.Emit
         /// <param name="arguments">参数<see cref="object"/>[]。</param>
         /// <returns></returns>
         public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo method, AstExpression arguments) => new InvocationAst(instanceAst, method, arguments);
+
+        /// <summary>
+        /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="overrideAst">重写方法。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(OverrideAst overrideAst, AstExpression arguments) => new InvocationAst(overrideAst, arguments);
+
+        /// <summary>
+        /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="overrideAst">重写方法。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression instanceAst, OverrideAst overrideAst, AstExpression arguments) => new InvocationAst(instanceAst, overrideAst, arguments);
 
         /// <summary>
         /// 代码块。

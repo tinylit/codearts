@@ -14,7 +14,7 @@ namespace CodeArts.Emit.Expressions
     {
         private readonly ConstructorInfo constructorInfo;
         private readonly AstExpression[] parameters;
-        private string ParemetersNames => string.Join(",", parameters.Select(x => x.ReturnType.Name));
+        private string ParemetersNames => string.Join(",", parameters.Select(x => x.RuntimeType.Name));
 
         /// <summary>
         /// 构造函数。
@@ -37,7 +37,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="instanceType">实例类型。</param>
         /// <param name="parameters">参数。</param>
-        public NewInstanceAst(Type instanceType, params AstExpression[] parameters) : this(instanceType.GetConstructor(parameters?.Select(x => x.ReturnType).ToArray() ?? Type.EmptyTypes), parameters) { }
+        public NewInstanceAst(Type instanceType, params AstExpression[] parameters) : this(instanceType.GetConstructor(parameters?.Select(x => x.RuntimeType).ToArray() ?? Type.EmptyTypes), parameters) { }
 
         /// <summary>
         /// 生成。

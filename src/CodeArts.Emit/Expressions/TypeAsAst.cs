@@ -30,7 +30,7 @@ namespace CodeArts.Emit.Expressions
         {
             body.Load(ilg);
 
-            ilg.Emit(OpCodes.Isinst, ReturnType);
+            ilg.Emit(OpCodes.Isinst, RuntimeType);
         }
     }
 }

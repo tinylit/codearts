@@ -103,7 +103,7 @@ namespace CodeArts.Emit
         {
             hasDefaultValue = true;
 
-            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, ReturnType);
+            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, RuntimeType);
         }
 
         /// <summary>

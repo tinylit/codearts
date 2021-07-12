@@ -28,7 +28,7 @@ namespace CodeArts.Emit.Expressions
         {
             if(local is null)
             {
-                local = ilg.DeclareLocal(ReturnType);
+                local = ilg.DeclareLocal(RuntimeType);
             }
         }
 

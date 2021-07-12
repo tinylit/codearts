@@ -32,7 +32,7 @@ namespace CodeArts.Emit.Expressions
         {
             if (code is CatchAst catchAst)
             {
-                if (ReturnType.IsAssignableFrom(catchAst.ReturnType) || typeof(Exception).IsAssignableFrom(catchAst.ReturnType))
+                if (RuntimeType.IsAssignableFrom(catchAst.RuntimeType) || typeof(Exception).IsAssignableFrom(catchAst.RuntimeType))
                 {
                     catchAsts.Add(catchAst);
                 }
@@ -74,7 +74,7 @@ namespace CodeArts.Emit.Expressions
                 throw new AstException("表达式会将结果推到堆上，不能写返回！");
             }
 
-            if (ReturnType == typeof(void))
+            if (RuntimeType == typeof(void))
             {
                 if (catchAsts.Count > 0)
                 {
@@ -102,7 +102,7 @@ namespace CodeArts.Emit.Expressions
             }
             else
             {
-                var variable = ilg.DeclareLocal(ReturnType);
+                var variable = ilg.DeclareLocal(RuntimeType);
 
                 ilg.Emit(OpCodes.Stloc, variable);
 
@@ -114,7 +114,7 @@ namespace CodeArts.Emit.Expressions
                     {
                         item.Load(ilg);
 
-                        if (ReturnType.IsAssignableFrom(item.ReturnType))
+                        if (RuntimeType.IsAssignableFrom(item.RuntimeType))
                         {
                             ilg.Emit(OpCodes.Stloc, variable);
                         }

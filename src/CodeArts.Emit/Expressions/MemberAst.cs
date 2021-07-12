@@ -68,7 +68,7 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(value));
             }
 
-            var returnType = ReturnType;
+            var returnType = RuntimeType;
 
             if (returnType == typeof(void))
             {
@@ -80,7 +80,7 @@ namespace CodeArts.Emit.Expressions
                 goto label_core;
             }
 
-            var valueType = value.ReturnType;
+            var valueType = value.RuntimeType;
 
             if (valueType == typeof(void))
             {

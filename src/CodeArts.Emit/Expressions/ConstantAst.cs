@@ -32,7 +32,7 @@ namespace CodeArts.Emit.Expressions
             {
                 if (type.IsValueType && !type.IsNullable())
                 {
-                    throw new NotSupportedException($"常量null，不能对值类型({ReturnType})进行转换!");
+                    throw new NotSupportedException($"常量null，不能对值类型({RuntimeType})进行转换!");
                 }
 
                 this.value = value;
@@ -52,6 +52,6 @@ namespace CodeArts.Emit.Expressions
         /// 生成。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg) => EmitUtils.EmitConstantOfType(ilg, value, ReturnType);
+        public override void Load(ILGenerator ilg) => EmitUtils.EmitConstantOfType(ilg, value, RuntimeType);
     }
 }

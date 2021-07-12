@@ -19,7 +19,7 @@ namespace CodeArts.Emit.Expressions
 
             public override void Load(ILGenerator ilg)
             {
-                ilg.BeginCatchBlock(ReturnType);
+                ilg.BeginCatchBlock(RuntimeType);
             }
         }
 
@@ -60,7 +60,7 @@ namespace CodeArts.Emit.Expressions
         /// <param name="body">代码块。</param>
         /// <param name="exceptionType">异常类型。</param>
         /// <param name="variable">变量。</param>
-        public CatchAst(AstExpression body, Type exceptionType, VariableAst variable) : base(body.ReturnType)
+        public CatchAst(AstExpression body, Type exceptionType, VariableAst variable) : base(body.RuntimeType)
         {
             this.body = body ?? throw new ArgumentNullException(nameof(body));
 

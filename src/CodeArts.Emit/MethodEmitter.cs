@@ -14,12 +14,12 @@ namespace CodeArts.Emit
     [DebuggerDisplay("{ReturnType.Name} {Name}({ParemetersNames})")]
     public class MethodEmitter : BlockAst
     {
-        private MethodBuilder builder;
+        private MethodBuilder methodBuilder;
         private int parameterIndex = 0;
         private readonly List<ParameterEmitter> parameters = new List<ParameterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
-        private string ParemetersNames => string.Join(",", Parameters.Select(x => string.Concat(x.ReturnType.Name, " ", x.ParameterName)));
+        private string ParemetersNames => string.Join(",", parameters.Select(x => string.Concat(x.RuntimeType.Name, " ", x.ParameterName)));
 
         /// <summary>
         /// 构造函数。
@@ -34,9 +34,20 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
+        /// 是否为泛型方法。
+        /// </summary>
+        public virtual bool IsGenericMethod => false;
+
+        /// <summary>
+        /// 泛型参数。
+        /// </summary>
+        /// <returns></returns>
+        public virtual Type[] GetGenericArguments() => null;
+
+        /// <summary>
         /// 成员。
         /// </summary>
-        internal MethodBuilder Value => builder ?? throw new NotImplementedException();
+        internal MethodBuilder Value => methodBuilder ?? throw new NotImplementedException();
 
         /// <summary>
         /// 方法的名称。
@@ -51,7 +62,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 参数。
         /// </summary>
-        public ParameterEmitter[] Parameters => parameters.ToArray();
+        public ParameterEmitter[] GetParameters() => parameters.ToArray();
 
         /// <summary>
         /// 声明参数。
@@ -130,24 +141,19 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 发行。
+        /// 发行方法。
         /// </summary>
-        /// <param name="builder">构造器。</param>
-        public virtual void Emit(MethodBuilder builder)
+        /// <param name="methodBuilder">方法。</param>
+        protected virtual void Emit(MethodBuilder methodBuilder)
         {
-            this.builder = builder;
-
-            foreach (var parameter in parameters)
-            {
-                parameter.Emit(builder.DefineParameter(parameter.Position, parameter.Attributes, parameter.ParameterName));
-            }
+            this.methodBuilder = methodBuilder;
 
             foreach (var item in customAttributes)
             {
-                builder.SetCustomAttribute(item);
+                methodBuilder.SetCustomAttribute(item);
             }
 
-            var ilg = builder.GetILGenerator();
+            var ilg = methodBuilder.GetILGenerator();
 
             base.Load(ilg);
 
@@ -156,12 +162,37 @@ namespace CodeArts.Emit
                 return;
             }
 
-            if (!IsEmpty && ReturnType == typeof(void))
+            if (!IsEmpty && RuntimeType == typeof(void))
             {
                 ilg.Emit(OpCodes.Nop);
             }
 
             ilg.Emit(OpCodes.Ret);
+        }
+
+        /// <summary>
+        /// 发行。
+        /// </summary>
+        /// <param name="builder">构造器。</param>
+        public virtual void Emit(TypeBuilder builder)
+        {
+            int index = 0;
+
+            var parameterTypes = new Type[parameters.Count];
+
+            foreach (var parameterEmitter in parameters)
+            {
+                parameterTypes[index++] = parameterEmitter.RuntimeType;
+            }
+
+            var methodBuilder = builder.DefineMethod(Name, Attributes, CallingConventions.Standard, RuntimeType, parameterTypes);
+
+            foreach (var parameter in parameters)
+            {
+                parameter.Emit(methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.ParameterName));
+            }
+
+            Emit(methodBuilder);
         }
     }
 }

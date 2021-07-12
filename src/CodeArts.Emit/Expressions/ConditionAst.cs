@@ -36,7 +36,7 @@ namespace CodeArts.Emit.Expressions
         {
             this.test = test ?? throw new ArgumentNullException(nameof(test));
 
-            if (test.ReturnType == typeof(bool))
+            if (test.RuntimeType == typeof(bool))
             {
                 this.ifTrue = ifTrue ?? throw new ArgumentNullException(nameof(ifTrue));
                 this.ifFalse = ifFalse ?? throw new ArgumentNullException(nameof(ifFalse));
@@ -51,30 +51,30 @@ namespace CodeArts.Emit.Expressions
                 return;
             }
 
-            if (returnType == ifTrue.ReturnType)
+            if (returnType == ifTrue.RuntimeType)
             {
 
             }
-            else if (returnType.IsAssignableFrom(ifTrue.ReturnType))
+            else if (returnType.IsAssignableFrom(ifTrue.RuntimeType))
             {
                 this.ifTrue = new ConvertAst(ifTrue, returnType);
             }
             else
             {
-                throw new ArgumentException($"表达式类型“{ifTrue.ReturnType}”不能默认转换为“{returnType}”!", nameof(ifTrue));
+                throw new ArgumentException($"表达式类型“{ifTrue.RuntimeType}”不能默认转换为“{returnType}”!", nameof(ifTrue));
             }
 
-            if (returnType == ifFalse.ReturnType)
+            if (returnType == ifFalse.RuntimeType)
             {
 
             }
-            else if (returnType.IsAssignableFrom(ifTrue.ReturnType))
+            else if (returnType.IsAssignableFrom(ifTrue.RuntimeType))
             {
                 this.ifFalse = new ConvertAst(ifFalse, returnType);
             }
             else
             {
-                throw new ArgumentException($"表达式类型“{ifFalse.ReturnType}”不能默认转换为“{returnType}”!", nameof(ifFalse));
+                throw new ArgumentException($"表达式类型“{ifFalse.RuntimeType}”不能默认转换为“{returnType}”!", nameof(ifFalse));
             }
 
         }
@@ -91,24 +91,24 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(ifFalse));
             }
 
-            if (ifTrue.ReturnType == typeof(void) || ifFalse.ReturnType == typeof(void))
+            if (ifTrue.RuntimeType == typeof(void) || ifFalse.RuntimeType == typeof(void))
             {
                 return typeof(void);
             }
 
-            if (ifTrue.ReturnType == ifFalse.ReturnType)
+            if (ifTrue.RuntimeType == ifFalse.RuntimeType)
             {
-                return ifTrue.ReturnType;
+                return ifTrue.RuntimeType;
             }
 
-            if (ifTrue.ReturnType.IsAssignableFrom(ifFalse.ReturnType))
+            if (ifTrue.RuntimeType.IsAssignableFrom(ifFalse.RuntimeType))
             {
-                return ifTrue.ReturnType;
+                return ifTrue.RuntimeType;
             }
 
-            if (ifTrue.ReturnType.IsSubclassOf(ifFalse.ReturnType))
+            if (ifTrue.RuntimeType.IsSubclassOf(ifFalse.RuntimeType))
             {
-                return ifFalse.ReturnType;
+                return ifFalse.RuntimeType;
             }
 
             return typeof(void);
@@ -120,7 +120,7 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if (ReturnType == typeof(void))
+            if (RuntimeType == typeof(void))
             {
                 EmitVoid(ilg);
             }
@@ -134,7 +134,7 @@ namespace CodeArts.Emit.Expressions
         {
             var label = ilg.DefineLabel();
             var leave = ilg.DefineLabel();
-            var variable = ilg.DeclareLocal(ReturnType);
+            var variable = ilg.DeclareLocal(RuntimeType);
 
             test.Load(ilg);
 
@@ -172,7 +172,7 @@ namespace CodeArts.Emit.Expressions
 
             ifTrue.Load(ilg);
 
-            if (ifFalse.ReturnType != typeof(void))
+            if (ifFalse.RuntimeType != typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
             }
@@ -185,7 +185,7 @@ namespace CodeArts.Emit.Expressions
 
             ifFalse.Load(ilg);
 
-            if (ifTrue.ReturnType != typeof(void))
+            if (ifTrue.RuntimeType != typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
             }

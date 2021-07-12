@@ -77,9 +77,9 @@ namespace CodeArts.Emit.Expressions
 
                 IsLastReturn = true;
 
-                if (ReturnType != code.ReturnType)
+                if (RuntimeType != code.RuntimeType)
                 {
-                    throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
+                    throw new AstException($"返回类型“{code.RuntimeType}”和预期的返回类型“{RuntimeType}”不相同!");
                 }
             }
             else if (code is BlockAst blockAst)

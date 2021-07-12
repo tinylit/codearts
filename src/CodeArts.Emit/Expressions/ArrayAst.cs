@@ -16,7 +16,7 @@ namespace CodeArts.Emit.Expressions
 
         private static bool IsValid(AstExpression[] expressions, Type elementType)
         {
-            return expressions.Length == 0 || elementType == typeof(object) || expressions.All(x => elementType.IsAssignableFrom(x.ReturnType));
+            return expressions.Length == 0 || elementType == typeof(object) || expressions.All(x => elementType.IsAssignableFrom(x.RuntimeType));
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace CodeArts.Emit.Expressions
 
                 if (isObjectElememt)
                 {
-                    var type = expressionAst.ReturnType;
+                    var type = expressionAst.RuntimeType;
 
                     if (type.IsByRef)
                     {

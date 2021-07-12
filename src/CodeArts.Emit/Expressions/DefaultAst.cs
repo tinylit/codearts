@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 默认值。
     /// </summary>
-    [DebuggerDisplay("default({ReturnType.Name})")]
+    [DebuggerDisplay("default({RuntimeType.Name})")]
     public class DefaultAst : AstExpression
     {
         /// <summary>
@@ -24,13 +24,13 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if (ReturnType.IsByRef)
+            if (RuntimeType.IsByRef)
             {
-                EmitByRef(ilg, ReturnType.GetElementType());
+                EmitByRef(ilg, RuntimeType.GetElementType());
             }
             else
             {
-                Emit(ilg, ReturnType);
+                Emit(ilg, RuntimeType);
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -17,7 +18,6 @@ namespace CodeArts.Emit
         private readonly List<MethodEmitter> methods = new List<MethodEmitter>();
         private readonly List<AbstractTypeEmitter> abstracts = new List<AbstractTypeEmitter>();
         private readonly List<ConstructorEmitter> constructors = new List<ConstructorEmitter>();
-        private readonly Dictionary<MethodEmitter, MethodInfo> overrides = new Dictionary<MethodEmitter, MethodInfo>();
         private readonly Dictionary<string, FieldEmitter> fields = new Dictionary<string, FieldEmitter>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, PropertyEmitter> properties = new Dictionary<string, PropertyEmitter>(StringComparer.OrdinalIgnoreCase);
 
@@ -55,12 +55,51 @@ namespace CodeArts.Emit
                     return;
                 }
 
-                if (!IsEmpty && ReturnType == typeof(void))
+                if (!IsEmpty && RuntimeType == typeof(void))
                 {
                     ilg.Emit(OpCodes.Nop);
                 }
 
                 ilg.Emit(OpCodes.Ret);
+            }
+        }
+
+        /// <summary>
+        /// 方法。
+        /// </summary>
+        private class MethodOverrideEmitter : MethodEmitter
+        {
+            private readonly MethodBuilder methodBuilder;
+            private readonly MethodInfo methodInfoDeclaration;
+
+            public MethodOverrideEmitter(MethodBuilder methodBuilder, MethodInfo methodInfoDeclaration) : base(methodBuilder.Name, methodBuilder.Attributes, methodBuilder.ReturnType)
+            {
+                if (methodBuilder is null)
+                {
+                    throw new ArgumentNullException(nameof(methodBuilder));
+                }
+
+                if (methodInfoDeclaration is null)
+                {
+                    throw new ArgumentNullException(nameof(methodInfoDeclaration));
+                }
+
+                this.methodBuilder = methodBuilder;
+                this.methodInfoDeclaration = methodInfoDeclaration;
+            }
+
+            public override bool IsGenericMethod => methodInfoDeclaration.IsGenericMethod;
+
+            public override Type[] GetGenericArguments() => methodBuilder.GetGenericArguments();
+
+            public override void Emit(TypeBuilder builder)
+            {
+                base.Emit(methodBuilder);
+
+                if (methodInfoDeclaration.DeclaringType.IsInterface)
+                {
+                    builder.DefineMethodOverride(methodBuilder, methodInfoDeclaration);
+                }
             }
         }
 
@@ -107,6 +146,12 @@ namespace CodeArts.Emit
                 throw new ArgumentNullException(nameof(typeEmitter));
             }
 
+            if ((attributes & TypeAttributes.Public) == TypeAttributes.Public)
+            {
+                attributes ^= TypeAttributes.Public;
+                attributes |= TypeAttributes.NestedPublic;
+            }
+
             builder = typeEmitter.builder.DefineNestedType(name, attributes);
 
             typeEmitter.abstracts.Add(this);
@@ -126,6 +171,12 @@ namespace CodeArts.Emit
             if (typeEmitter is null)
             {
                 throw new ArgumentNullException(nameof(typeEmitter));
+            }
+
+            if ((attributes & TypeAttributes.Public) == TypeAttributes.Public)
+            {
+                attributes ^= TypeAttributes.Public;
+                attributes |= TypeAttributes.NestedPublic;
             }
 
             builder = typeEmitter.builder.DefineNestedType(name, attributes, baseType);
@@ -149,6 +200,12 @@ namespace CodeArts.Emit
             if (typeEmitter is null)
             {
                 throw new ArgumentNullException(nameof(typeEmitter));
+            }
+
+            if ((attributes & TypeAttributes.Public) == TypeAttributes.Public)
+            {
+                attributes ^= TypeAttributes.Public;
+                attributes |= TypeAttributes.NestedPublic;
             }
 
             builder = typeEmitter.builder.DefineNestedType(name, attributes, baseType, interfaces);
@@ -207,10 +264,7 @@ namespace CodeArts.Emit
         /// <param name="name">名称。</param>
         /// <param name="fieldType">类型。</param>
         /// <returns></returns>
-        public FieldEmitter DefineField(string name, Type fieldType)
-        {
-            return DefineField(name, fieldType, true);
-        }
+        public FieldEmitter DefineField(string name, Type fieldType) => DefineField(name, fieldType, true);
 
         /// <summary>
         /// 创建字段。
@@ -283,39 +337,61 @@ namespace CodeArts.Emit
         public MethodEmitter DefineMethod(string name, MethodAttributes attrs, Type returnType)
         {
             var member = new MethodEmitter(name, attrs, returnType);
+
             methods.Add(member);
+
             return member;
         }
 
         /// <summary>
-        /// 实现接口方法或重写方法。
+        /// 定义重写方法。
         /// </summary>
-        /// <param name="methodEmitter">方法。</param>
-        /// <param name="methodInfoDeclaration">被重写或实现的方法。</param>
-        public OverrideAst DefineMethodOverride(MethodEmitter methodEmitter, MethodInfo methodInfoDeclaration)
+        /// <param name="methodInfoDeclaration">被重写的方法。</param>
+        /// <param name="attrs">重写方法的方法属性。</param>
+        /// <returns></returns>
+        public MethodEmitter DefineMethodOverride(MethodInfo methodInfoDeclaration, MethodAttributes attrs)
         {
-            if (methodEmitter is null)
+            var parameterInfos = methodInfoDeclaration.GetParameters();
+
+            var parameterTypes = new Type[parameterInfos.Length];
+
+            for (int i = 0; i < parameterInfos.Length; i++)
             {
-                throw new ArgumentNullException(nameof(methodEmitter));
+                parameterTypes[i] = parameterInfos[i].ParameterType;
             }
 
-            if (methodInfoDeclaration is null)
-            {
-                throw new ArgumentNullException(nameof(methodInfoDeclaration));
-            }
+            var methodBuilder = builder.DefineMethod(methodInfoDeclaration.Name, attrs | MethodAttributes.HideBySig, CallingConventions.Standard, methodInfoDeclaration.ReturnType, parameterTypes);
 
-            overrides.Add(methodEmitter, methodInfoDeclaration);
+            var overrideEmitter = new MethodOverrideEmitter(methodBuilder, methodInfoDeclaration);
+
+            foreach (var parameterInfo in parameterInfos)
+            {
+                overrideEmitter.DefineParameter(parameterInfo);
+            }
 
             if (methodInfoDeclaration.IsGenericMethod)
             {
-                return new OverrideAst(methodEmitter, methodInfoDeclaration);
+                var genericArguments = methodInfoDeclaration.GetGenericArguments();
+
+                var newGenericParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
+
+                foreach (var item in genericArguments.Zip(newGenericParameters, (g, t) =>
+                {
+                    t.SetGenericParameterAttributes(g.GenericParameterAttributes);
+
+                    t.SetInterfaceConstraints(AdjustGenericConstraints(newGenericParameters, methodInfoDeclaration, genericArguments, g.GetGenericParameterConstraints()));
+
+                    t.SetBaseTypeConstraint(g.BaseType);
+
+                    return true;
+                })) { }
+
+                methodBuilder.SetReturnType(methodInfoDeclaration.ReturnType);
             }
 
-            var fieldEmitter = DefineField($"____token__{methodInfoDeclaration.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+            methods.Add(overrideEmitter);
 
-            TypeInitializer.Append(AstExpression.Assign(fieldEmitter, AstExpression.Constant(methodInfoDeclaration)));
-
-            return new OverrideAst(fieldEmitter, methodInfoDeclaration);
+            return overrideEmitter;
         }
 
         /// <summary>
@@ -389,7 +465,7 @@ namespace CodeArts.Emit
         {
             foreach (FieldEmitter emitter in fields.Values)
             {
-                emitter.Emit(builder.DefineField(emitter.Name, emitter.ReturnType, emitter.Attributes));
+                emitter.Emit(builder.DefineField(emitter.Name, emitter.RuntimeType, emitter.Attributes));
             }
 
             TypeInitializer.Emit(builder.DefineTypeInitializer());
@@ -406,55 +482,17 @@ namespace CodeArts.Emit
 
             foreach (ConstructorEmitter emitter in constructors)
             {
-                emitter.Emit(builder.DefineConstructor(emitter.Attributes, emitter.Conventions, emitter.Parameters.Select(x => x.ReturnType).ToArray()));
+                emitter.Emit(builder.DefineConstructor(emitter.Attributes, emitter.Conventions, emitter.Parameters.Select(x => x.RuntimeType).ToArray()));
             }
 
             foreach (MethodEmitter emitter in methods)
             {
-                if (overrides.TryGetValue(emitter, out MethodInfo methodInfo))
-                {
-                    var parameters = methodInfo.GetParameters();
-                    var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
-
-                    var method = builder.DefineMethod(emitter.Name, emitter.Attributes ^ MethodAttributes.Abstract | MethodAttributes.NewSlot | MethodAttributes.HideBySig, CallingConventions.Standard);
-
-                    if (methodInfo.IsGenericMethod)
-                    {
-                        var genericArguments = methodInfo.GetGenericArguments();
-
-                        var newGenericParameters = method.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
-
-                        foreach (var item in genericArguments.Zip(newGenericParameters, (g, t) =>
-                        {
-                            t.SetGenericParameterAttributes(g.GenericParameterAttributes);
-
-                            t.SetInterfaceConstraints(g.GetGenericParameterConstraints());
-
-                            t.SetBaseTypeConstraint(g.BaseType);
-
-                            return true;
-                        })) { }
-                    }
-
-                    method.SetReturnType(methodInfo.ReturnType);
-
-                    method.SetParameters(parameterTypes);
-
-                    emitter.Emit(method);
-
-                    builder.DefineMethodOverride(method, methodInfo);
-                }
-                else
-                {
-                    var method = builder.DefineMethod(emitter.Name, emitter.Attributes, CallingConventions.Standard, emitter.ReturnType, emitter.Parameters.Select(x => x.ReturnType).ToArray());
-
-                    emitter.Emit(method);
-                }
+                emitter.Emit(builder);
             }
 
             foreach (PropertyEmitter emitter in properties.Values)
             {
-                emitter.Emit(builder.DefineProperty(emitter.Name, emitter.Attributes, emitter.ReturnType, emitter.ParameterTypes));
+                emitter.Emit(builder.DefineProperty(emitter.Name, emitter.Attributes, emitter.RuntimeType, emitter.ParameterTypes));
             }
 
 #if NETSTANDARD2_0_OR_GREATER
@@ -462,6 +500,62 @@ namespace CodeArts.Emit
 #else
             return builder.CreateType();
 #endif
+        }
+
+        private static Type AdjustConstraintToNewGenericParameters(
+            Type constraint, MethodInfo methodToCopyGenericsFrom, Type[] originalGenericParameters,
+            GenericTypeParameterBuilder[] newGenericParameters)
+        {
+            if (constraint.IsGenericType)
+            {
+                var genericArgumentsOfConstraint = constraint.GetGenericArguments();
+
+                for (var i = 0; i < genericArgumentsOfConstraint.Length; ++i)
+                {
+                    genericArgumentsOfConstraint[i] =
+                        AdjustConstraintToNewGenericParameters(genericArgumentsOfConstraint[i], methodToCopyGenericsFrom,
+                                                               originalGenericParameters, newGenericParameters);
+                }
+                return constraint.GetGenericTypeDefinition().MakeGenericType(genericArgumentsOfConstraint);
+            }
+            else if (constraint.IsGenericParameter)
+            {
+                if (constraint.DeclaringMethod is null)
+                {
+                    Trace.Assert(constraint.DeclaringType.IsGenericTypeDefinition);
+                    Trace.Assert(methodToCopyGenericsFrom.DeclaringType.IsGenericType
+                                 && constraint.DeclaringType == methodToCopyGenericsFrom.DeclaringType.GetGenericTypeDefinition(),
+                                 "When a generic method parameter has a constraint on a generic type parameter, the generic type must be the declaring typer of the method.");
+
+                    var index = Array.IndexOf(constraint.DeclaringType.GetGenericArguments(), constraint);
+                    Trace.Assert(index != -1, "The generic parameter comes from the given type.");
+
+                    var genericArguments = methodToCopyGenericsFrom.DeclaringType.GetGenericArguments();
+
+                    return genericArguments[index]; // these are the actual, concrete types
+                }
+                else
+                {
+                    var index = Array.IndexOf(originalGenericParameters, constraint);
+                    Trace.Assert(index != -1,
+                                 "When a generic method parameter has a constraint on another method parameter, both parameters must be declared on the same method.");
+                    return newGenericParameters[index];
+                }
+            }
+            else
+            {
+                return constraint;
+            }
+        }
+
+        private static Type[] AdjustGenericConstraints(GenericTypeParameterBuilder[] newGenericParameters, MethodInfo methodInfo, Type[] originalGenericArguments, Type[] constraints)
+        {
+            Type[] adjustedConstraints = new Type[constraints.Length];
+            for (var i = 0; i < constraints.Length; i++)
+            {
+                adjustedConstraints[i] = AdjustConstraintToNewGenericParameters(constraints[i], methodInfo, originalGenericArguments, newGenericParameters);
+            }
+            return adjustedConstraints;
         }
 
         /// <summary>

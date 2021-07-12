@@ -21,12 +21,22 @@ namespace CodeArts
                 return false;
             }
 
+            if (x == y)
+            {
+                return true;
+            }
+
+            if (x.IsGenericMethod ^ y.IsGenericMethod)
+            {
+                return false;
+            }
+
             if (!string.Equals(x.Name, y.Name))
             {
                 return false;
             }
 
-            if (x.ReturnType != y.ReturnType)
+            if (x.ReturnType != y.ReturnType && !(x.ReturnType.IsGenericParameter && y.ReturnType.IsGenericParameter))
             {
                 return false;
             }
@@ -40,7 +50,7 @@ namespace CodeArts
             }
 
             return xParameters
-                .Zip(yParameters, (x1, y1) => x1.ParameterType == y1.ParameterType)
+                .Zip(yParameters, (x1, y1) => x1.ParameterType == y1.ParameterType || x1.ParameterType.IsGenericParameter && y1.ParameterType.IsGenericParameter)
                 .All(isEquals => isEquals);
         }
 

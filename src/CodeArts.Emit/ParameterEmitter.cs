@@ -59,7 +59,7 @@ namespace CodeArts.Emit
 
             hasDefaultValue = true;
 
-            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, ReturnType);
+            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, RuntimeType);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace CodeArts.Emit
                 }
                 catch (ArgumentException)
                 {
-                    var parameterType = ReturnType;
+                    var parameterType = RuntimeType;
                     var parameterNonNullableType = parameterType;
 
                     if (defaultValue == null)

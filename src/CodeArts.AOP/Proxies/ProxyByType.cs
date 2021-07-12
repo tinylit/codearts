@@ -34,7 +34,7 @@ namespace CodeArts.Proxies
             {
                 return ResolveIsInterface();
             }
-            else if (implementationType.IsNested)
+            else if (implementationType.IsSealed)
             {
                 throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是密封类!");
             }
@@ -163,67 +163,135 @@ namespace CodeArts.Proxies
 
         private ServiceDescriptor ResolveIsClass()
         {
+#if NET40_OR_GREATER
+            var moduleEmitter = new ModuleEmitter(true);
+#else
             var moduleEmitter = new ModuleEmitter();
+#endif
+
             string name = string.Concat(serviceType.Name, "Proxy");
 
-            var classEmitter = serviceType.IsInterface
-                ? new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Sealed, null, serviceType.GetAllInterfaces())
-                : new ClassEmitter(moduleEmitter, name, serviceType.Attributes | TypeAttributes.Sealed, implementationType, implementationType.GetInterfaces());
+            var interfaces = implementationType.GetInterfaces();
 
-            var target = classEmitter.DefineField("____target__", implementationType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
+            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Class, implementationType, interfaces);
 
-            if (serviceType.IsInterface)
+            foreach (var constructorInfo in implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
             {
-                foreach (var constructorInfo in implementationType.GetConstructors())
+                var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
+
+                var parameterInfos = constructorInfo.GetParameters();
+                var parameterEmiters = new ParameterEmitter[parameterInfos.Length];
+
+                for (int i = 0; i < parameterInfos.Length; i++)
                 {
-                    var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
-
-                    var parameterInfos = constructorInfo.GetParameters();
-                    var parameterEmiters = new AstExpression[parameterInfos.Length];
-
-                    for (int i = 0; i < parameterInfos.Length; i++)
-                    {
-                        parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
-                    }
-
-                    constructorEmitter.Append(Assign(target, New(constructorInfo, parameterEmiters)));
+                    parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
                 }
+
+                constructorEmitter.InvokeBaseConstructor(constructorInfo, parameterEmiters);
             }
-            else if (implementationType.IsNested)
+
+            var interceptMethods = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
+
+            foreach (var type in interfaces)
             {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是密封类!");
-            }
-            else if (implementationType.IsInterface)
-            {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是接口!");
-            }
-            else if (implementationType.IsAbstract)
-            {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是抽象类!");
-            }
-            else if (implementationType.IsValueType)
-            {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是值类型!");
-            }
-            else
-            {
-                foreach (var constructorInfo in implementationType.GetConstructors())
+                bool flag = type.IsDefined(InterceptAttributeType, false);
+
+                var attributes = flag
+                    ? (InterceptAttribute[])type.GetCustomAttributes(InterceptAttributeType, false)
+                    : new InterceptAttribute[0];
+
+                foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
-                    var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
+                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
+                        ? Merge(attributes, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
+                        : attributes;
 
-                    var parameterInfos = constructorInfo.GetParameters();
-                    var parameterEmiters = new ParameterEmitter[parameterInfos.Length];
-
-                    for (int i = 0; i < parameterInfos.Length; i++)
+                    if (interceptAttributes.Length == 0)
                     {
-                        parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
+                        continue;
                     }
 
-                    constructorEmitter.InvokeBaseConstructor(constructorInfo, parameterEmiters);
+                    if (interceptMethods.ContainsKey(methodInfo))
+                    {
+                        throw new NotSupportedException($"{methodInfo.ReturnType.Name} “{methodInfo.Name}({string.Join(",", methodInfo.GetParameters().Select(x => string.Concat(x.ParameterType.Name, " ", x.Name)))})”重复定义!");
+                    }
+                    else
+                    {
+                        interceptMethods.Add(methodInfo, interceptAttributes);
+                    }
                 }
             }
 
-            throw new NotImplementedException();
+            var iterationType = serviceType;
+
+            do
+            {
+                bool isDefined = iterationType.IsDefined(InterceptAttributeType, false);
+
+                var intercepts = isDefined
+                    ? (InterceptAttribute[])iterationType.GetCustomAttributes(InterceptAttributeType, false)
+                    : new InterceptAttribute[0];
+
+                foreach (var methodInfo in iterationType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                {
+                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
+                        ? Merge(intercepts, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
+                        : intercepts;
+
+                    if (interceptAttributes.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    if (interceptMethods.TryGetValue(methodInfo, out var attributes))
+                    {
+                        interceptMethods[methodInfo] = Merge(interceptAttributes, attributes);
+                    }
+                    else
+                    {
+                        interceptMethods.Add(methodInfo, interceptAttributes);
+                    }
+                }
+
+                iterationType = iterationType.BaseType;
+
+            } while (iterationType != null && iterationType != typeof(object));
+
+            var methodInfos = serviceType.GetMethods();
+
+            foreach (var methodInfo in methodInfos)
+            {
+                if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
+                {
+                    InterceptCaching.DefineMethodOverride(This, classEmitter, methodInfo, interceptAttributes);
+                }
+                else if (methodInfo.DeclaringType == typeof(object))
+                {
+                    continue;
+                }
+                else
+                {
+                    InterceptCaching.DefineMethodOverride(This, classEmitter, methodInfo, null);
+                }
+            }
+
+            /*
+             * bool InterfaceA.CallMethod() => true; 
+             */
+
+            if (interceptMethods.Keys.Except(methodInfos, MethodInfoEqualityComparer.Instance).Any())
+            {
+                throw new NotSupportedException("不支持特定接口拦截!");
+            }
+
+
+            var typeNew = classEmitter.CreateType();
+
+#if NET40_OR_GREATER
+            moduleEmitter.SaveAssembly();
+#endif
+
+            return new ServiceDescriptor(serviceType, typeNew, lifetime);
         }
     }
 }

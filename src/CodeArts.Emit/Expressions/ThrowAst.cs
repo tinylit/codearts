@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 抛出异常。
     /// </summary>
-    [DebuggerDisplay("throw new {exceptionType.Name}({errorMsg})")]
+    [DebuggerDisplay("throw new {RuntimeType.Name}({errorMsg})")]
     public class ThrowAst : AstExpression
     {
         private readonly AstExpression exception;
@@ -34,11 +34,11 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="exception">异常。</param>
-        public ThrowAst(AstExpression exception) : base(exception.ReturnType)
+        public ThrowAst(AstExpression exception) : base(exception.RuntimeType)
         {
             this.exception = exception ?? throw new ArgumentNullException(nameof(exception));
 
-            if (!exception.ReturnType.IsSubclassOf(typeof(Exception)))
+            if (!exception.RuntimeType.IsSubclassOf(typeof(Exception)))
             {
                 throw new AstException("参数不是异常类型!");
             }

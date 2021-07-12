@@ -19,7 +19,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="array">数组。</param>
         /// <param name="index">索引。</param>
-        public ArrayIndexAst(AstExpression array, int index) : base(array.ReturnType.GetElementType())
+        public ArrayIndexAst(AstExpression array, int index) : base(array.RuntimeType.GetElementType())
         {
             if (index < 0)
             {
@@ -28,7 +28,7 @@ namespace CodeArts.Emit.Expressions
 
             this.array = array ?? throw new ArgumentNullException(nameof(array));
 
-            if (array.ReturnType.IsArray && typeof(Array).IsAssignableFrom(array.ReturnType) && array.ReturnType.GetArrayRank() == 1)
+            if (array.RuntimeType.IsArray && typeof(Array).IsAssignableFrom(array.RuntimeType) && array.RuntimeType.GetArrayRank() == 1)
             {
                 this.index = index;
             }
@@ -42,10 +42,10 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="array">数组。</param>
         /// <param name="indexExp">索引。</param>
-        public ArrayIndexAst(AstExpression array, AstExpression indexExp) : base(array.ReturnType.GetElementType())
+        public ArrayIndexAst(AstExpression array, AstExpression indexExp) : base(array.RuntimeType.GetElementType())
         {
             this.array = array ?? throw new ArgumentNullException(nameof(array));
-            if (array.ReturnType.IsArray && typeof(Array).IsAssignableFrom(array.ReturnType) && array.ReturnType.GetArrayRank() == 1)
+            if (array.RuntimeType.IsArray && typeof(Array).IsAssignableFrom(array.RuntimeType) && array.RuntimeType.GetArrayRank() == 1)
             {
                 this.indexExp = indexExp ?? throw new ArgumentNullException(nameof(indexExp));
             }
@@ -77,7 +77,7 @@ namespace CodeArts.Emit.Expressions
                 EmitUtils.EmitInt(ilg, index);
             }
 
-            EmitEnsureArrayIndexLoadedSafely(ilg, ReturnType);
+            EmitEnsureArrayIndexLoadedSafely(ilg, RuntimeType);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace CodeArts.Emit.Expressions
 
             value.Load(ilg);
 
-            EmitEnsureArrayIndexAssignedSafely(ilg, ReturnType);
+            EmitEnsureArrayIndexAssignedSafely(ilg, RuntimeType);
         }
 
         private static void EmitEnsureArrayIndexLoadedSafely(ILGenerator ilg, Type elementType)
