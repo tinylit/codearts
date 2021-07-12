@@ -36,9 +36,19 @@ namespace CodeArts
                 return false;
             }
 
-            if (x.ReturnType != y.ReturnType && !(x.ReturnType.IsGenericParameter && y.ReturnType.IsGenericParameter))
+            if (x.ReturnType != y.ReturnType)
             {
-                return false;
+                if (x.ReturnType.IsGenericType && y.ReturnType.IsGenericType)
+                {
+                    if (x.ReturnType.GetGenericTypeDefinition() != y.ReturnType.GetGenericTypeDefinition())
+                    {
+                        return false;
+                    }
+                }
+                else if (!x.ReturnType.IsGenericParameter || !y.ReturnType.IsGenericParameter)
+                {
+                    return false;
+                }
             }
 
             var xParameters = x.GetParameters();

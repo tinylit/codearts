@@ -265,14 +265,6 @@ namespace CodeArts.Proxies
                 {
                     InterceptCaching.DefineMethodOverride(This, classEmitter, methodInfo, interceptAttributes);
                 }
-                else if (methodInfo.DeclaringType == typeof(object))
-                {
-                    continue;
-                }
-                else
-                {
-                    InterceptCaching.DefineMethodOverride(This, classEmitter, methodInfo, null);
-                }
             }
 
             /*

@@ -13,16 +13,16 @@ namespace CodeArts
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
-        private static readonly Dictionary<MethodInfo, InterceptAttribute[]> InterceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
+        private static readonly Dictionary<MethodInfo, InterceptAttribute[]> InterceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>();
 
         private static readonly Type[] ContextTypes = new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) };
 
         private static readonly ConstructorInfo InterceptContextCtor = typeof(InterceptContext).GetConstructor(ContextTypes);
         private static readonly ConstructorInfo InterceptAsyncContextCtor = typeof(InterceptAsyncContext).GetConstructor(ContextTypes);
 
-        public static readonly MethodInfo InterceptMethodCall;
-        public static readonly MethodInfo InterceptAsyncMethodCall;
-        public static readonly MethodInfo InterceptAsyncGenericMethodCall;
+        private static readonly MethodInfo InterceptMethodCall;
+        private static readonly MethodInfo InterceptAsyncMethodCall;
+        private static readonly MethodInfo InterceptAsyncGenericMethodCall;
 
         private class MethodInfoEqualityComparer : IEqualityComparer<MethodInfo>
         {
@@ -46,6 +46,11 @@ namespace CodeArts
                     return true;
                 }
 
+                if (!x.DeclaringType.IsGenericType || !y.DeclaringType.IsGenericType)
+                {
+                    return false;
+                }
+
                 if (!x.IsGenericMethod || !y.IsGenericMethod)
                 {
                     return false;
@@ -61,9 +66,34 @@ namespace CodeArts
                     return false;
                 }
 
-                if (x.ReturnType != y.ReturnType && !x.ReturnType.IsGenericParameter)
+                if (x.ReflectedType != y.ReflectedType)
                 {
-                    return false;
+                    if (x.ReflectedType.IsGenericType && y.ReflectedType.IsGenericType)
+                    {
+                        if (x.ReflectedType.GetGenericTypeDefinition() != y.ReflectedType.GetGenericTypeDefinition())
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                if (x.ReturnType != y.ReturnType)
+                {
+                    if (x.ReturnType.IsGenericType && y.ReturnType.IsGenericType)
+                    {
+                        if (x.ReturnType.GetGenericTypeDefinition() != y.ReturnType.GetGenericTypeDefinition())
+                        {
+                            return false;
+                        }
+                    }
+                    else if (!x.ReturnType.IsGenericParameter)
+                    {
+                        return false;
+                    }
                 }
 
                 if (x.GetGenericArguments().Length != y.GetGenericArguments().Length)
@@ -84,7 +114,7 @@ namespace CodeArts
                 .All(isEquals => isEquals);
             }
 
-            public int GetHashCode(MethodInfo obj) => obj?.Name.GetHashCode() ?? 0;
+            public int GetHashCode(MethodInfo obj) => obj is null ? 0 : obj.GetHashCode();
         }
         static InterceptCaching()
         {
@@ -101,7 +131,7 @@ namespace CodeArts
         {
             var intercept = new Intercept();
 
-            if (InterceptCache.TryGetValue(context.Main, out var attributes))
+            if (InterceptCache.TryGetValue(context.Main.IsGenericMethod ? context.Main.GetGenericMethodDefinition() : context.Main, out var attributes))
             {
                 foreach (var attribute in attributes)
                 {
@@ -118,7 +148,7 @@ namespace CodeArts
         {
             var intercept = new InterceptAsync();
 
-            if (InterceptCache.TryGetValue(context.Main, out var attributes))
+            if (InterceptCache.TryGetValue(context.Main.IsGenericMethod ? context.Main.GetGenericMethodDefinition() : context.Main, out var attributes))
             {
                 foreach (var attribute in attributes)
                 {
@@ -133,7 +163,7 @@ namespace CodeArts
         {
             var intercept = new InterceptAsync<T>();
 
-            if (InterceptCache.TryGetValue(context.Main, out var attributes))
+            if (InterceptCache.TryGetValue(context.Main.IsGenericMethod ? context.Main.GetGenericMethodDefinition() : context.Main, out var attributes))
             {
                 foreach (var attribute in attributes)
                 {
@@ -153,9 +183,7 @@ namespace CodeArts
                 methodAttributes ^= MethodAttributes.Abstract;
             }
 
-            var methodEmitter = classEmitter.DefineMethod(methodInfo.Name, methodAttributes, methodInfo.ReturnType);
-
-            var methodOverride = methodEmitter.OverrideFrom(methodInfo);
+            var methodEmitter = classEmitter.DefineMethodOverride(methodInfo, methodAttributes);
 
             var paramterEmitters = methodEmitter.GetParameters();
 
@@ -172,36 +200,35 @@ namespace CodeArts
 
             methodEmitter.Append(Assign(variable, Array(paramterEmitters)));
 
-            if (methodOverride.IsGenericMethod)
+            if (methodEmitter.IsGenericMethod)
             {
-                arguments = new AstExpression[] { instanceAst, Constant(methodOverride), variable };
+                arguments = new AstExpression[] { instanceAst, Constant(methodInfo.MakeGenericMethod(methodEmitter.GetGenericArguments())), variable };
             }
             else
             {
-                var fieldEmitter = classEmitter.DefineField($"____token__{methodOverride.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+                var fieldEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
 
-                classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodOverride)));
+                classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodInfo)));
 
                 arguments = new AstExpression[] { instanceAst, fieldEmitter, variable };
             }
 
-
             bool hasByRef = paramterEmitters.Any(x => x.RuntimeType.IsByRef);
 
-            var blockAst = hasByRef ? Try(methodOverride.ReturnType) : Block(methodOverride.ReturnType);
+            var blockAst = hasByRef ? Try(methodInfo.ReturnType) : Block(methodInfo.ReturnType);
 
-            if (methodOverride.ReturnType.IsClass && typeof(Task).IsAssignableFrom(methodOverride.ReturnType))
+            if (methodInfo.ReturnType.IsClass && typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
             {
-                if (methodOverride.ReturnType.IsGenericType)
+                if (methodInfo.ReturnType.IsGenericType)
                 {
-                    blockAst.Append(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodOverride.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments)));
+                    blockAst.Append(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments)));
                 }
                 else
                 {
                     blockAst.Append(Call(InterceptAsyncMethodCall, New(InterceptAsyncContextCtor, arguments)));
                 }
             }
-            else if (methodOverride.ReturnType == typeof(void))
+            else if (methodInfo.ReturnType == typeof(void))
             {
                 blockAst.Append(Call(InterceptMethodCall, New(InterceptContextCtor, arguments)));
             }
@@ -211,7 +238,7 @@ namespace CodeArts
 
                 blockAst.Append(Assign(value, Call(InterceptMethodCall, New(InterceptContextCtor, arguments))));
 
-                blockAst.Append(Condition(Equal(value, Constant(null)), Default(methodOverride.ReturnType), Convert(value, methodOverride.ReturnType)));
+                blockAst.Append(Condition(Equal(value, Constant(null)), Default(methodInfo.ReturnType), Convert(value, methodInfo.ReturnType)));
             }
 
             if (hasByRef)
@@ -235,9 +262,16 @@ namespace CodeArts
 
             methodEmitter.Append(blockAst);
 
-            InterceptCache.Add(methodInfo, attributes);
+            if (methodInfo.IsGenericMethod)
+            {
+                InterceptCache[methodInfo.GetGenericMethodDefinition()] = attributes;
+            }
+            else
+            {
+                InterceptCache[methodInfo] = attributes;
+            }
 
-            label_core:
+        label_core:
 
             foreach (var attributeData in methodInfo.GetCustomAttributesData())
             {

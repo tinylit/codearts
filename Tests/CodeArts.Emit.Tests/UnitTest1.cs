@@ -163,6 +163,8 @@ namespace CodeArts.Emit.Tests
             bool AopTestByOut(int i, out int j);
 
             T Get<T>() where T : struct;
+
+            Task<T> GetAsync<T>() where T : new();
         }
 
         /// <inheritdoc />
@@ -188,6 +190,11 @@ namespace CodeArts.Emit.Tests
             public bool AopTest() => true;
 
             public T Get<T>() where T : struct => default;
+
+            public Task<T> GetAsync<T>() where T : new()
+            {
+                return Task.FromResult(new T());
+            }
         }
 
         [TestMethod]
@@ -206,6 +213,8 @@ namespace CodeArts.Emit.Tests
             var k2 = dependency.AopTestByOut(4, out j);
 
             var k3 = dependency.Get<long>();
+
+            var k4 = dependency.GetAsync<Dependency>().GetAwaiter().GetResult();
         }
     }
 }
