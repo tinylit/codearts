@@ -8,7 +8,7 @@ using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts.Proxies
 {
-    public class ProxyByType : IProxyByPattern
+    class ProxyByType : IProxyByPattern
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
@@ -68,7 +68,7 @@ namespace CodeArts.Proxies
 
             var interfaces = serviceType.GetAllInterfaces();
 
-            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Class, null, interfaces);
+            var classEmitter = moduleEmitter.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, null, interfaces);
 
             var instanceAst = classEmitter.DefineField("____instance__", serviceType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
 
@@ -123,13 +123,15 @@ namespace CodeArts.Proxies
             {
                 if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
                 {
-                    InterceptCaching.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
+                    InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
                 }
                 else
                 {
-                    InterceptCaching.DefineMethodOverride(instanceAst, classEmitter, methodInfo, null);
+                    InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, null);
                 }
             }
+
+            interceptMethods.Clear();
 
             var typeNew = classEmitter.CreateType();
 
@@ -173,7 +175,7 @@ namespace CodeArts.Proxies
 
             var interfaces = implementationType.GetInterfaces();
 
-            var classEmitter = new ClassEmitter(moduleEmitter, name, TypeAttributes.Public | TypeAttributes.Class, implementationType, interfaces);
+            var classEmitter = moduleEmitter.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, implementationType, interfaces);
 
             foreach (var constructorInfo in implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
             {
@@ -263,7 +265,7 @@ namespace CodeArts.Proxies
             {
                 if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
                 {
-                    InterceptCaching.DefineMethodOverride(This, classEmitter, methodInfo, interceptAttributes);
+                    InterceptCore.DefineMethodOverride(This, classEmitter, methodInfo, interceptAttributes);
                 }
             }
 

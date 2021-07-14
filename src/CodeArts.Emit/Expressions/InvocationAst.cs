@@ -9,10 +9,8 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public class InvocationAst : AstExpression
     {
-        private readonly bool isOverrideAst = false;
         private readonly AstExpression instanceAst;
         private readonly MethodInfo method;
-        private readonly OverrideAst overrideAst;
         private readonly AstExpression arguments;
 
         private static readonly MethodInfo InvokeMethod = typeof(MethodBase).GetMethod(nameof(MethodBase.Invoke), new Type[2] { typeof(object), typeof(object[]) });
@@ -72,41 +70,12 @@ namespace CodeArts.Emit.Expressions
         }
 
         /// <summary>
-        /// 静态方法调用。
-        /// </summary>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">调用参数。</param>
-        public InvocationAst(OverrideAst overrideAst, AstExpression arguments) : this(null, overrideAst, arguments)
-        {
-        }
-
-        /// <summary>
-        /// 方法调用。
-        /// </summary>
-        /// <param name="instanceAst">实例。</param>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">调用参数。</param>
-        public InvocationAst(AstExpression instanceAst, OverrideAst overrideAst, AstExpression arguments) : this(instanceAst, overrideAst.Value, arguments)
-        {
-            isOverrideAst = true;
-
-            this.overrideAst = overrideAst;
-        }
-
-        /// <summary>
         /// 加载数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if (isOverrideAst)
-            {
-                overrideAst.Load(ilg);
-            }
-            else
-            {
-                EmitUtils.EmitConstantOfType(ilg, method, typeof(MethodInfo));
-            }
+            EmitUtils.EmitConstantOfType(ilg, method, typeof(MethodInfo));
 
             if (instanceAst is null)
             {

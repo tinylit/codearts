@@ -10,10 +10,8 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public class MethodCallAst : AstExpression
     {
-        private readonly bool isOverrideAst = false;
         private readonly MethodInfo method;
         private readonly AstExpression instanceAst;
-        private readonly OverrideAst overrideAst;
         private readonly AstExpression[] arguments;
 
         private static Type GetReturnType(AstExpression instanceAst, MethodInfo method, AstExpression[] arguments)
@@ -102,45 +100,6 @@ namespace CodeArts.Emit.Expressions
         }
 
         /// <summary>
-        /// 静态无参函数调用。
-        /// </summary>
-        /// <param name="overrideAst">重写方法。</param>
-        public MethodCallAst(OverrideAst overrideAst) : this(null, overrideAst, EmptyAsts)
-        {
-        }
-
-        /// <summary>
-        /// 静态函数调用。
-        /// </summary>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">参数。</param>
-        public MethodCallAst(OverrideAst overrideAst, AstExpression[] arguments) : this(null, overrideAst, arguments)
-        {
-        }
-
-        /// <summary>
-        /// 无参函数调用。
-        /// </summary>
-        /// <param name="instanceAst">实例。</param>
-        /// <param name="overrideAst">重写方法。</param>
-        public MethodCallAst(AstExpression instanceAst, OverrideAst overrideAst) : this(instanceAst, overrideAst, EmptyAsts)
-        {
-        }
-
-        /// <summary>
-        /// 函数调用。
-        /// </summary>
-        /// <param name="instanceAst">实例。</param>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">参数。</param>
-        public MethodCallAst(AstExpression instanceAst, OverrideAst overrideAst, AstExpression[] arguments) : this(instanceAst, overrideAst.Value, arguments)
-        {
-            isOverrideAst = true;
-
-            this.overrideAst = overrideAst;
-        }
-
-        /// <summary>
         /// 加载数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
@@ -158,11 +117,11 @@ namespace CodeArts.Emit.Expressions
 
             if (method.IsStatic || method.DeclaringType.IsValueType)
             {
-                ilg.Emit(OpCodes.Call, isOverrideAst ? overrideAst.Value : method);
+                ilg.Emit(OpCodes.Call, method);
             }
             else
             {
-                ilg.Emit(OpCodes.Callvirt, isOverrideAst ? overrideAst.Value : method);
+                ilg.Emit(OpCodes.Callvirt, method);
             }
         }
     }

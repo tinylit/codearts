@@ -1,6 +1,7 @@
 using CodeArts.AOP;
 using CodeArts.Emit.Expressions;
 using CodeArts.Proxies;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -35,7 +36,7 @@ namespace CodeArts.Emit.Tests
 #else
             var m = new ModuleEmitter();
 #endif
-            var classType = new ClassEmitter(m, "test", TypeAttributes.Public);
+            var classType = m.DefineType("test", TypeAttributes.Public);
             var method = classType.DefineMethod("Test", MethodAttributes.Public, typeof(int));
 
             var pI = method.DefineParameter(typeof(int), ParameterAttributes.None, "i");
@@ -71,7 +72,7 @@ namespace CodeArts.Emit.Tests
 #else
             var m = new ModuleEmitter();
 #endif
-            var classType = new ClassEmitter(m, "linq", TypeAttributes.Public);
+            var classType = m.DefineType("linq", TypeAttributes.Public);
             var method = classType.DefineMethod("Query", MethodAttributes.Public, typeof(void));
 
             var pI = method.DefineParameter(typeof(int), ParameterAttributes.None, "i");
@@ -197,14 +198,34 @@ namespace CodeArts.Emit.Tests
             }
         }
 
+        [DependencyIntercept]
+        public interface IDependency<T> where T : class
+        {
+            T Clone(T obj);
+        }
+
+        public class Dependency<T> : IDependency<T> where T : class
+        {
+            public T Clone(T obj)
+            {
+                //... ¿ËÂ¡µÄÂß¼­¡£
+                return obj;
+            }
+        }
+
         [TestMethod]
         public void AopTest()
         {
-            var pattern = new ProxyByType(typeof(Dependency), typeof(Dependency), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient);
+            var services = new ServiceCollection();
 
-            var descriptor = pattern.Resolve();
+            var serviceProvider = services.AddTransient<IDependency, Dependency>()
+                 .AddSingleton<Dependency>()
+                 .AddTransient(typeof(IDependency<>), typeof(Dependency<>))
+                 .UseAOP()
+                 .BuildServiceProvider();
 
-            IDependency dependency = (IDependency)Activator.CreateInstance(descriptor.ImplementationType);
+            IDependency dependency = serviceProvider.GetService<IDependency>();
+            IDependency<IDependency> dependency2 = serviceProvider.GetService<IDependency<IDependency>>();
 
             int j = 10;
 
@@ -215,6 +236,8 @@ namespace CodeArts.Emit.Tests
             var k3 = dependency.Get<long>();
 
             var k4 = dependency.GetAsync<Dependency>().GetAwaiter().GetResult();
+
+            var dependency3 = dependency2.Clone(dependency);
         }
     }
 }

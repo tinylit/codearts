@@ -148,6 +148,11 @@ namespace CodeArts.Emit
         {
             this.methodBuilder = methodBuilder;
 
+            foreach (var parameter in parameters)
+            {
+                parameter.Emit(methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.ParameterName));
+            }
+
             foreach (var item in customAttributes)
             {
                 methodBuilder.SetCustomAttribute(item);
@@ -185,14 +190,7 @@ namespace CodeArts.Emit
                 parameterTypes[index++] = parameterEmitter.RuntimeType;
             }
 
-            var methodBuilder = builder.DefineMethod(Name, Attributes, CallingConventions.Standard, RuntimeType, parameterTypes);
-
-            foreach (var parameter in parameters)
-            {
-                parameter.Emit(methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.ParameterName));
-            }
-
-            Emit(methodBuilder);
+            Emit(builder.DefineMethod(Name, Attributes, CallingConventions.Standard, RuntimeType, parameterTypes));
         }
     }
 }

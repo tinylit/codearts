@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -9,61 +10,138 @@ namespace CodeArts
         private MethodInfoEqualityComparer() { }
 
         public static MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
-        public bool Equals(MethodInfo x, MethodInfo y)
+        public bool EqualGenericParameters(MethodInfo x, MethodInfo y)
         {
-            if (x is null)
-            {
-                return y is null;
-            }
-
-            if (y is null)
+            if (x.IsGenericMethod != y.IsGenericMethod)
             {
                 return false;
             }
 
-            if (x == y)
+            if (x.IsGenericMethod)
             {
-                return true;
-            }
+                var xArgs = x.GetGenericArguments();
+                var yArgs = y.GetGenericArguments();
 
-            if (x.IsGenericMethod ^ y.IsGenericMethod)
-            {
-                return false;
-            }
-
-            if (!string.Equals(x.Name, y.Name))
-            {
-                return false;
-            }
-
-            if (x.ReturnType != y.ReturnType)
-            {
-                if (x.ReturnType.IsGenericType && y.ReturnType.IsGenericType)
+                if (xArgs.Length != yArgs.Length)
                 {
-                    if (x.ReturnType.GetGenericTypeDefinition() != y.ReturnType.GetGenericTypeDefinition())
+                    return false;
+                }
+
+                for (var i = 0; i < xArgs.Length; ++i)
+                {
+                    if (xArgs[i].IsGenericParameter != yArgs[i].IsGenericParameter)
+                    {
+                        return false;
+                    }
+
+                    if (!xArgs[i].IsGenericParameter && !xArgs[i].Equals(yArgs[i]))
                     {
                         return false;
                     }
                 }
-                else if (!x.ReturnType.IsGenericParameter || !y.ReturnType.IsGenericParameter)
+            }
+
+            return true;
+        }
+
+        public bool EqualParameters(MethodInfo x, MethodInfo y)
+        {
+            var xArgs = x.GetParameters();
+            var yArgs = y.GetParameters();
+
+            if (xArgs.Length != yArgs.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < xArgs.Length; ++i)
+            {
+                if (!EqualSignatureTypes(xArgs[i].ParameterType, yArgs[i].ParameterType))
                 {
                     return false;
                 }
             }
 
-            var xParameters = x.GetParameters();
-            var yParameters = y.GetParameters();
+            return true;
+        }
 
-            if (xParameters.Length != yParameters.Length)
+        public bool EqualSignatureTypes(Type x, Type y)
+        {
+            if (x.IsGenericParameter != y.IsGenericParameter)
+            {
+                return false;
+            }
+            else if (x.IsGenericType != y.IsGenericType)
             {
                 return false;
             }
 
-            return xParameters
-                .Zip(yParameters, (x1, y1) => x1.ParameterType == y1.ParameterType || x1.ParameterType.IsGenericParameter && y1.ParameterType.IsGenericParameter)
-                .All(isEquals => isEquals);
+            if (x.IsGenericParameter)
+            {
+                if (x.GenericParameterPosition != y.GenericParameterPosition)
+                {
+                    return false;
+                }
+            }
+            else if (x.IsGenericType)
+            {
+                var xGenericTypeDef = x.GetGenericTypeDefinition();
+                var yGenericTypeDef = y.GetGenericTypeDefinition();
+
+                if (xGenericTypeDef != yGenericTypeDef)
+                {
+                    return false;
+                }
+
+                var xArgs = x.GetGenericArguments();
+                var yArgs = y.GetGenericArguments();
+
+                if (xArgs.Length != yArgs.Length)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < xArgs.Length; ++i)
+                {
+                    if (!EqualSignatureTypes(xArgs[i], yArgs[i])) return false;
+                }
+            }
+            else
+            {
+                if (!x.Equals(y))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        public int GetHashCode(MethodInfo obj) => obj?.Name.GetHashCode() ?? 0;
+        public bool Equals(MethodInfo x, MethodInfo y)
+        {
+            if (x is null && y is null)
+            {
+                return true;
+            }
+
+            if (x is null || y is null)
+            {
+                return false;
+            }
+
+            return EqualNames(x, y) &&
+                   EqualGenericParameters(x, y) &&
+                   EqualSignatureTypes(x.ReturnType, y.ReturnType) &&
+                   EqualParameters(x, y);
+        }
+
+        public int GetHashCode(MethodInfo obj)
+        {
+            return obj.Name.GetHashCode() ^ obj.GetParameters().Length; // everything else would be too cumbersome
+        }
+
+        private bool EqualNames(MethodInfo x, MethodInfo y)
+        {
+            return x.Name == y.Name;
+        }
     }
 }

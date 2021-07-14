@@ -385,38 +385,6 @@ namespace CodeArts.Emit
         public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(instanceAst, method, arguments);
 
         /// <summary>
-        /// 调用方法。
-        /// </summary>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <returns></returns>
-        public static MethodCallAst Call(OverrideAst overrideAst) => new MethodCallAst(overrideAst);
-
-        /// <summary>
-        /// 调用方法。
-        /// </summary>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">方法参数。</param>
-        /// <returns></returns>
-        public static MethodCallAst Call(OverrideAst overrideAst, params AstExpression[] arguments) => new MethodCallAst(overrideAst, arguments);
-
-        /// <summary>
-        /// 调用方法。
-        /// </summary>
-        /// <param name="instanceAst">实例。</param>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <returns></returns>
-        public static MethodCallAst Call(AstExpression instanceAst, OverrideAst overrideAst) => new MethodCallAst(instanceAst, overrideAst);
-
-        /// <summary>
-        /// 调用方法。
-        /// </summary>
-        /// <param name="instanceAst">实例。</param>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">方法参数。</param>
-        /// <returns></returns>
-        public static MethodCallAst Call(AstExpression instanceAst, OverrideAst overrideAst, params AstExpression[] arguments) => new MethodCallAst(instanceAst, overrideAst, arguments);
-
-        /// <summary>
         /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
         /// </summary>
         /// <param name="method">方法。</param>
@@ -432,23 +400,6 @@ namespace CodeArts.Emit
         /// <param name="arguments">参数<see cref="object"/>[]。</param>
         /// <returns></returns>
         public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo method, AstExpression arguments) => new InvocationAst(instanceAst, method, arguments);
-
-        /// <summary>
-        /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
-        /// </summary>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">参数<see cref="object"/>[]。</param>
-        /// <returns></returns>
-        public static InvocationAst Invoke(OverrideAst overrideAst, AstExpression arguments) => new InvocationAst(overrideAst, arguments);
-
-        /// <summary>
-        /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
-        /// </summary>
-        /// <param name="instanceAst">实例。</param>
-        /// <param name="overrideAst">重写方法。</param>
-        /// <param name="arguments">参数<see cref="object"/>[]。</param>
-        /// <returns></returns>
-        public static InvocationAst Invoke(AstExpression instanceAst, OverrideAst overrideAst, AstExpression arguments) => new InvocationAst(instanceAst, overrideAst, arguments);
 
         /// <summary>
         /// 代码块。

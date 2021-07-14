@@ -16,6 +16,7 @@ namespace CodeArts.Emit
         /// <param name="name">匿名类型名称。</param>
         public NestedClassEmitter(AbstractTypeEmitter typeEmitter, string name) : base(typeEmitter, name)
         {
+
         }
 
         /// <summary>
@@ -26,6 +27,7 @@ namespace CodeArts.Emit
         /// <param name="attributes">匿名函数类型。</param>
         public NestedClassEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes) : base(typeEmitter, name, attributes)
         {
+
         }
 
         /// <summary>
@@ -48,8 +50,7 @@ namespace CodeArts.Emit
         /// <param name="attributes">匿名函数类型。</param>
         /// <param name="baseType">匿名函数基类。</param>
         /// <param name="interfaces">匿名函数实现接口。</param>
-        public NestedClassEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType,
-                                  Type[] interfaces) : base(typeEmitter, name, attributes, baseType, interfaces)
+        public NestedClassEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType, Type[] interfaces) : base(typeEmitter, name, attributes, baseType, interfaces)
         {
 
         }

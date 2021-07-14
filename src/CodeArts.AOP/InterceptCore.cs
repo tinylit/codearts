@@ -9,11 +9,15 @@ using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts
 {
-    public static class InterceptCaching
+    /// <summary>
+    /// 拦截器。
+    /// </summary>
+    public static class InterceptCore
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
         private static readonly Dictionary<MethodInfo, InterceptAttribute[]> InterceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>();
+        private static readonly Dictionary<Type, Dictionary<MethodInfo, InterceptAttribute[]>> GenericInterceptCache = new Dictionary<Type, Dictionary<MethodInfo, InterceptAttribute[]>>();
 
         private static readonly Type[] ContextTypes = new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) };
 
@@ -24,101 +28,9 @@ namespace CodeArts
         private static readonly MethodInfo InterceptAsyncMethodCall;
         private static readonly MethodInfo InterceptAsyncGenericMethodCall;
 
-        private class MethodInfoEqualityComparer : IEqualityComparer<MethodInfo>
+        static InterceptCore()
         {
-            private MethodInfoEqualityComparer() { }
-
-            public static MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
-            public bool Equals(MethodInfo x, MethodInfo y)
-            {
-                if (x is null)
-                {
-                    return y is null;
-                }
-
-                if (y is null)
-                {
-                    return false;
-                }
-
-                if (x == y)
-                {
-                    return true;
-                }
-
-                if (!x.DeclaringType.IsGenericType || !y.DeclaringType.IsGenericType)
-                {
-                    return false;
-                }
-
-                if (!x.IsGenericMethod || !y.IsGenericMethod)
-                {
-                    return false;
-                }
-
-                if (x.DeclaringType != y.DeclaringType)
-                {
-                    return false;
-                }
-
-                if (!string.Equals(x.Name, y.Name))
-                {
-                    return false;
-                }
-
-                if (x.ReflectedType != y.ReflectedType)
-                {
-                    if (x.ReflectedType.IsGenericType && y.ReflectedType.IsGenericType)
-                    {
-                        if (x.ReflectedType.GetGenericTypeDefinition() != y.ReflectedType.GetGenericTypeDefinition())
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-
-                if (x.ReturnType != y.ReturnType)
-                {
-                    if (x.ReturnType.IsGenericType && y.ReturnType.IsGenericType)
-                    {
-                        if (x.ReturnType.GetGenericTypeDefinition() != y.ReturnType.GetGenericTypeDefinition())
-                        {
-                            return false;
-                        }
-                    }
-                    else if (!x.ReturnType.IsGenericParameter)
-                    {
-                        return false;
-                    }
-                }
-
-                if (x.GetGenericArguments().Length != y.GetGenericArguments().Length)
-                {
-                    return false;
-                }
-
-                var xParameters = x.GetParameters();
-                var yParameters = y.GetParameters();
-
-                if (xParameters.Length != yParameters.Length)
-                {
-                    return false;
-                }
-
-                return xParameters
-                .Zip(yParameters, (x1, y1) => x1.ParameterType == y1.ParameterType || !x1.ParameterType.IsGenericParameter)
-                .All(isEquals => isEquals);
-            }
-
-            public int GetHashCode(MethodInfo obj) => obj is null ? 0 : obj.GetHashCode();
-        }
-        static InterceptCaching()
-        {
-            var methodInfos = typeof(InterceptCaching).GetMethods();
+            var methodInfos = typeof(InterceptCore).GetMethods();
 
             InterceptMethodCall = methodInfos.Single(x => x.Name == nameof(Intercept));
 
@@ -127,11 +39,62 @@ namespace CodeArts
             InterceptAsyncGenericMethodCall = methodInfos.Single(x => x.Name == nameof(InterceptAsync) && x.IsGenericMethod);
         }
 
+        private static bool TryGetValue(MethodInfo methodInfo, out InterceptAttribute[] attributes)
+        {
+            if (methodInfo.IsGenericMethod)
+            {
+                methodInfo = methodInfo.GetGenericMethodDefinition();
+            }
+
+            if (methodInfo.DeclaringType.IsGenericType)
+            {
+                if (GenericInterceptCache.TryGetValue(methodInfo.DeclaringType.GetGenericTypeDefinition(), out Dictionary<MethodInfo, InterceptAttribute[]> interceptCache))
+                {
+                    return interceptCache.TryGetValue(methodInfo, out attributes);
+                }
+
+                attributes = new InterceptAttribute[0];
+
+                return false;
+            }
+
+            return InterceptCache.TryGetValue(methodInfo, out attributes);
+        }
+
+        private static void InterceptAdd(MethodInfo methodInfo, InterceptAttribute[] attributes)
+        {
+            if (methodInfo.IsGenericMethod)
+            {
+                methodInfo = methodInfo.GetGenericMethodDefinition();
+            }
+
+            if (methodInfo.DeclaringType.IsGenericType)
+            {
+                var typeDefinition = methodInfo.DeclaringType.GetGenericTypeDefinition();
+
+                if (!GenericInterceptCache.TryGetValue(typeDefinition, out Dictionary<MethodInfo, InterceptAttribute[]> interceptCache))
+                {
+                    GenericInterceptCache.Add(typeDefinition, interceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>());
+                }
+
+                interceptCache[methodInfo] = attributes;
+            }
+            else
+            {
+                InterceptCache[methodInfo] = attributes;
+            }
+        }
+
+        /// <summary>
+        /// 拦截同步方法。
+        /// </summary>
+        /// <param name="context">上下文。</param>
+        /// <returns></returns>
         public static object Intercept(InterceptContext context)
         {
             var intercept = new Intercept();
 
-            if (InterceptCache.TryGetValue(context.Main.IsGenericMethod ? context.Main.GetGenericMethodDefinition() : context.Main, out var attributes))
+            if (TryGetValue(context.Main, out var attributes))
             {
                 foreach (var attribute in attributes)
                 {
@@ -144,11 +107,16 @@ namespace CodeArts
             return context.ReturnValue;
         }
 
+        /// <summary>
+        /// 拦截异步方法。
+        /// </summary>
+        /// <param name="context">上下文。</param>
+        /// <returns></returns>
         public static Task InterceptAsync(InterceptAsyncContext context)
         {
             var intercept = new InterceptAsync();
 
-            if (InterceptCache.TryGetValue(context.Main.IsGenericMethod ? context.Main.GetGenericMethodDefinition() : context.Main, out var attributes))
+            if (TryGetValue(context.Main, out var attributes))
             {
                 foreach (var attribute in attributes)
                 {
@@ -159,11 +127,17 @@ namespace CodeArts
             return intercept.RunAsync(context);
         }
 
+        /// <summary>
+        /// 拦截异步有返回值方法。
+        /// </summary>
+        /// <typeparam name="T">返回值类型。</typeparam>
+        /// <param name="context">上下文。</param>
+        /// <returns></returns>
         public static Task<T> InterceptAsync<T>(InterceptAsyncContext context)
         {
             var intercept = new InterceptAsync<T>();
 
-            if (InterceptCache.TryGetValue(context.Main.IsGenericMethod ? context.Main.GetGenericMethodDefinition() : context.Main, out var attributes))
+            if (TryGetValue(context.Main, out var attributes))
             {
                 foreach (var attribute in attributes)
                 {
@@ -174,6 +148,13 @@ namespace CodeArts
             return intercept.RunAsync(context);
         }
 
+        /// <summary>
+        /// 重写方法。
+        /// </summary>
+        /// <param name="instanceAst">方法“this”上下文。</param>
+        /// <param name="classEmitter">类。</param>
+        /// <param name="methodInfo">被重写的方法。</param>
+        /// <param name="attributes">拦截器。</param>
         public static void DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
         {
             var methodAttributes = methodInfo.Attributes;
@@ -183,26 +164,40 @@ namespace CodeArts
                 methodAttributes ^= MethodAttributes.Abstract;
             }
 
-            var methodEmitter = classEmitter.DefineMethodOverride(methodInfo, methodAttributes);
+            var overrideEmitter = classEmitter.DefineMethodOverride(ref methodInfo, methodAttributes);
 
-            var paramterEmitters = methodEmitter.GetParameters();
+            var paramterEmitters = overrideEmitter.GetParameters();
+
+            foreach (var attributeData in methodInfo.GetCustomAttributesData())
+            {
+                if (InterceptAttributeType.IsAssignableFrom(attributeData.Constructor.ReflectedType))
+                {
+                    continue;
+                }
+
+                overrideEmitter.SetCustomAttribute(attributeData);
+            }
 
             if (attributes is null || attributes.Length == 0)
             {
-                methodEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
+                overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
 
-                goto label_core;
+                return;
             }
 
             AstExpression[] arguments = null;
 
-            var variable = methodEmitter.DeclareVariable(typeof(object[]));
+            var variable = overrideEmitter.DeclareVariable(typeof(object[]));
 
-            methodEmitter.Append(Assign(variable, Array(paramterEmitters)));
+            overrideEmitter.Append(Assign(variable, Array(paramterEmitters)));
 
-            if (methodEmitter.IsGenericMethod)
+            if (overrideEmitter.IsGenericMethod)
             {
-                arguments = new AstExpression[] { instanceAst, Constant(methodInfo.MakeGenericMethod(methodEmitter.GetGenericArguments())), variable };
+                arguments = new AstExpression[] { instanceAst, Constant(methodInfo.MakeGenericMethod(overrideEmitter.GetGenericArguments())), variable };
+            }
+            else if (classEmitter.IsGenericType)
+            {
+                arguments = new AstExpression[] { instanceAst, Constant(methodInfo), variable };
             }
             else
             {
@@ -260,28 +255,9 @@ namespace CodeArts
                 blockAst.Append(Finally(finallyAst));
             }
 
-            methodEmitter.Append(blockAst);
+            overrideEmitter.Append(blockAst);
 
-            if (methodInfo.IsGenericMethod)
-            {
-                InterceptCache[methodInfo.GetGenericMethodDefinition()] = attributes;
-            }
-            else
-            {
-                InterceptCache[methodInfo] = attributes;
-            }
-
-        label_core:
-
-            foreach (var attributeData in methodInfo.GetCustomAttributesData())
-            {
-                if (InterceptAttributeType.IsAssignableFrom(attributeData.Constructor.ReflectedType))
-                {
-                    continue;
-                }
-
-                methodEmitter.SetCustomAttribute(attributeData);
-            }
+            InterceptAdd(methodInfo, attributes);
         }
     }
 }
