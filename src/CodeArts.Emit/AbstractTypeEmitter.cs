@@ -678,7 +678,7 @@ namespace CodeArts.Emit
 
 
 
-            if (false && methodInfoDeclaration.DeclaringType.IsGenericType && Array.Exists(methodInfoDeclaration.DeclaringType.GetGenericArguments(), x => x.IsGenericParameter))
+            if (methodInfoDeclaration.DeclaringType.IsGenericType && Array.Exists(methodInfoDeclaration.DeclaringType.GetGenericArguments(), x => x.IsGenericParameter))
             {
                 Type declaringType = methodBuilder.DeclaringType;
                 Type typeDefinition = methodInfoDeclaration.DeclaringType.GetGenericTypeDefinition();
@@ -730,6 +730,8 @@ namespace CodeArts.Emit
             {
                 methodInfoDeclaration = methodInfoOriginal;
             }
+
+            SetSignature(methodBuilder, methodInfoDeclaration.ReturnType, methodInfoDeclaration.ReturnParameter, parameterTypes, parameterInfos);
 
             methods.Add(overrideEmitter);
 
@@ -967,6 +969,85 @@ namespace CodeArts.Emit
                 adjustedConstraints[i] = AdjustConstraintToNewGenericParameters(constraints[i], methodInfo, originalGenericArguments, newGenericParameters);
             }
             return adjustedConstraints;
+        }
+
+        private static void SetSignature(MethodBuilder builder, Type returnType, ParameterInfo returnParameter, Type[] parameters,
+                                  ParameterInfo[] baseMethodParameters)
+        {
+            Type[] returnRequiredCustomModifiers;
+            Type[] returnOptionalCustomModifiers;
+            Type[][] parametersRequiredCustomModifiers;
+            Type[][] parametersOptionalCustomModifiers;
+
+            returnRequiredCustomModifiers = returnParameter.GetRequiredCustomModifiers();
+            Array.Reverse(returnRequiredCustomModifiers);
+
+            returnOptionalCustomModifiers = returnParameter.GetOptionalCustomModifiers();
+            Array.Reverse(returnOptionalCustomModifiers);
+
+            int parameterCount = baseMethodParameters.Length;
+            parametersRequiredCustomModifiers = new Type[parameterCount][];
+            parametersOptionalCustomModifiers = new Type[parameterCount][];
+            for (int i = 0; i < parameterCount; ++i)
+            {
+                parametersRequiredCustomModifiers[i] = baseMethodParameters[i].GetRequiredCustomModifiers();
+                Array.Reverse(parametersRequiredCustomModifiers[i]);
+
+                parametersOptionalCustomModifiers[i] = baseMethodParameters[i].GetOptionalCustomModifiers();
+                Array.Reverse(parametersOptionalCustomModifiers[i]);
+            }
+
+            builder.SetSignature(
+                returnType,
+                returnRequiredCustomModifiers,
+                returnOptionalCustomModifiers,
+                parameters,
+                parametersRequiredCustomModifiers,
+                parametersOptionalCustomModifiers);
+        }
+
+        private static bool HasGenericParameter(Type type, Type[] genericArguments)
+        {
+            if (type.IsGenericParameter)
+            {
+                return genericArguments is null || Array.IndexOf(genericArguments, type) > -1;
+            }
+
+            if (type.IsGenericType)
+            {
+                Debug.Assert(type.IsGenericTypeDefinition == false);
+
+                return Array.Exists(type.GetGenericArguments(), x => HasGenericParameter(x, genericArguments));
+            }
+
+            if (type.IsArray || type.IsByRef)
+            {
+                return HasGenericParameter(type.GetElementType(), genericArguments);
+            }
+
+            return false;
+        }
+
+        private static Type MakeGenericParameter(Type type, Type[] genericArguments)
+        {
+            if (type.IsGenericParameter)
+            {
+                return null;
+            }
+
+            if (type.IsGenericType)
+            {
+                Debug.Assert(type.IsGenericTypeDefinition == false);
+
+                //return Array.Exists(type.GetGenericArguments(), x => HasGenericParameter(x, genericArguments));
+            }
+
+            if (type.IsArray || type.IsByRef)
+            {
+                //return HasGenericParameter(type.GetElementType(), genericArguments);
+            }
+
+            return type;
         }
 
         /// <summary>
