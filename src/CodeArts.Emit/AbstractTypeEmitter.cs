@@ -69,32 +69,34 @@ namespace CodeArts.Emit
 
         private class RuntimeMethodInfo : MethodInfo
         {
+            private readonly Type declaringType;
             private readonly MethodInfo methodInfoOriginal;
-            private readonly MethodInfo methodInfoDeclaration;
+            private readonly MethodBuilder builder;
 
-            public RuntimeMethodInfo(MethodInfo methodInfoOriginal, MethodInfo methodInfoDeclaration)
+            public RuntimeMethodInfo(Type declaringType, MethodInfo methodInfoOriginal, MethodBuilder builder)
             {
+                this.declaringType = declaringType;
                 this.methodInfoOriginal = methodInfoOriginal;
-                this.methodInfoDeclaration = methodInfoDeclaration;
+                this.builder = builder;
             }
 
             public override string Name => methodInfoOriginal.Name;
 
-            public override Type DeclaringType => methodInfoDeclaration.DeclaringType;
+            public override Type DeclaringType => declaringType;
 
-            public override Type ReflectedType => methodInfoDeclaration.ReflectedType;
-            public override ParameterInfo ReturnParameter => methodInfoDeclaration.ReturnParameter;
-            public override Type ReturnType => methodInfoDeclaration.ReturnType;
-            public override MethodInfo GetBaseDefinition() => methodInfoDeclaration.GetBaseDefinition();
-            public override ParameterInfo[] GetParameters() => methodInfoDeclaration.GetParameters();
+            public override Type ReflectedType => declaringType;
+            public override ParameterInfo ReturnParameter => builder.ReturnParameter;
+            public override Type ReturnType => builder.ReturnType;
+            public override MethodInfo GetBaseDefinition() => methodInfoOriginal;
+            public override ParameterInfo[] GetParameters() => builder.GetParameters();
 
 #if NET45_OR_GREATER
-            public override Delegate CreateDelegate(Type delegateType) => methodInfoDeclaration.CreateDelegate(delegateType);
+            public override Delegate CreateDelegate(Type delegateType) => methodInfoOriginal.CreateDelegate(delegateType);
 
-            public override Delegate CreateDelegate(Type delegateType, object target) => methodInfoDeclaration.CreateDelegate(delegateType, target);
+            public override Delegate CreateDelegate(Type delegateType, object target) => methodInfoOriginal.CreateDelegate(delegateType, target);
 #endif
 
-            public override Type[] GetGenericArguments() => methodInfoDeclaration.GetGenericArguments();
+            public override Type[] GetGenericArguments() => builder.GetGenericArguments();
 
             public override ICustomAttributeProvider ReturnTypeCustomAttributes => methodInfoOriginal.ReturnTypeCustomAttributes;
 
@@ -133,7 +135,6 @@ namespace CodeArts.Emit
 
             public override IList<CustomAttributeData> GetCustomAttributesData() => methodInfoOriginal.GetCustomAttributesData();
 
-
             public override MethodInfo GetGenericMethodDefinition() => methodInfoOriginal.GetGenericMethodDefinition();
 
             public override bool Equals(object obj) => methodInfoOriginal.Equals(obj);
@@ -142,7 +143,15 @@ namespace CodeArts.Emit
 
             public override MethodBody GetMethodBody() => methodInfoOriginal.GetMethodBody();
 
-            public override MethodInfo MakeGenericMethod(params Type[] typeArguments) => methodInfoOriginal.MakeGenericMethod(typeArguments);
+            public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
+            {
+                if (methodInfoOriginal.ReturnType == ReturnType)
+                {
+                    return methodInfoOriginal.MakeGenericMethod(typeArguments);
+                }
+
+                return null;
+            }
 
             public override string ToString() => methodInfoOriginal.ToString();
         }
@@ -193,11 +202,9 @@ namespace CodeArts.Emit
             /// </summary>
             public MethodInfo MethodInfoDeclaration => methodInfoDeclaration;
 
-            public ParameterEmitter DefineParameter(ParameterInfo parameterInfo, bool skipValid)
+            public ParameterEmitter DefineParameter(ParameterInfo parameterInfo, Type parameterType)
             {
-                var parameter = skipValid
-                    ? base.DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name)
-                    : base.DefineParameter(parameterInfo);
+                var parameter = base.DefineParameter(parameterType, parameterInfo.Attributes, parameterInfo.Name);
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
                 if (parameterInfo.HasDefaultValue)
@@ -215,8 +222,6 @@ namespace CodeArts.Emit
 
                 return parameter;
             }
-
-            public override ParameterEmitter DefineParameter(ParameterInfo parameterInfo) => DefineParameter(parameterInfo, false);
 
             public override ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
             {
@@ -648,14 +653,12 @@ namespace CodeArts.Emit
 
             var overrideEmitter = new MethodOverrideEmitter(methodBuilder, methodInfoOriginal);
 
-            foreach (var parameterInfo in parameterInfos)
-            {
-                overrideEmitter.DefineParameter(parameterInfo, true);
-            }
-
             bool flag = false;
+
             var genericArguments = Type.EmptyTypes;
-            var newGenericParameters = new GenericTypeParameterBuilder[0];
+            Type returnType = methodInfoDeclaration.ReturnType;
+            ParameterInfo returnParameter = methodInfoDeclaration.ReturnParameter;
+            GenericTypeParameterBuilder[] newGenericParameters = new GenericTypeParameterBuilder[0];
 
             if (methodInfoDeclaration.IsGenericMethod)
             {
@@ -676,39 +679,31 @@ namespace CodeArts.Emit
                 }
             }
 
-
-
-            if (methodInfoDeclaration.DeclaringType.IsGenericType && Array.Exists(methodInfoDeclaration.DeclaringType.GetGenericArguments(), x => x.IsGenericParameter))
+            if (HasGenericParameter(methodInfoDeclaration.DeclaringType))
             {
-                Type declaringType = methodBuilder.DeclaringType;
-                Type typeDefinition = methodInfoDeclaration.DeclaringType.GetGenericTypeDefinition();
+                flag = true;
+
+                Type declaringType = builder;
+
+                var typeDefinition = methodInfoDeclaration
+                        .DeclaringType
+                        .GetGenericTypeDefinition();
 
                 if (methodInfoDeclaration.DeclaringType.IsClass)
                 {
-                    do
+                    while ((declaringType = declaringType.BaseType) != null)
                     {
-                        if (!declaringType.IsGenericType)
-                        {
-                            continue;
-                        }
-
-                        if (declaringType.GetGenericTypeDefinition() == typeDefinition)
+                        if (declaringType.IsGenericType && declaringType.GetGenericTypeDefinition() == typeDefinition)
                         {
                             break;
                         }
-
-                    } while ((declaringType = declaringType.BaseType) != null);
+                    }
                 }
                 else
                 {
-                    foreach (var interfaceType in methodBuilder.DeclaringType.GetInterfaces())
+                    foreach (var interfaceType in builder.GetInterfaces())
                     {
-                        if (!interfaceType.IsGenericType)
-                        {
-                            continue;
-                        }
-
-                        if (interfaceType.GetGenericTypeDefinition() == typeDefinition)
+                        if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeDefinition)
                         {
                             declaringType = interfaceType;
 
@@ -717,21 +712,65 @@ namespace CodeArts.Emit
                     }
                 }
 
-                flag = true;
+                Type[] declaringTypeParameters = declaringType.GetGenericArguments();
 
-                methodInfoDeclaration = declaringType
-                    .GetMethod(methodInfoDeclaration.Name, methodInfoDeclaration
-                    .GetParameters()
-                    .Select(x => x.ParameterType)
-                    .ToArray());
+                if (methodInfoDeclaration.IsGenericMethod)
+                {
+                    for (int i = 0; i < parameterTypes.Length; i++)
+                    {
+                        if (HasGenericParameter(parameterTypes[i]))
+                        {
+                            parameterTypes[i] = MakeGenericParameter(parameterTypes[i], genericArguments, declaringTypeParameters, newGenericParameters);
+                        }
+                    }
+
+                    if (HasGenericParameter(returnType))
+                    {
+                        returnType = MakeGenericParameter(returnType, genericArguments, declaringTypeParameters, newGenericParameters);
+                    }
+
+                    methodInfoDeclaration = new RuntimeMethodInfo(declaringType, methodInfoDeclaration, methodBuilder);
+                }
+                else
+                {
+                    for (int i = 0; i < parameterTypes.Length; i++)
+                    {
+                        if (HasGenericParameter(parameterTypes[i]))
+                        {
+                            parameterTypes[i] = MakeGenericParameter(parameterTypes[i], declaringTypeParameters);
+                        }
+                    }
+
+                    if (HasGenericParameter(returnType))
+                    {
+                        returnType = MakeGenericParameter(returnType, declaringTypeParameters);
+                    }
+                }
             }
-
-            if (flag)
+            else if (methodInfoDeclaration.IsGenericMethod)
             {
-                methodInfoDeclaration = methodInfoOriginal;
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    if (HasGenericParameter(parameterTypes[i]))
+                    {
+                        parameterTypes[i] = MakeGenericParameter(parameterTypes[i], newGenericParameters);
+                    }
+                }
+
+                if (HasGenericParameter(returnType))
+                {
+                    returnType = MakeGenericParameter(returnType, newGenericParameters);
+                }
             }
 
-            SetSignature(methodBuilder, methodInfoDeclaration.ReturnType, methodInfoDeclaration.ReturnParameter, parameterTypes, parameterInfos);
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                overrideEmitter.DefineParameter(parameterInfos[i], parameterTypes[i]);
+            }
+
+            methodBuilder.SetReturnType(returnType);
+
+            SetSignature(methodBuilder, returnType, returnParameter, parameterTypes, parameterInfos);
 
             methods.Add(overrideEmitter);
 
@@ -971,8 +1010,7 @@ namespace CodeArts.Emit
             return adjustedConstraints;
         }
 
-        private static void SetSignature(MethodBuilder builder, Type returnType, ParameterInfo returnParameter, Type[] parameters,
-                                  ParameterInfo[] baseMethodParameters)
+        private static void SetSignature(MethodBuilder builder, Type returnType, ParameterInfo returnParameter, Type[] parameterTypes, ParameterInfo[] baseMethodParameters)
         {
             Type[] returnRequiredCustomModifiers;
             Type[] returnOptionalCustomModifiers;
@@ -1001,50 +1039,132 @@ namespace CodeArts.Emit
                 returnType,
                 returnRequiredCustomModifiers,
                 returnOptionalCustomModifiers,
-                parameters,
+                parameterTypes,
                 parametersRequiredCustomModifiers,
                 parametersOptionalCustomModifiers);
         }
 
-        private static bool HasGenericParameter(Type type, Type[] genericArguments)
+        private static bool HasGenericParameter(Type type)
         {
             if (type.IsGenericParameter)
             {
-                return genericArguments is null || Array.IndexOf(genericArguments, type) > -1;
+                return true;
             }
 
             if (type.IsGenericType)
             {
                 Debug.Assert(type.IsGenericTypeDefinition == false);
 
-                return Array.Exists(type.GetGenericArguments(), x => HasGenericParameter(x, genericArguments));
+                return Array.Exists(type.GetGenericArguments(), HasGenericParameter);
             }
 
             if (type.IsArray || type.IsByRef)
             {
-                return HasGenericParameter(type.GetElementType(), genericArguments);
+                return HasGenericParameter(type.GetElementType());
             }
 
             return false;
         }
 
-        private static Type MakeGenericParameter(Type type, Type[] genericArguments)
+        private static Type MakeGenericParameter(Type type, Type[] typeParameterBuilders)
         {
             if (type.IsGenericParameter)
             {
-                return null;
+                return typeParameterBuilders[type.GenericParameterPosition];
             }
 
             if (type.IsGenericType)
             {
                 Debug.Assert(type.IsGenericTypeDefinition == false);
 
-                //return Array.Exists(type.GetGenericArguments(), x => HasGenericParameter(x, genericArguments));
+                bool flag = false;
+
+                var genericArguments = type.GetGenericArguments();
+
+                for (int i = 0; i < genericArguments.Length; i++)
+                {
+                    if (HasGenericParameter(genericArguments[i]))
+                    {
+                        flag = true;
+                        genericArguments[i] = MakeGenericParameter(genericArguments[i], typeParameterBuilders);
+                    }
+
+                }
+
+                return flag
+                    ? type.GetGenericTypeDefinition().MakeGenericType(genericArguments)
+                    : type;
             }
 
-            if (type.IsArray || type.IsByRef)
+            if (type.IsArray)
             {
-                //return HasGenericParameter(type.GetElementType(), genericArguments);
+                Type elementType = MakeGenericParameter(type.GetElementType(), typeParameterBuilders);
+                int rank = type.GetArrayRank();
+
+                return rank == 1
+                    ? elementType.MakeArrayType()
+                    : elementType.MakeArrayType(rank);
+            }
+
+            if (type.IsByRef)
+            {
+                Type elementType = MakeGenericParameter(type.GetElementType(), typeParameterBuilders);
+
+                return elementType.MakeByRefType();
+            }
+
+            return type;
+        }
+
+        private static Type MakeGenericParameter(Type type, Type[] genericArguments, Type[] declaringTypeParameters, GenericTypeParameterBuilder[] newGenericParameters)
+        {
+            if (type.IsGenericParameter)
+            {
+                if (Array.IndexOf(genericArguments, type) > -1)
+                {
+                    return newGenericParameters[type.GenericParameterPosition];
+                }
+
+                return declaringTypeParameters[type.GenericParameterPosition];
+            }
+
+            if (type.IsGenericType)
+            {
+                Debug.Assert(type.IsGenericTypeDefinition == false);
+
+                bool flag = false;
+
+                var genericArguments2 = type.GetGenericArguments();
+
+                for (int i = 0; i < genericArguments2.Length; i++)
+                {
+                    if (HasGenericParameter(genericArguments2[i]))
+                    {
+                        genericArguments2[i] = MakeGenericParameter(genericArguments2[i], genericArguments, declaringTypeParameters, newGenericParameters);
+                    }
+
+                }
+
+                return flag
+                    ? type.GetGenericTypeDefinition().MakeGenericType(genericArguments2)
+                    : type;
+            }
+
+            if (type.IsArray)
+            {
+                Type elementType = MakeGenericParameter(type.GetElementType(), genericArguments, declaringTypeParameters, newGenericParameters);
+                int rank = type.GetArrayRank();
+
+                return rank == 1
+                    ? elementType.MakeArrayType()
+                    : elementType.MakeArrayType(rank);
+            }
+
+            if (type.IsByRef)
+            {
+                Type elementType = MakeGenericParameter(type.GetElementType(), genericArguments, declaringTypeParameters, newGenericParameters);
+
+                return elementType.MakeByRefType();
             }
 
             return type;
