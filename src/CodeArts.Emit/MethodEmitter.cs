@@ -11,15 +11,13 @@ namespace CodeArts.Emit
     /// <summary>
     /// 方法。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} {Name}({ParemetersNames})")]
+    [DebuggerDisplay("{ReturnType.Name} {Name}(...args)")]
     public class MethodEmitter : BlockAst
     {
         private MethodBuilder methodBuilder;
         private int parameterIndex = 0;
         private readonly List<ParameterEmitter> parameters = new List<ParameterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
-
-        private string ParemetersNames => string.Join(",", parameters.Select(x => string.Concat(x.RuntimeType.Name, " ", x.ParameterName)));
 
         /// <summary>
         /// 构造函数。
@@ -69,26 +67,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="parameterInfo">参数。</param>
         /// <returns></returns>
-        public ParameterEmitter DefineParameter(ParameterInfo parameterInfo)
-        {
-            var parameter = DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
-
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            if (parameterInfo.HasDefaultValue)
-#else
-            if (parameterInfo.IsOptional)
-#endif
-            {
-                parameter.SetConstant(parameterInfo.DefaultValue);
-            }
-
-            foreach (var customAttribute in parameterInfo.GetCustomAttributesData())
-            {
-                parameter.SetCustomAttribute(customAttribute);
-            }
-
-            return parameter;
-        }
+        public virtual ParameterEmitter DefineParameter(ParameterInfo parameterInfo) => DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
 
         /// <summary>
         /// 声明参数。
@@ -105,9 +84,9 @@ namespace CodeArts.Emit
         /// <param name="attributes">属性。</param>
         /// <param name="name">名称。</param>
         /// <returns></returns>
-        public ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
+        public virtual ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
         {
-            var parameter = new ParameterEmitter(parameterType, ++parameterIndex, attributes, name);
+            var parameter = new ParameterEmitter(parameterType, (Attributes & MethodAttributes.Static) == MethodAttributes.Static ? parameterIndex++ : ++parameterIndex, attributes, name);
             parameters.Add(parameter);
             return parameter;
         }

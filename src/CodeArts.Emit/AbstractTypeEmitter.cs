@@ -193,6 +193,36 @@ namespace CodeArts.Emit
             /// </summary>
             public MethodInfo MethodInfoDeclaration => methodInfoDeclaration;
 
+            public ParameterEmitter DefineParameter(ParameterInfo parameterInfo, bool skipValid)
+            {
+                var parameter = skipValid
+                    ? base.DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name)
+                    : base.DefineParameter(parameterInfo);
+
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                if (parameterInfo.HasDefaultValue)
+#else
+                if (parameterInfo.IsOptional)
+#endif
+                {
+                    parameter.SetConstant(parameterInfo.DefaultValue);
+                }
+
+                foreach (var customAttribute in parameterInfo.GetCustomAttributesData())
+                {
+                    parameter.SetCustomAttribute(customAttribute);
+                }
+
+                return parameter;
+            }
+
+            public override ParameterEmitter DefineParameter(ParameterInfo parameterInfo) => DefineParameter(parameterInfo, false);
+
+            public override ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
+            {
+                throw new AstException("重新方法不允许自定义参数!");
+            }
+
             /// <summary>
             /// 发行。
             /// </summary>
@@ -614,22 +644,24 @@ namespace CodeArts.Emit
 
             MethodInfo methodInfoOriginal = methodInfoDeclaration;
 
-            var methodBuilder = builder.DefineMethod(methodInfoDeclaration.Name, attrs | MethodAttributes.HideBySig, CallingConventions.Standard, methodInfoDeclaration.ReturnType, parameterTypes);
+            var methodBuilder = builder.DefineMethod(methodInfoDeclaration.Name, attrs | MethodAttributes.HideBySig, CallingConventions.Standard);
 
             var overrideEmitter = new MethodOverrideEmitter(methodBuilder, methodInfoOriginal);
 
             foreach (var parameterInfo in parameterInfos)
             {
-                overrideEmitter.DefineParameter(parameterInfo);
+                overrideEmitter.DefineParameter(parameterInfo, true);
             }
 
             bool flag = false;
+            var genericArguments = Type.EmptyTypes;
+            var newGenericParameters = new GenericTypeParameterBuilder[0];
 
             if (methodInfoDeclaration.IsGenericMethod)
             {
-                var genericArguments = methodInfoDeclaration.GetGenericArguments();
+                genericArguments = methodInfoDeclaration.GetGenericArguments();
 
-                var newGenericParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
+                newGenericParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
 
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
@@ -642,13 +674,9 @@ namespace CodeArts.Emit
 
                     t.SetBaseTypeConstraint(g.BaseType);
                 }
-
-                flag = true;
-
-                methodInfoDeclaration = methodInfoDeclaration.MakeGenericMethod(newGenericParameters);
-
-                methodBuilder.SetReturnType(methodInfoDeclaration.ReturnType);
             }
+
+
 
             if (false && methodInfoDeclaration.DeclaringType.IsGenericType && Array.Exists(methodInfoDeclaration.DeclaringType.GetGenericArguments(), x => x.IsGenericParameter))
             {
