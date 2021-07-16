@@ -180,7 +180,18 @@ namespace CodeArts
 
             if (attributes is null || attributes.Length == 0)
             {
-                overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
+                if (methodInfo.DeclaringType.IsGenericType)
+                {
+                    var fieldEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+                    classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodInfo)));
+
+                    overrideEmitter.Append(Invoke(instanceAst, fieldEmitter, Array(paramterEmitters)));
+                }
+                else
+                {
+                    overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
+                }
 
                 return;
             }
@@ -194,10 +205,6 @@ namespace CodeArts
             if (overrideEmitter.IsGenericMethod)
             {
                 arguments = new AstExpression[] { instanceAst, Constant(methodInfo.MakeGenericMethod(overrideEmitter.GetGenericArguments())), variable };
-            }
-            else if (classEmitter.IsGenericType)
-            {
-                arguments = new AstExpression[] { instanceAst, Constant(methodInfo), variable };
             }
             else
             {

@@ -9,12 +9,11 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 创建新实例。
     /// </summary>
-    [DebuggerDisplay("new {ReturnType.Name}({ParemetersNames})")]
+    [DebuggerDisplay("new {RuntimeType.Name}(...args)")]
     public class NewInstanceAst : AstExpression
     {
         private readonly ConstructorInfo constructorInfo;
         private readonly AstExpression[] parameters;
-        private string ParemetersNames => string.Join(",", parameters.Select(x => x.RuntimeType.Name));
 
         /// <summary>
         /// 构造函数。

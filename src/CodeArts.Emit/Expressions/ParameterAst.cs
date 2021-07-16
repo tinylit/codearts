@@ -10,7 +10,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 参数。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} ({position})")]
+    [DebuggerDisplay("{RuntimeType.Name} ({position})")]
     public class ParameterAst : AstExpression
     {
         private readonly bool canWrite = true;

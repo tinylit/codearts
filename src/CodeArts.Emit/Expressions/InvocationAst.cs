@@ -10,7 +10,7 @@ namespace CodeArts.Emit.Expressions
     public class InvocationAst : AstExpression
     {
         private readonly AstExpression instanceAst;
-        private readonly MethodInfo method;
+        private readonly AstExpression methodAst;
         private readonly AstExpression arguments;
 
         private static readonly MethodInfo InvokeMethod = typeof(MethodBase).GetMethod(nameof(MethodBase.Invoke), new Type[2] { typeof(object), typeof(object[]) });
@@ -18,9 +18,9 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 静态方法调用。
         /// </summary>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">调用参数。</param>
-        public InvocationAst(MethodInfo method, AstExpression arguments) : this(null, method, arguments)
+        public InvocationAst(MethodInfo methodInfo, AstExpression arguments) : this(null, methodInfo, arguments)
         {
         }
 
@@ -28,9 +28,9 @@ namespace CodeArts.Emit.Expressions
         /// 方法调用。
         /// </summary>
         /// <param name="instanceAst">实例。</param>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">调用参数。</param>
-        public InvocationAst(AstExpression instanceAst, MethodInfo method, AstExpression arguments) : base(method.ReturnType)
+        public InvocationAst(AstExpression instanceAst, MethodInfo methodInfo, AstExpression arguments) : base(methodInfo is DynamicMethod dynamicMethod ? dynamicMethod.DynamicReturnType : methodInfo.ReturnType)
         {
             if (instanceAst is null)
             {
@@ -42,15 +42,15 @@ namespace CodeArts.Emit.Expressions
                 throw new ArgumentNullException(nameof(arguments));
             }
 
-            if (method.IsStatic ^ !(instanceAst is null))
+            if (methodInfo.IsStatic ^ (instanceAst is null))
             {
-                if (method.IsStatic)
+                if (methodInfo.IsStatic)
                 {
-                    throw new ArgumentException($"方法“{method.Name}”是静态的，不能指定实例！");
+                    throw new ArgumentException($"方法“{methodInfo.Name}”是静态的，不能指定实例！");
                 }
                 else
                 {
-                    throw new ArgumentException($"方法“{method.Name}”不是静态的，必须指定实例！");
+                    throw new ArgumentException($"方法“{methodInfo.Name}”不是静态的，必须指定实例！");
                 }
             }
 
@@ -65,8 +65,62 @@ namespace CodeArts.Emit.Expressions
             }
 
             this.instanceAst = instanceAst;
-            this.method = method;
+            this.methodAst = new ConstantAst(methodInfo, typeof(MethodInfo));
             this.arguments = arguments;
+        }
+
+        /// <summary>
+        /// 静态方法调用。
+        /// </summary>
+        /// <param name="methodAst">方法。</param>
+        /// <param name="arguments">调用参数。</param>
+        public InvocationAst(AstExpression methodAst, AstExpression arguments) : this(null, methodAst, arguments)
+        {
+        }
+
+        /// <summary>
+        /// 方法调用。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="methodAst">方法。</param>
+        /// <param name="arguments">调用参数。</param>
+        public InvocationAst(AstExpression instanceAst, AstExpression methodAst, AstExpression arguments) : base(typeof(object))
+        {
+            if (instanceAst is null)
+            {
+                throw new ArgumentNullException(nameof(instanceAst));
+            }
+
+            if (methodAst is null)
+            {
+                throw new ArgumentNullException(nameof(methodAst));
+            }
+
+            if (arguments is null)
+            {
+                throw new ArgumentNullException(nameof(arguments));
+            }
+
+            if (!arguments.RuntimeType.IsArray)
+            {
+                throw new ArgumentException("参数不是数组!", nameof(arguments));
+            }
+
+            if (arguments.RuntimeType != typeof(object[]))
+            {
+                throw new ArgumentException("参数不是“System.Object”数组!", nameof(arguments));
+            }
+
+            if (methodAst.RuntimeType == typeof(MethodInfo) || typeof(MethodInfo).IsAssignableFrom(methodAst.RuntimeType))
+            {
+                this.instanceAst = instanceAst;
+                this.methodAst = methodAst;
+                this.arguments = arguments;
+            }
+            else
+            {
+                throw new ArgumentException("参数不是方法!", nameof(methodAst));
+            }
         }
 
         /// <summary>
@@ -75,7 +129,7 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            EmitUtils.EmitConstantOfType(ilg, method, typeof(MethodInfo));
+            methodAst.Load(ilg);
 
             if (instanceAst is null)
             {
@@ -89,6 +143,18 @@ namespace CodeArts.Emit.Expressions
             arguments.Load(ilg);
 
             ilg.Emit(OpCodes.Callvirt, InvokeMethod);
+
+            if (RuntimeType != typeof(object))
+            {
+                if (RuntimeType == typeof(void))
+                {
+                    ilg.Emit(OpCodes.Pop);
+                }
+                else
+                {
+                    EmitUtils.EmitConvertToType(ilg, typeof(object), RuntimeType.IsByRef ? RuntimeType.GetElementType() : RuntimeType, true);
+                }
+            }
         }
     }
 }

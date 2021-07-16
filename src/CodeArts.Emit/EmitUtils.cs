@@ -17,7 +17,6 @@ namespace CodeArts.Emit
 
         private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
 
-        private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
         private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
         private static readonly List<object> Constants = new List<object>();
@@ -866,17 +865,19 @@ namespace CodeArts.Emit
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;
                     case MethodInfo method:
+                        Debug.Assert(method.DeclaringType != null);
+
                         ilg.Emit(OpCodes.Ldtoken, method);
 
-                        if (method.DeclaringType is null)
+                        if (method is DynamicMethod dynamicMethod)
                         {
-                            ilg.Emit(OpCodes.Call, GetMethodFromHandle);
+                            ilg.Emit(OpCodes.Ldtoken, dynamicMethod.DynamicDeclaringType);
                         }
                         else
                         {
                             ilg.Emit(OpCodes.Ldtoken, method.DeclaringType);
-                            ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
                         }
+                        ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
 
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;

@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 字段。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} {field.Name}")]
+    [DebuggerDisplay("{RuntimeType.Name} {field.Name}")]
     public class FieldAst : MemberAst
     {
         private readonly FieldInfo field;

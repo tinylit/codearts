@@ -10,15 +10,15 @@ namespace CodeArts.Emit.Expressions
     /// </summary>
     public class MethodCallAst : AstExpression
     {
-        private readonly MethodInfo method;
+        private readonly MethodInfo methodInfo;
         private readonly AstExpression instanceAst;
         private readonly AstExpression[] arguments;
 
-        private static Type GetReturnType(AstExpression instanceAst, MethodInfo method, AstExpression[] arguments)
+        private static Type GetReturnType(AstExpression instanceAst, MethodInfo methodInfo, AstExpression[] arguments)
         {
-            if (method is null)
+            if (methodInfo is null)
             {
-                throw new ArgumentNullException(nameof(method));
+                throw new ArgumentNullException(nameof(methodInfo));
             }
 
             if (arguments is null)
@@ -27,31 +27,42 @@ namespace CodeArts.Emit.Expressions
             }
 
 
-            if (method.IsStatic ^ (instanceAst is null))
+            if (methodInfo.IsStatic ^ (instanceAst is null))
             {
-                if (method.IsStatic)
+                if (methodInfo.IsStatic)
                 {
-                    throw new AstException($"方法“{method.Name}”是静态的，不能指定实例！");
+                    throw new AstException($"方法“{methodInfo.Name}”是静态的，不能指定实例！");
                 }
                 else
                 {
-                    throw new AstException($"方法“{method.Name}”不是静态的，必须指定实例！");
+                    throw new AstException($"方法“{methodInfo.Name}”不是静态的，必须指定实例！");
                 }
             }
 
-            var parameterInfos = method.GetParameters();
+            var parameterInfos = methodInfo.GetParameters();
 
             if (arguments.Length != parameterInfos.Length)
             {
                 throw new AstException("方法参数不匹配!");
             }
 
-            if (parameterInfos.Zip(arguments, (x, y) =>
-             {
-                 return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType);
-             }).All(x => x))
+            if (methodInfo is DynamicMethod dynamicMethod)
             {
-                return method.ReturnType;
+                if (parameterInfos.Zip(arguments, (x, y) =>
+                 {
+                     return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType) || EqualSignatureTypes(x.ParameterType, y.RuntimeType);
+                 }).All(x => x))
+                {
+                    return dynamicMethod.DynamicReturnType;
+                }
+            }
+            else if (parameterInfos.Zip(arguments, (x, y) =>
+            {
+                return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType);
+
+            }).All(x => x))
+            {
+                return methodInfo.ReturnType;
             }
 
             throw new AstException("方法参数类型不匹配!");
@@ -60,17 +71,17 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 静态无参函数调用。
         /// </summary>
-        /// <param name="method">函数。</param>
-        public MethodCallAst(MethodInfo method) : this(null, method, EmptyAsts)
+        /// <param name="methodInfo">函数。</param>
+        public MethodCallAst(MethodInfo methodInfo) : this(null, methodInfo, EmptyAsts)
         {
         }
 
         /// <summary>
         /// 静态函数调用。
         /// </summary>
-        /// <param name="method">函数。</param>
+        /// <param name="methodInfo">函数。</param>
         /// <param name="arguments">参数。</param>
-        public MethodCallAst(MethodInfo method, AstExpression[] arguments) : this(null, method, arguments)
+        public MethodCallAst(MethodInfo methodInfo, AstExpression[] arguments) : this(null, methodInfo, arguments)
         {
         }
 
@@ -78,8 +89,8 @@ namespace CodeArts.Emit.Expressions
         /// 无参函数调用。
         /// </summary>
         /// <param name="instanceAst">实例。</param>
-        /// <param name="method">函数。</param>
-        public MethodCallAst(AstExpression instanceAst, MethodInfo method) : this(instanceAst, method, EmptyAsts)
+        /// <param name="methodInfo">函数。</param>
+        public MethodCallAst(AstExpression instanceAst, MethodInfo methodInfo) : this(instanceAst, methodInfo, EmptyAsts)
         {
         }
 
@@ -87,15 +98,15 @@ namespace CodeArts.Emit.Expressions
         /// 函数调用。
         /// </summary>
         /// <param name="instanceAst">实例。</param>
-        /// <param name="method">函数。</param>
+        /// <param name="methodInfo">函数。</param>
         /// <param name="arguments">参数。</param>
-        public MethodCallAst(AstExpression instanceAst, MethodInfo method, AstExpression[] arguments) : base(GetReturnType(instanceAst, method, arguments))
+        public MethodCallAst(AstExpression instanceAst, MethodInfo methodInfo, AstExpression[] arguments) : base(GetReturnType(instanceAst, methodInfo, arguments))
         {
-            this.instanceAst = instanceAst is null || method.DeclaringType == instanceAst.RuntimeType
+            this.instanceAst = instanceAst is null || methodInfo.DeclaringType == instanceAst.RuntimeType
                 ? instanceAst
-                : Convert(instanceAst, method.DeclaringType);
+                : Convert(instanceAst, methodInfo.DeclaringType);
 
-            this.method = method;
+            this.methodInfo = methodInfo;
             this.arguments = arguments;
         }
 
@@ -105,24 +116,89 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            if (!method.IsStatic)
+            if (methodInfo is DynamicMethod dynamicMethod)
             {
-                instanceAst.Load(ilg);
-            }
+                var arrayAst = new ArrayAst(arguments);
 
-            foreach (var item in arguments)
-            {
-                item.Load(ilg);
-            }
+                var invocationAst = new InvocationAst(instanceAst, methodInfo, arrayAst);
 
-            if (method.IsStatic || method.DeclaringType.IsValueType)
-            {
-                ilg.Emit(OpCodes.Call, method);
+                var convertAst = new ConvertAst(invocationAst, dynamicMethod.DynamicReturnType);
+
+                convertAst.Load(ilg);
             }
             else
             {
-                ilg.Emit(OpCodes.Callvirt, method);
+                if (!methodInfo.IsStatic)
+                {
+                    instanceAst.Load(ilg);
+                }
+
+                foreach (var item in arguments)
+                {
+                    item.Load(ilg);
+                }
+
+                if (methodInfo.IsStatic || methodInfo.DeclaringType.IsValueType)
+                {
+                    ilg.Emit(OpCodes.Call, methodInfo);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Callvirt, methodInfo);
+                }
             }
+        }
+
+        private static bool EqualSignatureTypes(Type x, Type y)
+        {
+            if (x.IsGenericParameter != y.IsGenericParameter)
+            {
+                return false;
+            }
+            else if (x.IsGenericType != y.IsGenericType)
+            {
+                return false;
+            }
+
+            if (x.IsGenericParameter)
+            {
+                if (x.GenericParameterPosition != y.GenericParameterPosition)
+                {
+                    return false;
+                }
+            }
+            else if (x.IsGenericType)
+            {
+                var xGenericTypeDef = x.GetGenericTypeDefinition();
+                var yGenericTypeDef = y.GetGenericTypeDefinition();
+
+                if (xGenericTypeDef != yGenericTypeDef)
+                {
+                    return false;
+                }
+
+                var xArgs = x.GetGenericArguments();
+                var yArgs = y.GetGenericArguments();
+
+                if (xArgs.Length != yArgs.Length)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < xArgs.Length; ++i)
+                {
+                    if (!EqualSignatureTypes(xArgs[i], yArgs[i]))
+                        return false;
+                }
+            }
+            else
+            {
+                if (!x.Equals(y))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

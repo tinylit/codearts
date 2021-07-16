@@ -10,7 +10,7 @@ namespace CodeArts.Emit
     /// <summary>
     /// 字段。
     /// </summary>
-    [DebuggerDisplay("{Name} ({ReturnType})")]
+    [DebuggerDisplay("{RuntimeType.Name} {Name}")]
     public class FieldEmitter : MemberAst
     {
         private FieldBuilder builder;
@@ -72,7 +72,7 @@ namespace CodeArts.Emit
             {
                 throw new ArgumentNullException(nameof(attributeData));
             }
-
+            
             customAttributes.Add(EmitUtils.CreateCustomAttribute(attributeData));
         }
 

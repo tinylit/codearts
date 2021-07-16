@@ -1,6 +1,5 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -11,7 +10,7 @@ namespace CodeArts.Emit
     /// <summary>
     /// 方法。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} {Name}(...args)")]
+    [DebuggerDisplay("{RuntimeType.Name} {Name}(...args)")]
     public class MethodEmitter : BlockAst
     {
         private MethodBuilder methodBuilder;
@@ -89,6 +88,26 @@ namespace CodeArts.Emit
             var parameter = new ParameterEmitter(parameterType, (Attributes & MethodAttributes.Static) == MethodAttributes.Static ? parameterIndex++ : ++parameterIndex, attributes, name);
             parameters.Add(parameter);
             return parameter;
+        }
+
+        /// <summary>
+        /// 添加代码。
+        /// </summary>
+        /// <param name="code">代码。</param>
+        /// <returns></returns>
+        public override BlockAst Append(AstExpression code)
+        {
+            if (code.RuntimeType == RuntimeType || RuntimeType == typeof(void))
+            {
+                return base.Append(code);
+            }
+
+            if (code is InvocationAst invocationAst && invocationAst.RuntimeType == typeof(object))
+            {
+                return base.Append(Convert(invocationAst, RuntimeType));
+            }
+
+            return base.Append(code);
         }
 
         /// <summary>

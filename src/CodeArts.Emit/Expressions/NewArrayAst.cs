@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 创建数组。
     /// </summary>
-    [DebuggerDisplay("new {ReturnType.Name}[{size}]")]
+    [DebuggerDisplay("new {RuntimeType.Name}[{size}]")]
     public class NewArrayAst : AstExpression
     {
         private readonly int size;
@@ -26,7 +26,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="size">数组大小。</param>
         /// <param name="elementType">数组元素类型。</param>
-        public NewArrayAst(int size, Type elementType) : base(elementType.MakeArrayType(1))
+        public NewArrayAst(int size, Type elementType) : base(elementType.MakeArrayType())
         {
             this.size = size;
             this.elementType = elementType;

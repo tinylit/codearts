@@ -83,15 +83,20 @@ namespace CodeArts.Emit.Expressions
                         type = type.GetElementType();
                     }
 
-                    if (type.IsEnum)
-                    {
-                        type = Enum.GetUnderlyingType(type);
-                    }
-
-                    if (type.IsValueType || type.IsGenericParameter)
+                    if (type.IsGenericParameter)
                     {
                         ilg.Emit(OpCodes.Box, type);
                     }
+                    else if (type.IsValueType)
+                    {
+                        if (type.IsEnum)
+                        {
+                            type = Enum.GetUnderlyingType(type);
+                        }
+
+                        ilg.Emit(OpCodes.Box, type);
+                    }
+
                 }
 
                 ilg.Emit(OpCodes.Stelem_Ref);

@@ -198,15 +198,23 @@ namespace CodeArts.Emit.Tests
             }
         }
 
-        [DependencyIntercept]
         public interface IDependency<T> where T : class
         {
+            [DependencyIntercept]
             T Clone(T obj);
+
+            T Copy(T obj);
         }
 
         public class Dependency<T> : IDependency<T> where T : class
         {
             public T Clone(T obj)
+            {
+                //... 克隆的逻辑。
+                return obj;
+            }
+
+            public T Copy(T obj)
             {
                 //... 克隆的逻辑。
                 return obj;
@@ -238,6 +246,7 @@ namespace CodeArts.Emit.Tests
             var k4 = dependency.GetAsync<Dependency>().GetAwaiter().GetResult();
 
             var dependency3 = dependency2.Clone(dependency);
+            var dependency4 = dependency2.Copy(dependency);
         }
     }
 }

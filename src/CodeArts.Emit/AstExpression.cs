@@ -64,7 +64,7 @@ namespace CodeArts.Emit
                 throw new AstException("值表达式类型和当前表达式类型不相同!");
             }
 
-        label_core:
+            label_core:
 
             if (CanWrite)
             {
@@ -355,51 +355,68 @@ namespace CodeArts.Emit
         /// <summary>
         /// 调用方法。
         /// </summary>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <returns></returns>
-        public static MethodCallAst Call(MethodInfo method) => new MethodCallAst(method);
+        public static MethodCallAst Call(MethodInfo methodInfo) => new MethodCallAst(methodInfo);
 
         /// <summary>
         /// 调用方法。
         /// </summary>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">方法参数。</param>
         /// <returns></returns>
-        public static MethodCallAst Call(MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(method, arguments);
+        public static MethodCallAst Call(MethodInfo methodInfo, params AstExpression[] arguments) => new MethodCallAst(methodInfo, arguments);
 
         /// <summary>
         /// 调用方法。
         /// </summary>
         /// <param name="instanceAst">实例。</param>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <returns></returns>
-        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method) => new MethodCallAst(instanceAst, method);
+        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo methodInfo) => new MethodCallAst(instanceAst, methodInfo);
 
         /// <summary>
         /// 调用方法。
         /// </summary>
         /// <param name="instanceAst">实例。</param>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">方法参数。</param>
         /// <returns></returns>
-        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo method, params AstExpression[] arguments) => new MethodCallAst(instanceAst, method, arguments);
+        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo methodInfo, params AstExpression[] arguments) => new MethodCallAst(instanceAst, methodInfo, arguments);
 
         /// <summary>
         /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
         /// </summary>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">参数<see cref="object"/>[]。</param>
         /// <returns></returns>
-        public static InvocationAst Invoke(MethodInfo method, AstExpression arguments) => new InvocationAst(method, arguments);
+        public static InvocationAst Invoke(MethodInfo methodInfo, AstExpression arguments) => new InvocationAst(methodInfo, arguments);
 
         /// <summary>
         /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
         /// </summary>
         /// <param name="instanceAst">实例。</param>
-        /// <param name="method">方法。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">参数<see cref="object"/>[]。</param>
         /// <returns></returns>
-        public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo method, AstExpression arguments) => new InvocationAst(instanceAst, method, arguments);
+        public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo methodInfo, AstExpression arguments) => new InvocationAst(instanceAst, methodInfo, arguments);
+
+        /// <summary>
+        /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="methodAst">方法表达式。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression methodAst, AstExpression arguments) => new InvocationAst(methodAst, arguments);
+
+        /// <summary>
+        /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="methodAst">方法表达式。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression instanceAst, AstExpression methodAst, AstExpression arguments) => new InvocationAst(instanceAst, methodAst, arguments);
 
         /// <summary>
         /// 代码块。

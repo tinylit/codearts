@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 变量。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} variable")]
+    [DebuggerDisplay("{RuntimeType.Name} variable")]
     public sealed class VariableAst : AstExpression
     {
         private LocalBuilder local;

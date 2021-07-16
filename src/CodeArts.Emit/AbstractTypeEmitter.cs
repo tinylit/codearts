@@ -67,95 +67,6 @@ namespace CodeArts.Emit
             }
         }
 
-        private class RuntimeMethodInfo : MethodInfo
-        {
-            private readonly Type declaringType;
-            private readonly MethodInfo methodInfoOriginal;
-            private readonly MethodBuilder builder;
-
-            public RuntimeMethodInfo(Type declaringType, MethodInfo methodInfoOriginal, MethodBuilder builder)
-            {
-                this.declaringType = declaringType;
-                this.methodInfoOriginal = methodInfoOriginal;
-                this.builder = builder;
-            }
-
-            public override string Name => methodInfoOriginal.Name;
-
-            public override Type DeclaringType => declaringType;
-
-            public override Type ReflectedType => declaringType;
-            public override ParameterInfo ReturnParameter => builder.ReturnParameter;
-            public override Type ReturnType => builder.ReturnType;
-            public override MethodInfo GetBaseDefinition() => methodInfoOriginal;
-            public override ParameterInfo[] GetParameters() => builder.GetParameters();
-
-#if NET45_OR_GREATER
-            public override Delegate CreateDelegate(Type delegateType) => methodInfoOriginal.CreateDelegate(delegateType);
-
-            public override Delegate CreateDelegate(Type delegateType, object target) => methodInfoOriginal.CreateDelegate(delegateType, target);
-#endif
-
-            public override Type[] GetGenericArguments() => builder.GetGenericArguments();
-
-            public override ICustomAttributeProvider ReturnTypeCustomAttributes => methodInfoOriginal.ReturnTypeCustomAttributes;
-
-            public override RuntimeMethodHandle MethodHandle => methodInfoOriginal.MethodHandle;
-
-            public override MethodAttributes Attributes => methodInfoOriginal.Attributes;
-            public override CallingConventions CallingConvention => methodInfoOriginal.CallingConvention;
-
-            public override bool ContainsGenericParameters => methodInfoOriginal.ContainsGenericParameters;
-
-#if NET45_OR_GREATER
-            public override IEnumerable<CustomAttributeData> CustomAttributes => methodInfoOriginal.CustomAttributes;
-#endif
-
-            public override bool IsGenericMethod => methodInfoOriginal.IsGenericMethod;
-            public override bool IsGenericMethodDefinition => false;
-            public override bool IsSecurityCritical => methodInfoOriginal.IsSecurityCritical;
-            public override bool IsSecuritySafeCritical => methodInfoOriginal.IsSecuritySafeCritical;
-            public override bool IsSecurityTransparent => methodInfoOriginal.IsSecurityTransparent;
-            public override MemberTypes MemberType => methodInfoOriginal.MemberType;
-            public override int MetadataToken => methodInfoOriginal.MetadataToken;
-#if NET45_OR_GREATER
-            public override MethodImplAttributes MethodImplementationFlags => methodInfoOriginal.MethodImplementationFlags;
-#endif
-            public override Module Module => methodInfoOriginal.Module;
-
-            public override object[] GetCustomAttributes(bool inherit) => methodInfoOriginal.GetCustomAttributes(inherit);
-
-            public override object[] GetCustomAttributes(Type attributeType, bool inherit) => methodInfoOriginal.GetCustomAttributes(attributeType, inherit);
-
-            public override MethodImplAttributes GetMethodImplementationFlags() => methodInfoOriginal.GetMethodImplementationFlags();
-
-            public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) => methodInfoOriginal.Invoke(obj, invokeAttr, binder, parameters, culture);
-
-            public override bool IsDefined(Type attributeType, bool inherit) => methodInfoOriginal.IsDefined(attributeType, inherit);
-
-            public override IList<CustomAttributeData> GetCustomAttributesData() => methodInfoOriginal.GetCustomAttributesData();
-
-            public override MethodInfo GetGenericMethodDefinition() => methodInfoOriginal.GetGenericMethodDefinition();
-
-            public override bool Equals(object obj) => methodInfoOriginal.Equals(obj);
-
-            public override int GetHashCode() => methodInfoOriginal.GetHashCode();
-
-            public override MethodBody GetMethodBody() => methodInfoOriginal.GetMethodBody();
-
-            public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
-            {
-                if (methodInfoOriginal.ReturnType == ReturnType)
-                {
-                    return methodInfoOriginal.MakeGenericMethod(typeArguments);
-                }
-
-                return null;
-            }
-
-            public override string ToString() => methodInfoOriginal.ToString();
-        }
-
         /// <summary>
         /// 方法。
         /// </summary>
@@ -164,12 +75,7 @@ namespace CodeArts.Emit
             private readonly MethodBuilder methodBuilder;
             private readonly MethodInfo methodInfoDeclaration;
 
-            /// <summary>
-            /// 重写方法。
-            /// </summary>
-            /// <param name="methodBuilder">方法构造器。</param>
-            /// <param name="methodInfoDeclaration">被重写的方法。</param>
-            public MethodOverrideEmitter(MethodBuilder methodBuilder, MethodInfo methodInfoDeclaration) : base(methodBuilder.Name, methodBuilder.Attributes, methodBuilder.ReturnType)
+            public MethodOverrideEmitter(MethodBuilder methodBuilder, MethodInfo methodInfoDeclaration, Type returnType) : base(methodBuilder.Name, methodBuilder.Attributes, returnType)
             {
                 if (methodBuilder is null)
                 {
@@ -186,21 +92,9 @@ namespace CodeArts.Emit
                 this.methodInfoDeclaration = methodInfoDeclaration;
             }
 
-            /// <summary>
-            /// 是否为泛型方法。
-            /// </summary>
             public override bool IsGenericMethod => methodInfoDeclaration.IsGenericMethod;
 
-            /// <summary>
-            /// 泛型参数。
-            /// </summary>
-            /// <returns></returns>
             public override Type[] GetGenericArguments() => methodBuilder.GetGenericArguments();
-
-            /// <summary>
-            /// 声明的方法（被重写的方法。）
-            /// </summary>
-            public MethodInfo MethodInfoDeclaration => methodInfoDeclaration;
 
             public ParameterEmitter DefineParameter(ParameterInfo parameterInfo, Type parameterType)
             {
@@ -225,13 +119,9 @@ namespace CodeArts.Emit
 
             public override ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
             {
-                throw new AstException("重新方法不允许自定义参数!");
+                throw new AstException("重写方法不支持自定义参数!");
             }
 
-            /// <summary>
-            /// 发行。
-            /// </summary>
-            /// <param name="builder">构造器。</param>
             public override void Emit(TypeBuilder builder)
             {
                 if (builder != methodBuilder.DeclaringType)
@@ -649,20 +539,16 @@ namespace CodeArts.Emit
 
             MethodInfo methodInfoOriginal = methodInfoDeclaration;
 
-            var methodBuilder = builder.DefineMethod(methodInfoDeclaration.Name, attrs | MethodAttributes.HideBySig, CallingConventions.Standard);
-
-            var overrideEmitter = new MethodOverrideEmitter(methodBuilder, methodInfoOriginal);
-
-            bool flag = false;
+            var methodBuilder = builder.DefineMethod(methodInfoOriginal.Name, attrs | MethodAttributes.HideBySig, CallingConventions.Standard);
 
             var genericArguments = Type.EmptyTypes;
-            Type returnType = methodInfoDeclaration.ReturnType;
-            ParameterInfo returnParameter = methodInfoDeclaration.ReturnParameter;
+            Type returnType = methodInfoOriginal.ReturnType;
+            ParameterInfo returnParameter = methodInfoOriginal.ReturnParameter;
             GenericTypeParameterBuilder[] newGenericParameters = new GenericTypeParameterBuilder[0];
 
-            if (methodInfoDeclaration.IsGenericMethod)
+            if (methodInfoOriginal.IsGenericMethod)
             {
-                genericArguments = methodInfoDeclaration.GetGenericArguments();
+                genericArguments = methodInfoOriginal.GetGenericArguments();
 
                 newGenericParameters = methodBuilder.DefineGenericParameters(genericArguments.Select(x => x.Name).ToArray());
 
@@ -679,17 +565,15 @@ namespace CodeArts.Emit
                 }
             }
 
-            if (HasGenericParameter(methodInfoDeclaration.DeclaringType))
+            if (HasGenericParameter(methodInfoOriginal.DeclaringType))
             {
-                flag = true;
-
                 Type declaringType = builder;
 
-                var typeDefinition = methodInfoDeclaration
+                var typeDefinition = methodInfoOriginal
                         .DeclaringType
                         .GetGenericTypeDefinition();
 
-                if (methodInfoDeclaration.DeclaringType.IsClass)
+                if (methodInfoOriginal.DeclaringType.IsClass)
                 {
                     while ((declaringType = declaringType.BaseType) != null)
                     {
@@ -714,7 +598,7 @@ namespace CodeArts.Emit
 
                 Type[] declaringTypeParameters = declaringType.GetGenericArguments();
 
-                if (methodInfoDeclaration.IsGenericMethod)
+                if (methodInfoOriginal.IsGenericMethod)
                 {
                     for (int i = 0; i < parameterTypes.Length; i++)
                     {
@@ -729,7 +613,7 @@ namespace CodeArts.Emit
                         returnType = MakeGenericParameter(returnType, genericArguments, declaringTypeParameters, newGenericParameters);
                     }
 
-                    methodInfoDeclaration = new RuntimeMethodInfo(declaringType, methodInfoDeclaration, methodBuilder);
+                    methodInfoDeclaration = new DynamicMethod(declaringType, returnType, methodInfoOriginal, declaringTypeParameters);
                 }
                 else
                 {
@@ -745,6 +629,8 @@ namespace CodeArts.Emit
                     {
                         returnType = MakeGenericParameter(returnType, declaringTypeParameters);
                     }
+
+                    methodInfoDeclaration = new DynamicMethod(declaringType, returnType, methodInfoOriginal, declaringTypeParameters);
                 }
             }
             else if (methodInfoDeclaration.IsGenericMethod)
@@ -763,14 +649,43 @@ namespace CodeArts.Emit
                 }
             }
 
+            var overrideEmitter = new MethodOverrideEmitter(methodBuilder, methodInfoOriginal, returnType);
+
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 overrideEmitter.DefineParameter(parameterInfos[i], parameterTypes[i]);
             }
 
-            methodBuilder.SetReturnType(returnType);
+            Type[] returnRequiredCustomModifiers;
+            Type[] returnOptionalCustomModifiers;
+            Type[][] parametersRequiredCustomModifiers;
+            Type[][] parametersOptionalCustomModifiers;
 
-            SetSignature(methodBuilder, returnType, returnParameter, parameterTypes, parameterInfos);
+            returnRequiredCustomModifiers = returnParameter.GetRequiredCustomModifiers();
+            Array.Reverse(returnRequiredCustomModifiers);
+
+            returnOptionalCustomModifiers = returnParameter.GetOptionalCustomModifiers();
+            Array.Reverse(returnOptionalCustomModifiers);
+
+            int parameterCount = parameterInfos.Length;
+            parametersRequiredCustomModifiers = new Type[parameterCount][];
+            parametersOptionalCustomModifiers = new Type[parameterCount][];
+            for (int i = 0; i < parameterCount; ++i)
+            {
+                parametersRequiredCustomModifiers[i] = parameterInfos[i].GetRequiredCustomModifiers();
+                Array.Reverse(parametersRequiredCustomModifiers[i]);
+
+                parametersOptionalCustomModifiers[i] = parameterInfos[i].GetOptionalCustomModifiers();
+                Array.Reverse(parametersOptionalCustomModifiers[i]);
+            }
+
+            methodBuilder.SetSignature(
+                returnType,
+                returnRequiredCustomModifiers,
+                returnOptionalCustomModifiers,
+                parameterTypes,
+                parametersRequiredCustomModifiers,
+                parametersOptionalCustomModifiers);
 
             methods.Add(overrideEmitter);
 
@@ -1010,40 +925,6 @@ namespace CodeArts.Emit
             return adjustedConstraints;
         }
 
-        private static void SetSignature(MethodBuilder builder, Type returnType, ParameterInfo returnParameter, Type[] parameterTypes, ParameterInfo[] baseMethodParameters)
-        {
-            Type[] returnRequiredCustomModifiers;
-            Type[] returnOptionalCustomModifiers;
-            Type[][] parametersRequiredCustomModifiers;
-            Type[][] parametersOptionalCustomModifiers;
-
-            returnRequiredCustomModifiers = returnParameter.GetRequiredCustomModifiers();
-            Array.Reverse(returnRequiredCustomModifiers);
-
-            returnOptionalCustomModifiers = returnParameter.GetOptionalCustomModifiers();
-            Array.Reverse(returnOptionalCustomModifiers);
-
-            int parameterCount = baseMethodParameters.Length;
-            parametersRequiredCustomModifiers = new Type[parameterCount][];
-            parametersOptionalCustomModifiers = new Type[parameterCount][];
-            for (int i = 0; i < parameterCount; ++i)
-            {
-                parametersRequiredCustomModifiers[i] = baseMethodParameters[i].GetRequiredCustomModifiers();
-                Array.Reverse(parametersRequiredCustomModifiers[i]);
-
-                parametersOptionalCustomModifiers[i] = baseMethodParameters[i].GetOptionalCustomModifiers();
-                Array.Reverse(parametersOptionalCustomModifiers[i]);
-            }
-
-            builder.SetSignature(
-                returnType,
-                returnRequiredCustomModifiers,
-                returnOptionalCustomModifiers,
-                parameterTypes,
-                parametersRequiredCustomModifiers,
-                parametersOptionalCustomModifiers);
-        }
-
         private static bool HasGenericParameter(Type type)
         {
             if (type.IsGenericParameter)
@@ -1053,8 +934,6 @@ namespace CodeArts.Emit
 
             if (type.IsGenericType)
             {
-                Debug.Assert(type.IsGenericTypeDefinition == false);
-
                 return Array.Exists(type.GetGenericArguments(), HasGenericParameter);
             }
 
@@ -1075,8 +954,6 @@ namespace CodeArts.Emit
 
             if (type.IsGenericType)
             {
-                Debug.Assert(type.IsGenericTypeDefinition == false);
-
                 bool flag = false;
 
                 var genericArguments = type.GetGenericArguments();

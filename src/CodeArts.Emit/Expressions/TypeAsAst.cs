@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 类型转换。
     /// </summary>
-    [DebuggerDisplay("{body} as {ReturnType.Name}")]
+    [DebuggerDisplay("{body} as {RuntimeType.Name}")]
     public class TypeAsAst : AstExpression
     {
         private readonly AstExpression body;

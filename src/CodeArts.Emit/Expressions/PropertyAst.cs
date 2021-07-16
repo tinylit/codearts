@@ -7,7 +7,7 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 属性。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} property.Name \\{ get; set; \\}")]
+    [DebuggerDisplay("{RuntimeType.Name} property.Name \\{ get; set; \\}")]
     public class PropertyAst : AstExpression
     {
         private readonly PropertyInfo property;
