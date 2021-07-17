@@ -204,6 +204,8 @@ namespace CodeArts.Emit.Tests
             T Clone(T obj);
 
             T Copy(T obj);
+
+            T2 New<T2>() where T2 : T, new();
         }
 
         public class Dependency<T> : IDependency<T> where T : class
@@ -218,6 +220,11 @@ namespace CodeArts.Emit.Tests
             {
                 //... ¿ËÂ¡µÄÂß¼­¡£
                 return obj;
+            }
+
+            public T2 New<T2>() where T2 : T, new()
+            {
+                return new T2();
             }
         }
 
@@ -247,6 +254,9 @@ namespace CodeArts.Emit.Tests
 
             var dependency3 = dependency2.Clone(dependency);
             var dependency4 = dependency2.Copy(dependency);
+
+            var dependency5 = dependency2.New<Dependency>();
+
         }
     }
 }

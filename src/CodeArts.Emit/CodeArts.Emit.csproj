@@ -21,6 +21,10 @@
 		<PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Compile Remove="AbstractTypeEmitter - 副本.cs" />
+	</ItemGroup>
+
 
 
 </Project>

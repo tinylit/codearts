@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Text.RegularExpressions;
 
 namespace CodeArts.Emit
 {
@@ -271,6 +272,7 @@ namespace CodeArts.Emit
             return new ClassEmitter(DefineTypeBuilder(moduleBuilder, namingScope.GetUniqueName(name), attr, parent, interfaces), namingScope);
         }
 
+        private static readonly Regex NamingPattern = new Regex("[^0-9a-zA-Z]+", RegexOptions.Singleline | RegexOptions.Compiled);
 
         private static TypeBuilder DefineTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type baseType, Type[] interfaces)
         {
@@ -278,6 +280,8 @@ namespace CodeArts.Emit
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
+            name = NamingPattern.Replace(name, string.Empty);
 
             if (baseType is null && interfaces is null)
             {

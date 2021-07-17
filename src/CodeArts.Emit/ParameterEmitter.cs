@@ -24,6 +24,11 @@ namespace CodeArts.Emit
         public override bool IsByRef => base.IsByRef || (Attributes & ParameterAttributes.Out) == ParameterAttributes.Out || (Attributes & ParameterAttributes.Retval) == ParameterAttributes.Retval;
 
         /// <summary>
+        /// 参数类型。
+        /// </summary>
+        public Type ParameterType => RuntimeType;
+
+        /// <summary>
         /// 标记。
         /// </summary>
         public ParameterAttributes Attributes { get; }

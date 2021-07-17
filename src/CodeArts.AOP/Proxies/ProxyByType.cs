@@ -12,12 +12,14 @@ namespace CodeArts.Proxies
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
+        private readonly ModuleEmitter moduleEmitter;
         private readonly Type serviceType;
         private readonly Type implementationType;
         private readonly ServiceLifetime lifetime;
 
-        public ProxyByType(Type serviceType, Type implementationType, ServiceLifetime lifetime)
+        public ProxyByType(ModuleEmitter moduleEmitter, Type serviceType, Type implementationType, ServiceLifetime lifetime)
         {
+            this.moduleEmitter = moduleEmitter;
             this.serviceType = serviceType;
             this.implementationType = implementationType;
             this.lifetime = lifetime;
@@ -58,12 +60,6 @@ namespace CodeArts.Proxies
 
         private ServiceDescriptor ResolveIsInterface()
         {
-#if NET40_OR_GREATER
-            var moduleEmitter = new ModuleEmitter(true);
-#else
-            var moduleEmitter = new ModuleEmitter();
-#endif
-
             string name = string.Concat(serviceType.Name, "Proxy");
 
             var interfaces = serviceType.GetAllInterfaces();
@@ -133,13 +129,7 @@ namespace CodeArts.Proxies
 
             interceptMethods.Clear();
 
-            var typeNew = classEmitter.CreateType();
-
-#if NET40_OR_GREATER
-            moduleEmitter.SaveAssembly();
-#endif
-
-            return new ServiceDescriptor(serviceType, typeNew, lifetime);
+            return new ServiceDescriptor(serviceType, classEmitter.CreateType(), lifetime);
         }
 
         private static T[] Merge<T>(T[] arrays, T[] arrays2)

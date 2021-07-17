@@ -1,4 +1,5 @@
-﻿using CodeArts.Proxies;
+﻿using CodeArts.Emit;
+using CodeArts.Proxies;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -24,6 +25,12 @@ namespace CodeArts
                 throw new ArgumentNullException(nameof(services));
             }
 
+#if NET40_OR_GREATER
+            var moduleEmitter = new ModuleEmitter(true);
+#else
+            var moduleEmitter = new ModuleEmitter();
+#endif
+
             for (int i = 0; i < services.Count; i++)
             {
                 ServiceDescriptor descriptor = services[i];
@@ -43,7 +50,7 @@ namespace CodeArts
                     }
                     else
                     {
-                        byPattern = new ProxyByType(descriptor.ServiceType, descriptor.ImplementationType, descriptor.Lifetime);
+                        byPattern = new ProxyByType(moduleEmitter, descriptor.ServiceType, descriptor.ImplementationType, descriptor.Lifetime);
 
                     }
                 }
@@ -54,6 +61,10 @@ namespace CodeArts
 
                 services[i] = byPattern.Resolve();
             }
+
+#if NET40_OR_GREATER
+            moduleEmitter.SaveAssembly();
+#endif
 
             return services;
         }

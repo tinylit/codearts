@@ -11,41 +11,54 @@ namespace CodeArts.Emit
         private readonly Type returnType;
         private readonly MethodInfo methodInfoOriginal;
         private readonly Type[] declaringTypeParameters;
+        private readonly MethodInfo methodInfoDeclaration;
+        private readonly bool hasDeclaringTypes;
 
-        public DynamicMethod(Type declaringType, Type returnType, MethodInfo methodInfoOriginal, Type[] declaringTypeParameters)
+        public DynamicMethod(MethodInfo methodInfoOriginal, MethodInfo methodInfoDeclaration, Type declaringType, Type returnType, Type[] declaringTypeParameters, bool hasDeclaringTypes)
         {
+            this.methodInfoOriginal = methodInfoOriginal;
+            this.methodInfoDeclaration = methodInfoDeclaration;
             this.declaringType = declaringType;
             this.returnType = returnType;
-            this.methodInfoOriginal = methodInfoOriginal;
             this.declaringTypeParameters = declaringTypeParameters;
+            this.hasDeclaringTypes = hasDeclaringTypes;
         }
 
-        public Type DynamicDeclaringType => declaringType;
-        public Type DynamicReturnType => returnType;
+        public DynamicMethod(MethodInfo methodInfoOriginal, Type declaringType, Type returnType, Type[] declaringTypeParameters, bool hasDeclaringTypes) : this(methodInfoOriginal, methodInfoOriginal, declaringType, returnType, declaringTypeParameters, hasDeclaringTypes)
+        {
+
+        }
+
+        public MethodInfo RuntimeMethod => methodInfoDeclaration;
 
         public override string Name => methodInfoOriginal.Name;
 
-        public override Type DeclaringType => methodInfoOriginal.DeclaringType;
+        public override Type DeclaringType => declaringType;
 
         public override Type ReflectedType => methodInfoOriginal.ReflectedType;
+
         public override ParameterInfo ReturnParameter => methodInfoOriginal.ReturnParameter;
-        public override Type ReturnType => methodInfoOriginal.ReturnType;
+
+        public override Type ReturnType => returnType;
+
         public override MethodInfo GetBaseDefinition() => methodInfoOriginal;
+
         public override ParameterInfo[] GetParameters() => methodInfoOriginal.GetParameters();
 
 #if NET45_OR_GREATER
-        public override Delegate CreateDelegate(Type delegateType) => methodInfoOriginal.CreateDelegate(delegateType);
+        public override Delegate CreateDelegate(Type delegateType) => methodInfoDeclaration.CreateDelegate(delegateType);
 
-        public override Delegate CreateDelegate(Type delegateType, object target) => methodInfoOriginal.CreateDelegate(delegateType, target);
+        public override Delegate CreateDelegate(Type delegateType, object target) => methodInfoDeclaration.CreateDelegate(delegateType, target);
 #endif
 
-        public override Type[] GetGenericArguments() => methodInfoOriginal.GetGenericArguments();
+        public override Type[] GetGenericArguments() => methodInfoDeclaration.GetGenericArguments();
 
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => methodInfoOriginal.ReturnTypeCustomAttributes;
 
         public override RuntimeMethodHandle MethodHandle => methodInfoOriginal.MethodHandle;
 
         public override MethodAttributes Attributes => methodInfoOriginal.Attributes;
+
         public override CallingConventions CallingConvention => methodInfoOriginal.CallingConvention;
 
         public override bool ContainsGenericParameters => methodInfoOriginal.ContainsGenericParameters;
@@ -72,7 +85,7 @@ namespace CodeArts.Emit
 
         public override MethodImplAttributes GetMethodImplementationFlags() => methodInfoOriginal.GetMethodImplementationFlags();
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) => methodInfoOriginal.Invoke(obj, invokeAttr, binder, parameters, culture);
+        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) => methodInfoDeclaration.Invoke(obj, invokeAttr, binder, parameters, culture);
 
         public override bool IsDefined(Type attributeType, bool inherit) => methodInfoOriginal.IsDefined(attributeType, inherit);
 
@@ -80,9 +93,9 @@ namespace CodeArts.Emit
 
         public override MethodInfo GetGenericMethodDefinition()
         {
-            var methodDefinition = methodInfoOriginal.GetGenericMethodDefinition();
+            var methodInfoDeclaration = methodInfoOriginal.GetGenericMethodDefinition();
 
-            return new DynamicMethod(declaringType, returnType, methodDefinition, declaringTypeParameters);
+            return new DynamicMethod(methodInfoOriginal, methodInfoDeclaration, declaringType, returnType, declaringTypeParameters, hasDeclaringTypes);
         }
 
         public override bool Equals(object obj) => methodInfoOriginal.Equals(obj);
@@ -93,9 +106,13 @@ namespace CodeArts.Emit
 
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
-            var methodInfo = methodInfoOriginal.MakeGenericMethod(typeArguments);
+            var methodInfoDeclaration = methodInfoOriginal.IsGenericMethodDefinition
+                ? methodInfoOriginal.MakeGenericMethod(typeArguments)
+                : methodInfoOriginal.GetGenericMethodDefinition().MakeGenericMethod(typeArguments);
 
-            return new DynamicMethod(declaringType, MakeGenericParameter(methodInfo.ReturnType, typeArguments, declaringTypeParameters), methodInfo, declaringTypeParameters);
+            return hasDeclaringTypes
+                ? new DynamicMethod(methodInfoOriginal, methodInfoDeclaration, declaringType, MakeGenericParameter(methodInfoDeclaration.ReturnType, typeArguments, declaringTypeParameters), declaringTypeParameters, hasDeclaringTypes)
+                : new DynamicMethod(methodInfoOriginal, methodInfoDeclaration, declaringType, methodInfoDeclaration.ReturnType, declaringTypeParameters, hasDeclaringTypes);
         }
 
         public override string ToString() => methodInfoOriginal.ToString();

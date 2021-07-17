@@ -53,7 +53,7 @@ namespace CodeArts.Emit.Expressions
                      return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType) || EqualSignatureTypes(x.ParameterType, y.RuntimeType);
                  }).All(x => x))
                 {
-                    return dynamicMethod.DynamicReturnType;
+                    return dynamicMethod.ReturnType;
                 }
             }
             else if (parameterInfos.Zip(arguments, (x, y) =>
@@ -116,28 +116,29 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
+            if (!methodInfo.IsStatic)
+            {
+                instanceAst.Load(ilg);
+            }
+
+            foreach (var item in arguments)
+            {
+                item.Load(ilg);
+            }
+
             if (methodInfo is DynamicMethod dynamicMethod)
             {
-                var arrayAst = new ArrayAst(arguments);
-
-                var invocationAst = new InvocationAst(instanceAst, methodInfo, arrayAst);
-
-                var convertAst = new ConvertAst(invocationAst, dynamicMethod.DynamicReturnType);
-
-                convertAst.Load(ilg);
+                if (methodInfo.IsStatic || methodInfo.DeclaringType.IsValueType)
+                {
+                    ilg.Emit(OpCodes.Call, dynamicMethod.RuntimeMethod);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Callvirt, dynamicMethod.RuntimeMethod);
+                }
             }
             else
             {
-                if (!methodInfo.IsStatic)
-                {
-                    instanceAst.Load(ilg);
-                }
-
-                foreach (var item in arguments)
-                {
-                    item.Load(ilg);
-                }
-
                 if (methodInfo.IsStatic || methodInfo.DeclaringType.IsValueType)
                 {
                     ilg.Emit(OpCodes.Call, methodInfo);

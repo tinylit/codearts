@@ -15,9 +15,9 @@ namespace CodeArts.Emit
     {
         private static readonly ConstructorInfo GuidConstructorInfo = typeof(Guid).GetConstructor(new Type[1] { typeof(string) });
 
-        private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
+        private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
 
-        private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
+        private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod(nameof(MethodBase.GetMethodFromHandle), new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
         private static readonly List<object> Constants = new List<object>();
         private static readonly Dictionary<object, int> ConstantCache = new Dictionary<object, int>();
@@ -36,7 +36,7 @@ namespace CodeArts.Emit
                 type = Nullable.GetUnderlyingType(type);
             }
 
-            if (type.IsEnum)
+            if (type.IsValueType && type.IsEnum)
             {
                 return true;
             }
@@ -864,20 +864,21 @@ namespace CodeArts.Emit
 
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;
-                    case MethodInfo method:
-                        Debug.Assert(method.DeclaringType != null);
+                    case MethodInfo methodInfo:
+                        Debug.Assert(methodInfo.DeclaringType != null);
 
-                        ilg.Emit(OpCodes.Ldtoken, method);
-
-                        if (method is DynamicMethod dynamicMethod)
+                        if (methodInfo is DynamicMethod dynamicMethod)
                         {
-                            ilg.Emit(OpCodes.Ldtoken, dynamicMethod.DynamicDeclaringType);
+                            ilg.Emit(OpCodes.Ldtoken, dynamicMethod.RuntimeMethod);
                         }
                         else
                         {
-                            ilg.Emit(OpCodes.Ldtoken, method.DeclaringType);
+                            ilg.Emit(OpCodes.Ldtoken, methodInfo);
                         }
-                        ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
+
+                        ilg.Emit(OpCodes.Ldtoken, methodInfo.DeclaringType);
+
+                        ilg.Emit(OpCodes.Call, GetMethodFromHandle);
 
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;
@@ -909,7 +910,7 @@ namespace CodeArts.Emit
 
                             EmitConstantOfType(ilg, enumerator.Current, elementType);
 
-                            if (elementType.IsEnum)
+                            if (elementType.IsValueType && elementType.IsEnum)
                             {
                                 ilg.Emit(OpCodes.Stelem, elementType);
                             }

@@ -36,6 +36,11 @@ namespace CodeArts.Emit
         public virtual bool IsGenericMethod => false;
 
         /// <summary>
+        /// 返回值类型。
+        /// </summary>
+        public Type ReturnType => RuntimeType;
+
+        /// <summary>
         /// 泛型参数。
         /// </summary>
         /// <returns></returns>

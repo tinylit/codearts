@@ -108,9 +108,9 @@ namespace CodeArts.Emit.Expressions
 
             if (IsByRef)
             {
-                var type = RuntimeType.IsByRef ? RuntimeType.GetElementType() : RuntimeType;
+                var type = RuntimeType.GetElementType();
 
-                if (type.IsEnum)
+                if (type.IsValueType && type.IsEnum)
                 {
                     type = Enum.GetUnderlyingType(type);
                 }
@@ -224,9 +224,9 @@ namespace CodeArts.Emit.Expressions
 
             if (IsByRef)
             {
-                var type = RuntimeType.IsByRef ? RuntimeType.GetElementType() : RuntimeType;
+                var type = RuntimeType.GetElementType();
 
-                if (type.IsEnum)
+                if (type.IsValueType && type.IsEnum)
                 {
                     type = Enum.GetUnderlyingType(type);
                 }

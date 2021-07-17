@@ -30,7 +30,7 @@ namespace CodeArts.Emit.Expressions
         /// <param name="instanceAst">实例。</param>
         /// <param name="methodInfo">方法。</param>
         /// <param name="arguments">调用参数。</param>
-        public InvocationAst(AstExpression instanceAst, MethodInfo methodInfo, AstExpression arguments) : base(methodInfo is DynamicMethod dynamicMethod ? dynamicMethod.DynamicReturnType : methodInfo.ReturnType)
+        public InvocationAst(AstExpression instanceAst, MethodInfo methodInfo, AstExpression arguments) : base(methodInfo.ReturnType)
         {
             if (instanceAst is null)
             {

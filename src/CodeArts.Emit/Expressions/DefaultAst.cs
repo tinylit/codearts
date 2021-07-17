@@ -36,7 +36,7 @@ namespace CodeArts.Emit.Expressions
 
         private static void Emit(ILGenerator ilg, Type type)
         {
-            if (type.IsEnum)
+            if (type.IsValueType && type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
             }
@@ -101,7 +101,6 @@ namespace CodeArts.Emit.Expressions
             }
             else if (type.IsValueType || type.IsGenericParameter)
             {
-
                 var local = ilg.DeclareLocal(type);
                 ilg.Emit(OpCodes.Ldloca_S, local);
                 ilg.Emit(OpCodes.Initobj, type);
@@ -115,7 +114,7 @@ namespace CodeArts.Emit.Expressions
 
         private static void EmitByRef(ILGenerator ilg, Type type)
         {
-            if (type.IsEnum)
+            if (type.IsValueType && type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
             }

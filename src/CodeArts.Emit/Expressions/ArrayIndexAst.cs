@@ -173,7 +173,7 @@ namespace CodeArts.Emit.Expressions
 
         private static void EmitEnsureArrayIndexAssignedSafely(ILGenerator ilg, Type elementType)
         {
-            if (elementType.IsEnum)
+            if (elementType.IsValueType && elementType.IsEnum)
             {
                 ilg.Emit(OpCodes.Stelem, elementType);
             }

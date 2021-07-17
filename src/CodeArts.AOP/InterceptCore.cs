@@ -74,7 +74,7 @@ namespace CodeArts
 
                 if (!GenericInterceptCache.TryGetValue(typeDefinition, out Dictionary<MethodInfo, InterceptAttribute[]> interceptCache))
                 {
-                    GenericInterceptCache.Add(typeDefinition, interceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>());
+                    GenericInterceptCache.Add(typeDefinition, interceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance));
                 }
 
                 interceptCache[methodInfo] = attributes;
@@ -180,18 +180,7 @@ namespace CodeArts
 
             if (attributes is null || attributes.Length == 0)
             {
-                if (methodInfo.DeclaringType.IsGenericType)
-                {
-                    var fieldEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
-
-                    classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodInfo)));
-
-                    overrideEmitter.Append(Invoke(instanceAst, fieldEmitter, Array(paramterEmitters)));
-                }
-                else
-                {
-                    overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
-                }
+                overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
 
                 return;
             }
@@ -204,7 +193,7 @@ namespace CodeArts
 
             if (overrideEmitter.IsGenericMethod)
             {
-                arguments = new AstExpression[] { instanceAst, Constant(methodInfo.MakeGenericMethod(overrideEmitter.GetGenericArguments())), variable };
+                arguments = new AstExpression[] { instanceAst, Constant(methodInfo), variable };
             }
             else
             {
@@ -219,18 +208,18 @@ namespace CodeArts
 
             var blockAst = hasByRef ? Try(methodInfo.ReturnType) : Block(methodInfo.ReturnType);
 
-            if (methodInfo.ReturnType.IsClass && typeof(Task).IsAssignableFrom(methodInfo.ReturnType))
+            if (overrideEmitter.ReturnType.IsClass && typeof(Task).IsAssignableFrom(overrideEmitter.ReturnType))
             {
-                if (methodInfo.ReturnType.IsGenericType)
+                if (overrideEmitter.ReturnType.IsGenericType)
                 {
-                    blockAst.Append(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments)));
+                    blockAst.Append(Call(InterceptAsyncGenericMethodCall.MakeGenericMethod(overrideEmitter.ReturnType.GetGenericArguments()), New(InterceptAsyncContextCtor, arguments)));
                 }
                 else
                 {
                     blockAst.Append(Call(InterceptAsyncMethodCall, New(InterceptAsyncContextCtor, arguments)));
                 }
             }
-            else if (methodInfo.ReturnType == typeof(void))
+            else if (overrideEmitter.ReturnType == typeof(void))
             {
                 blockAst.Append(Call(InterceptMethodCall, New(InterceptContextCtor, arguments)));
             }
@@ -240,7 +229,7 @@ namespace CodeArts
 
                 blockAst.Append(Assign(value, Call(InterceptMethodCall, New(InterceptContextCtor, arguments))));
 
-                blockAst.Append(Condition(Equal(value, Constant(null)), Default(methodInfo.ReturnType), Convert(value, methodInfo.ReturnType)));
+                blockAst.Append(Condition(Equal(value, Constant(null)), Default(overrideEmitter.ReturnType), Convert(value, overrideEmitter.ReturnType)));
             }
 
             if (hasByRef)
@@ -256,7 +245,7 @@ namespace CodeArts
                         continue;
                     }
 
-                    finallyAst.Append(Assign(paramterEmitter, Convert(ArrayIndex(variable, i), paramterEmitter.RuntimeType)));
+                    finallyAst.Append(Assign(paramterEmitter, Convert(ArrayIndex(variable, i), paramterEmitter.ParameterType)));
                 }
 
                 blockAst.Append(Finally(finallyAst));
