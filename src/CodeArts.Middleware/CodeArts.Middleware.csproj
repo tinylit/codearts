@@ -8,7 +8,7 @@
 		<Version>7.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
-		<Description>A middleware framework.</Description>
+		<Description>A lightweight middleware framework based on IoC.</Description>
 		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
 		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -17,12 +17,6 @@
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 		<RootNamespace>CodeArts</RootNamespace>
 	</PropertyGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
-			<Version>3.1.0</Version>
-		</PackageReference>
-	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
@@ -38,6 +32,12 @@
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45'">
 		<ProjectReference Include="..\CodeArts.DependencyInjection.Abstractions\CodeArts.DependencyInjection.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+			<Version>3.1.0</Version>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
