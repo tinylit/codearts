@@ -1,4 +1,4 @@
-﻿namespace CodeArts.AOP
+﻿namespace CodeArts.Middleware
 {
     /// <summary>
     /// 拦截执行方法。

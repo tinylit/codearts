@@ -208,9 +208,18 @@ namespace CodeArts.Mvc.Hosting
 
                         if (!(configureServices is null))
                         {
+                            var controllerBaseType = typeof(ApiController);
+
                             IServiceCollection services = new ServiceCollection();
 
                             configureServices.Invoke(instance, new object[1] { services });
+
+                            foreach (var controllerType in _referencedAssemblies
+                            .SelectMany(x => x.GetTypes())
+                            .Where(x => x.IsClass && !x.IsAbstract && controllerBaseType.IsAssignableFrom(x)))
+                            {
+                                services.AddTransient(controllerType);
+                            }
 
                             if (services.Count > 0)
                             {

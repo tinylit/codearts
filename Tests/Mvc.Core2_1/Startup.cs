@@ -30,6 +30,8 @@ namespace Mvc.Core2_1
             services.AddTransient(typeof(IDbRepository<>), typeof(DbRepository<>));
 
             base.ConfigureServices(services);
+
+            services.UseDependencyInjection();
         }
 
         /// <inheritdoc />

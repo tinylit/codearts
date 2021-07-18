@@ -8,20 +8,18 @@ using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts.Proxies
 {
-    class ProxyByType : IProxyByPattern
+    abstract class ProxyByServiceType : IProxyByPattern
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
         private readonly ModuleEmitter moduleEmitter;
         private readonly Type serviceType;
-        private readonly Type implementationType;
         private readonly ServiceLifetime lifetime;
 
-        public ProxyByType(ModuleEmitter moduleEmitter, Type serviceType, Type implementationType, ServiceLifetime lifetime)
+        public ProxyByServiceType(ModuleEmitter moduleEmitter, Type serviceType, ServiceLifetime lifetime)
         {
             this.moduleEmitter = moduleEmitter;
             this.serviceType = serviceType;
-            this.implementationType = implementationType;
             this.lifetime = lifetime;
         }
 
@@ -36,21 +34,13 @@ namespace CodeArts.Proxies
             {
                 return ResolveIsInterface();
             }
-            else if (implementationType.IsSealed)
+            else if (serviceType.IsSealed)
             {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是密封类!");
+                throw new NotSupportedException($"代理“{serviceType.FullName}”类是密封类!");
             }
-            else if (implementationType.IsInterface)
+            else if (serviceType.IsValueType)
             {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是接口!");
-            }
-            else if (implementationType.IsAbstract)
-            {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是抽象类!");
-            }
-            else if (implementationType.IsValueType)
-            {
-                throw new NotSupportedException($"代理“{serviceType.FullName}”类的实现类（“{implementationType.FullName}”）是值类型!");
+                throw new NotSupportedException($"代理“{serviceType.FullName}”类是值类型!");
             }
             else
             {
@@ -68,20 +58,11 @@ namespace CodeArts.Proxies
 
             var instanceAst = classEmitter.DefineField("____instance__", serviceType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
 
-            foreach (var constructorInfo in implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
-            {
-                var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
+            var constructorEmitter = classEmitter.DefineConstructor(MethodAttributes.Public);
 
-                var parameterInfos = constructorInfo.GetParameters();
-                var parameterEmiters = new AstExpression[parameterInfos.Length];
+            var parameterEmitter = constructorEmitter.DefineParameter(serviceType, ParameterAttributes.None, "instance");
 
-                for (int i = 0; i < parameterInfos.Length; i++)
-                {
-                    parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
-                }
-
-                constructorEmitter.Append(Assign(instanceAst, Convert(New(constructorInfo, parameterEmiters), serviceType)));
-            }
+            constructorEmitter.Append(Assign(instanceAst, parameterEmitter));
 
             var interceptMethods = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
 
@@ -129,7 +110,7 @@ namespace CodeArts.Proxies
 
             interceptMethods.Clear();
 
-            return new ServiceDescriptor(serviceType, classEmitter.CreateType(), lifetime);
+            return Resolve(serviceType, classEmitter.CreateType(), lifetime);
         }
 
         private static T[] Merge<T>(T[] arrays, T[] arrays2)
@@ -155,31 +136,43 @@ namespace CodeArts.Proxies
 
         private ServiceDescriptor ResolveIsClass()
         {
-#if NET40_OR_GREATER
-            var moduleEmitter = new ModuleEmitter(true);
-#else
-            var moduleEmitter = new ModuleEmitter();
-#endif
-
             string name = string.Concat(serviceType.Name, "Proxy");
 
-            var interfaces = implementationType.GetInterfaces();
+            var interfaces = serviceType.GetInterfaces();
 
-            var classEmitter = moduleEmitter.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, implementationType, interfaces);
+            var classEmitter = moduleEmitter.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, serviceType, interfaces);
 
-            foreach (var constructorInfo in implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
+            var instanceAst = classEmitter.DefineField("____instance__", serviceType, FieldAttributes.Private | FieldAttributes.InitOnly | FieldAttributes.NotSerialized);
+
+            bool throwsError = true;
+
+            var constructorInfos = serviceType.GetConstructors();
+
+            foreach (var constructorInfo in serviceType.GetConstructors())
             {
-                var constructorEmitter = classEmitter.DefineConstructor(constructorInfo.Attributes);
-
                 var parameterInfos = constructorInfo.GetParameters();
-                var parameterEmiters = new ParameterEmitter[parameterInfos.Length];
 
-                for (int i = 0; i < parameterInfos.Length; i++)
+                if (parameterInfos.Length > 0)
                 {
-                    parameterEmiters[i] = constructorEmitter.DefineParameter(parameterInfos[i]);
+                    continue;
                 }
 
-                constructorEmitter.InvokeBaseConstructor(constructorInfo, parameterEmiters);
+                throwsError = false;
+
+                var constructorEmitter = classEmitter.DefineConstructor(MethodAttributes.Public);
+
+                var parameterEmitter = constructorEmitter.DefineParameter(serviceType, ParameterAttributes.None, "instance");
+
+                constructorEmitter.Append(Assign(instanceAst, parameterEmitter));
+
+                constructorEmitter.InvokeBaseConstructor(constructorInfo);
+
+                break;
+            }
+
+            if (throwsError)
+            {
+                throw new AstException($"“{serviceType.FullName}”不存在无参构造函数!");
             }
 
             var interceptMethods = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
@@ -255,27 +248,13 @@ namespace CodeArts.Proxies
             {
                 if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
                 {
-                    InterceptCore.DefineMethodOverride(This, classEmitter, methodInfo, interceptAttributes);
+                    InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
                 }
             }
 
-            /*
-             * bool InterfaceA.CallMethod() => true; 
-             */
-
-            if (interceptMethods.Keys.Except(methodInfos, MethodInfoEqualityComparer.Instance).Any())
-            {
-                throw new NotSupportedException("不支持特定接口拦截!");
-            }
-
-
-            var typeNew = classEmitter.CreateType();
-
-#if NET40_OR_GREATER
-            moduleEmitter.SaveAssembly();
-#endif
-
-            return new ServiceDescriptor(serviceType, typeNew, lifetime);
+            return Resolve(serviceType, classEmitter.CreateType(), lifetime);
         }
+
+        protected abstract ServiceDescriptor Resolve(Type serviceType, Type implementationType, ServiceLifetime lifetime);
     }
 }

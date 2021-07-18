@@ -36,7 +36,9 @@ namespace Mvc.Core
 
             base.ConfigureServices(services);
 
-            services.UseAOP();
+            services
+                .UseDependencyInjection()
+                .UseMiddleware();
         }
     }
 }

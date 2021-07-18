@@ -23,7 +23,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CodeArts.AOP\CodeArts.AOP.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Casting\CodeArts.Casting.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Db.EntityFramework.SqlServer\CodeArts.Db.EntityFramework.SqlServer.csproj" />
@@ -31,6 +30,7 @@
     <ProjectReference Include="..\..\src\CodeArts.Db.Lts.MySql\CodeArts.Db.Lts.MySql.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Json\CodeArts.Json.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.MemoryCaching\CodeArts.MemoryCaching.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.Middleware\CodeArts.Middleware.csproj" />
     <ProjectReference Include="..\..\src\CodeArts.Mvc\CodeArts.Mvc.csproj" />
   </ItemGroup>
 

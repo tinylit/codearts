@@ -46,6 +46,11 @@ namespace CodeArts
                 throw new ArgumentNullException(nameof(pattern));
             }
 
+            if (pattern.Length == 0)
+            {
+                throw new ArgumentException($"“{nameof(pattern)}”不能为空。", nameof(pattern));
+            }
+
             if (!pattern.EndsWith(".dll"))
             {
                 pattern += ".dll";

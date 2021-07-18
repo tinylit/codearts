@@ -7,6 +7,7 @@ using System.Web.Http;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using CodeArts.Mvc;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,22 +20,30 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，也会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】）。
         /// </summary>
-        /// <remarks>可配置【di:pattern】缩小依赖注入程序集范围，作为<see cref="System.IO.Directory.GetFiles(string, string)"/>的第二个参数，默认:“*”。</remarks>
-        /// <remarks>可配置【di:singleton】决定注入控制器构造函数时，是否参数单例模式注入，默认：true。</remarks>
 #else
         /// <summary>
         /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，也会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】）。
         /// </summary>
-        /// <remarks>可配置【di-pattern】缩小依赖注入程序集范围，作为<see cref="System.IO.Directory.GetFiles(string, string)"/>的第二个参数，默认:“*”。</remarks>
-        /// <remarks>可配置【di-singleton】决定注入控制器构造函数时，是否参数单例模式注入，默认：true。</remarks>
 #endif
-        public static IServiceCollection UseDependencyInjection(this IServiceCollection services)
-        {
+        public static IServiceCollection UseDependencyInjection(this IServiceCollection services) => UseDependencyInjection(services, new DependencyInjectionOptions());
+
 #if NETCOREAPP2_0_OR_GREATER
-            string pattern = "di:pattern".Config("*");
+        /// <summary>
+        /// 使用依赖注入（注入继承<see cref="ControllerBase"/>的构造函数参数类型，也会注入【继承<see cref="ControllerBase"/>的构造函数参数】以及【其参数类型的构造函数参数】）。
+        /// </summary>
 #else
-            string pattern = "di-pattern".Config("*");
+        /// <summary>
+        /// 使用依赖注入（注入继承<see cref="ApiController"/>的构造函数参数类型，也会注入【继承<see cref="ApiController"/>的构造函数参数】以及【其参数类型的构造函数参数】）。
+        /// </summary>
 #endif
+        public static IServiceCollection UseDependencyInjection(this IServiceCollection services, DependencyInjectionOptions options)
+        {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            string pattern = options.Pattern;
 
             var assemblys = AssemblyFinder.Find(pattern);
 
@@ -53,13 +62,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .Where(x => x.IsClass && !x.IsAbstract && controllerBaseType.IsAssignableFrom(x))
                 .ToList();
 
-#if NETCOREAPP2_0_OR_GREATER
-            int maxDepth = "di:depth".Config(5);
-            ServiceLifetime lifetime = "di:lifetime".Config(ServiceLifetime.Scoped);
-#else
-            int maxDepth = "di-depth".Config(5);
-            ServiceLifetime lifetime = "di-lifetime".Config(ServiceLifetime.Scoped);
-#endif
+            int maxDepth = options.MaxDepth;
+            ServiceLifetime lifetime = options.Lifetime;
 
             if (!Enum.IsDefined(typeof(ServiceLifetime), lifetime))
             {
@@ -88,10 +92,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (flag)
                     {
-#if NET40_OR_GREATER
-                        services.AddTransient(controllerType);
-#endif
-
                         break;
                     }
                 }

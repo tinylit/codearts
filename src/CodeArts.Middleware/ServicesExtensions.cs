@@ -18,7 +18,7 @@ namespace CodeArts
         /// </summary>
         /// <param name="services">服务集合。</param>
         /// <returns></returns>
-        public static IServiceCollection UseAOP(this IServiceCollection services)
+        public static IServiceCollection UseMiddleware(this IServiceCollection services)
         {
             if (services is null)
             {
@@ -42,21 +42,21 @@ namespace CodeArts
 
                 IProxyByPattern byPattern;
 
-                if (descriptor.ImplementationInstance is null)
+                if (descriptor.ImplementationType is null)
                 {
-                    if (descriptor.ImplementationType is null)
+                    if (descriptor.ImplementationInstance is null)
                     {
-                        byPattern = new ProxyByFactory(descriptor.ServiceType, descriptor.ImplementationFactory, descriptor.Lifetime);
+                        byPattern = new ProxyByInstance(moduleEmitter, descriptor.ServiceType, descriptor.ImplementationInstance);
                     }
                     else
                     {
-                        byPattern = new ProxyByType(moduleEmitter, descriptor.ServiceType, descriptor.ImplementationType, descriptor.Lifetime);
-
+                        byPattern = new ProxyByFactory(moduleEmitter, descriptor.ServiceType, descriptor.ImplementationFactory, descriptor.Lifetime);
                     }
                 }
                 else
                 {
-                    byPattern = new ProxyByInstance(descriptor.ServiceType, descriptor.ImplementationInstance);
+                    byPattern = new ProxyByImplementationType(moduleEmitter, descriptor.ServiceType, descriptor.ImplementationType, descriptor.Lifetime);
+
                 }
 
                 services[i] = byPattern.Resolve();

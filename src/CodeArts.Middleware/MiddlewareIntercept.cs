@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CodeArts.AOP
+namespace CodeArts.Middleware
 {
     /// <summary>
     /// 中间件拦截方法。

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace CodeArts.AOP
+namespace CodeArts.Middleware
 {
     /// <summary>
     /// 异步拦截上下文。

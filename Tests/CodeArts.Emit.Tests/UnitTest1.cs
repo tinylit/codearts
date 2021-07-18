@@ -1,6 +1,5 @@
-using CodeArts.AOP;
 using CodeArts.Emit.Expressions;
-using CodeArts.Proxies;
+using CodeArts.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -236,7 +235,7 @@ namespace CodeArts.Emit.Tests
             var serviceProvider = services.AddTransient<IDependency, Dependency>()
                  .AddSingleton<Dependency>()
                  .AddTransient(typeof(IDependency<>), typeof(Dependency<>))
-                 .UseAOP()
+                 .UseMiddleware()
                  .BuildServiceProvider();
 
             IDependency dependency = serviceProvider.GetService<IDependency>();

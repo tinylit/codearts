@@ -96,26 +96,6 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 添加代码。
-        /// </summary>
-        /// <param name="code">代码。</param>
-        /// <returns></returns>
-        public override BlockAst Append(AstExpression code)
-        {
-            if (code.RuntimeType == RuntimeType || RuntimeType == typeof(void))
-            {
-                return base.Append(code);
-            }
-
-            if (code is InvocationAst invocationAst && invocationAst.RuntimeType == typeof(object))
-            {
-                return base.Append(Convert(invocationAst, RuntimeType));
-            }
-
-            return base.Append(code);
-        }
-
-        /// <summary>
         /// 设置属性标记。
         /// </summary>
         /// <param name="attributeData">属性。</param>

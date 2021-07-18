@@ -71,6 +71,8 @@ namespace CodeArts.Emit.Expressions
                 throw new AstException("当前代码块已作为其它代码块的一部分，不能进行修改!");
             }
 
+            IsLastReturn = false;
+
             if (code is ReturnAst)
             {
                 HasReturn = true;
@@ -84,13 +86,11 @@ namespace CodeArts.Emit.Expressions
             }
             else if (code is BlockAst blockAst)
             {
-                IsLastReturn = false;
-
                 blockAst.isReadOnly = true;
             }
-            else
+            else if (code is InvocationAst && code.RuntimeType == typeof(object))
             {
-                IsLastReturn = false;
+                code = Convert(code, RuntimeType);
             }
 
             codes.Add(code);
