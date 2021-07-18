@@ -1,7 +1,8 @@
 ﻿using CodeArts;
+using CodeArts.Db.EntityFramework;
 using CodeArts.Exceptions;
+using CodeArts.Middleware;
 using CodeArts.Mvc;
-using CodeArts.Db;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,9 +12,6 @@ using Mvc.Core.Dtos;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using CodeArts.Db.EntityFramework;
-using CodeArts.AOP;
 using System.Threading.Tasks;
 
 namespace Mvc.Core.Controllers
@@ -148,6 +146,7 @@ namespace Mvc.Core.Controllers
         public DResult Login(string account, [Required] string password)
         {
             dependency.AopTest();
+
             return DResult.Ok(new
             {
                 id = 100000,

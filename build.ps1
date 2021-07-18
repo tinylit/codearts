@@ -19,6 +19,7 @@ $projectsToBuild =
     'CodeArts.Net',
     'CodeArts.Logging',
     'CodeArts.Emit',
+    'CodeArts.Middleware',
     'CodeArts.Mvc',
     'CodeArts.Db',
     'CodeArts.Db.Lts',

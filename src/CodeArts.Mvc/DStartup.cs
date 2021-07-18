@@ -228,6 +228,9 @@ using System.Web.Http.Dependencies;
 using System.Web.Http.Metadata;
 using CodeArts.Mvc.Providers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Web.Http.Routing;
+using System.Net.Http;
+using System.Collections.Generic;
 
 namespace CodeArts.Mvc
 {
@@ -291,10 +294,11 @@ namespace CodeArts.Mvc
             config.Routes.IgnoreRoute("ignore", "{resource}.axd/{*pathInfo}");
 #endif
 
+
             //? 注册默认路由
             config.Routes.MapHttpRoute(
                 name: "code-arts",
-                routeTemplate: "api/{controller}/{id}",
+                routeTemplate: "api/{controller}/{action}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
 
