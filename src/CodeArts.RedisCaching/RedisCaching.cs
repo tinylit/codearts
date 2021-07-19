@@ -100,7 +100,7 @@ namespace CodeArts.Caching
                 return (T)(object)valueStr;
             }
 
-            return type.IsValueType ? Mapper.Cast<T>(valueStr) : JsonHelper.Json<T>(valueStr);
+            return JsonHelper.Json<T>(valueStr);
         }
 
         /// <summary>
@@ -290,7 +290,7 @@ namespace CodeArts.Caching
                 return (T)(object)valueStr;
             }
 
-            return type.IsValueType ? Mapper.Cast<T>(valueStr) : JsonHelper.Json<T>(valueStr);
+            return JsonHelper.Json<T>(valueStr);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿#if NETCOREAPP3_1
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,9 +26,23 @@ namespace CodeArts.Mvc.Converters
                 return true;
             }
 
-            if (!typeToConvert.IsGenericType || !typeToConvert.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+            if (!typeToConvert.IsGenericType)
             {
-                return false;
+                return typeToConvert.IsInterface && typeToConvert == typeof(IEnumerable);
+            }
+
+            var typeDefinition = typeToConvert.GetGenericTypeDefinition();
+
+            if (typeToConvert.IsClass)
+            {
+                return typeDefinition == typeof(List<>);
+            }
+
+            if (typeToConvert.IsInterface)
+            {
+                return typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyList<>)
+                    || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IReadOnlyList<>)
+                    || typeDefinition == typeof(IEnumerable<>);
             }
 
             var typeArguments = typeToConvert.GetGenericArguments();
@@ -37,7 +52,7 @@ namespace CodeArts.Mvc.Converters
                 return false;
             }
 
-            return typeArguments.All(x => !x.IsGenericParameter);
+            return false;
         }
 
         /// <summary>
@@ -243,7 +258,7 @@ namespace CodeArts.Mvc.Converters
 
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
-                    return Mapper.ThrowsMap(elements, typeToConvert);
+                    return elements;
                 }
 
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
@@ -251,7 +266,7 @@ namespace CodeArts.Mvc.Converters
                     elements.Add(JsonSerializer.Deserialize<T>(ref reader, options));
                 }
 
-                return Mapper.ThrowsMap(elements, typeToConvert);
+                return elements;
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
@@ -387,15 +402,10 @@ namespace CodeArts.Mvc.Converters
             {
                 return Convert.ChangeType(text, typeToConvert);
             }
-            catch (FormatException)
+            catch (FormatException) when (typeToConvert == typeof(bool) && int.TryParse(text, out int i))
             {
-                if (typeToConvert == typeof(bool) && int.TryParse(text, out int i))
-                {
-                    return i > 1;
-                }
+                return i != 0;
             }
-
-            return Mapper.ThrowsCast(value, typeToConvert);
         }
         /// <summary>
         /// 写入。
@@ -485,7 +495,8 @@ namespace CodeArts.Mvc.Converters
         /// <returns></returns>
         private object ChangeType(object source, Type conversionType)
         {
-            if (source is null) return source;
+            if (source is null) 
+                return source;
 
             if (source.GetType() == conversionType)
                 return source;
@@ -535,6 +546,7 @@ namespace CodeArts.Mvc.Converters
                             return result > 0;
                         return Convert.ChangeType(result, conversionType);
                     }
+
                     return null;
                 }
 
@@ -569,7 +581,7 @@ namespace CodeArts.Mvc.Converters
             if (conversionType == typeof(string))
                 return source.ToString();
 
-            return Mapper.ThrowsCast(source, conversionType);
+            throw new InvalidCastException($"无法将“{source}”转换成“{conversionType}”类型!");
         }
 
         /// <summary>

@@ -30,9 +30,15 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45'">
 		<PackageReference Include="Newtonsoft.Json">
-			<Version>11.0.2</Version>
+			<Version>7.0.1</Version>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+		<PackageReference Include="Newtonsoft.Json">
+			<Version>9.0.1</Version>
 		</PackageReference>
 	</ItemGroup>
 

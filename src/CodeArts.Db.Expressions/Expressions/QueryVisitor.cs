@@ -100,7 +100,7 @@ namespace CodeArts.Db.Expressions
                             }
                             else
                             {
-                                DefaultValue = expression.GetValueFromExpression(Mapper.ThrowsMap(DefaultValue, argType));
+                                throw new InvalidCastException($"无法从“{argType}”转换为“{defaultType}”类型!");
                             }
                         }
                     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Casting;
+using System;
 
 namespace CodeArts
 {
@@ -12,7 +13,7 @@ namespace CodeArts
         /// <summary>
         /// inheritdoc
         /// </summary>
-        static Mapper() => mapper = RuntimeServPools.Singleton<IMapper>();
+        static Mapper() => mapper = RuntimeServPools.Singleton<IMapper, CastingMapper>();
 
         /// <summary>
         /// 对象转换。

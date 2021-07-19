@@ -1,9 +1,11 @@
 ﻿using CodeArts.Mvc.Filters;
 using System.Collections.Generic;
 using System;
+using CodeArts.Serialize.Json;
 #if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 #else
 using System.Web.Http;
@@ -158,12 +160,16 @@ namespace CodeArts.Mvc
             var tokenHandler = new JwtSecurityTokenHandler();
             var value = authorize.ToString();
             var values = value.Split(' ');
+
 #if NETCOREAPP3_1
-            var token = tokenHandler.ReadJwtToken(values[^1]);
+            var token = values[^1];
 #else
-            var token = tokenHandler.ReadJwtToken(values[values.Length - 1]);
+            var token = values[values.Length - 1];
 #endif
-            return Mapper.ThrowsMap<TUser>(token.Payload);
+
+            var payload = token.Split('.')[1];
+
+            return JsonHelper.Json<TUser>(Base64UrlEncoder.Decode(payload));
 #else
             var serializer = new JsonNetSerializer();
             var provider = new UtcDateTimeProvider();
