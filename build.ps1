@@ -23,6 +23,7 @@ $projectsToBuild =
     'CodeArts.Mvc',
     'CodeArts.Db',
     'CodeArts.Db.Lts',
+    'CodeArts.Db.Linq2Sql',
     'CodeArts.Db.Dapper',
     'CodeArts.Db.EntityFramework',
     'CodeArts.Db.MySql',

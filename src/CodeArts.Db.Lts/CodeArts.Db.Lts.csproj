@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>7.1.2.7</Version>
+		<Version>8.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>A Linq to SQL ORM framework.</Description>
@@ -39,6 +39,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\CodeArts.Db.Expressions\CodeArts.Db.Expressions.csproj" />
+		<ProjectReference Include="..\CodeArts.Db.Linq2Sql\CodeArts.Db.Linq2Sql.csproj" />
 	</ItemGroup>
 </Project>

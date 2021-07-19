@@ -99,7 +99,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.DependencyInjectio
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.DependencyInjection", "src\CodeArts.DependencyInjection\CodeArts.DependencyInjection.csproj", "{03DA8EE8-6AAB-457D-9A3C-536D9BBCD8F6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Expressions", "src\CodeArts.Db.Expressions\CodeArts.Db.Expressions.csproj", "{2ECC9421-A3EE-46A1-BFA7-66DDF37E9BAC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Linq2Sql", "src\CodeArts.Db.Linq2SQL\CodeArts.Db.Linq2Sql.csproj", "{2ECC9421-A3EE-46A1-BFA7-66DDF37E9BAC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Middleware", "src\CodeArts.Middleware\CodeArts.Middleware.csproj", "{F05FBC01-A93E-45F0-A5D8-6777147F09A8}"
 EndProject

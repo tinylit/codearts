@@ -115,9 +115,9 @@
       <Project>{2fe5dea1-f628-476b-bacf-0fa220537a29}</Project>
       <Name>CodeArts.Configuration</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\CodeArts.Db.Expressions\CodeArts.Db.Expressions.csproj">
+    <ProjectReference Include="..\..\src\CodeArts.Db.Linq2SQL\CodeArts.Db.Linq2Sql.csproj">
       <Project>{2ecc9421-a3ee-46a1-bfa7-66ddf37e9bac}</Project>
-      <Name>CodeArts.Db.Expressions</Name>
+      <Name>CodeArts.Db.Linq2Sql</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Db.Lts.MySql\CodeArts.Db.Lts.MySql.csproj">
       <Project>{e49cc361-3352-4f1e-a215-5d0475331c9e}</Project>
