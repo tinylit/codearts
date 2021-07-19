@@ -155,7 +155,7 @@ namespace CodeArts
         /// <param name="classEmitter">类。</param>
         /// <param name="methodInfo">被重写的方法。</param>
         /// <param name="attributes">拦截器。</param>
-        public static void DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
+        public static MethodEmitter DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
         {
             var methodAttributes = methodInfo.Attributes;
 
@@ -182,7 +182,7 @@ namespace CodeArts
             {
                 overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
 
-                return;
+                return overrideEmitter;
             }
 
             AstExpression[] arguments = null;
@@ -254,6 +254,8 @@ namespace CodeArts
             overrideEmitter.Append(blockAst);
 
             InterceptAdd(methodInfo, attributes);
+
+            return overrideEmitter;
         }
     }
 }

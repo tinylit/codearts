@@ -153,6 +153,8 @@ namespace CodeArts.Emit.Tests
         [DependencyIntercept]
         public interface IDependency
         {
+            bool Flags { get; set; }
+
             /// <inheritdoc />
             bool AopTest();
 
@@ -170,6 +172,8 @@ namespace CodeArts.Emit.Tests
         /// <inheritdoc />
         public class Dependency : IDependency
         {
+            public bool Flags { get; set; }
+
             /// <inheritdoc />
             public bool AopTestByRef(int i, ref int j)
             {
@@ -242,6 +246,8 @@ namespace CodeArts.Emit.Tests
             IDependency<IDependency> dependency2 = serviceProvider.GetService<IDependency<IDependency>>();
 
             int j = 10;
+
+            dependency.Flags = true;
 
             var k = dependency.AopTestByRef(3, ref j);
 

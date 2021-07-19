@@ -147,7 +147,7 @@ namespace CodeArts.Emit
         protected AbstractTypeEmitter(TypeBuilder builder, INamingScope namingScope)
         {
             this.builder = builder ?? throw new ArgumentNullException(nameof(builder));
-            this.namingScope = namingScope ?? throw new ArgumentNullException(nameof(namingScope));
+            this.namingScope = namingScope?.BeginScope() ?? throw new ArgumentNullException(nameof(namingScope));
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace CodeArts.Emit
         /// <param name="attributes">匿名函数类型。</param>
         /// <param name="baseType">匿名函数基类。</param>
         /// <param name="interfaces">匿名函数实现接口。</param>
-        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType, Type[] interfaces) : this(DefineTypeBuilder(typeEmitter, name, attributes, baseType, interfaces), typeEmitter.namingScope.BeginScope())
+        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType, Type[] interfaces) : this(DefineTypeBuilder(typeEmitter, name, attributes, baseType, interfaces), typeEmitter.namingScope)
         {
             typeEmitter.abstracts.Add(this);
         }

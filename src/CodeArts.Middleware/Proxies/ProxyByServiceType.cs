@@ -96,8 +96,38 @@ namespace CodeArts.Proxies
                 }
             }
 
+            var propertyMethods = new HashSet<MethodInfo>();
+
+            foreach (var propertyInfo in serviceType.GetProperties())
+            {
+                var propertyEmitter = classEmitter.DefineProperty(propertyInfo.Name, propertyInfo.Attributes, propertyInfo.PropertyType);
+
+                if (propertyInfo.CanRead)
+                {
+                    var readMethod = propertyInfo.GetGetMethod(true);
+
+                    propertyMethods.Add(readMethod);
+
+                    propertyEmitter.SetGetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, readMethod, null));
+                }
+
+                if (propertyInfo.CanWrite)
+                {
+                    var writeMethod = propertyInfo.GetSetMethod(true);
+
+                    propertyMethods.Add(writeMethod);
+
+                    propertyEmitter.SetSetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, writeMethod, null));
+                }
+            }
+
             foreach (var methodInfo in serviceType.GetMethods())
             {
+                if (propertyMethods.Contains(methodInfo))
+                {
+                    continue;
+                }
+
                 if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
                 {
                     InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
@@ -107,6 +137,8 @@ namespace CodeArts.Proxies
                     InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, null);
                 }
             }
+
+            propertyMethods.Clear();
 
             interceptMethods.Clear();
 
@@ -187,6 +219,11 @@ namespace CodeArts.Proxies
 
                 foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
+                    if (methodInfo.IsSpecialName)
+                    {
+                        continue;
+                    }
+
                     var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
                         ? Merge(attributes, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
                         : attributes;
@@ -219,6 +256,11 @@ namespace CodeArts.Proxies
 
                 foreach (var methodInfo in iterationType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
+                    if (methodInfo.IsSpecialName)
+                    {
+                        continue;
+                    }
+
                     var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
                         ? Merge(intercepts, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
                         : intercepts;
@@ -242,15 +284,15 @@ namespace CodeArts.Proxies
 
             } while (iterationType != null && iterationType != typeof(object));
 
-            var methodInfos = serviceType.GetMethods();
-
-            foreach (var methodInfo in methodInfos)
+            foreach (var methodInfo in serviceType.GetMethods())
             {
                 if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
                 {
                     InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
                 }
             }
+
+            interceptMethods.Clear();
 
             return Resolve(serviceType, classEmitter.CreateType(), lifetime);
         }
