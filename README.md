@@ -43,7 +43,7 @@ NuGet 包
 | [CodeArts.Db.EntityFramework.SqlServer](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.SqlServer/) | [![CodeArts.Db.EntityFramework.SqlServer](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.SqlServer.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.SqlServer/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework.SqlServer) | SqlServer for EF/EFCore. |
 | [CodeArts.Db.EntityFramework.Sqlite](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.Sqlite/) | [![CodeArts.Db.EntityFramework.Sqlite](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.Sqlite.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework.Sqlite/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework.Sqlite) | Sqlite for EF/EFCore. |
 | [CodeArts.Db.Linq2Sql](https://www.nuget.org/packages/CodeArts.Db.Linq2Sql/) | [![CodeArts.Db.Linq2Sql](https://img.shields.io/nuget/v/CodeArts.Db.Linq2Sql.svg)](https://www.nuget.org/packages/CodeArts.Db.Linq2Sql/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Linq2Sql) | Linq to SQL. |
-| [CodeArts.Db.Middleware](https://www.nuget.org/packages/CodeArts.Db.Middleware/) | [![CodeArts.Db.Middleware](https://img.shields.io/nuget/v/CodeArts.Db.Middleware.svg)](https://www.nuget.org/packages/CodeArts.Db.Middleware/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Middleware) | IOC middleware. |
+| [CodeArts.Middleware](https://www.nuget.org/packages/CodeArts.Middleware/) | [![CodeArts.Middleware](https://img.shields.io/nuget/v/CodeArts.Middleware.svg)](https://www.nuget.org/packages/CodeArts.Middleware/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Middleware) | IOC middleware. |
 
 ### 引包即用？
 * 引包即用是指，安装 `NuGet` 包后，自动注入配置信息。
