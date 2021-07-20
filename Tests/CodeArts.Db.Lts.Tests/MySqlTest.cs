@@ -22,22 +22,20 @@ namespace UnitTest
     {
         private static bool isCompleted;
 
-        private readonly MySqlUserRespository userSingleton = Singleton<MySqlUserRespository>.Instance;
-        private readonly AuthShipRepository authShipSingleton = Singleton<AuthShipRepository>.Instance;
-        private readonly AuthTreeRepository authTreesingleton = Singleton<AuthTreeRepository>.Instance;
-        private readonly TaxCodeRepository taxCodeSingleton = Singleton<TaxCodeRepository>.Instance;
+        private MySqlUserRespository UserSingleton => Singleton<MySqlUserRespository>.Instance;
+        private AuthShipRepository AuthShipSingleton => Singleton<AuthShipRepository>.Instance;
+        private AuthTreeRepository AuthTreesingleton => Singleton<AuthTreeRepository>.Instance;
+        private TaxCodeRepository TaxCodeSingleton => Singleton<TaxCodeRepository>.Instance;
 
         [TestInitialize]
         public void Initialize()
         {
-            var adapter = new CodeArts.Db.Lts.MySqlLtsAdapter();
+            var adapter = new MySqlLtsAdapter();
 
             adapter.Visitors.Add(new ConvertVisitter());
 
             DbConnectionManager.RegisterAdapter(adapter);
             DbConnectionManager.RegisterDatabaseFor<DapperFor>();
-
-            RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
 
             if (isCompleted) return;
 
@@ -80,9 +78,9 @@ namespace UnitTest
         {
             var id = 6518750666955952128uL;
             var rights = new int[] { 1, 2, 3, 4, 5 };
-            var userRights = authShipSingleton.Where(x => x.Status != CommonStatusEnum.Deleted && x.Type == AuthShipEnum.Tree || x.Type == AuthShipEnum.Vip && x.OwnerId == id && rights.Contains(x.AuthId));
+            var userRights = AuthShipSingleton.Where(x => x.Status != CommonStatusEnum.Deleted && x.Type == AuthShipEnum.Tree || x.Type == AuthShipEnum.Vip && x.OwnerId == id && rights.Contains(x.AuthId));
 
-            var auths = authTreesingleton.Where(x => x.Status != CommonStatusEnum.Deleted && rights.Contains(x.Id) && !userRights.Any(y => y.AuthId == x.Id))
+            var auths = AuthTreesingleton.Where(x => x.Status != CommonStatusEnum.Deleted && rights.Contains(x.Id) && !userRights.Any(y => y.AuthId == x.Id))
                 .ToList();
         }
 
@@ -90,13 +88,13 @@ namespace UnitTest
         public void SelectNullableTest()
         {
             var role = new UserRole?(UserRole.Owner);
-            var defautUser = userSingleton.Where(x => x.Role == role.Value).FirstOrDefault();
+            var defautUser = UserSingleton.Where(x => x.Role == role.Value).FirstOrDefault();
         }
 
         [TestMethod]
         public void IsNullableTest()
         {
-            var defautUser = userSingleton.Where(x => x.Name == null).FirstOrDefault();
+            var defautUser = UserSingleton.Where(x => x.Name == null).FirstOrDefault();
         }
 
         [TestMethod]
@@ -124,16 +122,16 @@ namespace UnitTest
 
             bool validAlipay = !string.IsNullOrEmpty(user.AlipayId);
 
-            var data = from x in userSingleton
+            var data = from x in UserSingleton
                        where validWx && x.WechatId == user.WechatId
                        select x;
             var value = data.FirstOrDefault();
 
 
-            var defautUser = userSingleton.Where(x => validWx && x.WechatId == user.WechatId)
+            var defautUser = UserSingleton.Where(x => validWx && x.WechatId == user.WechatId)
                .FirstOrDefault();
 
-            var dataUser = userSingleton.Where(x => x.Account == user.Account ||
+            var dataUser = UserSingleton.Where(x => x.Account == user.Account ||
                 (validTel && x.Tel == user.Tel) || // 电话
                 (validMail && x.Mail == user.Mail) || // 邮件
                 (validWx && x.WechatId == user.WechatId) || // 微信账号
@@ -146,7 +144,7 @@ namespace UnitTest
         {
             var list = new List<int> { 0 };
 
-            var code = authTreesingleton.Where(x => x.ParentId == list[0])
+            var code = AuthTreesingleton.Where(x => x.ParentId == list[0])
                  .Select(x => x.Code)
                  .FirstOrDefault();
         }
@@ -173,14 +171,14 @@ namespace UnitTest
                 Modified = modified
             };
 
-            int i = userSingleton.AsInsertable(entry)
+            int i = UserSingleton.AsInsertable(entry)
                   .ExecuteCommand();
         }
 
         [TestMethod]
         public void UpdateTest()
         {
-            int i = userSingleton
+            int i = UserSingleton
              .Where(x => x.Account.Contains("admin"))
              .Update(x => new Domain.Entities.User
              {
@@ -210,7 +208,7 @@ namespace UnitTest
                 Modified = modified
             };
 
-            userSingleton.AsUpdateable(entry)
+            UserSingleton.AsUpdateable(entry)
             .Where(x => new { x.Tel, x.Mail })
             .Limit(x => x.Account)
             .ExecuteCommand();
@@ -219,7 +217,7 @@ namespace UnitTest
         [TestMethod]
         public void DeleteTest()
         {
-            int i = userSingleton
+            int i = UserSingleton
              .Where(x => x.Id == 1)
              .Delete();
         }
@@ -246,7 +244,7 @@ namespace UnitTest
                 Modified = modified
             };
 
-            int i = userSingleton.AsDeleteable(entry)
+            int i = UserSingleton.AsDeleteable(entry)
             .Where(x => x.Account ?? x.Tel)
             .ExecuteCommand();
         }
@@ -256,13 +254,13 @@ namespace UnitTest
         {
             string id = "*";
             bool isLevel = string.IsNullOrEmpty(id) || id == "*";
-            var list = taxCodeSingleton.Where(x => isLevel ? x.Level == 1 : x.ParentId == id)
+            var list = TaxCodeSingleton.Where(x => isLevel ? x.Level == 1 : x.ParentId == id)
                 .Select(x => new
                 {
                     Id = Convert.ToString(x.Id),
                     x.Name,
                     x.ShortName,
-                    HasChild = taxCodeSingleton.Any(y => y.ParentId == x.Id)
+                    HasChild = TaxCodeSingleton.Any(y => y.ParentId == x.Id)
                 }).ToList();
         }
 
@@ -291,7 +289,7 @@ namespace UnitTest
         [TestMethod]
         public void ConcatTest()
         {
-            var userDto = userSingleton.Where(x => x.Name.StartsWith(x.Account + x.Name))
+            var userDto = UserSingleton.Where(x => x.Name.StartsWith(x.Account + x.Name))
                 .DefaultIfEmpty(new Domain.Entities.User
                 {
                     Id = 1

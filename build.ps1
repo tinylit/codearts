@@ -20,6 +20,8 @@ $projectsToBuild =
     'CodeArts.Logging',
     'CodeArts.Emit',
     'CodeArts.Middleware',
+    'CodeArts.DependencyInjection',
+    'CodeArts.DependencyInjection.Abstractions',
     'CodeArts.Mvc',
     'CodeArts.Db',
     'CodeArts.Db.Lts',

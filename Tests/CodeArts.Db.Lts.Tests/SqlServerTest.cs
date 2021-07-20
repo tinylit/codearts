@@ -45,8 +45,6 @@ namespace UnitTest
             DbConnectionManager.RegisterAdapter(adapter);
             DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
-            RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
-
             if (isCompleted) return;
 
             var connectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}",

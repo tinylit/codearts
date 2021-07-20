@@ -16,18 +16,24 @@ using System.Threading.Tasks;
 
 namespace Mvc.Core.Controllers
 {
+
+    /// <inheritdoc />
     public class DependencyInterceptAttribute : InterceptAttribute
     {
+
+        /// <inheritdoc />
         public override void Run(InterceptContext context, Intercept intercept)
         {
              intercept.Run(context);
         }
 
+        /// <inheritdoc />
         public override Task RunAsync(InterceptAsyncContext context, InterceptAsync intercept)
         {
             return intercept.RunAsync(context);
         }
 
+        /// <inheritdoc />
         public override Task<T> RunAsync<T>(InterceptAsyncContext context, InterceptAsync<T> intercept)
         {
             return intercept.RunAsync(context);
