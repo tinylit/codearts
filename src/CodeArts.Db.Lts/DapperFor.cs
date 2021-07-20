@@ -25,7 +25,7 @@ namespace CodeArts.Db.Lts
 
         private class BooleanHandler : SqlMapper.ITypeHandler
         {
-            public object Parse(Type destinationType, object value) => Convert.ChangeType(value, destinationType);
+            public object Parse(Type destinationType, object value) => Convert.ChangeType(value, typeof(bool));
 
             public void SetValue(IDbDataParameter parameter, object value)
             {
