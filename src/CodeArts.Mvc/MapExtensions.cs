@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
+#if NETCOREAPP2_0_OR_GREATER
 using System.Text;
-#if NET_CORE
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 #else
@@ -25,16 +25,7 @@ namespace CodeArts.Mvc
         /// <param name="path">路由地址。</param>
         /// <param name="destinationPath">目标地址。</param>
         /// <returns></returns>
-        public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.GET, () => destinationPath);
-
-        /// <summary>
-        /// 路由(HttpVerbs.Get)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationPath">获取目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.GET, destinationPath);
+        public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.GET, destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.POST)。
@@ -43,16 +34,7 @@ namespace CodeArts.Mvc
         /// <param name="path">路由地址。</param>
         /// <param name="destinationPath">目标地址。</param>
         /// <returns></returns>
-        public static IApplicationBuilder MapPost(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.POST, () => destinationPath);
-
-        /// <summary>
-        /// 路由(HttpVerbs.POST)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationPath">获取目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapPost(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.POST, destinationPath);
+        public static IApplicationBuilder MapPost(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.POST, destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.PUT)。
@@ -61,16 +43,7 @@ namespace CodeArts.Mvc
         /// <param name="path">路由地址。</param>
         /// <param name="destinationPath">目标地址。</param>
         /// <returns></returns>
-        public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.PUT, () => destinationPath);
-
-        /// <summary>
-        /// 路由(HttpVerbs.PUT)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationPath">获取目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.PUT, destinationPath);
+        public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.PUT, destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.DELETE)。
@@ -79,16 +52,7 @@ namespace CodeArts.Mvc
         /// <param name="path">路由地址。</param>
         /// <param name="destinationPath">目标地址。</param>
         /// <returns></returns>
-        public static IApplicationBuilder MapDelete(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.DELETE, () => destinationPath);
-
-        /// <summary>
-        /// 路由(HttpVerbs.DELETE)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationPath">获取目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapDelete(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath) => app.Map(path, HttpVerbs.DELETE, destinationPath);
+        public static IApplicationBuilder MapDelete(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, HttpVerbs.DELETE, destinationPath);
 
         /// <summary>
         /// 路由(HttpVerbs.Get | HttpVerbs.Post | HttpVerbs.Put | HttpVerbs.Delete | HttpVerbs.Head | HttpVerbs.Patch | HttpVerbs.Options)。
@@ -97,24 +61,8 @@ namespace CodeArts.Mvc
         /// <param name="path">路由地址。</param>
         /// <param name="destinationPath">目标地址。</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, PathString destinationPath) => app.Map(path, () => destinationPath);
-
-        /// <summary>
-        /// 路由(HttpVerbs.Get | HttpVerbs.Post | HttpVerbs.Put | HttpVerbs.Delete | HttpVerbs.Head | HttpVerbs.Patch | HttpVerbs.Options)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationPath">获取目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, Func<PathString> destinationPath)
-        {
-            if (destinationPath is null)
-            {
-                throw new ArgumentNullException(nameof(destinationPath));
-            }
-
-            return app.Map(path, HttpVerbs.GET | HttpVerbs.POST | HttpVerbs.PUT | HttpVerbs.DELETE | HttpVerbs.HEAD | HttpVerbs.PATCH | HttpVerbs.OPTIONS, destinationPath);
-        }
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, PathString destinationPath)
+            => app.Map(path, HttpVerbs.GET | HttpVerbs.POST | HttpVerbs.PUT | HttpVerbs.DELETE | HttpVerbs.HEAD | HttpVerbs.PATCH | HttpVerbs.OPTIONS, destinationPath);
 
         /// <summary>
         /// 路由。
@@ -124,70 +72,36 @@ namespace CodeArts.Mvc
         /// <param name="httpVerbs">请求方式。</param>
         /// <param name="destinationPath">目标地址。</param>
         /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath) => app.Map(path, httpVerbs, () => destinationPath);
-
-        /// <summary>
-        /// 路由。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="httpVerbs">请求方式。</param>
-        /// <param name="destinationPath">获取目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, Func<PathString> destinationPath)
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
         {
-            if (destinationPath is null)
-            {
-                throw new ArgumentNullException(nameof(destinationPath));
-            }
-
-#if NET_CORE
-            return app.Map(path, builder => builder.Run(async context =>
-            {
-                string method = context.Request.Method;
+#if NETCOREAPP2_0_OR_GREATER
+            return app.Map(path, httpVerbs, async context =>
+             {
+                 string method = context.Request.Method;
 #elif NET40
-            return app.Map(path, (HttpContext context) =>
+            return app.Map(path, httpVerbs, (HttpContext context) =>
             {
                 string method = context.Request.HttpMethod;
 #else
-            return app.Map(path, async (HttpContext context) =>
+            return app.Map(path, httpVerbs, async (HttpContext context) =>
             {
                 string method = context.Request.HttpMethod;
 #endif
 
-                if (!Enum.TryParse(method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
-                {
-                    context.Response.StatusCode = 404;
-                    
-                    return;
-                }
+                string destinationUrl = destinationPath.Value;
 
-                string destinationUrl = destinationPath.Invoke();
-
-                if (string.IsNullOrEmpty(destinationUrl))
-                {
-                    context.Response.StatusCode = 404;
-
-                    return;
-                }
-
-#if NET_CORE
-
-                if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Scheme}://{context.Request.Host}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
-                {
-                    await context.Response.WriteJsonAsync(DResult.Error($"不规范的接口({path.Value}=>{destinationUrl})!", StatusCodes.NonstandardServerError)).ConfigureAwait(false);
-                    
-                    return;
-                }
+                Uri uri = new Uri(destinationPath.HasValue
+#if NETCOREAPP2_0_OR_GREATER
+                    ? $"{context.Request.Scheme}://{context.Request.Host}/{destinationUrl.TrimStart('/')}"
+                    : $"{context.Request.Scheme}://{context.Request.Host}/"
 #else
-                if (destinationUrl.IsUrl() ? !Uri.TryCreate(destinationUrl, UriKind.Absolute, out Uri uri) : !Uri.TryCreate($"{context.Request.Url.Scheme}://{context.Request.Url.Authority}/{destinationUrl.TrimStart('/')}", UriKind.Absolute, out uri))
-                {
-                    context.Response.WriteJson(DResult.Error($"不规范的接口({path.Value}=>{destinationUrl})!", StatusCodes.NonstandardServerError));
-                    return;
-                }
+                    ? $"{context.Request.Url.Scheme}://{context.Request.Url.Host}/{destinationUrl.TrimStart('/')}"
+                    : $"{context.Request.Url.Scheme}://{context.Request.Url.Host}/"
 #endif
+                    );
 
-                var request = uri.AsRequestable().AppendQueryString(context.Request.QueryString.ToString());
+                var request = uri.AsRequestable()
+                    .AppendQueryString(context.Request.QueryString.ToString());
 
                 var token = context.Request.Headers["Authorization"];
 
@@ -204,17 +118,17 @@ namespace CodeArts.Mvc
                 }
                 else if (contentType.IsNotEmpty())
                 {
-#if NET_CORE
-                    if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
-                    {
-                        var length = context.Request.ContentLength.Value;
-                        var buffer = new byte[length];
-                        await context.Request.Body.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+#if NETCOREAPP2_0_OR_GREATER
+                     if (context.Request.ContentLength.HasValue && context.Request.ContentLength.Value > 0)
+                     {
+                         var length = context.Request.ContentLength.Value;
+                         var buffer = new byte[length];
+                         await context.Request.Body.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
 
-                        var body = Encoding.UTF8.GetString(buffer);
+                         var body = Encoding.UTF8.GetString(buffer);
 
-                        request.Body(body, contentType);
-                    }
+                         request.Body(body, contentType);
+                     }
 #else
                     if (context.Request.InputStream.Length > 0)
                     {
@@ -226,16 +140,15 @@ namespace CodeArts.Mvc
 #endif
                 }
 
-#if NET_CORE
-                try
-                {
-                    await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)).ConfigureAwait(false));
-                }
-                catch (WebException e)
-                {
-                    await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e)).ConfigureAwait(false);
-                }
-            }));
+#if NETCOREAPP2_0_OR_GREATER
+                 try
+                 {
+                     await context.Response.WriteAsync(await request.RequestAsync(method ?? "GET", "map:timeout".Config(Consts.MapTimeout)).ConfigureAwait(false));
+                 }
+                 catch (WebException e)
+                 {
+                     await context.Response.WriteJsonAsync(ExceptionHandler.Handler(e)).ConfigureAwait(false);
+                 }
 #else
                 try
                 {
@@ -249,6 +162,83 @@ namespace CodeArts.Mvc
                 {
                     context.Response.WriteJson(ExceptionHandler.Handler(e));
                 }
+#endif
+            });
+        }
+
+        /// <summary>
+        /// 路由。
+        /// </summary>
+        /// <param name="app">app。</param>
+        /// <param name="path">路由地址。</param>
+        /// <param name="httpVerbs">请求方式。</param>
+        /// <param name="handler">请求。</param>
+        /// <returns></returns>
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, RequestDelegate handler)
+        {
+#if NETCOREAPP3_1_OR_GREATER
+            if (path.HasValue && path.Value[^1] == '/')
+#else
+            if (path.HasValue && path.Value[path.Value.Length - 1] == '/')
+#endif
+            {
+                path = new PathString(path.Value.TrimEnd('/'));
+            }
+
+#if NETCOREAPP2_1_OR_GREATER
+            return app.Map(path, x => x.Use(next => context =>
+            {
+                if (!Enum.TryParse(context.Request.Method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
+                {
+                    return next.Invoke(context);
+                }
+
+                PathString absolutePath = context.Request.PathBase.Add(context.Request.Path); 
+                
+                if (absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase, out PathString segments) && !segments.HasValue)
+                {
+                    return handler.Invoke(context);
+                }
+
+                return next.Invoke(context);
+            }));
+#elif NET40
+            return app.Use(next => context =>
+            {
+                if (!Enum.TryParse(context.Request.HttpMethod ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
+                {
+                    next.Invoke(context);
+                }
+                else
+                {
+                    PathString absolutePath = new PathString(context.Request.Url.AbsolutePath);
+                    
+                    if (absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase, out PathString segments) && !segments.HasValue)
+                    {
+                        handler.Invoke(context);
+                    }
+                    else
+                    {
+                        next.Invoke(context);
+                    }
+                }
+            });
+#else
+            return app.Use(next => context =>
+            {
+                if (!Enum.TryParse(context.Request.HttpMethod ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
+                {
+                    return next.Invoke(context);
+                }
+
+                PathString absolutePath = new PathString(context.Request.Url.AbsolutePath);
+
+                if (absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase, out PathString segments) && !segments.HasValue)
+                {
+                    return handler.Invoke(context);
+                }
+
+                return next.Invoke(context);
             });
 #endif
         }

@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 
 namespace CodeArts.Db
 {
@@ -10,6 +11,11 @@ namespace CodeArts.Db
         /// <summary> 创建数据库连接。 </summary>
         /// <returns></returns>
         IDbConnection Create(string connectionString);
+
+        /// <summary>
+        /// 连接类型。
+        /// </summary>
+        Type DbConnectionType { get; }
 
         /// <summary>
         /// 供应器名称。

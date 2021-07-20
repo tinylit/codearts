@@ -160,12 +160,12 @@ namespace CodeArts.Db
                 return new ParameterValue(value);
             }
 
-            if (valueType == value.GetType())
+            if (valueType == value.GetType() || valueType.IsAssignableFrom(value.GetType()))
             {
                 return new ParameterValue(value);
             }
 
-            return new ParameterValue(Mapper.ThrowsCast(value, valueType));
+            throw new InvalidCastException();
         }
 
         /// <summary>

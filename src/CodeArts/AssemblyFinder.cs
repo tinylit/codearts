@@ -37,7 +37,7 @@ namespace CodeArts
         /// <summary>
         /// 满足指定条件的程序集。
         /// </summary>
-        /// <param name="pattern">DLL过滤规则。</param>
+        /// <param name="pattern">DLL过滤规则。<see cref="Directory.GetFiles(string, string)"/></param>
         /// <returns></returns>
         public static IEnumerable<Assembly> Find(string pattern)
         {
@@ -46,12 +46,43 @@ namespace CodeArts
                 throw new ArgumentNullException(nameof(pattern));
             }
 
+            if (pattern.Length == 0)
+            {
+                throw new ArgumentException($"“{nameof(pattern)}”不能为空。", nameof(pattern));
+            }
+
             if (!pattern.EndsWith(".dll"))
             {
                 pattern += ".dll";
             }
 
-            return AssemblyCache.GetOrAdd(pattern, searchPattern => Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, Assembly.LoadFrom)).ToList());
+            return AssemblyCache.GetOrAdd(pattern, searchPattern =>
+            {
+                Assembly[] assemblies = null;
+
+                return Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, y =>
+                {
+                    if (assemblies is null)
+                    {
+                        assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    }
+
+                    foreach (var assembly in assemblies)
+                    {
+                        if (assembly.IsDynamic)
+                        {
+                            continue;
+                        }
+
+                        if (string.Equals(y, assembly.Location, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return assembly;
+                        }
+                    }
+
+                    return Assembly.LoadFrom(y);
+                })).ToList();
+            });
         }
     }
 }

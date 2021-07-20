@@ -6,24 +6,12 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 成员。
     /// </summary>
-    public abstract class MemberAst : AssignAstExpression
+    public abstract class MemberAst : AstExpression
     {
-        private static class AnyAssignable { }
-
-        /// <summary>
-        /// 暂不确定的类型。
-        /// </summary>
-        private static readonly Type AnyAssignableType = typeof(AnyAssignable);
-
-        /// <summary>
-        /// 当前上下文对象。
-        /// </summary>
-        private static readonly ThisAst Instance = new ThisAst(AnyAssignableType);
-
         /// <summary>
         /// 引用。
         /// </summary>
-        public AstExpression Expression { set; get; } = Instance;
+        public AstExpression Expression { set; get; } = ThisAst.Instance;
 
         /// <summary>
         /// 构造函数。
@@ -52,48 +40,70 @@ namespace CodeArts.Emit.Expressions
         protected MemberAst(Type returnType, AstExpression reference) : base(returnType) => Expression = reference;
 
         /// <summary>
-        /// 发行引用链。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="expression">表达式。</param>
-        private static void EmitLoad(ILGenerator ilg, AstExpression expression)
-        {
-            if (expression is null)
-            {
-                return;
-            }
-
-            if (expression is MemberAst member)
-            {
-                EmitLoad(ilg, member);
-            }
-            else
-            {
-                expression.Load(ilg);
-            }
-        }
-
-        /// <summary>
-        /// 发行引用链。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="member">成员。</param>
-        private static void EmitLoad(ILGenerator ilg, MemberAst member)
-        {
-            if (member is null || member.Expression == member)
-            {
-                return;
-            }
-
-            EmitLoad(ilg, member.Expression);
-
-            member.Load(ilg);
-        }
-
-        /// <summary>
         /// 取值。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg) => EmitLoad(ilg, this);
+        public sealed override void Load(ILGenerator ilg)
+        {
+            Expression?.Load(ilg);
+
+            LoadCore(ilg);
+        }
+
+        /// <summary>
+        /// 获取成员数据。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        protected abstract void LoadCore(ILGenerator ilg);
+
+        /// <summary>
+        /// 赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
+        public sealed override void Assign(ILGenerator ilg, AstExpression value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            var returnType = RuntimeType;
+
+            if (returnType == typeof(void))
+            {
+                throw new AstException("不能对无返回值类型进行赋值运算!");
+            }
+
+            if (value is ThisAst)
+            {
+                goto label_core;
+            }
+
+            var valueType = value.RuntimeType;
+
+            if (valueType == typeof(void))
+            {
+                throw new AstException("无返回值类型赋值不能用于赋值运算!");
+            }
+
+            if (valueType != returnType && !returnType.IsAssignableFrom(valueType) && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
+            {
+                throw new AstException("值表达式类型和当前表达式类型不相同!");
+            }
+
+            label_core:
+
+            if (CanWrite)
+            {
+                Expression?.Load(ilg);
+
+                AssignCore(ilg, value);
+            }
+            else
+            {
+                throw new AstException("当前表达式不可写!");
+            }
+        }
     }
 }

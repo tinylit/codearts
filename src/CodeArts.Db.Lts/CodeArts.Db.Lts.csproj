@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>7.1.2.7</Version>
+		<Version>8.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>A Linq to SQL ORM framework.</Description>
@@ -17,17 +17,19 @@
 		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 	</PropertyGroup>
+	
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45'">
+		<PackageReference Include="Dapper" Version="1.50.2" />
+	</ItemGroup>
 
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
-		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+		<PackageReference Include="Dapper" Version="1.60.6" />
+	</ItemGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
-		<DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
-
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
+		<PackageReference Include="Dapper" Version="2.0.78" />
+	</ItemGroup>
+	
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
 		<Reference Include="System.ComponentModel.DataAnnotations" />
 	</ItemGroup>
@@ -37,6 +39,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\CodeArts.Db\CodeArts.Db.csproj" />
+		<ProjectReference Include="..\CodeArts.Db.Linq2Sql\CodeArts.Db.Linq2Sql.csproj" />
 	</ItemGroup>
 </Project>

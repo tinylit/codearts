@@ -10,12 +10,13 @@ namespace CodeArts.Emit
     /// <summary>
     /// 字段。
     /// </summary>
-    [DebuggerDisplay("{Name} ({ReturnType})")]
+    [DebuggerDisplay("{RuntimeType.Name} {Name}")]
     public class FieldEmitter : MemberAst
     {
         private FieldBuilder builder;
         private object defaultValue;
         private bool hasDefaultValue = false;
+        private readonly bool isStatic;
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
 
         /// <summary>
@@ -24,10 +25,15 @@ namespace CodeArts.Emit
         /// <param name="name">字段的名称。</param>
         /// <param name="returnType">字段的返回类型。</param>
         /// <param name="attributes">字段的属性。</param>
-        public FieldEmitter(string name, Type returnType, FieldAttributes attributes) : base(returnType, (attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        public FieldEmitter(string name, Type returnType, FieldAttributes attributes) : this(name, returnType, attributes, (attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        {
+        }
+
+        private FieldEmitter(string name, Type returnType, FieldAttributes attributes, bool isStatic) : base(returnType, isStatic)
         {
             Name = name;
             Attributes = attributes;
+            this.isStatic = isStatic;
         }
 
         /// <summary>
@@ -41,9 +47,9 @@ namespace CodeArts.Emit
         public FieldAttributes Attributes { get; }
 
         /// <summary>
-        /// 字段构造器。
+        /// 是否可写。
         /// </summary>
-        public FieldBuilder Value => builder ?? throw new NotImplementedException();
+        public override bool CanWrite => true;
 
         /// <summary>
         /// 设置默认值。
@@ -53,7 +59,21 @@ namespace CodeArts.Emit
         {
             hasDefaultValue = true;
 
-            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, ReturnType);
+            this.defaultValue = EmitUtils.SetConstantOfType(defaultValue, RuntimeType);
+        }
+
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="attributeData">属性。</param>
+        public void SetCustomAttribute(CustomAttributeData attributeData)
+        {
+            if (attributeData is null)
+            {
+                throw new ArgumentNullException(nameof(attributeData));
+            }
+            
+            customAttributes.Add(EmitUtils.CreateCustomAttribute(attributeData));
         }
 
         /// <summary>
@@ -71,34 +91,18 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 发行。
+        /// 获取成员数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg)
+        protected override void LoadCore(ILGenerator ilg)
         {
-            if ((Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+            if (isStatic)
             {
-                ilg.Emit(OpCodes.Ldsfld, Value);
+                ilg.Emit(OpCodes.Ldsfld, builder);
             }
             else
             {
-                ilg.Emit(OpCodes.Ldfld, Value);
-            }
-        }
-
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
-        {
-            if ((Attributes & FieldAttributes.Static) == FieldAttributes.Static)
-            {
-                ilg.Emit(OpCodes.Stsfld, Value);
-            }
-            else
-            {
-                ilg.Emit(OpCodes.Stfld, Value);
+                ilg.Emit(OpCodes.Ldfld, builder);
             }
         }
 
@@ -111,7 +115,14 @@ namespace CodeArts.Emit
         {
             value.Load(ilg);
 
-            Assign(ilg);
+            if (isStatic)
+            {
+                ilg.Emit(OpCodes.Stsfld, builder);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Stfld, builder);
+            }
         }
 
         /// <summary>

@@ -5,7 +5,7 @@
     /// </summary>
     public static class Consts
     {
-#if NET_CORE
+#if NETSTANDARD2_0_OR_GREATER
 
         /// <summary>
         /// 映射接口响应超时时间（推荐配置：map:timeout）， 单位：毫秒。

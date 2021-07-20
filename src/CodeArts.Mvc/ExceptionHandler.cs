@@ -1,5 +1,5 @@
 ﻿using CodeArts.Mvc;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.Extensions.Logging;
 #else
 using log4net;
@@ -15,7 +15,7 @@ namespace CodeArts.Exceptions
     /// <summary> 异常处理类。 </summary>
     public static class ExceptionHandler
     {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         private static ILogger logger;
 #if NETCOREAPP3_1
         private static ILogger Logger => logger ??= LoggerManager.GetLogger(typeof(ExceptionHandler));
@@ -92,7 +92,7 @@ namespace CodeArts.Exceptions
                         return DResult.Error(error.Message);
                     }
 
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
                     Logger.Error(error, error.Message);
 #else
                     Logger.Error(error.Message, error);

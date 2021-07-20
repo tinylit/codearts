@@ -9,12 +9,11 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 创建新实例。
     /// </summary>
-    [DebuggerDisplay("new {ReturnType.Name}({ParemetersNames})")]
+    [DebuggerDisplay("new {RuntimeType.Name}(...args)")]
     public class NewInstanceAst : AstExpression
     {
         private readonly ConstructorInfo constructorInfo;
         private readonly AstExpression[] parameters;
-        private string ParemetersNames => string.Join(",", parameters.Select(x => x.ReturnType.Name));
 
         /// <summary>
         /// 构造函数。
@@ -37,7 +36,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="instanceType">实例类型。</param>
         /// <param name="parameters">参数。</param>
-        public NewInstanceAst(Type instanceType, params AstExpression[] parameters) : this(instanceType.GetConstructor(parameters?.Select(x => x.ReturnType).ToArray() ?? Type.EmptyTypes), parameters) { }
+        public NewInstanceAst(Type instanceType, params AstExpression[] parameters) : this(instanceType.GetConstructor(parameters?.Select(x => x.RuntimeType).ToArray() ?? Type.EmptyTypes), parameters) { }
 
         /// <summary>
         /// 生成。
@@ -47,9 +46,9 @@ namespace CodeArts.Emit.Expressions
         {
             if (parameters != null)
             {
-                foreach (var paramter in parameters)
+                foreach (var parameter in parameters)
                 {
-                    paramter.Load(ilg);
+                    parameter.Load(ilg);
                 }
             }
 

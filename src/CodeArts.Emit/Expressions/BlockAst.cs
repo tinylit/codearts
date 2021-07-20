@@ -12,7 +12,7 @@ namespace CodeArts.Emit.Expressions
         private readonly List<AstExpression> codes = new List<AstExpression>();
         private readonly List<VariableAst> variables = new List<VariableAst>();
 
-        private bool isLastReturn = false;
+        private bool isReadOnly = false;
 
         /// <summary>
         /// 构造函数。
@@ -26,6 +26,16 @@ namespace CodeArts.Emit.Expressions
         /// 是否为空。
         /// </summary>
         public bool IsEmpty => codes.Count == 0;
+
+        /// <summary>
+        /// 最后一个是返回。
+        /// </summary>
+        protected internal bool HasReturn { private set; get; }
+
+        /// <summary>
+        /// 有返回。
+        /// </summary>
+        protected bool IsLastReturn { private set; get; }
 
         /// <summary>
         /// 声明变量。
@@ -49,25 +59,38 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="code">代码。</param>
         /// <returns></returns>
-        public BlockAst Append(AstExpression code)
+        public virtual BlockAst Append(AstExpression code)
         {
             if (code is null)
             {
                 throw new ArgumentNullException(nameof(code));
             }
 
+            if (isReadOnly)
+            {
+                throw new AstException("当前代码块已作为其它代码块的一部分，不能进行修改!");
+            }
+
+            IsLastReturn = false;
+
             if (code is ReturnAst)
             {
-                if (ReturnType != code.ReturnType)
-                {
-                    throw new AstException($"返回类型“{code.ReturnType}”和预期的返回类型“{ReturnType}”不相同!");
-                }
+                HasReturn = true;
 
-                isLastReturn = true;
+                IsLastReturn = true;
+
+                if (RuntimeType != code.RuntimeType)
+                {
+                    throw new AstException($"返回类型“{code.RuntimeType}”和预期的返回类型“{RuntimeType}”不相同!");
+                }
             }
-            else
+            else if (code is BlockAst blockAst)
             {
-                isLastReturn = false;
+                blockAst.isReadOnly = true;
+            }
+            else if (code is InvocationAst && code.RuntimeType == typeof(object))
+            {
+                code = Convert(code, RuntimeType);
             }
 
             codes.Add(code);
@@ -90,18 +113,6 @@ namespace CodeArts.Emit.Expressions
             {
                 code.Load(ilg);
             }
-
-            if (isLastReturn)
-            {
-                return;
-            }
-
-            if (ReturnType == typeof(void))
-            {
-                ilg.Emit(OpCodes.Nop);
-            }
-
-            ilg.Emit(OpCodes.Ret);
         }
     }
 }

@@ -13,16 +13,19 @@ namespace CodeArts.Emit
     /// </summary>
     public static class EmitUtils
     {
-        private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
+        private static readonly ConstructorInfo GuidConstructorInfo = typeof(Guid).GetConstructor(new Type[1] { typeof(string) });
 
-        private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle) });
-        private static readonly MethodInfo GetIsGenericTypeMethodFromHandle = typeof(MethodBase).GetMethod("GetMethodFromHandle", new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
+        private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
+
+        private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod(nameof(MethodBase.GetMethodFromHandle), new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
         private static readonly List<object> Constants = new List<object>();
         private static readonly Dictionary<object, int> ConstantCache = new Dictionary<object, int>();
         private static readonly MethodInfo GetConstantMethod = typeof(EmitUtils).GetMethod(nameof(GetConstant), BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 
         private static object GetConstant(int index) => Constants[index];
+
+        internal static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
         #region Convert
 
@@ -33,7 +36,7 @@ namespace CodeArts.Emit
                 type = Nullable.GetUnderlyingType(type);
             }
 
-            if (type.IsEnum)
+            if (type.IsValueType && type.IsEnum)
             {
                 return true;
             }
@@ -508,12 +511,18 @@ namespace CodeArts.Emit
 
         #region Constants
 
-        private static void EmitString(ILGenerator ilg, string value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitString(ILGenerator ilg, string value)
         {
             ilg.Emit(OpCodes.Ldstr, value);
         }
 
-        private static void EmitBoolean(ILGenerator ilg, bool value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitBoolean(ILGenerator ilg, bool value)
         {
             if (value)
             {
@@ -525,37 +534,55 @@ namespace CodeArts.Emit
             }
         }
 
-        private static void EmitChar(ILGenerator ilg, char value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitChar(ILGenerator ilg, char value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U2);
         }
 
-        private static void EmitByte(ILGenerator ilg, byte value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitByte(ILGenerator ilg, byte value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U1);
         }
 
-        private static void EmitSByte(ILGenerator ilg, sbyte value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitSByte(ILGenerator ilg, sbyte value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_I1);
         }
 
-        private static void EmitShort(ILGenerator ilg, short value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitShort(ILGenerator ilg, short value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_I2);
         }
 
-        private static void EmitUShort(ILGenerator ilg, ushort value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitUShort(ILGenerator ilg, ushort value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U2);
         }
 
-        private static void EmitInt(ILGenerator ilg, int value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitInt(ILGenerator ilg, int value)
         {
             OpCode c;
             switch (value)
@@ -604,13 +631,19 @@ namespace CodeArts.Emit
             ilg.Emit(c);
         }
 
-        private static void EmitUInt(ILGenerator ilg, uint value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitUInt(ILGenerator ilg, uint value)
         {
             EmitInt(ilg, (int)value);
             ilg.Emit(OpCodes.Conv_U4);
         }
 
-        private static void EmitLong(ILGenerator ilg, long value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitLong(ILGenerator ilg, long value)
         {
             ilg.Emit(OpCodes.Ldc_I8, value);
 
@@ -623,23 +656,35 @@ namespace CodeArts.Emit
             ilg.Emit(OpCodes.Conv_I8);
         }
 
-        private static void EmitULong(ILGenerator ilg, ulong value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitULong(ILGenerator ilg, ulong value)
         {
             ilg.Emit(OpCodes.Ldc_I8, (long)value);
             ilg.Emit(OpCodes.Conv_U8);
         }
 
-        private static void EmitDouble(ILGenerator ilg, double value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitDouble(ILGenerator ilg, double value)
         {
             ilg.Emit(OpCodes.Ldc_R8, value);
         }
 
-        private static void EmitSingle(ILGenerator ilg, float value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitSingle(ILGenerator ilg, float value)
         {
             ilg.Emit(OpCodes.Ldc_R4, value);
         }
 
-        private static void EmitDecimal(ILGenerator ilg, decimal value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitDecimal(ILGenerator ilg, decimal value)
         {
             if (decimal.Truncate(value) == value)
             {
@@ -666,7 +711,10 @@ namespace CodeArts.Emit
             }
         }
 
-        private static void EmitDecimalBits(ILGenerator ilg, decimal value)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitDecimalBits(ILGenerator ilg, decimal value)
         {
             int[] bits = decimal.GetBits(value);
             EmitInt(ilg, bits[0]);
@@ -677,7 +725,10 @@ namespace CodeArts.Emit
             EmitNew(ilg, typeof(decimal).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }));
         }
 
-        private static void EmitNew(ILGenerator ilg, ConstructorInfo ci)
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public static void EmitNew(ILGenerator ilg, ConstructorInfo ci)
         {
             if (ci.DeclaringType.ContainsGenericParameters)
             {
@@ -751,92 +802,6 @@ namespace CodeArts.Emit
         }
         #endregion
 
-        #region CreateCustomAttribute
-        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
-        {
-            var value = argument.Value;
-
-            if (value is IEnumerable<CustomAttributeTypedArgument> values)
-            {
-                //special case for handling arrays in attributes
-                var arguments = GetArguments(values);
-
-                var array = new object[arguments.Length];
-                arguments.CopyTo(array, 0);
-                return array;
-            }
-
-            return value;
-        }
-
-        private static object[] GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments)
-        {
-            var arguments = new List<object>();
-
-            foreach (var item in constructorArguments)
-            {
-                arguments.Add(ReadAttributeValue(item));
-            }
-
-            return arguments.ToArray();
-        }
-
-        private static void GetArguments(IEnumerable<CustomAttributeTypedArgument> constructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs)
-        {
-            var types = new List<Type>();
-            var args = new List<object>();
-
-            foreach (var item in constructorArguments)
-            {
-                types.Add(item.ArgumentType);
-                args.Add(ReadAttributeValue(item));
-            }
-
-            constructorArgTypes = types.ToArray();
-            constructorArgs = args.ToArray();
-        }
-
-        private static void GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues)
-        {
-            var propertyList = new List<PropertyInfo>();
-            var propertyValuesList = new List<object>();
-            var fieldList = new List<FieldInfo>();
-            var fieldValuesList = new List<object>();
-            foreach (var argument in namedArguments)
-            {
-#if NET40
-				if (argument.MemberInfo.MemberType == MemberTypes.Field)
-				{
-					fieldList.Add(argument.MemberInfo as FieldInfo);
-					fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-				}
-				else
-				{
-					propertyList.Add(argument.MemberInfo as PropertyInfo);
-					propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-				}
-#else
-                if (argument.IsField)
-                {
-                    fieldList.Add(attributeType.GetField(argument.MemberName));
-                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-                else
-                {
-                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
-                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
-                }
-#endif
-            }
-
-            properties = propertyList.ToArray();
-            propertyValues = propertyValuesList.ToArray();
-            fields = fieldList.ToArray();
-            fieldValues = fieldValuesList.ToArray();
-        }
-
-        #endregion
-
         /// <summary>
         /// 设置指定类型的常量。
         /// </summary>
@@ -882,32 +847,44 @@ namespace CodeArts.Emit
         {
             if (value is null)
             {
-                EmitDefaultValueOfType(ilg, valueType);
+                ilg.Emit(OpCodes.Ldnull);
             }
             else
             {
+                if (valueType is null)
+                {
+                    valueType = value.GetType();
+                }
+
                 switch (value)
                 {
                     case Type type:
                         ilg.Emit(OpCodes.Ldtoken, type);
                         ilg.Emit(OpCodes.Call, GetTypeFromHandle);
 
-                        ilg.Emit(OpCodes.Castclass, typeof(Type));
+                        ilg.Emit(OpCodes.Castclass, valueType);
                         break;
-                    case MethodInfo method:
-                        ilg.Emit(OpCodes.Ldtoken, method);
+                    case MethodInfo methodInfo:
+                        Debug.Assert(methodInfo.DeclaringType != null);
 
-                        if (method.DeclaringType != null && method.DeclaringType.IsGenericType)
+                        if (methodInfo is DynamicMethod dynamicMethod)
                         {
-                            ilg.Emit(OpCodes.Ldtoken, method.DeclaringType);
-                            ilg.Emit(OpCodes.Call, GetIsGenericTypeMethodFromHandle);
+                            ilg.Emit(OpCodes.Ldtoken, dynamicMethod.RuntimeMethod);
                         }
                         else
                         {
-                            ilg.Emit(OpCodes.Call, GetMethodFromHandle);
+                            ilg.Emit(OpCodes.Ldtoken, methodInfo);
                         }
 
-                        ilg.Emit(OpCodes.Castclass, typeof(MethodInfo));
+                        ilg.Emit(OpCodes.Ldtoken, methodInfo.DeclaringType);
+
+                        ilg.Emit(OpCodes.Call, GetMethodFromHandle);
+
+                        ilg.Emit(OpCodes.Castclass, valueType);
+                        break;
+                    case Guid guid:
+                        ilg.Emit(OpCodes.Ldstr, guid.ToString("D"));
+                        ilg.Emit(OpCodes.Newobj, GuidConstructorInfo);
                         break;
                     case Array array:
                         if (!IsSimpleArray(valueType))
@@ -933,7 +910,7 @@ namespace CodeArts.Emit
 
                             EmitConstantOfType(ilg, enumerator.Current, elementType);
 
-                            if (elementType.IsEnum)
+                            if (elementType.IsValueType && elementType.IsEnum)
                             {
                                 ilg.Emit(OpCodes.Stelem, elementType);
                             }
@@ -1005,6 +982,7 @@ namespace CodeArts.Emit
                         }
 
                         EmitInt(ilg, key);
+
                         ilg.Emit(OpCodes.Call, GetConstantMethod);
 
                         if (valueType.IsValueType)
@@ -1018,75 +996,6 @@ namespace CodeArts.Emit
 
                         break;
                 }
-            }
-        }
-
-        /// <summary>
-        /// 发行指定类型的默认值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="type">类型。</param>
-        public static void EmitDefaultValueOfType(ILGenerator ilg, Type type)
-        {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Object:
-                case TypeCode.DateTime:
-                    if (type.IsValueType)
-                    {
-                        if (type.IsEnum)
-                        {
-                            goto case default;
-                        }
-                        LocalBuilder lb = ilg.DeclareLocal(type);
-                        ilg.Emit(OpCodes.Ldloca, lb);
-                        ilg.Emit(OpCodes.Initobj, type);
-                        ilg.Emit(OpCodes.Ldloc, lb);
-                    }
-                    else
-                    {
-                        ilg.Emit(OpCodes.Ldnull);
-                    }
-                    break;
-
-                case TypeCode.Empty:
-                case TypeCode.String:
-                case TypeCode.DBNull:
-                    ilg.Emit(OpCodes.Ldnull);
-                    break;
-
-                case TypeCode.Boolean:
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                    ilg.Emit(OpCodes.Ldc_I4_0);
-                    break;
-
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    ilg.Emit(OpCodes.Ldc_I4_0);
-                    ilg.Emit(OpCodes.Conv_I8);
-                    break;
-
-                case TypeCode.Single:
-                    ilg.Emit(OpCodes.Ldc_R4, default(float));
-                    break;
-
-                case TypeCode.Double:
-                    ilg.Emit(OpCodes.Ldc_R8, default(double));
-                    break;
-
-                case TypeCode.Decimal:
-                    ilg.Emit(OpCodes.Ldc_I4_0);
-                    ilg.Emit(OpCodes.Newobj, typeof(decimal).GetConstructor(new Type[] { typeof(int) }));
-                    break;
-
-                default:
-                    throw new NotSupportedException();
             }
         }
 
@@ -1139,6 +1048,7 @@ namespace CodeArts.Emit
             }
         }
 
+        #region Attribute
         /// <summary>
         /// 创建自定义标记。
         /// </summary>
@@ -1146,35 +1056,104 @@ namespace CodeArts.Emit
         /// <returns></returns>
         public static CustomAttributeBuilder CreateCustomAttribute<TAttribute>() where TAttribute : Attribute, new() => new CustomAttributeBuilder(typeof(TAttribute).GetConstructor(Type.EmptyTypes), new object[0]);
 
+
         /// <summary>
-        /// 创建自定义标记。
+        /// 创建自定义属性构造器。
         /// </summary>
-        /// <param name="attributeData">属性数据。</param>
+        /// <param name="attribute">属性。</param>
         /// <returns></returns>
-        public static CustomAttributeBuilder CreateCustomAttribute(CustomAttributeData attributeData)
+        public static CustomAttributeBuilder CreateCustomAttribute(CustomAttributeData attribute)
         {
-            GetArguments(attributeData.ConstructorArguments, out Type[] constructorArgTypes, out object[] constructorArgs);
+            if (attribute is null)
+            {
+                throw new ArgumentNullException(nameof(attribute));
+            }
 
-#if NET40
-			var constructor = attributeData.Constructor;
+            var constructorArguments = GetArguments(attribute.ConstructorArguments);
+
+#if NET40            
+            var namedArguments = GetSettersAndFields(attribute.Constructor.DeclaringType, attribute.NamedArguments);
+
+            return new CustomAttributeBuilder(attribute.Constructor.DeclaringType.GetConstructor(constructorArguments.Item1), constructorArguments.Item2, namedArguments.Item1, namedArguments.Item2, namedArguments.Item3, namedArguments.Item4);
 #else
-            var constructor = attributeData.AttributeType.GetConstructor(constructorArgTypes);
-#endif
+            var namedArguments = GetSettersAndFields(attribute.AttributeType, attribute.NamedArguments);
 
-            GetSettersAndFields(
-#if NET40
-                null,
-#else
-                attributeData.AttributeType,
+            return new CustomAttributeBuilder(attribute.AttributeType.GetConstructor(constructorArguments.Item1), constructorArguments.Item2, namedArguments.Item1, namedArguments.Item2, namedArguments.Item3, namedArguments.Item4);
 #endif
-                attributeData.NamedArguments, out PropertyInfo[] properties, out object[] propertyValues, out FieldInfo[] fields, out object[] fieldValues);
-
-            return new CustomAttributeBuilder(constructor,
-                                             constructorArgs,
-                                             properties,
-                                             propertyValues,
-                                             fields,
-                                             fieldValues);
         }
+
+        private static Tuple<Type[], object[]> GetArguments(IList<CustomAttributeTypedArgument> constructorArguments)
+        {
+            var constructorArgTypes = new Type[constructorArguments.Count];
+            var constructorArgs = new object[constructorArguments.Count];
+            for (var i = 0; i < constructorArguments.Count; i++)
+            {
+                constructorArgTypes[i] = constructorArguments[i].ArgumentType;
+                constructorArgs[i] = ReadAttributeValue(constructorArguments[i]);
+            }
+
+            return Tuple.Create(constructorArgTypes, constructorArgs);
+        }
+
+        private static Tuple<PropertyInfo[], object[], FieldInfo[], object[]> GetSettersAndFields(Type attributeType, IEnumerable<CustomAttributeNamedArgument> namedArguments)
+        {
+            var propertyList = new List<PropertyInfo>();
+            var propertyValuesList = new List<object>();
+            var fieldList = new List<FieldInfo>();
+            var fieldValuesList = new List<object>();
+            foreach (var argument in namedArguments)
+            {
+#if NET40
+                if (argument.MemberInfo is FieldInfo)
+                {
+                    fieldList.Add(attributeType.GetField(argument.MemberInfo.Name));
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(attributeType.GetProperty(argument.MemberInfo.Name));
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+#else
+                if (argument.IsField)
+                {
+                    fieldList.Add(attributeType.GetField(argument.MemberName));
+                    fieldValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+                else
+                {
+                    propertyList.Add(attributeType.GetProperty(argument.MemberName));
+                    propertyValuesList.Add(ReadAttributeValue(argument.TypedValue));
+                }
+#endif
+            }
+
+            return Tuple.Create(propertyList.ToArray(), propertyValuesList.ToArray(), fieldList.ToArray(), fieldValuesList.ToArray());
+        }
+
+        private static object ReadAttributeValue(CustomAttributeTypedArgument argument)
+        {
+            var value = argument.Value;
+            if (argument.ArgumentType.IsArray && value is IList<CustomAttributeTypedArgument> arrays)
+            {
+                //special case for handling arrays in attributes
+                return GetNestedArguments(arrays);
+            }
+
+            return value;
+        }
+
+        private static object[] GetNestedArguments(IList<CustomAttributeTypedArgument> constructorArguments)
+        {
+            var arguments = new object[constructorArguments.Count];
+
+            for (var i = 0; i < constructorArguments.Count; i++)
+            {
+                arguments[i] = ReadAttributeValue(constructorArguments[i]);
+            }
+
+            return arguments;
+        }
+        #endregion
     }
 }

@@ -35,7 +35,7 @@ namespace UnitTest
             adapter.Visitors.Add(new ConvertVisitter());
 
             DbConnectionManager.RegisterAdapter(adapter);
-            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
             RuntimeServPools.TryAddSingleton<IMapper, CastingMapper>();
 

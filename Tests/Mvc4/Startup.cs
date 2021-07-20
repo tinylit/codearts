@@ -1,6 +1,8 @@
 ﻿using CodeArts;
 using CodeArts.Mvc;
 using CodeArts.Mvc.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace Mvc4
 {
@@ -13,9 +15,15 @@ namespace Mvc4
                 startup.DoStartup();
             }
         }
-        public override void Configure(IApplicationBuilder builder)
+        public void Configure(IApplicationBuilder builder, IServiceProvider serviceProvider)
         {
             base.Configure(builder.MapPost("/test", "/api/values/test"));
+        }
+
+        /// <inheritdoc />
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.UseDependencyInjection();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
@@ -63,7 +63,7 @@ namespace CodeArts.Config
         /// <summary>
         /// 构造函数。
         /// </summary>
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         public DefaultConfigHelper() : this(_builder ??= ConfigurationBuilder())
 #else
         public DefaultConfigHelper() : this(_builder ?? (_builder = ConfigurationBuilder()))

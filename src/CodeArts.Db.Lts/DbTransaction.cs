@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -34,7 +34,7 @@ namespace CodeArts.Db.Lts
         public void Dispose() => Transaction.Dispose();
     }
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
     /// <summary>
     /// 事务。
     /// </summary>

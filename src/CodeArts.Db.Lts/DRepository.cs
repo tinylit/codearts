@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -15,12 +16,15 @@ namespace CodeArts.Db.Lts
     /// 数据仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
     public class DRepository<TEntity> : Repository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IAsyncEnumerable<TEntity>, IEnumerable<TEntity>, IRepository, IAsyncQueryProvider, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #else
     public class DRepository<TEntity> : Repository<TEntity>, IDRepository<TEntity>, IRepository<TEntity>, IOrderedQueryable<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IRepository, IQueryProvider, IOrderedQueryable, IQueryable, IEnumerable where TEntity : class, IEntiy
 #endif
     {
+        private readonly IReadOnlyConnectionConfig connectionConfig;
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+
         private static readonly Type TypeSelfEntity = typeof(TEntity);
 
         private static readonly MethodInfo FromMethod = QueryableMethods.From.MakeGenericMethod(TypeSelfEntity);
@@ -40,23 +44,48 @@ namespace CodeArts.Db.Lts
         /// 构造函数。
         /// </summary>
         /// <param name="connectionConfig">链接配置。</param>
-        public DRepository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig) { }
+        public DRepository(IReadOnlyConnectionConfig connectionConfig) : base(connectionConfig)
+        {
+            this.connectionConfig = connectionConfig;
+        }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">数据上下文。</param>
-        public DRepository(IDbContext context) : base(context)
+        /// <param name="database">数据库。</param>
+        public DRepository(IDatabase database) : base(database)
         {
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">链接配置。</param>
+        /// <param name="database">链接配置。</param>
         /// <param name="expression">表达式。</param>
-        private DRepository(IDbContext context, Expression expression) : base(context, expression)
+        private DRepository(IDatabase database, Expression expression) : base(database, expression)
         {
+        }
+
+        /// <summary>
+        /// 获取数据库配置。
+        /// </summary>
+        /// <returns></returns>
+        protected override IReadOnlyConnectionConfig GetDbConfig()
+        {
+            if (connectionConfig is null)
+            {
+                var attr = DbConfigCache.GetOrAdd(GetType(), type =>
+                {
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbWriteConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
+                }) ?? DbConfigCache.GetOrAdd(ElementType, type =>
+                {
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbWriteConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
+                });
+
+                return attr.GetConfig();
+            }
+
+            return connectionConfig;
         }
 
         /// <summary>
@@ -66,7 +95,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> From(Func<ITableInfo, string> table)
         {
-            return new DRepository<TEntity>(DbContext, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table ?? throw new ArgumentNullException(nameof(table))) }));
+            return new DRepository<TEntity>(Database, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table ?? throw new ArgumentNullException(nameof(table))) }));
         }
 
         /// <summary>
@@ -76,7 +105,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> Where(Expression<Func<TEntity, bool>> expression)
         {
-            return new DRepository<TEntity>(DbContext, Expression.Call(null, WhereMethod, new Expression[2] { Expression, Expression.Quote(expression) }));
+            return new DRepository<TEntity>(Database, Expression.Call(null, WhereMethod, new Expression[2] { Expression, Expression.Quote(expression) }));
         }
 
         /// <summary>
@@ -86,7 +115,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> TimeOut(int commandTimeout)
         {
-            return new DRepository<TEntity>(DbContext, Expression.Call(null, TimeOutMethod, new Expression[2] { Expression, Expression.Constant(commandTimeout) }));
+            return new DRepository<TEntity>(Database, Expression.Call(null, TimeOutMethod, new Expression[2] { Expression, Expression.Constant(commandTimeout) }));
         }
 
         /// <summary>
@@ -96,7 +125,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Update(Expression<Func<TEntity, TEntity>> updateExp)
         {
-            return DbContext.Execute(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }));
+            return Database.Execute(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }));
         }
 
         /// <summary>
@@ -105,7 +134,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Delete()
         {
-            return DbContext.Execute(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }));
+            return Database.Execute(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }));
         }
 
         /// <summary>
@@ -115,7 +144,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Delete(Expression<Func<TEntity, bool>> whereExp)
         {
-            return DbContext.Execute(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }));
+            return Database.Execute(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }));
         }
 
         /// <summary>
@@ -125,10 +154,10 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public int Insert(IQueryable<TEntity> querable)
         {
-            return DbContext.Execute(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }));
+            return Database.Execute(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }));
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 更新数据。
         /// </summary>
@@ -137,7 +166,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> UpdateAsync(Expression<Func<TEntity, TEntity>> updateExp, CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, UpdateMethod, new Expression[2] { Expression, Expression.Quote(updateExp) }), cancellationToken);
         }
 
         /// <summary>
@@ -147,7 +176,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> DeleteAsync(CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, DeleteMethod, new Expression[1] { Expression }), cancellationToken);
         }
 
         /// <summary>
@@ -158,7 +187,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> DeleteAsync(Expression<Func<TEntity, bool>> whereExp, CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, DeleteWithPredicateMethod, new Expression[2] { Expression, Expression.Quote(whereExp) }), cancellationToken);
         }
 
         /// <summary>
@@ -169,7 +198,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public Task<int> InsertAsync(IQueryable<TEntity> querable, CancellationToken cancellationToken = default)
         {
-            return DbContext.ExecuteAsync(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }), cancellationToken);
+            return Database.ExecuteAsync(Expression.Call(null, InsertMethod, new Expression[2] { Expression, querable.Expression }), cancellationToken);
         }
 #endif
     }

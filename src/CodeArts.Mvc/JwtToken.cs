@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 namespace CodeArts.Mvc
 {
     /// <summary>

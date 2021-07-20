@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
-#if NET40 ||NET_NORMAL
+#if NET40_OR_GREATER
 using System.Runtime.Remoting;
 #endif
 using System.Threading;
@@ -226,7 +226,7 @@ namespace CodeArts.Db
 
             public override int ConnectionTimeout => connection.ConnectionTimeout;
 
-#if NET40 ||NET_NORMAL
+#if NET40_OR_GREATER
             public override ObjRef CreateObjRef(Type requestedType) => connection.CreateObjRef(requestedType);
 #endif
 
@@ -294,7 +294,7 @@ namespace CodeArts.Db
                 connectionState = connection.State;
             }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public override async Task OpenAsync(CancellationToken cancellationToken)
             {
                 switch (connection.State)
@@ -311,7 +311,7 @@ namespace CodeArts.Db
 
                         goto default;
                     case ConnectionState.Broken:
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                         await connection.CloseAsync()
                             .ConfigureAwait(false);
 #else
@@ -330,7 +330,7 @@ namespace CodeArts.Db
             }
 #endif
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             public override Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default) => connection.ChangeDatabaseAsync(databaseName, cancellationToken);
 
             protected override ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken) => connection.BeginTransactionAsync(isolationLevel, cancellationToken);

@@ -52,7 +52,11 @@ namespace CodeArts.Db
         {
             var indexOf = value.IndexOf("CASE", startIndex, StringComparison.OrdinalIgnoreCase);
 
+#if NETSTANDARD2_1_OR_GREATER
+            if (indexOf > -1 && (startIndex == indexOf || string.IsNullOrWhiteSpace(value[startIndex..indexOf])))
+#else
             if (indexOf > -1 && (startIndex == indexOf || string.IsNullOrWhiteSpace(value.Substring(startIndex, indexOf - startIndex))))
+#endif
             {
                 startIndex = indexOf;
 
@@ -89,7 +93,18 @@ namespace CodeArts.Db
             //? 不包含左括号
             if (leftIndex == -1) return index;
 
-            return ParameterAnalysis(value, leftIndex + 1, 1, 0);
+            int rightIndex = ParameterAnalysis(value, leftIndex + 1, 1, 0);
+
+            if (rightIndex == -1)
+            {
+#if NETSTANDARD2_1_OR_GREATER
+                throw new DSyntaxErrorException($"“{value[startIndex..]}”附近有语法错误！");
+#else
+                throw new DSyntaxErrorException($"“{value.Substring(startIndex)}”附近有语法错误！");
+#endif
+            }
+
+            return ParameterAnalysis(value, rightIndex + 1);
         }
 
         /// <summary>
@@ -107,11 +122,19 @@ namespace CodeArts.Db
 
                 if (nextIndex == -1)
                 {
+#if NETSTANDARD2_1_OR_GREATER
+                    list.Add(columns[startIndex..]);
+#else
                     list.Add(columns.Substring(startIndex));
+#endif
                 }
                 else
                 {
+#if NETSTANDARD2_1_OR_GREATER
+                    list.Add(columns[startIndex..nextIndex]);
+#else
                     list.Add(columns.Substring(startIndex, nextIndex - startIndex));
+#endif
                 }
 
                 startIndex = nextIndex + 1;
@@ -136,7 +159,7 @@ namespace CodeArts.Db
 
             Group group = match.Groups["cols"];
 
-            return new Tuple<string, int>(group.Value, group.Index);
+            return new Tuple<string, int>(group.Value.TrimEnd('\r', '\n'), group.Index);
         }
     }
 }

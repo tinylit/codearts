@@ -2,6 +2,7 @@
 using CodeArts.Exceptions;
 using CodeArts.Mvc;
 using Mvc4.Views;
+using System;
 using System.Collections.Generic;
 using System.Web.Http;
 
@@ -23,10 +24,9 @@ namespace Mvc4.Controllers
         /// <inheritdoc />
         public ValuesController(IDependency dependency)
         {
-
         }
+
         /// <inheritdoc />
-        // GET api/values
         [HttpGet]
         public IEnumerable<string> Get()
         {
@@ -43,7 +43,7 @@ namespace Mvc4.Controllers
         /// <inheritdoc />
         // PUT api/values/5
         [HttpPut]
-        public void Put(int id, [FromBody]string value)
+        public void Put(int id, [FromBody] string value)
         {
         }
         /// <inheritdoc />
@@ -68,7 +68,7 @@ namespace Mvc4.Controllers
 
         [HttpPost]
         [ActionName("test")]
-        public DResult Test([FromBody]TestView view)
+        public DResult Test([FromBody] TestView view)
         {
             return DResult.Ok(view);
         }

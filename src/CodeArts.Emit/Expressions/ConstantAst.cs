@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -16,7 +17,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="value">值。</param>
-        public ConstantAst(object value) : this(value, null)
+        public ConstantAst(object value) : this(value, value is MethodInfo ? typeof(MethodInfo) : value is Type ? typeof(Type) : value?.GetType() ?? typeof(object))
         {
         }
 
@@ -25,22 +26,32 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="value">值。</param>
         /// <param name="type">值类型。</param>
-        public ConstantAst(object value, Type type) : base(type ?? value?.GetType() ?? typeof(object))
+        public ConstantAst(object value, Type type) : base(type)
         {
-            if (value is null || value.GetType() == ReturnType || ReturnType.IsAssignableFrom(value.GetType()))
+            if (value is null || value.GetType() == type || type.IsAssignableFrom(value.GetType()))
             {
+                if (type.IsValueType && !type.IsNullable())
+                {
+                    throw new NotSupportedException($"常量null，不能对值类型({RuntimeType})进行转换!");
+                }
+
                 this.value = value;
             }
             else
             {
-                throw new NotSupportedException($"常量值类型({value.GetType()})和指定类型({ReturnType})无法进行转换!");
+                throw new NotSupportedException($"常量值类型({value.GetType()})和指定类型({type})无法进行转换!");
             }
         }
+
+        /// <summary>
+        /// 空的。
+        /// </summary>
+        public bool IsNull => value is null;
 
         /// <summary>
         /// 生成。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg) => EmitUtils.EmitConstantOfType(ilg, value, ReturnType);
+        public override void Load(ILGenerator ilg) => EmitUtils.EmitConstantOfType(ilg, value, RuntimeType);
     }
 }

@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -26,24 +26,15 @@ namespace CodeArts.Mvc
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public JwtStartup() : base()
+        public JwtStartup()
         {
         }
 
-#if NETCOREAPP3_1
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-#else
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-#endif
-        public JwtStartup(bool useSwaggerUi = true, bool useDependencyInjection = true) : base(useSwaggerUi, useDependencyInjection)
+        public JwtStartup(bool useSwaggerUi) : base(useSwaggerUi)
         {
         }
 
@@ -156,8 +147,7 @@ namespace CodeArts.Mvc
 #else
 using CodeArts.Mvc.Authentication;
 using CodeArts.Mvc.Builder;
-using CodeArts.Mvc.DependencyInjection;
-#if !NET40
+#if NET45_OR_GREATER
 using Swashbuckle.Application;
 using System;
 #endif
@@ -169,37 +159,19 @@ namespace CodeArts.Mvc
     /// </summary>
     public class JwtStartup : DStartup
     {
+#if NET45_OR_GREATER
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public JwtStartup() : base()
+        public JwtStartup()
         {
         }
-
-#if NET40
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public JwtStartup(bool useDependencyInjection) : base(useDependencyInjection)
-        {
-        }
-#else
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
         public JwtStartup(bool useSwaggerUi) : base(useSwaggerUi)
-        {
-        }
-
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        /// <param name="useDependencyInjection">使用依赖注入：<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public JwtStartup(bool useSwaggerUi, bool useDependencyInjection) : base(useSwaggerUi, useDependencyInjection)
         {
         }
 

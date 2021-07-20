@@ -696,19 +696,23 @@ namespace CodeArts.Casting.Implements
 
             if (conversionType.IsInterface)
             {
-#if NET40
-                if (typeDefinition == typeof(IDictionary<,>))
-#else
-                if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
+                if (typeDefinition == typeof(IDictionary<,>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyDictionary<,>)
 #endif
+                    )
+                {
                     return ByLikeEnumarableToDictionary<TResult>(sourceType, conversionType, typeArguments);
+                }
 
-#if NET40
-                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-#else
-                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
+                if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>)
 #endif
-                    return ByLikeEnumarableToList<TResult>(sourceType, conversionType, typeArguments.First());
+                    )
+                {
+                    return ByLikeEnumarableToList<TResult>(sourceType, conversionType, typeArguments[0]);
+                }
 
                 return ByLikeEnumarableToUnknownInterface<TResult>(sourceType, conversionType, typeArguments);
             }
@@ -721,19 +725,23 @@ namespace CodeArts.Casting.Implements
                 {
                     var type = item.GetGenericTypeDefinition();
 
-#if NET40
-                    if (type == typeof(IDictionary<,>))
-#else
-                    if (type == typeof(IDictionary<,>) || type == typeof(IReadOnlyDictionary<,>))
+                    if (typeDefinition == typeof(IDictionary<,>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyDictionary<,>)
 #endif
+                    )
+                    {
                         return ByLikeEnumarableToDictionaryLike<TResult>(sourceType, conversionType, item.GetGenericArguments());
+                    }
 
-#if NET40
-                    if (type == typeof(ICollection<>) || type == typeof(IList<>))
-#else
-                    if (type == typeof(ICollection<>) || type == typeof(IList<>) || type == typeof(IReadOnlyCollection<>) || type == typeof(IReadOnlyList<>))
+                    if (typeDefinition == typeof(IEnumerable<>) || typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>)
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                    || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>)
 #endif
-                        return ByLikeEnumarableToCollectionLike<TResult>(sourceType, conversionType, item.GetGenericArguments().First());
+                    )
+                    {
+                        return ByLikeEnumarableToCollectionLike<TResult>(sourceType, conversionType, item.GetGenericArguments()[0]);
+                    }
                 }
             }
 

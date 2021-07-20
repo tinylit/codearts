@@ -1,6 +1,4 @@
-﻿#if !NET40
-using System.Collections.Generic;
-using System.Text;
+﻿#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading.Tasks;
 
 namespace System.Collections
@@ -16,21 +14,17 @@ namespace System.Collections
         /// <typeparam name="T">元素类型。</typeparam>
         /// <param name="source">数据源。</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
-        public static Task ForEachAsync<T>(this IEnumerable source, Func<T, Task> action)
+        public static async Task ForEachAsync<T>(this IEnumerable source, Func<T, Task> action)
         {
             if (action is null)
             {
                 throw new ArgumentNullException(nameof(action));
             }
 
-            var tasks = new List<Task>();
-
             foreach (T item in source)
             {
-                tasks.Add(action.Invoke(item));
+                await action.Invoke(item);
             }
-
-            return Task.WhenAll(tasks);
         }
 
         /// <summary>
@@ -39,7 +33,7 @@ namespace System.Collections
         /// <typeparam name="T">元素类型。</typeparam>
         /// <param name="source">数据源。</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
-        public static Task ForEachAsync<T>(this IEnumerable source, Func<T, int, Task> action)
+        public static async Task ForEachAsync<T>(this IEnumerable source, Func<T, int, Task> action)
         {
             if (action is null)
             {
@@ -48,14 +42,10 @@ namespace System.Collections
 
             int index = -1;
 
-            var tasks = new List<Task>();
-
             foreach (T item in source)
             {
-                tasks.Add(action.Invoke(item, ++index));
+                await action.Invoke(item, ++index);
             }
-
-            return Task.WhenAll(tasks);
         }
     }
 }
@@ -73,21 +63,17 @@ namespace System.Collections.Generic
         /// <typeparam name="T">元素类型。</typeparam>
         /// <param name="source">数据源。</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
-        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> action)
+        public static async Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> action)
         {
             if (action is null)
             {
                 throw new ArgumentNullException(nameof(action));
             }
 
-            var tasks = new List<Task>();
-
             foreach (T item in source)
             {
-                tasks.Add(action.Invoke(item));
+                await action.Invoke(item);
             }
-
-            return Task.WhenAll(tasks);
         }
 
         /// <summary>
@@ -96,7 +82,7 @@ namespace System.Collections.Generic
         /// <typeparam name="T">元素类型。</typeparam>
         /// <param name="source">数据源。</param>
         /// <param name="action">要对数据源的每个元素执行的委托。</param>
-        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, int, Task> action)
+        public static async Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, int, Task> action)
         {
             if (action is null)
             {
@@ -105,14 +91,10 @@ namespace System.Collections.Generic
 
             int index = -1;
 
-            var tasks = new List<Task>();
-
             foreach (T item in source)
             {
-                tasks.Add(action.Invoke(item, ++index));
+                await action.Invoke(item, ++index);
             }
-
-            return Task.WhenAll(tasks);
         }
     }
 }

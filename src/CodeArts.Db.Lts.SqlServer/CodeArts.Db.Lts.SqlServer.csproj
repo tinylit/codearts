@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net451;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net451;net45;net40;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Authors>Tiny Lit</Authors>
-		<Version>7.1.2.7</Version>
+		<Version>8.0.0.0</Version>
 		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
 		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>

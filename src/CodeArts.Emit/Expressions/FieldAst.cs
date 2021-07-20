@@ -7,27 +7,37 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 字段。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} {field.Name}")]
+    [DebuggerDisplay("{RuntimeType.Name} {field.Name}")]
     public class FieldAst : MemberAst
     {
         private readonly FieldInfo field;
         private readonly bool isStatic;
 
         /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => !(field.IsStatic || field.IsInitOnly);
+
+        /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="field">字段。</param>
-        public FieldAst(FieldInfo field) : base(field.FieldType, (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        public FieldAst(FieldInfo field) : this(field, (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static)
+        {
+
+        }
+
+        private FieldAst(FieldInfo field, bool isStatic) : base(field.FieldType, isStatic)
         {
             this.field = field;
-            isStatic = (field.Attributes & FieldAttributes.Static) == FieldAttributes.Static;
+            this.isStatic = isStatic;
         }
 
         /// <summary>
-        /// 发行。
+        /// 获取成员数据。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Load(ILGenerator ilg)
+        protected override void LoadCore(ILGenerator ilg)
         {
             if (isStatic)
             {
@@ -43,7 +53,8 @@ namespace CodeArts.Emit.Expressions
         /// 赋值。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg)
+        /// <param name="value">值。</param>
+        protected override void AssignCore(ILGenerator ilg, AstExpression value)
         {
             if (isStatic)
             {
@@ -53,16 +64,6 @@ namespace CodeArts.Emit.Expressions
             {
                 ilg.Emit(OpCodes.Stfld, field);
             }
-        }
-
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
-        {
-            Assign(ilg);
 
             value.Load(ilg);
         }

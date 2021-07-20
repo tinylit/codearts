@@ -1,4 +1,4 @@
-﻿#if NET40 || NET_NORMAL
+﻿#if NET40_OR_GREATER
 using System;
 
 namespace CodeArts.Mvc.Builder

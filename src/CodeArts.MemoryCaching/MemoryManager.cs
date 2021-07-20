@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETSTANDARD2_0_OR_GREATER
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;

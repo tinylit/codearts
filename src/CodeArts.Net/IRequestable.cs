@@ -203,7 +203,7 @@ namespace CodeArts.Net
         /// <returns></returns>
         IThenConditionRequestable TryThen(Action<IRequestableBase, WebException> then);
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 如果请求异常，会调用【<paramref name="then"/>】，并重试一次请求。
         /// </summary>
@@ -233,7 +233,7 @@ namespace CodeArts.Net
         IFinallyRequestable Finally(Action log);
     }
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
     /// <summary>
     /// 异步请求能力。
     /// </summary>
@@ -754,7 +754,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 请求能力。
     /// </summary>
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
     public interface IRequestable<T> : IRequestableAsync<T>
 #else
     public interface IRequestable<T>
@@ -814,7 +814,7 @@ namespace CodeArts.Net
     /// <summary>
     /// 文件下载。
     /// </summary>
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
     public interface IFileRequestable : IFileRequestableAsync
 #else
     public interface IFileRequestable
@@ -1295,7 +1295,7 @@ namespace CodeArts.Net
         /// <returns></returns>
         IThenConditionRequestable Then(Action<IRequestableBase, WebException> then);
 
-#if !NET40
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 新开一个重试机制，如果请求异常，会调用【<paramref name="thenAsync"/>】，并重试一次请求。
         /// </summary>

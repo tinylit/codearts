@@ -10,9 +10,10 @@ namespace CodeArts
     /// </summary>
     public class XStartup : IDisposable
     {
-        private List<IStartup> startups;
         private readonly List<Type> types;
+        private static readonly object lockObj = new object();
         private static readonly Type StartupType = typeof(IStartup);
+        private static readonly HashSet<Type> Startups = new HashSet<Type>();
 
         /// <summary>
         /// 启动（获取所有DLL的类型启动）<see cref="AssemblyFinder.FindAll()"/>。
@@ -57,15 +58,17 @@ namespace CodeArts
         /// </summary>
         public void DoStartup()
         {
-#if NETSTANDARD2_1
-            startups ??= types
-                .Select(x => (IStartup)Activator.CreateInstance(x, true))
-                .ToList();
-#else
-            startups = startups ?? types
-                .Select(x => (IStartup)Activator.CreateInstance(x, true))
-                .ToList();
-#endif
+            var startups = new List<IStartup>(types.Count);
+
+            foreach (var type in types)
+            {
+                if (Startups.Contains(type))
+                {
+                    continue;
+                }
+
+                startups.Add((IStartup)Activator.CreateInstance(type, true));
+            }
 
             startups
                 .GroupBy(x => x.Code)
@@ -76,7 +79,17 @@ namespace CodeArts
                     {
                         if (ToStartup(startup))
                         {
-                            startup.Startup();
+                            bool flag = false;
+
+                            lock (lockObj)
+                            {
+                                flag = Startups.Add(startup.GetType());
+                            }
+
+                            if (flag)
+                            {
+                                startup.Startup();
+                            }
 
                             break;
                         }
@@ -101,12 +114,8 @@ namespace CodeArts
             {
                 types.Clear();
 
-                startups?.Clear();
-
                 if (disposing)
                 {
-                    startups = null;
-
                     GC.SuppressFinalize(this);
                 }
 

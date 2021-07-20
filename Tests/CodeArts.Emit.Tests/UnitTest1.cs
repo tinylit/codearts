@@ -1,10 +1,13 @@
 using CodeArts.Emit.Expressions;
+using CodeArts.Middleware;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace CodeArts.Emit.Tests
 {
@@ -32,7 +35,7 @@ namespace CodeArts.Emit.Tests
 #else
             var m = new ModuleEmitter();
 #endif
-            var classType = new ClassEmitter(m, "test", TypeAttributes.Public);
+            var classType = m.DefineType("test", TypeAttributes.Public);
             var method = classType.DefineMethod("Test", MethodAttributes.Public, typeof(int));
 
             var pI = method.DefineParameter(typeof(int), ParameterAttributes.None, "i");
@@ -68,7 +71,7 @@ namespace CodeArts.Emit.Tests
 #else
             var m = new ModuleEmitter();
 #endif
-            var classType = new ClassEmitter(m, "linq", TypeAttributes.Public);
+            var classType = m.DefineType("linq", TypeAttributes.Public);
             var method = classType.DefineMethod("Query", MethodAttributes.Public, typeof(void));
 
             var pI = method.DefineParameter(typeof(int), ParameterAttributes.None, "i");
@@ -126,6 +129,139 @@ namespace CodeArts.Emit.Tests
 	            }, body: Expression.Equal(left, Expression.Constant(i)));
             }
              */
+        }
+
+        public class DependencyInterceptAttribute : InterceptAttribute
+        {
+            public override void Run(InterceptContext context, Intercept intercept)
+            {
+                intercept.Run(context);
+            }
+
+            public override Task RunAsync(InterceptAsyncContext context, InterceptAsync intercept)
+            {
+                return intercept.RunAsync(context);
+            }
+
+            public override Task<T> RunAsync<T>(InterceptAsyncContext context, InterceptAsync<T> intercept)
+            {
+                return intercept.RunAsync(context);
+            }
+        }
+
+        /// <inheritdoc />
+        [DependencyIntercept]
+        public interface IDependency
+        {
+            bool Flags { get; set; }
+
+            /// <inheritdoc />
+            bool AopTest();
+
+            //[DependencyIntercept]
+            bool AopTestByRef(int i, ref int j);
+
+            [DependencyIntercept]
+            bool AopTestByOut(int i, out int j);
+
+            T Get<T>() where T : struct;
+
+            Task<T> GetAsync<T>() where T : new();
+        }
+
+        /// <inheritdoc />
+        public class Dependency : IDependency
+        {
+            public bool Flags { get; set; }
+
+            /// <inheritdoc />
+            public bool AopTestByRef(int i, ref int j)
+            {
+                j = i * 5;
+
+                return (i & 1) == 0;
+            }
+
+            /// <inheritdoc />
+            [DependencyIntercept]
+            public bool AopTestByOut(int i, out int j)
+            {
+                j = i * 5;
+
+                return (i & 1) == 0;
+            }
+
+            public bool AopTest() => true;
+
+            public T Get<T>() where T : struct => default;
+
+            public Task<T> GetAsync<T>() where T : new()
+            {
+                return Task.FromResult(new T());
+            }
+        }
+
+        public interface IDependency<T> where T : class
+        {
+            [DependencyIntercept]
+            T Clone(T obj);
+
+            T Copy(T obj);
+
+            T2 New<T2>() where T2 : T, new();
+        }
+
+        public class Dependency<T> : IDependency<T> where T : class
+        {
+            public T Clone(T obj)
+            {
+                //... 克隆的逻辑。
+                return obj;
+            }
+
+            public T Copy(T obj)
+            {
+                //... 克隆的逻辑。
+                return obj;
+            }
+
+            public T2 New<T2>() where T2 : T, new()
+            {
+                return new T2();
+            }
+        }
+
+        [TestMethod]
+        public void AopTest()
+        {
+            var services = new ServiceCollection();
+
+            var serviceProvider = services.AddTransient<IDependency, Dependency>()
+                 .AddSingleton<Dependency>()
+                 .AddTransient(typeof(IDependency<>), typeof(Dependency<>))
+                 .UseMiddleware()
+                 .BuildServiceProvider();
+
+            IDependency dependency = serviceProvider.GetService<IDependency>();
+            IDependency<IDependency> dependency2 = serviceProvider.GetService<IDependency<IDependency>>();
+
+            int j = 10;
+
+            dependency.Flags = true;
+
+            var k = dependency.AopTestByRef(3, ref j);
+
+            var k2 = dependency.AopTestByOut(4, out j);
+
+            var k3 = dependency.Get<long>();
+
+            var k4 = dependency.GetAsync<Dependency>().GetAwaiter().GetResult();
+
+            var dependency3 = dependency2.Clone(dependency);
+            var dependency4 = dependency2.Copy(dependency);
+
+            var dependency5 = dependency2.New<Dependency>();
+
         }
     }
 }

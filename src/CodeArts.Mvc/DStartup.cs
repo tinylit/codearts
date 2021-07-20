@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
@@ -25,13 +25,12 @@ namespace CodeArts.Mvc
     /// </summary>
     public class DStartup
     {
-        private readonly bool useSwaggerUi;
-        private readonly bool useDependencyInjection;
+        private readonly bool useSwaggerUi = true;
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public DStartup() : this(true)
+        public DStartup()
         {
         }
 
@@ -39,19 +38,9 @@ namespace CodeArts.Mvc
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        public DStartup(bool useSwaggerUi) : this(useSwaggerUi, true)
-        {
-        }
-
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public DStartup(bool useSwaggerUi, bool useDependencyInjection)
+        public DStartup(bool useSwaggerUi)
         {
             this.useSwaggerUi = useSwaggerUi;
-            this.useDependencyInjection = useDependencyInjection;
         }
 
         /// <summary>
@@ -75,11 +64,6 @@ namespace CodeArts.Mvc
                             .AllowCredentials();
                     });
             });
-
-            if (useDependencyInjection)
-            {
-                services.UseDependencyInjection();
-            }
 
             if (useSwaggerUi)
             {
@@ -234,8 +218,7 @@ namespace CodeArts.Mvc
 using Newtonsoft.Json.Serialization;
 using CodeArts.Mvc.Builder;
 using CodeArts.Mvc.Converters;
-using CodeArts.Mvc.DependencyInjection;
-#if NET_NORMAL
+#if NET45_OR_GREATER
 using Swashbuckle.Application;
 using System.IO;
 #endif
@@ -244,6 +227,10 @@ using System.Web.Http;
 using System.Web.Http.Dependencies;
 using System.Web.Http.Metadata;
 using CodeArts.Mvc.Providers;
+using Microsoft.Extensions.DependencyInjection;
+using System.Web.Http.Routing;
+using System.Net.Http;
+using System.Collections.Generic;
 
 namespace CodeArts.Mvc
 {
@@ -256,45 +243,30 @@ namespace CodeArts.Mvc
     /// </summary>
     public class DStartup
     {
-        private readonly bool useDependencyInjection;
-
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        public DStartup() : this(true)
-        {
-        }
-
 #if NET40
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public DStartup(bool useDependencyInjection)
+        public DStartup()
         {
-            this.useDependencyInjection = useDependencyInjection;
         }
 #else
-        private readonly bool useSwaggerUi;
+        private readonly bool useSwaggerUi = true;
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        public DStartup(bool useSwaggerUi) : this(useSwaggerUi, true)
+        public DStartup()
         {
-
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
         /// <param name="useSwaggerUi">使用SwaggerUi。</param>
-        /// <param name="useDependencyInjection">使用依赖注入<see cref="DependencyInjectionServiceCollectionExtentions.UseDependencyInjection(IServiceCollection)"/>。</param>
-        public DStartup(bool useSwaggerUi, bool useDependencyInjection)
+        public DStartup(bool useSwaggerUi)
         {
             this.useSwaggerUi = useSwaggerUi;
-            this.useDependencyInjection = useDependencyInjection;
         }
 #endif
 
@@ -315,17 +287,18 @@ namespace CodeArts.Mvc
         /// <param name="config">配置。</param>
         public virtual void Configuration(HttpConfiguration config)
         {
-#if !NET40
+#if NET45_OR_GREATER
             // Web API 路由
             config.MapHttpAttributeRoutes();
 
             config.Routes.IgnoreRoute("ignore", "{resource}.axd/{*pathInfo}");
 #endif
 
+
             //? 注册默认路由
             config.Routes.MapHttpRoute(
                 name: "code-arts",
-                routeTemplate: "api/{controller}/{id}",
+                routeTemplate: "api/{controller}/{action}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
 
@@ -360,7 +333,7 @@ namespace CodeArts.Mvc
 
             config.Services.Replace(typeof(ModelMetadataProvider), new DataAnnotationsModelMetadataProvider(config.Services.GetService(typeof(ModelMetadataProvider)) as System.Web.Http.Metadata.Providers.DataAnnotationsModelMetadataProvider));
 
-#if !NET40
+#if NET45_OR_GREATER
             if (useSwaggerUi)
             {
                 //? SwaggerUi
@@ -373,7 +346,7 @@ namespace CodeArts.Mvc
             config.Filters.Add(new DExceptionFilterAttribute());
         }
 
-#if !NET40
+#if NET45_OR_GREATER
         /// <summary>
         /// 配置Swagger。
         /// </summary>
@@ -416,18 +389,6 @@ namespace CodeArts.Mvc
         protected virtual void ConfigureSwaggerUi(SwaggerUiConfig config) => config.DocExpansion(DocExpansion.List);
 
 #endif
-
-        /// <summary>
-        /// 配置依赖注入。
-        /// </summary>
-        /// <param name="services">服务集合。</param>
-        public virtual void ConfigureServices(IServiceCollection services)
-        {
-            if (useDependencyInjection)
-            {
-                services.UseDependencyInjection();
-            }
-        }
     }
 }
 #endif

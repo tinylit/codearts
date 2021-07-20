@@ -1,6 +1,6 @@
 ﻿using CodeArts.Serialize.Json;
 using System;
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
 namespace log4net.Core
 #else
 namespace Microsoft.Extensions.Logging
@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class LoggerExtentions
     {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
         private static readonly Type ExtentionsType = typeof(LoggerExtentions);
 #endif
 
@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Debug(this ILogger logger, Exception exception, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Debug, args?.Length > 0 ? string.Format(message, args) : message, exception);
 #else
             logger.Log(LogLevel.Debug, exception, message, args);
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Debug(this ILogger logger, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Debug, args?.Length > 0 ? string.Format(message, args) : message, null);
 #else
             logger.Log(LogLevel.Debug, message, args);
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Trace(this ILogger logger, Exception exception, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Trace, args?.Length > 0 ? string.Format(message, args) : message, exception);
 #else
             logger.Log(LogLevel.Trace, exception, message, args);
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Trace(this ILogger logger, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Trace, args?.Length > 0 ? string.Format(message, args) : message, null);
 #else
             logger.Log(LogLevel.Trace, message, args);
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Info(this ILogger logger, Exception exception, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Info, args?.Length > 0 ? string.Format(message, args) : message, exception);
 #else
             logger.Log(LogLevel.Information, exception, message, args);
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Info(this ILogger logger, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Info, args?.Length > 0 ? string.Format(message, args) : message, null);
 #else
             logger.Log(LogLevel.Information, message, args);
@@ -207,7 +207,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Warn(this ILogger logger, Exception exception, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Warn, args?.Length > 0 ? string.Format(message, args) : message, exception);
 #else
             logger.Log(LogLevel.Warning, exception, message, args);
@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Warn(this ILogger logger, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Warn, args?.Length > 0 ? string.Format(message, args) : message, null);
 #else
             logger.Log(LogLevel.Warning, message, args);
@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Error(this ILogger logger, Exception exception, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Error, args?.Length > 0 ? string.Format(message, args) : message, exception);
 #else
             logger.Log(LogLevel.Error, exception, message, args);
@@ -253,7 +253,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Error(this ILogger logger, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Error, args?.Length > 0 ? string.Format(message, args) : message, null);
 #else
             logger.Log(LogLevel.Error, message, args);
@@ -269,7 +269,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Critical(this ILogger logger, Exception exception, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Critical, args?.Length > 0 ? string.Format(message, args) : message, exception);
 #else
             logger.Log(LogLevel.Critical, exception, message, args);
@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">参数。</param>
         public static void Critical(this ILogger logger, string message, params object[] args)
         {
-#if NET40 || NET_NORMAL
+#if NET40_OR_GREATER
             logger.Log(ExtentionsType, Level.Critical, args?.Length > 0 ? string.Format(message, args) : message, null);
 #else
             logger.Log(LogLevel.Critical, message, args);

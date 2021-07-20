@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -22,7 +22,7 @@ namespace CodeArts.Mvc.Filters
         /// 出错时验证。
         /// </summary>
         /// <param name="context">异常上下文。</param>
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             //? 验证是否通过

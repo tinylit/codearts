@@ -236,7 +236,7 @@ namespace CodeArts.Casting
 #endif
                         return ByIEnumarableLikeToIDictionaryLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
 #if NET40
-                if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
+                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
 #else
                     if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
 #endif
@@ -459,7 +459,7 @@ namespace CodeArts.Casting
 #endif
                         return ByObjectToDictionaryLike<TResult>(sourceType, conversionType, typeArguments);
 
-                    var typeArgument = item.GetGenericArguments().First();
+                    var typeArgument = item.GetGenericArguments()[0];
 
 #if NET40
                     if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))

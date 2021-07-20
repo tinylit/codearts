@@ -23,7 +23,7 @@ namespace Mvc.Core
         public override void ConfigureServices(IServiceCollection services)
         {
             DbConnectionManager.RegisterAdapter(new MySqlLtsAdapter());
-            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
             LinqConnectionManager.RegisterAdapter(new SqlServerLinqAdapter());
 
@@ -35,6 +35,10 @@ namespace Mvc.Core
             });
 
             base.ConfigureServices(services);
+
+            services
+                .UseDependencyInjection()
+                .UseMiddleware();
         }
     }
 }

@@ -1,6 +1,6 @@
-﻿#if NET40 || NET_NORMAL
+﻿#if NET40_OR_GREATER
 using System;
-#if NET_NORMAL
+#if NET45_OR_GREATER
 using System.Threading.Tasks;
 #endif
 using System.Web;

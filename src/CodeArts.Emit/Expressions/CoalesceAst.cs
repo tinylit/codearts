@@ -17,7 +17,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="left">左表达式。</param>
         /// <param name="right">右表达式。</param>
-        public CoalesceAst(AstExpression left, AstExpression right) : base(left.ReturnType)
+        public CoalesceAst(AstExpression left, AstExpression right) : base(left.RuntimeType)
         {
             this.left = left ?? throw new System.ArgumentNullException(nameof(left));
             this.right = right ?? throw new System.ArgumentNullException(nameof(right));

@@ -55,7 +55,7 @@ namespace CodeArts
         /// <summary>
         /// 设置 【PropConverter】 将在内容替换期间使用到它。
         /// </summary>
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         public ICollection<PropConverter> Converters => converters ??= new List<PropConverter>();
 #else
         public ICollection<PropConverter> Converters => converters ?? (converters = new List<PropConverter>());

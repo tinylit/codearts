@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net45;net40;netstandard2.0;</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net452;net45;net40;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Authors>Tiny Lit</Authors>
-		<Version>7.1.2.7</Version>
+		<Version>8.0.0.0</Version>
 		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
 		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -15,10 +15,6 @@
 		<Description>Provide MySQL support for ORM.</Description>
 		<RootNamespace>CodeArts.Db.Lts</RootNamespace>
 	</PropertyGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net452'">
-		<PackageReference Include="MySql.Data" Version="8.0.22" />
-	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net40' Or '$(TargetFramework)' == 'net45'">
 		<PackageReference Include="MySql.Data" Version="6.9.12" />

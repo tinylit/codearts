@@ -9,7 +9,7 @@ namespace CodeArts.Emit.Expressions
     [DebuggerDisplay("{left}={right}")]
     public class AssignAst : AstExpression
     {
-        private readonly AssignAstExpression left;
+        private readonly AstExpression left;
         private readonly AstExpression right;
 
         /// <summary>
@@ -17,7 +17,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="left">成员。</param>
         /// <param name="right">表达式。</param>
-        public AssignAst(AssignAstExpression left, AstExpression right) : base(right.ReturnType)
+        public AssignAst(AstExpression left, AstExpression right) : base(right.RuntimeType)
         {
             this.left = left ?? throw new System.ArgumentNullException(nameof(left));
             this.right = right ?? throw new System.ArgumentNullException(nameof(right));

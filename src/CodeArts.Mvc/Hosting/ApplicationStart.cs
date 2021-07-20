@@ -1,8 +1,7 @@
-﻿#if NET40 || NET_NORMAL
+﻿#if NET40_OR_GREATER
 using CodeArts.Mvc.Builder;
-using CodeArts.Mvc.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 #if NET40
@@ -11,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-#if NET_NORMAL
+#if NET45_OR_GREATER
 using System.Threading.Tasks;
 #endif
 using System.Web;
@@ -29,6 +28,8 @@ namespace CodeArts.Mvc.Hosting
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class ApplicationStart
     {
+        private static readonly Type ResolverType = typeof(IDependencyResolver);
+        private static readonly Type ScopeType = typeof(IDependencyScope);
         private class ApplicationBuilder : IApplicationBuilder
         {
             private Func<RequestDelegate, RequestDelegate> _middleware = next => next;
@@ -55,209 +56,73 @@ namespace CodeArts.Mvc.Hosting
                 return _middleware.Invoke(request);
             }
         }
+
+        private class DefaultScope : IDependencyScope, IDisposable
+        {
+            private readonly IServiceScope serviceScope;
+
+            public DefaultScope(IServiceScope serviceScope)
+            {
+                this.serviceScope = serviceScope;
+            }
+
+            public void Dispose() => serviceScope.Dispose();
+
+            public object GetService(Type serviceType)
+            {
+                var serviceObj = serviceScope.ServiceProvider.GetService(serviceType);
+
+                if (serviceObj is null)
+                {
+                    if (serviceType == ResolverType)
+                    {
+                        return new DefaultResolver(serviceScope.ServiceProvider);
+                    }
+
+                    if (serviceType == ScopeType)
+                    {
+                        return this;
+                    }
+                }
+
+                return serviceObj;
+            }
+
+            public IEnumerable<object> GetServices(Type serviceType) => serviceScope.ServiceProvider.GetServices(serviceType);
+        }
         private class DefaultResolver : IDependencyResolver, IDependencyScope, IDisposable
         {
             private readonly IServiceProvider provider;
-
-            public IDependencyScope BeginScope() => this;
+            public IDependencyScope BeginScope() => new DefaultScope(provider.CreateScope());
 
             public DefaultResolver(IServiceProvider provider)
             {
                 this.provider = provider ?? throw new ArgumentNullException(nameof(provider));
             }
 
-            public void Dispose()
-            {
-                GC.SuppressFinalize(this);
-            }
+            public void Dispose() => GC.SuppressFinalize(this);
 
-            public object GetService(Type serviceType) => provider.GetService(serviceType);
-
-            public IEnumerable<object> GetServices(Type serviceType) => Enumerable.Empty<object>();
-        }
-        private class MultiResolver : IDependencyResolver, IServiceProvider, IDependencyScope, IDisposable
-        {
-            private readonly IEnumerable<ServiceDescriptor> serviceDescriptors;
-            private readonly IDependencyResolver dependencyResolver;
-            private readonly ConcurrentDictionary<Type, ServiceDescriptor> descriptors = new ConcurrentDictionary<Type, ServiceDescriptor>();
-#if NET_NORMAL
-            private readonly ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>> scopes = new ConcurrentDictionary<HttpContext, ConcurrentDictionary<ServiceDescriptor, object>>();
-            private readonly ConcurrentDictionary<HttpContext, List<IDisposable>> transients = new ConcurrentDictionary<HttpContext, List<IDisposable>>();
-#endif
-            public MultiResolver(IEnumerable<ServiceDescriptor> serviceDescriptors, IDependencyResolver dependencyResolver)
-            {
-                this.serviceDescriptors = serviceDescriptors;
-                this.dependencyResolver = dependencyResolver;
-            }
-
-            /// <summary>
-            /// Gets the service object of the specified type.
-            /// </summary>
-            /// <param name="serviceType">服务类型。</param>
-            /// <returns></returns>
             public object GetService(Type serviceType)
             {
-                ServiceDescriptor service = serviceDescriptors.FirstOrDefault(x => x.ServiceType == serviceType);
+                var serviceObj = provider.GetService(serviceType);
 
-                if (service is null)
+                if (serviceObj is null)
                 {
-                    if (serviceType.IsGenericType)
+                    if (serviceType == ResolverType)
                     {
-                        if (descriptors.TryGetValue(serviceType, out var descriptor))
-                        {
-                            return GetService(descriptor);
-                        }
-
-                        var genericType = serviceType.GetGenericTypeDefinition();
-
-                        var implementationService = serviceDescriptors.FirstOrDefault(x => x.ServiceType == genericType);
-
-                        if (implementationService is null || implementationService.ImplementationType is null)
-                        {
-                            return null;
-                        }
-
-                        return GetService(descriptors.GetOrAdd(serviceType, implementationType =>
-                        {
-                            return new ServiceDescriptor(implementationType, implementationService.ImplementationType.MakeGenericType(implementationType.GetGenericArguments()), implementationService.Lifetime);
-                        }));
+                        return this;
                     }
 
-                    return dependencyResolver.GetService(serviceType);
-                }
-
-                return GetService(service);
-            }
-
-            private object ImplementationInstance(ServiceDescriptor service)
-            {
-                if (service.ImplementationFactory is null)
-                {
-                    service.ImplementationFactory = MakeImplementationFactory(service.ImplementationType);
-                }
-
-                return service.ImplementationFactory.Invoke(this);
-            }
-
-            private object GetService(ServiceDescriptor service)
-            {
-                switch (service.Lifetime)
-                {
-                    case ServiceLifetime.Singleton:
-                        return service.ImplementationInstance ?? (service.ImplementationInstance = ImplementationInstance(service));
-#if NET_NORMAL
-                    case ServiceLifetime.Scoped:
-                        return service.ImplementationInstance ?? scopes.GetOrAdd(HttpContext.Current, context =>
-                        {
-                            context.AddOnRequestCompleted(context2 =>
-                            {
-                                if (scopes.TryRemove(context2, out ConcurrentDictionary<ServiceDescriptor, object> cache))
-                                {
-                                    foreach (var kv in cache)
-                                    {
-                                        if (kv.Value is IDisposable disposable)
-                                        {
-                                            disposable.Dispose();
-                                        }
-                                    }
-
-                                    cache.Clear();
-                                }
-                            });
-                            return new ConcurrentDictionary<ServiceDescriptor, object>();
-                        }).GetOrAdd(service, ImplementationInstance);
-#endif
-                    case ServiceLifetime.Transient when service.ImplementationInstance is null:
-
-                        var instance = ImplementationInstance(service);
-
-#if NET_NORMAL
-                        if (instance is IDisposable disposableValue)
-                        {
-                            var results = transients.GetOrAdd(HttpContext.Current, context =>
-                            {
-                                context.AddOnRequestCompleted(context2 =>
-                                {
-                                    if (transients.TryRemove(context2, out List<IDisposable> cache))
-                                    {
-                                        foreach (var value in cache)
-                                        {
-                                            value.Dispose();
-                                        }
-
-                                        cache.Clear();
-                                    }
-                                });
-
-                                return new List<IDisposable>();
-                            });
-
-                            results.Add(disposableValue);
-                        }
-#endif
-
-                        return instance;
-                    case ServiceLifetime.Transient:
-                        return service.ImplementationInstance;
-                    default:
-                        return null;
-                }
-            }
-
-            private Func<IServiceProvider, object> MakeImplementationFactory(Type implementationType)
-            {
-                var constructors = implementationType
-                    .GetConstructors();
-
-                if (constructors.Length == 0)
-                {
-                    throw new NotSupportedException($"类型“{implementationType.FullName}”不包含任何公共构造函数！");
-                }
-
-                foreach (var constructor in constructors)
-                {
-                    var parameters = constructor.GetParameters();
-
-                    if (parameters.Length == 0)
+                    if (serviceType == ScopeType)
                     {
-                        return provider => constructor.Invoke(new object[0]);
-                    }
-
-                    if (parameters.All(x => serviceDescriptors.Any(y => x.ParameterType == y.ServiceType)))
-                    {
-                        return provider => constructor.Invoke(parameters.Select(x => provider.GetService(x.ParameterType)).ToArray());
+                        return this;
                     }
                 }
 
-                throw new NotSupportedException($"类型“{implementationType.FullName}”所有公共构造函数都不被支持！");
+                return serviceObj;
             }
 
-            public IDependencyScope BeginScope() => this;
-
-            public IEnumerable<object> GetServices(Type serviceType) => Enumerable.Empty<object>();
-
-            public void Dispose()
-            {
-                descriptors.Clear();
-
-#if NET_NORMAL
-                foreach (var kv in scopes)
-                {
-                    kv.Value.Clear();
-                }
-
-                scopes.Clear();
-
-                foreach (var kv in transients)
-                {
-                    kv.Value.Clear();
-                }
-
-                transients.Clear();
-#endif
-
-                GC.SuppressFinalize(this);
-            }
+            public IEnumerable<object> GetServices(Type serviceType) => provider.GetServices(serviceType);
         }
 
         private class Loader
@@ -343,9 +208,18 @@ namespace CodeArts.Mvc.Hosting
 
                         if (!(configureServices is null))
                         {
+                            var controllerBaseType = typeof(ApiController);
+
                             IServiceCollection services = new ServiceCollection();
 
                             configureServices.Invoke(instance, new object[1] { services });
+
+                            foreach (var controllerType in _referencedAssemblies
+                            .SelectMany(x => x.GetTypes())
+                            .Where(x => x.IsClass && !x.IsAbstract && controllerBaseType.IsAssignableFrom(x)))
+                            {
+                                services.AddTransient(controllerType);
+                            }
 
                             if (services.Count > 0)
                             {
@@ -353,11 +227,11 @@ namespace CodeArts.Mvc.Hosting
 
                                 if (resolverType.Name == "EmptyResolver" && AssemblyEquels(resolverType.Assembly, "System.Web.Http"))
                                 {
-                                    config.DependencyResolver = new DefaultResolver(new ServiceProvider(services));
+                                    config.DependencyResolver = new DefaultResolver(services.BuildServiceProvider());
                                 }
                                 else
                                 {
-                                    config.DependencyResolver = new MultiResolver(services, config.DependencyResolver);
+                                    throw new NotSupportedException("不支持多次定义“HttpConfiguration.DependencyResolver”的实现!");
                                 }
                             }
                         }
@@ -546,7 +420,7 @@ namespace CodeArts.Mvc.Hosting
 
             public void Initialize(HttpApplication context)
             {
-#if !NET40
+#if NET45_OR_GREATER
                 pipeline.Configuration.EnsureInitialized();
 #endif
 

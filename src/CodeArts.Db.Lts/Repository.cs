@@ -14,8 +14,8 @@ namespace CodeArts.Db.Lts
     /// 数据仓储。
     /// </summary>
     /// <typeparam name="T">实体类型。</typeparam>
-#if NET_NORMAL || NET_CORE
-    public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IRepository, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+    public class Repository<T> : IRepository<T>, IOrderedQueryable<T>, IQueryable<T>, IAsyncEnumerable<T>, IEnumerable<T>, IRepository, IOrderedQueryable, IQueryable, IAsyncQueryProvider, IQueryProvider, IEnumerable, IDisposable
 #else
     public class Repository<T> : IRepository<T>, IQueryable<T>, IEnumerable<T>, IRepository, IQueryable, IQueryProvider, IEnumerable
 #endif
@@ -23,12 +23,10 @@ namespace CodeArts.Db.Lts
         private readonly IReadOnlyConnectionConfig connectionConfig;
         private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
-        private readonly bool isEmpty = true;
-
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public Repository() => DbContext = Create(GetDbConfig());
+        public Repository() => Database = Create(GetDbConfig());
 
         /// <summary>
         /// 构造函数。
@@ -41,26 +39,22 @@ namespace CodeArts.Db.Lts
                 throw new ArgumentNullException(nameof(connectionConfig));
             }
 
-            this.connectionConfig = connectionConfig;
-
-            DbContext = Create(connectionConfig);
+            Database = Create(this.connectionConfig = connectionConfig);
         }
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">数据库上下文。</param>
-        public Repository(IDbContext context) => DbContext = context ?? throw new ArgumentNullException(nameof(context));
+        /// <param name="database">数据库。</param>
+        public Repository(IDatabase database) => Database = database ?? throw new ArgumentNullException(nameof(database));
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="context">链接配置。</param>
+        /// <param name="database">链接配置。</param>
         /// <param name="expression">表达式。</param>
-        protected Repository(IDbContext context, Expression expression) : this(context)
+        protected Repository(IDatabase database, Expression expression) : this(database)
         {
-            isEmpty = false;
-
             this.expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
@@ -83,9 +77,9 @@ namespace CodeArts.Db.Lts
         protected IEnumerable<T> Enumerable { private set; get; }
 
         /// <summary>
-        /// 数据上下文。
+        /// 数据库。
         /// </summary>
-        protected IDbContext DbContext { get; }
+        protected IDatabase Database { get; }
 
         /// <summary>
         /// 获取数据库配置。
@@ -97,10 +91,10 @@ namespace CodeArts.Db.Lts
             {
                 var attr = DbConfigCache.GetOrAdd(GetType(), type =>
                 {
-                    return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbReadConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
                 }) ?? DbConfigCache.GetOrAdd(ElementType, type =>
                 {
-                    return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute));
+                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbReadConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
                 });
 
                 return attr.GetConfig();
@@ -110,11 +104,43 @@ namespace CodeArts.Db.Lts
         }
 
         /// <summary>
-        /// 创建上下文。
+        /// 创建数据库。
         /// </summary>
         /// <param name="connectionConfig">链接配置。</param>
         /// <returns></returns>
-        protected virtual IDbContext Create(IReadOnlyConnectionConfig connectionConfig) => new DbContext(connectionConfig);
+        protected virtual IDatabase Create(IReadOnlyConnectionConfig connectionConfig) => DatabaseFactory.Create(connectionConfig);
+
+        /// <summary>
+        /// 查找指定类型。
+        /// </summary>
+        /// <returns></returns>
+        private static Type FindGenericType(Type type, Type definition)
+        {
+            while (type != null && type != typeof(object))
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == definition)
+                {
+                    return type;
+                }
+
+                if (definition.IsInterface)
+                {
+                    Type[] interfaces = type.GetInterfaces();
+
+                    foreach (Type type2 in interfaces)
+                    {
+                        Type type3 = FindGenericType(type2, definition);
+
+                        if (type3 is null) continue;
+
+                        return type3;
+                    }
+                }
+
+                type = type.BaseType;
+            }
+            return null;
+        }
 
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
@@ -123,7 +149,7 @@ namespace CodeArts.Db.Lts
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            Type type = expression.Type.FindGenericType(typeof(IQueryable<>));
+            Type type = FindGenericType(expression.Type, typeof(IQueryable<>));
 
             if (type is null)
             {
@@ -134,7 +160,7 @@ namespace CodeArts.Db.Lts
 
             return (IQueryable)Activator.CreateInstance(type2, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[2]
             {
-                DbContext,
+                Database,
                 expression
             }, null);
         }
@@ -145,14 +171,14 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="TElement">泛型类型。</typeparam>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(DbContext, expression);
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression) => new Repository<TElement>(Database, expression);
 
         /// <summary>
         /// 执行表达式。
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        object IQueryProvider.Execute(Expression expression) => DbContext.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
+        object IQueryProvider.Execute(Expression expression) => Database.Single<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
 
         /// <summary>
         /// 执行结果。
@@ -177,7 +203,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return DbContext.Read<TResult>(expression);
+            return Database.Single<TResult>(expression);
         }
 
         /// <summary>
@@ -192,7 +218,7 @@ namespace CodeArts.Db.Lts
         /// 表达式。
         /// </summary>
         public Expression Expression
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             => expression ?? (_ContextExpression ??= Expression.Constant(this));
 #else
             => expression ?? _ContextExpression ?? (_ContextExpression = Expression.Constant(this));
@@ -200,9 +226,9 @@ namespace CodeArts.Db.Lts
 
         private IEnumerator<T> GetEnumerator()
         {
-            if (isEmpty || Enumerable is null)
+            if (Enumerable is null)
             {
-                Enumerable = DbContext.Query<T>(Expression);
+                Enumerable = Database.Query<T>(Expression);
             }
 
             return Enumerable.GetEnumerator();
@@ -212,7 +238,7 @@ namespace CodeArts.Db.Lts
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 异步消息。
         /// </summary>
@@ -237,7 +263,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return DbContext.ReadAsync<TResult>(expression);
+            return Database.SingleAsync<TResult>(expression);
         }
 
         private IAsyncEnumerable<T> AsyncEnumerable;
@@ -249,13 +275,40 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator(CancellationToken cancellationToken)
         {
-            if (isEmpty || AsyncEnumerable is null)
+            if (AsyncEnumerable is null)
             {
-                AsyncEnumerable = DbContext.QueryAsync<T>(Expression);
+                AsyncEnumerable = Database.QueryAsync<T>(Expression);
             }
 
             return AsyncEnumerable.GetAsyncEnumerator(cancellationToken);
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // 要检测冗余调用
+
+        /// <inheritdoc />
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    Database.Dispose();
+
+                    GC.SuppressFinalize(this);
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            // 请勿更改此代码。将清理代码放入以上 Dispose(bool disposing) 中。
+            Dispose(true);
+        }
+        #endregion
 #endif
     }
 }

@@ -1,4 +1,4 @@
-﻿#if NET_NORMAL || NET_CORE
+﻿#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using CodeArts;
 using System.Collections.Generic;
 using System.Linq;

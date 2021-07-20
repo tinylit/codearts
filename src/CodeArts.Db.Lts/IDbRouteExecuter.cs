@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq.Expressions;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -40,7 +40,7 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         int ExecuteCommand(int? commandTimeout = null);
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 执行指令。
         /// </summary>

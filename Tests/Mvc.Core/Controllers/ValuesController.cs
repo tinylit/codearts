@@ -1,7 +1,8 @@
 ﻿using CodeArts;
+using CodeArts.Db.EntityFramework;
 using CodeArts.Exceptions;
+using CodeArts.Middleware;
 using CodeArts.Mvc;
-using CodeArts.Db;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,15 +12,33 @@ using Mvc.Core.Dtos;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using CodeArts.Db.EntityFramework;
+using System.Threading.Tasks;
 
 namespace Mvc.Core.Controllers
 {
+    public class DependencyInterceptAttribute : InterceptAttribute
+    {
+        public override void Run(InterceptContext context, Intercept intercept)
+        {
+             intercept.Run(context);
+        }
+
+        public override Task RunAsync(InterceptAsyncContext context, InterceptAsync intercept)
+        {
+            return intercept.RunAsync(context);
+        }
+
+        public override Task<T> RunAsync<T>(InterceptAsyncContext context, InterceptAsync<T> intercept)
+        {
+            return intercept.RunAsync(context);
+        }
+    }
+
     /// <inheritdoc />
     public interface IDependency
     {
         /// <inheritdoc />
+        [DependencyIntercept]
         bool AopTest();
     }
 
@@ -57,6 +76,8 @@ namespace Mvc.Core.Controllers
         public ValuesController(IDependency dependency, UserRepository users, ILinqRepository<FeiUsers, int> linqUsers)
         {
             this.dependency = dependency;
+
+            dependency.AopTest();
         }
 
         /// <summary>
@@ -125,6 +146,7 @@ namespace Mvc.Core.Controllers
         public DResult Login(string account, [Required] string password)
         {
             dependency.AopTest();
+
             return DResult.Ok(new
             {
                 id = 100000,

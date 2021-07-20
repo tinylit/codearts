@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
@@ -19,7 +19,7 @@ namespace CodeArts.Mvc
         /// </summary>
         /// <param name="context">请求上下文。</param>
         /// <returns></returns>
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         public static string GetRemoteIpAddress(this HttpContext context)
         {
             string ipAddress = context.Connection.RemoteIpAddress.ToString();
@@ -67,7 +67,7 @@ namespace CodeArts.Mvc
         /// 获取请求方的地址。
         /// </summary>
         /// <returns></returns>
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
         public static string GetRefererUrlStrings(this HttpContext context)
         {
             StringValues origin = context.Request.Headers[HeaderNames.Referer];

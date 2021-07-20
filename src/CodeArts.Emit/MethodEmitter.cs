@@ -1,6 +1,5 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -11,15 +10,13 @@ namespace CodeArts.Emit
     /// <summary>
     /// 方法。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} {Name}({ParemetersNames})")]
+    [DebuggerDisplay("{RuntimeType.Name} {Name}(...args)")]
     public class MethodEmitter : BlockAst
     {
-        private MethodBuilder builder;
+        private MethodBuilder methodBuilder;
         private int parameterIndex = 0;
-        private readonly List<ParamterEmitter> parameters = new List<ParamterEmitter>();
+        private readonly List<ParameterEmitter> parameters = new List<ParameterEmitter>();
         private readonly List<CustomAttributeBuilder> customAttributes = new List<CustomAttributeBuilder>();
-
-        private string ParemetersNames => string.Join(",", Parameters.Select(x => string.Concat(x.ReturnType.Name, " ", x.ParameterName)));
 
         /// <summary>
         /// 构造函数。
@@ -30,13 +27,29 @@ namespace CodeArts.Emit
         public MethodEmitter(string name, MethodAttributes attributes, Type returnType) : base(returnType)
         {
             Name = name;
-            Attributes = attributes; 
+            Attributes = attributes;
         }
+
+        /// <summary>
+        /// 是否为泛型方法。
+        /// </summary>
+        public virtual bool IsGenericMethod => false;
+
+        /// <summary>
+        /// 返回值类型。
+        /// </summary>
+        public Type ReturnType => RuntimeType;
+
+        /// <summary>
+        /// 泛型参数。
+        /// </summary>
+        /// <returns></returns>
+        public virtual Type[] GetGenericArguments() => null;
 
         /// <summary>
         /// 成员。
         /// </summary>
-        public MethodBuilder Value => builder ?? throw new NotImplementedException();
+        internal MethodBuilder Value => methodBuilder ?? throw new NotImplementedException();
 
         /// <summary>
         /// 方法的名称。
@@ -51,8 +64,14 @@ namespace CodeArts.Emit
         /// <summary>
         /// 参数。
         /// </summary>
-        public ParamterEmitter[] Parameters => parameters.ToArray();
+        public ParameterEmitter[] GetParameters() => parameters.ToArray();
 
+        /// <summary>
+        /// 声明参数。
+        /// </summary>
+        /// <param name="parameterInfo">参数。</param>
+        /// <returns></returns>
+        public virtual ParameterEmitter DefineParameter(ParameterInfo parameterInfo) => DefineParameter(parameterInfo.ParameterType, parameterInfo.Attributes, parameterInfo.Name);
 
         /// <summary>
         /// 声明参数。
@@ -60,20 +79,34 @@ namespace CodeArts.Emit
         /// <param name="parameterType">参数类型。</param>
         /// <param name="strParamName">名称。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(Type parameterType, string strParamName) => DefineParameter(parameterType, ParameterAttributes.None, strParamName);
+        public ParameterEmitter DefineParameter(Type parameterType, string strParamName) => DefineParameter(parameterType, ParameterAttributes.None, strParamName);
 
         /// <summary>
         /// 声明参数。
         /// </summary>
         /// <param name="parameterType">参数类型。</param>
         /// <param name="attributes">属性。</param>
-        /// <param name="strParamName">名称。</param>
+        /// <param name="name">名称。</param>
         /// <returns></returns>
-        public ParamterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string strParamName)
+        public virtual ParameterEmitter DefineParameter(Type parameterType, ParameterAttributes attributes, string name)
         {
-            var parameter = new ParamterEmitter(parameterType, ++parameterIndex, attributes, strParamName);
+            var parameter = new ParameterEmitter(parameterType, (Attributes & MethodAttributes.Static) == MethodAttributes.Static ? parameterIndex++ : ++parameterIndex, attributes, name);
             parameters.Add(parameter);
             return parameter;
+        }
+
+        /// <summary>
+        /// 设置属性标记。
+        /// </summary>
+        /// <param name="attributeData">属性。</param>
+        public void SetCustomAttribute(CustomAttributeData attributeData)
+        {
+            if (attributeData is null)
+            {
+                throw new ArgumentNullException(nameof(attributeData));
+            }
+
+            customAttributes.Add(EmitUtils.CreateCustomAttribute(attributeData));
         }
 
         /// <summary>
@@ -91,24 +124,56 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
-        /// 发行。
+        /// 发行方法。
         /// </summary>
-        /// <param name="builder">构造器。</param>
-        public virtual void Emit(MethodBuilder builder)
+        /// <param name="methodBuilder">方法。</param>
+        protected virtual void Emit(MethodBuilder methodBuilder)
         {
-            this.builder = builder;
+            this.methodBuilder = methodBuilder;
 
-            foreach (var item in parameters)
+            foreach (var parameter in parameters)
             {
-                item.Emit(builder.DefineParameter(item.Position, item.Attributes, item.ParameterName));
+                parameter.Emit(methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.ParameterName));
             }
 
             foreach (var item in customAttributes)
             {
-                builder.SetCustomAttribute(item);
+                methodBuilder.SetCustomAttribute(item);
             }
 
-            base.Load(builder.GetILGenerator());
+            var ilg = methodBuilder.GetILGenerator();
+
+            base.Load(ilg);
+
+            if (IsLastReturn)
+            {
+                return;
+            }
+
+            if (!IsEmpty && RuntimeType == typeof(void))
+            {
+                ilg.Emit(OpCodes.Nop);
+            }
+
+            ilg.Emit(OpCodes.Ret);
+        }
+
+        /// <summary>
+        /// 发行。
+        /// </summary>
+        /// <param name="builder">构造器。</param>
+        public virtual void Emit(TypeBuilder builder)
+        {
+            int index = 0;
+
+            var parameterTypes = new Type[parameters.Count];
+
+            foreach (var parameterEmitter in parameters)
+            {
+                parameterTypes[index++] = parameterEmitter.RuntimeType;
+            }
+
+            Emit(builder.DefineMethod(Name, Attributes, CallingConventions.Standard, RuntimeType, parameterTypes));
         }
     }
 }

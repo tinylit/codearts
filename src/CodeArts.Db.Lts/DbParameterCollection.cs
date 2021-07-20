@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Data;
 
 namespace CodeArts.Db.Lts
@@ -67,7 +66,11 @@ namespace CodeArts.Db.Lts
                 case '@':
                 case ':':
                 case '?':
+#if NETSTANDARD2_1_OR_GREATER
+                    return settings.ParamterName(parameterName[1..]);
+#else
                     return settings.ParamterName(parameterName.Substring(1));
+#endif
                 default:
                     return settings.ParamterName(parameterName);
             }

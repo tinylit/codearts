@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Emit;
 
@@ -8,54 +10,48 @@ namespace CodeArts.Emit.Expressions
     /// 捕获异常。
     /// </summary>
     [DebuggerDisplay("try { {body} }")]
-    public class TryAst : AstExpression
+    public class TryAst : BlockAst
     {
-        private readonly AstExpression body;
-        private readonly CatchAst[] catchs;
-        private readonly FinallyAst @finally;
+        private readonly List<CatchAst> catchAsts = new List<CatchAst>();
+        private readonly List<FinallyAst> finallyAsts = new List<FinallyAst>();
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="body">内容。</param>
-        /// <param name="catchs">异常捕获。</param>
-        public TryAst(AstExpression body, params CatchAst[] catchs) : this(body, catchs, null)
+        /// <param name="returnType">返回结果。</param>
+        public TryAst(Type returnType) : base(returnType)
         {
         }
 
         /// <summary>
-        /// 构造函数。
+        /// 添加代码。
         /// </summary>
-        /// <param name="body">内容。</param>
-        /// <param name="finally">结束。</param>
-        public TryAst(AstExpression body, FinallyAst @finally) : this(body, null, @finally)
+        /// <param name="code">代码。</param>
+        /// <returns></returns>
+        public override BlockAst Append(AstExpression code)
         {
-        }
-
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        /// <param name="body">内容。</param>
-        /// <param name="catchs">异常捕获。</param>
-        /// <param name="finally">结束。</param>
-        public TryAst(AstExpression body, CatchAst[] catchs, FinallyAst @finally) : base(body.ReturnType)
-        {
-            if ((catchs is null || catchs.Length == 0) && @finally is null)
+            if (code is CatchAst catchAst)
             {
-                throw new AstException($"参数{nameof(catchs)}和{nameof(@finally)}不能同时为空!");
+                if (RuntimeType.IsAssignableFrom(catchAst.RuntimeType) || typeof(Exception).IsAssignableFrom(catchAst.RuntimeType))
+                {
+                    catchAsts.Add(catchAst);
+                }
+                else
+                {
+                    throw new ArgumentException("捕获器只能返回相同类型或抛出异常!", nameof(code));
+                }
+
+                return this;
             }
 
-            this.body = body ?? throw new System.ArgumentNullException(nameof(body));
-
-            var bodyType = body.ReturnType;
-
-            if (catchs is null || catchs.Length == 0 || bodyType == typeof(void) || catchs.All(x => x.ReturnType == bodyType || x.ReturnType.IsSubclassOf(bodyType)))
+            if (code is FinallyAst finallyAst)
             {
-                this.@finally = @finally;
-                this.catchs = catchs ?? new CatchAst[0];
+                finallyAsts.Add(finallyAst);
+
+                return this;
             }
 
-            throw new AstException($"异常代码块的返回类型和主代码块的返回类型不相同!");
+            return base.Append(code);
         }
 
         /// <summary>
@@ -64,35 +60,82 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
+            if (catchAsts.Count == 0 && finallyAsts.Count == 0)
+            {
+                throw new AstException("表达式残缺，未设置捕获代码块或最终执行代码块！");
+            }
+
             ilg.BeginExceptionBlock();
 
-            body.Load(ilg);
+            base.Load(ilg);
 
-            if (ReturnType == typeof(void))
+            if (HasReturn)
             {
-                foreach (var item in catchs)
+                throw new AstException("表达式会将结果推到堆上，不能写返回！");
+            }
+
+            if (RuntimeType == typeof(void))
+            {
+                if (catchAsts.Count > 0)
                 {
-                    item.Load(ilg);
+                    foreach (var item in catchAsts)
+                    {
+                        item.Load(ilg);
+                    }
                 }
 
-                @finally?.Load(ilg);
+                if (finallyAsts.Count > 0)
+                {
+                    ilg.BeginFinallyBlock();
+
+                    ilg.Emit(OpCodes.Nop);
+
+                    foreach (var item in finallyAsts)
+                    {
+                        item.Load(ilg);
+                    }
+
+                    ilg.Emit(OpCodes.Nop);
+                }
 
                 ilg.EndExceptionBlock();
             }
             else
             {
-                var variable = ilg.DeclareLocal(ReturnType);
+                var variable = ilg.DeclareLocal(RuntimeType);
 
                 ilg.Emit(OpCodes.Stloc, variable);
 
-                foreach (var item in catchs)
+                if (catchAsts.Count > 0)
                 {
-                    item.Load(ilg);
+                    ilg.Emit(OpCodes.Nop);
 
-                    ilg.Emit(OpCodes.Stloc, variable);
+                    foreach (var item in catchAsts)
+                    {
+                        item.Load(ilg);
+
+                        if (RuntimeType.IsAssignableFrom(item.RuntimeType))
+                        {
+                            ilg.Emit(OpCodes.Stloc, variable);
+                        }
+                    }
+
+                    ilg.Emit(OpCodes.Nop);
                 }
 
-                @finally?.Load(ilg);
+                if (finallyAsts.Count > 0)
+                {
+                    ilg.BeginFinallyBlock();
+
+                    ilg.Emit(OpCodes.Nop);
+
+                    foreach (var item in finallyAsts)
+                    {
+                        item.Load(ilg);
+                    }
+
+                    ilg.Emit(OpCodes.Nop);
+                }
 
                 ilg.EndExceptionBlock();
 

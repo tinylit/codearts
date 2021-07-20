@@ -1,4 +1,4 @@
-﻿#if NET_NORMAL || NET_CORE
+﻿#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -1912,7 +1912,7 @@ namespace System.LinqAsync
         {
             var list = new List<TSource>();
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             await using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
 #else
             using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
@@ -1975,7 +1975,7 @@ namespace System.LinqAsync
                 throw new ArgumentNullException(nameof(action));
             }
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
             await using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
 #else
             using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))

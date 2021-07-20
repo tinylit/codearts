@@ -14,11 +14,11 @@ namespace CodeArts.Db.Lts
     /// </summary>
     public static class DbConnectionManager
     {
-        private static readonly Dictionary<string, Func<IDbConnectionLtsAdapter, RepositoryProvider>> FactoryProviders;
+        private static readonly Dictionary<string, Func<IDbConnectionLtsAdapter, IDatabaseFor>> DatabaseFor;
 
         private static readonly Dictionary<string, IDbConnectionLtsAdapter> Adapters;
 
-        private static readonly ConcurrentDictionary<IDbConnectionLtsAdapter, RepositoryProvider> Providers;
+        private static readonly ConcurrentDictionary<IDbConnectionLtsAdapter, IDatabaseFor> DatabaseForCache;
 
 
         private static readonly MethodInfo ProviderNameMethodInfo = typeof(DbConnectionManager).GetMethod(nameof(GetProviderName), BindingFlags.NonPublic | BindingFlags.Static);
@@ -34,9 +34,9 @@ namespace CodeArts.Db.Lts
         /// </summary>
         static DbConnectionManager()
         {
-            Providers = new ConcurrentDictionary<IDbConnectionLtsAdapter, RepositoryProvider>();
             Adapters = new Dictionary<string, IDbConnectionLtsAdapter>();
-            FactoryProviders = new Dictionary<string, Func<IDbConnectionLtsAdapter, RepositoryProvider>>();
+            DatabaseFor = new Dictionary<string, Func<IDbConnectionLtsAdapter, IDatabaseFor>>();
+            DatabaseForCache = new ConcurrentDictionary<IDbConnectionLtsAdapter, IDatabaseFor>();
         }
 
         /// <summary> 注册适配器。</summary>
@@ -58,23 +58,20 @@ namespace CodeArts.Db.Lts
         }
 
         /// <summary>
-        /// 为当前所有为指定仓库供应器的适配器添加此仓库供应器。
+        /// 为当前所有为指定仓库供应器的适配器添加此数据库支持。
         /// </summary>
-        public static void RegisterProvider<T>() where T : RepositoryProvider
+        public static void RegisterDatabaseFor<T>() where T : IDatabaseFor
         {
-            foreach (string key in Adapters.Keys)
+            foreach (var providerName in Adapters.Keys)
             {
-                RegisterProvider<T>(key);
+                RegisterDatabaseFor<T>(providerName);
             }
         }
 
         /// <summary>
-        /// 为数据库适配器指定仓库提供者。
+        /// 为当前所有为指定仓库供应器的适配器添加此数据库支持。
         /// </summary>
-        /// <param name="providerName">供应商名称。</param>
-        /// <exception cref="ArgumentException">providerName不能为Null或空字符串！</exception>
-        /// <exception cref="NotImplementedException">供应器类型必须包含公共构造函数！</exception>
-        public static void RegisterProvider<T>(string providerName) where T : RepositoryProvider
+        public static void RegisterDatabaseFor<T>(string providerName) where T : IDatabaseFor
         {
             if (string.IsNullOrEmpty(providerName))
             {
@@ -91,13 +88,6 @@ namespace CodeArts.Db.Lts
 
             string key = providerName.ToLower();
 
-            if (constructors.Any(x => x.GetParameters().Length == 0))
-            {
-                FactoryProviders[key] = adapter => Activator.CreateInstance<T>();
-
-                return;
-            }
-
             var constructor = constructors.OrderBy(x => x.GetParameters().Length).First();
 
             var parameters = constructor.GetParameters();
@@ -108,9 +98,9 @@ namespace CodeArts.Db.Lts
             {
                 var bodyEx = New(constructor);
 
-                var lambdaEx = Lambda<Func<IDbConnectionLtsAdapter, RepositoryProvider>>(Convert(bodyEx, typeof(RepositoryProvider)), adapterEx);
+                var lambdaEx = Lambda<Func<IDbConnectionLtsAdapter, IDatabaseFor>>(Convert(bodyEx, typeof(IDatabaseFor)), adapterEx);
 
-                FactoryProviders[key] = lambdaEx.Compile();
+                DatabaseFor[key] = lambdaEx.Compile();
             }
             else
             {
@@ -146,12 +136,12 @@ namespace CodeArts.Db.Lts
 
                 var bodyEx = New(constructor, argumentsEx);
 
-                var lambdaEx = Lambda<Func<IDbConnectionLtsAdapter, RepositoryProvider>>(Convert(bodyEx, typeof(RepositoryProvider)), adapterEx);
+                var lambdaEx = Lambda<Func<IDbConnectionLtsAdapter, IDatabaseFor>>(Convert(bodyEx, typeof(IDatabaseFor)), adapterEx);
 
-                FactoryProviders[key] = lambdaEx.Compile();
+                DatabaseFor[key] = lambdaEx.Compile();
             }
         }
-
+        
         /// <summary> 创建数据库适配器。</summary>
         /// <param name="providerName">供应商名称。</param>
         /// <returns></returns>
@@ -180,21 +170,21 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="adapter">适配器。</param>
         /// <returns></returns>
-        public static RepositoryProvider Create(IDbConnectionLtsAdapter adapter)
+        public static IDatabaseFor GetOrCreate(IDbConnectionLtsAdapter adapter)
         {
             if (adapter is null)
             {
                 throw new ArgumentNullException(nameof(adapter));
             }
 
-            if (Providers.TryGetValue(adapter, out RepositoryProvider provider))
+            if (DatabaseForCache.TryGetValue(adapter, out IDatabaseFor databaseFor))
             {
-                return provider;
+                return databaseFor;
             }
 
-            if (FactoryProviders.TryGetValue(adapter.ProviderName.ToLower(), out Func<IDbConnectionLtsAdapter, RepositoryProvider> factory))
+            if (DatabaseFor.TryGetValue(adapter.ProviderName.ToLower(), out Func<IDbConnectionLtsAdapter, IDatabaseFor> factory))
             {
-                return Providers.GetOrAdd(adapter, factory.Invoke(adapter));
+                return DatabaseForCache.GetOrAdd(adapter, factory.Invoke(adapter));
             }
 
             throw new DException($"不支持的供应商：{adapter.ProviderName}");

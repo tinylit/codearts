@@ -1,4 +1,4 @@
-﻿#if NET_CORE
+﻿#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

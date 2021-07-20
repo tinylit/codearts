@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<RootNamespace>CodeArts.Caching</RootNamespace>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>7.0.1.0</Version>
+		<Version>8.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>Redis-based caching.</Description>
@@ -19,7 +19,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="StackExchange.Redis" Version="2.1.30" />
+		<PackageReference Include="StackExchange.Redis" Version="2.2.50" />
 	</ItemGroup>
 
 	<ItemGroup>

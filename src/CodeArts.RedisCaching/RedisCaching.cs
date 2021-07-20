@@ -3,7 +3,6 @@ using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CodeArts.Caching
@@ -101,7 +100,7 @@ namespace CodeArts.Caching
                 return (T)(object)valueStr;
             }
 
-            return type.IsValueType ? Mapper.Cast<T>(valueStr) : JsonHelper.Json<T>(valueStr);
+            return JsonHelper.Json<T>(valueStr);
         }
 
         /// <summary>
@@ -291,7 +290,7 @@ namespace CodeArts.Caching
                 return (T)(object)valueStr;
             }
 
-            return type.IsValueType ? Mapper.Cast<T>(valueStr) : JsonHelper.Json<T>(valueStr);
+            return JsonHelper.Json<T>(valueStr);
         }
 
         /// <summary>

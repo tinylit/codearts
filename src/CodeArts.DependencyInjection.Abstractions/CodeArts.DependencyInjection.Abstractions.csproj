@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net461;net45;net40;</TargetFrameworks>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Version>8.0.0.0</Version>
+		<Authors>Tiny Lit</Authors>
+		<Company>Tiny Lit</Company>
+		<Description>Compatibility changes based on Microsoft.Extensions.DependencyInjection.Abstractions source code.</Description>
+		<PackageLicenseUrl>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</PackageLicenseUrl>
+		<RepositoryUrl>https://github.com/tinylit/codearts</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Copyright>https://github.com/tinylit/codearts/blob/master/LICENSE.txt</Copyright>
+		<PackageIconUrl>https://raw.githubusercontent.com/tinylit/codearts/master/codearts.png</PackageIconUrl>
+		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45'">
+		<DefineConstants>$(DefineConstants);NET45_OR_GREATER</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+</Project>

@@ -1,5 +1,6 @@
 ﻿using CodeArts.Db.Exceptions;
 using CodeArts.Runtime;
+using Dapper;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -10,411 +11,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
 
 namespace CodeArts.Db.Lts
 {
-    /// <summary>
-    /// 数据写入器。
-    /// </summary>
-    public class DbWriter
-    {
-        // look for ? / @ / :
-        private static readonly Regex smellsLikeOleDb = new Regex(@"(?<![\p{L}\p{N}@_])[?:@]([\p{L}\p{N}_][\p{L}\p{N}@_]*)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-        private static readonly Dictionary<Type, DbType> typeMap;
-
-        static DbWriter()
-        {
-            typeMap = new Dictionary<Type, DbType>
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = DbType.Time,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(object)] = DbType.Object
-            };
-        }
-
-        private static DbType LookupDbType(Type dataType)
-        {
-            if (dataType.IsNullable())
-            {
-                dataType = Nullable.GetUnderlyingType(dataType);
-            }
-
-            if (dataType.IsEnum)
-            {
-                dataType = Enum.GetUnderlyingType(dataType);
-            }
-
-            if (typeMap.TryGetValue(dataType, out DbType dbType))
-            {
-                return dbType;
-            }
-
-            if (dataType.FullName == "System.Data.Linq.Binary")
-            {
-                return DbType.Binary;
-            }
-
-            return DbType.Object;
-        }
-
-        /// <summary>
-        /// 参数适配。
-        /// </summary>
-        /// <param name="command">命令。</param>
-        /// <param name="param">参数。</param>
-        public static void AddParameterAuto(IDbCommand command, object param = null)
-        {
-            switch (param)
-            {
-                case IEnumerable<KeyValuePair<string, ParameterValue>> parameters:
-                    foreach (var kv in parameters)
-                    {
-                        AddParameterAuto(command, kv.Key, kv.Value);
-                    }
-                    break;
-                case IEnumerable<KeyValuePair<string, object>> dic:
-                    foreach (var kv in dic)
-                    {
-                        if (kv.Value is ParameterValue parameterValue)
-                        {
-                            AddParameterAuto(command, kv.Key, parameterValue);
-                        }
-                        else
-                        {
-                            AddParameterAuto(command, kv.Key, kv.Value);
-                        }
-                    }
-                    break;
-                default:
-                    var matches = smellsLikeOleDb.Matches(command.CommandText);
-
-                    if (matches.Count == 0)
-                    {
-                        return;
-                    }
-
-                    if (param is null)
-                    {
-                        throw new NotSupportedException();
-                    }
-
-                    var tokens = new List<string>(matches.Count);
-
-                    foreach (Match item in matches)
-                    {
-                        tokens.Add(item.Groups[1].Value);
-                    }
-
-                    var paramType = param.GetType();
-
-                    if (paramType.IsValueType || paramType == typeof(string))
-                    {
-                        if (matches.Count == 1)
-                        {
-                            AddParameterAuto(command, tokens[0], param);
-
-                            break;
-                        }
-
-                        throw new NotSupportedException();
-                    }
-
-                    var storeItem = TypeItem.Get(paramType);
-
-                    storeItem.PropertyStores
-                        .Where(x => x.CanRead && tokens.Contains(x.Name))
-                        .ForEach(x =>
-                        {
-                            var value = x.Member.GetValue(param, null);
-
-                            if (value is null)
-                            {
-                                AddParameterAuto(command, x.Name, new ParameterValue(x.MemberType));
-                            }
-                            else if (value is ParameterValue parameterValue)
-                            {
-                                AddParameterAuto(command, x.Name, parameterValue);
-                            }
-                            else
-                            {
-                                AddParameterAuto(command, x.Name, value);
-                            }
-                        });
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 参数适配。
-        /// </summary>
-        /// <param name="command">命令。</param>
-        /// <param name="key">参数名称。</param>
-        /// <param name="value">参数值。</param>
-        public static void AddParameterAuto(IDbCommand command, string key, ParameterValue value)
-        {
-            var dbParameter = command.CreateParameter();
-
-            dbParameter.Value = value.IsNull ? DBNull.Value : value.Value;
-            dbParameter.ParameterName = key;
-            dbParameter.Direction = ParameterDirection.Input;
-            dbParameter.DbType = LookupDbType(value.ValueType);
-
-            command.Parameters.Add(dbParameter);
-        }
-
-        /// <summary>
-        /// 参数适配。
-        /// </summary>
-        /// <param name="command">命令。</param>
-        /// <param name="key">参数名称。</param>
-        /// <param name="value">参数值。</param>
-        public static void AddParameterAuto(IDbCommand command, string key, object value)
-        {
-            if (value is string)
-            {
-                Private_AddParameterAuto(command, key, value);
-            }
-            else if (value is IEnumerable list)
-            {
-                bool flag = false;
-
-                var listType = list.GetType();
-
-                if (listType.IsArray)
-                {
-                    if (Done(listType.GetElementType()))
-                    {
-                        value = DBNull.Value;
-                    }
-                    else
-                    {
-                        flag = true;
-                    }
-                }
-                else
-                {
-                    foreach (var type in listType.GetInterfaces())
-                    {
-                        if (!type.IsGenericType)
-                        {
-                            continue;
-                        }
-
-                        var typeDefinition = type.GetGenericTypeDefinition();
-
-                        if (typeDefinition == typeof(IList<>)
-#if !NET40
-                            || typeDefinition == typeof(IReadOnlyCollection<>)
-#endif
-                            || typeDefinition == typeof(ICollection<>)
-                            || typeDefinition == typeof(IEnumerable<>))
-                        {
-                            var valueType = type.GetGenericArguments()[0];
-
-                            if (Done(valueType))
-                            {
-                                value = null;
-                            }
-                            else
-                            {
-                                flag = true;
-                            }
-
-                            break;
-                        }
-                    }
-                }
-
-                bool Done(Type valueType)
-                {
-                    int count = 0;
-
-                    foreach (var item in list)
-                    {
-                        if (item is null)
-                        {
-                            Private_AddParameterAuto(command, string.Concat(key, count.ToString()), new ParameterValue(valueType));
-                        }
-                        else
-                        {
-                            Private_AddParameterAuto(command, string.Concat(key, count.ToString()), item);
-                        }
-
-                        count++;
-                    }
-
-                    string pattern = string.Concat("([?@:]", Regex.Escape(key), @")(?!\w)(\s+(?i)unknown(?-i))?");
-
-                    if (count == 0)
-                    {
-                        command.CommandText = Regex.Replace(command.CommandText, pattern, match =>
-                        {
-                            var variableName = match.Groups[1].Value;
-
-                            if (match.Groups[2].Success)
-                            {
-                                // looks like an optimize hint; leave it alone!
-                                return match.Value;
-                            }
-                            else
-                            {
-                                return "(SELECT " + variableName + " WHERE 1 = 0)";
-                            }
-                        }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
-
-
-                        return true;
-                    }
-
-                    command.CommandText = Regex.Replace(command.CommandText, pattern, match =>
-                    {
-                        var sb = new StringBuilder();
-
-                        var variableName = match.Groups[1].Value;
-
-                        if (match.Groups[2].Success)
-                        {
-                            var suffix = match.Groups[2].Value;
-
-                            sb.Append(variableName)
-                            .Append(0)
-                            .Append(suffix);
-
-                            for (int i = 1; i < count; i++)
-                            {
-                                sb.Append(',')
-                                .Append(variableName)
-                                .Append(i)
-                                .Append(suffix);
-                            }
-
-                            return sb.ToString();
-                        }
-                        else
-                        {
-                            sb.Append('(')
-                            .Append(variableName)
-                            .Append(0);
-
-                            for (int i = 1; i < count; i++)
-                            {
-                                sb.Append(',')
-                                .Append(variableName)
-                                .Append(i);
-                            }
-                            return sb
-                            .Append(')')
-                            .ToString();
-                        }
-                    }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
-
-                    return false;
-                }
-
-                if (!flag)
-                {
-                    Private_AddParameterAuto(command, key, value);
-                }
-            }
-            else
-            {
-                Private_AddParameterAuto(command, key, value);
-            }
-        }
-
-        private static void Private_AddParameterAuto(IDbCommand command, string key, object value)
-        {
-            var dbParameter = command.CreateParameter();
-
-            switch (value)
-            {
-                case IDbDataParameter dbDataParameter:
-
-                    dbParameter.Value = dbDataParameter.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = dbDataParameter.Direction;
-                    dbParameter.DbType = dbDataParameter.DbType;
-                    dbParameter.SourceColumn = dbDataParameter.SourceColumn;
-                    dbParameter.SourceVersion = dbDataParameter.SourceVersion;
-
-                    if (dbParameter is System.Data.Common.DbParameter myParameter)
-                    {
-                        myParameter.IsNullable = dbDataParameter.IsNullable;
-                    }
-
-                    dbParameter.Scale = dbDataParameter.Scale;
-                    dbParameter.Size = dbDataParameter.Size;
-                    dbParameter.Precision = dbDataParameter.Precision;
-
-                    break;
-                case IDataParameter dataParameter:
-
-                    dbParameter.Value = dataParameter.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = dataParameter.Direction;
-                    dbParameter.DbType = dataParameter.DbType;
-                    dbParameter.SourceColumn = dataParameter.SourceColumn;
-                    dbParameter.SourceVersion = dataParameter.SourceVersion;
-
-                    break;
-                case ParameterValue parameterValue:
-
-                    dbParameter.Value = parameterValue.IsNull ? DBNull.Value : parameterValue.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = ParameterDirection.Input;
-                    dbParameter.DbType = LookupDbType(parameterValue.ValueType);
-
-                    break;
-                case string text:
-                    dbParameter.Value = text;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = ParameterDirection.Input;
-                    dbParameter.DbType = DbType.String;
-                    if (text.Length > 4000)
-                    {
-                        dbParameter.Size = -1;
-                    }
-                    else
-                    {
-                        dbParameter.Size = 4000;
-                    }
-                    break;
-                default:
-
-                    dbParameter.Value = value ?? DBNull.Value;
-                    dbParameter.ParameterName = key;
-                    dbParameter.Direction = ParameterDirection.Input;
-                    dbParameter.DbType = value is null ? DbType.Object : LookupDbType(value.GetType());
-
-                    break;
-            }
-
-            command.Parameters.Add(dbParameter);
-        }
-    }
-
     /// <summary>
     /// 数据写入器。
     /// </summary>
@@ -432,6 +33,7 @@ namespace CodeArts.Db.Lts
         /// 最大参数长度。
         /// </summary>
         public const int MAX_PARAMETERS_COUNT = 1000;
+
         /// <summary>
         /// 最大IN SQL 参数长度（取自 Oracle 9I）。
         /// </summary>
@@ -461,10 +63,12 @@ namespace CodeArts.Db.Lts
         /// </summary>
         private abstract class DbRouteExecuter : IDbRouteExecuter<TEntity>
         {
-            public DbRouteExecuter(IDbContext context, ICollection<TEntity> entries)
+            private readonly IDatabaseFor databaseFor;
+            public DbRouteExecuter(IDatabase database, ICollection<TEntity> entries)
             {
                 this.Entries = entries ?? throw new ArgumentNullException(nameof(entries));
-                this.context = context ?? throw new ArgumentNullException(nameof(context));
+                this.database = database ?? throw new ArgumentNullException(nameof(database));
+                this.databaseFor = DbConnectionManager.GetOrCreate(DbConnectionManager.Get(database.ProviderName));
             }
 
             static DbRouteExecuter()
@@ -479,23 +83,21 @@ namespace CodeArts.Db.Lts
             protected static readonly ITableInfo typeRegions;
             protected static readonly string[] defaultLimit;
             protected static readonly string[] defaultWhere;
-            private readonly IDbContext context;
-            private bool useTransaction = false;
-            private System.Data.IsolationLevel? isolationLevel = null;
+
+            private readonly IDatabase database;
+            private IsolationLevel? isolationLevel = null;
             protected static readonly ConcurrentDictionary<Type, object> DefaultCache = new ConcurrentDictionary<Type, object>();
 
             public IDbRouteExecuter<TEntity> UseTransaction()
             {
-                useTransaction = true;
+                isolationLevel = IsolationLevel.ReadCommitted;
 
                 return this;
             }
 
-            public IDbRouteExecuter<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel)
+            public IDbRouteExecuter<TEntity> UseTransaction(IsolationLevel isolationLevel)
             {
                 this.isolationLevel = isolationLevel;
-
-                useTransaction = true;
 
                 return this;
             }
@@ -504,7 +106,7 @@ namespace CodeArts.Db.Lts
 
             public ICollection<TEntity> Entries { get; }
 
-            public ISQLCorrectSettings Settings => context.Settings;
+            public ISQLCorrectSettings Settings => database.Settings;
 
             public int ExecuteCommand(int? commandTimeout = null)
             {
@@ -520,7 +122,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                if (useTransaction)
+                if (isolationLevel.HasValue)
                 {
                     return UseTransactionExecute(results, commandTimeout);
                 }
@@ -534,167 +136,129 @@ namespace CodeArts.Db.Lts
 
                 SqlCapture capture = SqlCapture.Current;
 
-                if (!commandTimeout.HasValue)
+                var isCloseConnection = database.State == ConnectionState.Closed;
+
+                if (isCloseConnection)
                 {
-                    using (var connection = context.CreateDb())
+                    database.Open();
+                }
+
+                try
+                {
+                    if (commandTimeout.HasValue)
                     {
-                        connection.Open();
+                        Stopwatch stopwatch = new Stopwatch();
 
                         results.ForEach(x =>
                         {
-                            capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                            int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                            using (var command = connection.CreateCommand())
-                            {
-                                command.AllowSkippingFormattingSql = true;
+                            var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
 
-                                command.CommandText = x.Item1;
+                            capture?.Capture(commandSql);
 
-                                foreach (var kv in x.Item2)
-                                {
-                                    DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                                }
+                            stopwatch.Start();
 
-                                influenceLine += command.ExecuteNonQuery();
-                            }
+                            influenceLine += databaseFor.Execute(database, commandSql);
+
+                            stopwatch.Stop();
+                        });
+                    }
+                    else
+                    {
+                        results.ForEach(x =>
+                        {
+                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                            capture?.Capture(commandSql);
+
+                            influenceLine += databaseFor.Execute(database, commandSql);
                         });
                     }
 
                     return influenceLine;
                 }
-
-                Stopwatch stopwatch = new Stopwatch();
-
-                int remainingTime = commandTimeout.Value;
-
-                using (var connection = context.CreateDb())
+                finally
                 {
-                    connection.Open();
-
-                    results.ForEach(x =>
+                    if (isCloseConnection)
                     {
-                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                        using (var command = connection.CreateCommand())
-                        {
-                            command.AllowSkippingFormattingSql = true;
-
-                            command.CommandText = x.Item1;
-
-                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                            foreach (var kv in x.Item2)
-                            {
-                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                            }
-
-                            stopwatch.Start();
-
-                            influenceLine += command.ExecuteNonQuery();
-
-                            stopwatch.Stop();
-                        }
-                    });
+                        database.Close();
+                    }
                 }
-
-                return influenceLine;
             }
 
             private int UseTransactionExecute(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout)
             {
+                int influenceLine = 0;
+
                 SqlCapture capture = SqlCapture.Current;
 
-                if (!commandTimeout.HasValue)
+                var isCloseConnection = database.State == ConnectionState.Closed;
+
+                if (isCloseConnection)
                 {
-                    if (isolationLevel.HasValue)
-                    {
-                        return context.Transaction(Done, isolationLevel.Value);
-                    }
-                    else
-                    {
-                        return context.Transaction(Done);
-                    }
+                    database.Open();
                 }
 
-                if (isolationLevel.HasValue)
+                try
                 {
-                    return context.Transaction(DoneTimeOut, isolationLevel.Value);
-                }
-                else
-                {
-                    return context.Transaction(DoneTimeOut);
-                }
-
-                int Done(IDbCommandFactory factory)
-                {
-                    int influenceLine = 0;
-
-                    results.ForEach(x =>
+                    using (var transaction = database.BeginTransaction(isolationLevel.Value))
                     {
-                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                        using (var command = factory.CreateCommand())
+                        try
                         {
-                            command.AllowSkippingFormattingSql = true;
-
-                            command.CommandText = x.Item1;
-
-                            foreach (var kv in x.Item2)
+                            if (commandTimeout.HasValue)
                             {
-                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
+                                Stopwatch stopwatch = new Stopwatch();
+
+                                results.ForEach(x =>
+                                {
+                                    int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                                    capture?.Capture(commandSql);
+
+                                    stopwatch.Start();
+
+                                    influenceLine += databaseFor.Execute(database, commandSql);
+
+                                    stopwatch.Stop();
+                                });
+                            }
+                            else
+                            {
+                                results.ForEach(x =>
+                                {
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                                    influenceLine += databaseFor.Execute(database, commandSql);
+                                });
                             }
 
-                            influenceLine += command.ExecuteNonQuery();
+                            transaction.Commit();
+
+                            return influenceLine;
                         }
-                    });
-
-                    return influenceLine;
-                }
-
-                int DoneTimeOut(IDbCommandFactory factory)
-                {
-                    int influenceLine = 0;
-
-                    Stopwatch stopwatch = new Stopwatch();
-
-                    int remainingTime = commandTimeout.Value;
-
-                    results.ForEach(x =>
-                    {
-                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                        using (var command = factory.CreateCommand())
+                        catch (Exception)
                         {
-                            command.AllowSkippingFormattingSql = true;
+                            transaction.Rollback();
 
-                            command.CommandText = x.Item1;
-
-                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                            foreach (var kv in x.Item2)
-                            {
-                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                            }
-
-                            stopwatch.Start();
-
-                            influenceLine += command.ExecuteNonQuery();
-
-                            stopwatch.Stop();
+                            throw;
                         }
-                    });
-
-                    return influenceLine;
+                    }
+                }
+                finally
+                {
+                    if (isCloseConnection)
+                    {
+                        database.Close();
+                    }
                 }
             }
 
-            /// <summary>
-            /// 准备命令。
-            /// </summary>
-            /// <returns></returns>
             public abstract List<Tuple<string, Dictionary<string, ParameterValue>>> PrepareCommand();
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public Task<int> ExecuteCommandAsync(CancellationToken cancellationToken = default) => ExecuteCommandAsync(null, cancellationToken);
 
             public Task<int> ExecuteCommandAsync(int? commandTimeout, CancellationToken cancellationToken = default)
@@ -711,7 +275,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                if (useTransaction)
+                if (isolationLevel.HasValue)
                 {
                     return UseTransactionAsync(results, commandTimeout, cancellationToken);
                 }
@@ -725,157 +289,218 @@ namespace CodeArts.Db.Lts
 
                 SqlCapture capture = SqlCapture.Current;
 
-                if (!commandTimeout.HasValue)
+                var isCloseConnection = database.State == ConnectionState.Closed;
+
+                if (isCloseConnection)
                 {
-                    using (var connection = context.CreateDb())
+                    if (database is System.Data.Common.DbConnection connection)
                     {
                         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-                        foreach (var x in results)
-                        {
-                            capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                            using (var command = connection.CreateCommand())
-                            {
-                                command.AllowSkippingFormattingSql = true;
-
-                                command.CommandText = x.Item1;
-
-                                foreach (var kv in x.Item2)
-                                {
-                                    DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                                }
-
-                                influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
-                            }
-                        }
-                    }
-
-                    return influenceLine;
-                }
-
-                Stopwatch stopwatch = new Stopwatch();
-
-                int remainingTime = commandTimeout.Value;
-
-                using (var connection = context.CreateDb())
-                {
-                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-                    foreach (var x in results)
-                    {
-                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                        using (var command = connection.CreateCommand())
-                        {
-                            command.AllowSkippingFormattingSql = true;
-
-                            command.CommandText = x.Item1;
-
-                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                            foreach (var kv in x.Item2)
-                            {
-                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                            }
-
-                            stopwatch.Start();
-
-                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
-
-                            stopwatch.Stop();
-                        }
-                    }
-
-                    return influenceLine;
-                }
-            }
-
-            private Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
-            {
-                SqlCapture capture = SqlCapture.Current;
-
-                if (!commandTimeout.HasValue)
-                {
-                    if (isolationLevel.HasValue)
-                    {
-                        return context.TransactionAsync(Done, isolationLevel.Value);
                     }
                     else
                     {
-                        return context.TransactionAsync(Done);
+                        database.Open();
                     }
                 }
 
-                if (isolationLevel.HasValue)
+                try
                 {
-                    return context.TransactionAsync(DoneTimeOut, isolationLevel.Value);
-                }
-                else
-                {
-                    return context.TransactionAsync(DoneTimeOut);
-                }
-
-                async Task<int> Done(IDbCommandFactory factory)
-                {
-                    int influenceLine = 0;
-
-                    foreach (var x in results)
+                    if (commandTimeout.HasValue)
                     {
-                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
+                        Stopwatch stopwatch = new Stopwatch();
 
-                        using (var command = factory.CreateCommand())
+                        foreach (var x in results)
                         {
-                            command.AllowSkippingFormattingSql = true;
+                            int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                            command.CommandText = x.Item1;
+                            var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
 
-                            foreach (var kv in x.Item2)
-                            {
-                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                            }
-
-                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
-                        }
-                    }
-
-                    return influenceLine;
-                }
-
-                async Task<int> DoneTimeOut(IDbCommandFactory factory)
-                {
-                    int influenceLine = 0;
-
-                    Stopwatch stopwatch = new Stopwatch();
-
-                    int remainingTime = commandTimeout.Value;
-
-                    foreach (var x in results)
-                    {
-                        capture?.Capture(new CommandSql(x.Item1, x.Item2, commandTimeout));
-
-                        using (var command = factory.CreateCommand())
-                        {
-                            command.AllowSkippingFormattingSql = true;
-
-                            command.CommandText = x.Item1;
-
-                            command.CommandTimeout = remainingTime - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                            foreach (var kv in x.Item2)
-                            {
-                                DbWriter.AddParameterAuto(command, kv.Key, kv.Value);
-                            }
+                            capture?.Capture(commandSql);
 
                             stopwatch.Start();
 
-                            influenceLine += await command.ExecuteNonQueryAsyc(cancellationToken).ConfigureAwait(false);
+                            influenceLine += await databaseFor.ExecuteAsync(database, commandSql);
 
                             stopwatch.Stop();
                         }
                     }
+                    else
+                    {
+                        foreach (var x in results)
+                        {
+                            var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                            capture?.Capture(commandSql);
+
+                            influenceLine += await databaseFor.ExecuteAsync(database, commandSql);
+                        }
+                    }
 
                     return influenceLine;
+                }
+                finally
+                {
+                    if (isCloseConnection)
+                    {
+#if NETSTANDARD2_1_OR_GREATER
+                        if (database is System.Data.Common.DbConnection connection)
+                        {
+                            await connection.CloseAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            database.Close();
+                        }
+#else
+                        database.Close();
+#endif
+                    }
+                }
+            }
+
+            private async Task<int> UseTransactionAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken = default)
+            {
+                int influenceLine = 0;
+
+                SqlCapture capture = SqlCapture.Current;
+
+                var isCloseConnection = database.State == ConnectionState.Closed;
+
+                if (database is System.Data.Common.DbConnection connection)
+                {
+                    if (isCloseConnection)
+                    {
+                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    try
+                    {
+#if NETSTANDARD2_1_OR_GREATER
+                        await using (var transaction = await connection.BeginTransactionAsync(isolationLevel.Value, cancellationToken).ConfigureAwait(false))
+#else
+                        using (var transaction = connection.BeginTransaction(isolationLevel.Value))
+#endif
+                        {
+                            try
+                            {
+                                if (commandTimeout.HasValue)
+                                {
+                                    Stopwatch stopwatch = new Stopwatch();
+
+                                    foreach (var x in results)
+                                    {
+                                        int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                        var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                                        capture?.Capture(commandSql);
+
+                                        stopwatch.Start();
+
+                                        influenceLine += await databaseFor.ExecuteAsync(connection, commandSql);
+
+                                        stopwatch.Stop();
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var x in results)
+                                    {
+                                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                                        capture?.Capture(commandSql);
+
+                                        influenceLine += await databaseFor.ExecuteAsync(connection, commandSql);
+                                    }
+                                }
+
+#if NETSTANDARD2_1_OR_GREATER
+                                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+#else
+                                transaction.Commit();
+#endif
+                            }
+                            catch (Exception)
+                            {
+#if NETSTANDARD2_1_OR_GREATER
+                                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+#else
+                                transaction.Rollback();
+#endif
+
+                                throw;
+                            }
+                        }
+
+                        return influenceLine;
+                    }
+                    finally
+                    {
+#if NETSTANDARD2_1_OR_GREATER
+                        await connection.CloseAsync().ConfigureAwait(false);
+#else
+                        connection.Close();
+#endif
+                    }
+                }
+
+                if (isCloseConnection)
+                {
+                    database.Open();
+                }
+
+                try
+                {
+                    using (var transaction = database.BeginTransaction(isolationLevel.Value))
+                    {
+                        try
+                        {
+                            if (commandTimeout.HasValue)
+                            {
+                                Stopwatch stopwatch = new Stopwatch();
+
+                                foreach (var x in results)
+                                {
+                                    int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+
+                                    capture?.Capture(commandSql);
+
+                                    stopwatch.Start();
+
+                                    influenceLine += databaseFor.Execute(database, commandSql);
+
+                                    stopwatch.Stop();
+                                }
+                            }
+                            else
+                            {
+                                foreach (var x in results)
+                                {
+                                    var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+
+                                    capture?.Capture(commandSql);
+
+                                    influenceLine += databaseFor.Execute(database, commandSql);
+                                }
+                            }
+
+                            transaction.Commit();
+                        }
+                        catch (Exception)
+                        {
+                            transaction.Rollback();
+
+                            throw;
+                        }
+                    }
+
+                    return influenceLine;
+                }
+                finally
+                {
+                    database.Close();
                 }
             }
 #endif
@@ -916,7 +541,7 @@ namespace CodeArts.Db.Lts
 
         private class Deleteable : DbRouteExecuter, IDeleteable<TEntity>
         {
-            public Deleteable(IDbContext context, ICollection<TEntity> entries) : base(context, entries)
+            public Deleteable(IDatabase context, ICollection<TEntity> entries) : base(context, entries)
             {
                 wheres = defaultWhere;
             }
@@ -932,7 +557,7 @@ namespace CodeArts.Db.Lts
 
                 foreach (var kv in typeRegions.ReadOrWrites)
                 {
-                    if (kv.Key == value || kv.Value == value)
+                    if (string.Equals(kv.Key, value, StringComparison.OrdinalIgnoreCase) || string.Equals(kv.Value, value, StringComparison.OrdinalIgnoreCase))
                     {
                         flag = false;
 
@@ -969,7 +594,7 @@ namespace CodeArts.Db.Lts
                 List<Tuple<string, Dictionary<string, ParameterValue>>> results = new List<Tuple<string, Dictionary<string, ParameterValue>>>();
 
                 var columns = typeRegions.ReadOrWrites
-                        .Where(x => wheres.Any(y => y == x.Key) || wheres.Any(y => y == x.Value))
+                        .Where(x => wheres.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase)) || wheres.Any(y => string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)))
                         .ToList();
 
                 if (Entries.Count * columns.Count <= MAX_PARAMETERS_COUNT)
@@ -1319,6 +944,8 @@ namespace CodeArts.Db.Lts
                     return results;
                 }
 
+                bool flag = false;
+
                 int groupIndex = 0;
 
                 parameterCount = 0;
@@ -1335,27 +962,33 @@ namespace CodeArts.Db.Lts
 
                         sb.Clear();
 
+                        flag = false;
+
                         groupIndex = 0;
 
-                        parameters.Clear();
+                        parameters = new Dictionary<string, ParameterValue>();
 
                         parameterCount = item.Key.Length;
                     }
 
-                    if (sb.Length > 0)
+                    if (flag)
                     {
                         sb.Append(';');
                     }
-
-                    if (item.Key.Length > 1)
-                    {
-                        sb.Append(Complex(TableInfo.ReadOrWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
-                    }
                     else
+                    {
+                        flag = true;
+                    }
+
+                    if (item.Key.Length == 1)
                     {
                         string key = item.Key[0];
 
                         sb.Append(Simple(TableInfo.ReadOrWrites.First(x => x.Key == key), item, groupIndex, parameters));
+                    }
+                    else
+                    {
+                        sb.Append(Complex(TableInfo.ReadOrWrites.Where(x => item.Key.Contains(x.Key)).ToList(), item, groupIndex, parameters));
                     }
 
                     groupIndex++;
@@ -1372,7 +1005,7 @@ namespace CodeArts.Db.Lts
 
         private class Insertable : DbRouteExecuter, IInsertable<TEntity>
         {
-            public Insertable(IDbContext context, ICollection<TEntity> entries) : base(context, entries)
+            public Insertable(IDatabase context, ICollection<TEntity> entries) : base(context, entries)
             {
             }
 
@@ -1425,8 +1058,6 @@ namespace CodeArts.Db.Lts
                                     {
                                         throw new NoNullAllowedException("令牌不允许为空!");
                                     }
-
-                                    storeItem.Member.SetValue(item, value, null);
                                 }
                                 else if (storeItem.MemberType == Types.DateTime)
                                 {
@@ -1444,7 +1075,15 @@ namespace CodeArts.Db.Lts
                                 {
                                     value = new Version(1, 0, 0, 0);
                                 }
+                                else
+                                {
+                                    goto label_valid;
+                                }
+
+                                storeItem.Member.SetValue(item, value, null); //? 刷新数据。
                             }
+
+                            label_valid:
 
                             context.MemberName = storeItem.Member.Name;
 
@@ -1487,12 +1126,12 @@ namespace CodeArts.Db.Lts
 
                 if (!(limits is null))
                 {
-                    columns = columns.Where(x => limits.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => limits.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!(excepts is null))
                 {
-                    columns = columns.Where(x => !excepts.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => !excepts.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!columns.Any())
@@ -1539,7 +1178,7 @@ namespace CodeArts.Db.Lts
 
         private class Updateable : DbRouteExecuter, IUpdateable<TEntity>
         {
-            public Updateable(IDbContext context, ICollection<TEntity> entries) : base(context, entries)
+            public Updateable(IDatabase context, ICollection<TEntity> entries) : base(context, entries)
             {
             }
 
@@ -1629,15 +1268,6 @@ namespace CodeArts.Db.Lts
                         .Append(" SET ")
                         .Append(string.Join(",", columns.Select(kv =>
                         {
-                            var name = typeRegions.Tokens.ContainsKey(kv.Key)
-                            ? $"__token_{kv.Value}"
-                            : kv.Value;
-
-                            string parameterKey = index == 0
-                            ? name
-                            :
-                            $"{name}_{index}";
-
                             var storeItem = typeStore.PropertyStores.First(x => x.Name == kv.Key);
 
                             var value = storeItem.Member.GetValue(entry, null);
@@ -1650,6 +1280,15 @@ namespace CodeArts.Db.Lts
                             {
                                 ValidateValue(value, context, attrs);
                             }
+
+                            var name = typeRegions.Tokens.ContainsKey(kv.Key)
+                            ? $"__token_{kv.Value}"
+                            : kv.Value;
+
+                            string parameterKey = index == 0
+                            ? name
+                            :
+                            $"{name}_{index}";
 
                             parameters.Add(parameterKey, ParameterValue.Create(value, storeItem.MemberType));
 
@@ -1720,12 +1359,12 @@ namespace CodeArts.Db.Lts
 
                 if (!(limits is null))
                 {
-                    columns = columns.Where(x => limits.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => limits.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!(excepts is null))
                 {
-                    columns = columns.Where(x => !excepts.Any(y => y == x.Key || y == x.Value));
+                    columns = columns.Where(x => !excepts.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (!columns.Any())
@@ -1743,7 +1382,7 @@ namespace CodeArts.Db.Lts
                         throw new DException("未指定更新条件");
 
                     var whereColumns = typeRegions.ReadOrWrites
-                            .Where(x => typeRegions.Keys.Contains(x.Key) || wheres.Any(y => y == x.Key || y == x.Value))
+                            .Where(x => typeRegions.Keys.Contains(x.Key) || wheres.Any(y => string.Equals(y, x.Key, StringComparison.OrdinalIgnoreCase) || string.Equals(y, x.Value, StringComparison.OrdinalIgnoreCase)))
                             .Select(x => x.Key)
                             .ToArray();
 
@@ -1817,7 +1456,7 @@ namespace CodeArts.Db.Lts
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IInsertable<TEntity> AsInsertable(IDbContext executeable, ICollection<TEntity> entries)
+        public static IInsertable<TEntity> AsInsertable(IDatabase executeable, ICollection<TEntity> entries)
             => new Insertable(executeable, entries);
 
         /// <summary>
@@ -1826,7 +1465,7 @@ namespace CodeArts.Db.Lts
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IUpdateable<TEntity> AsUpdateable(IDbContext executeable, ICollection<TEntity> entries)
+        public static IUpdateable<TEntity> AsUpdateable(IDatabase executeable, ICollection<TEntity> entries)
             => new Updateable(executeable, entries);
 
         /// <summary>
@@ -1835,7 +1474,7 @@ namespace CodeArts.Db.Lts
         /// <param name="executeable">分析器。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IDeleteable<TEntity> AsDeleteable(IDbContext executeable, ICollection<TEntity> entries)
+        public static IDeleteable<TEntity> AsDeleteable(IDatabase executeable, ICollection<TEntity> entries)
             => new Deleteable(executeable, entries);
     }
 }

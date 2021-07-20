@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Reflection.Emit;
 
 namespace CodeArts.Emit.Expressions
@@ -8,10 +7,9 @@ namespace CodeArts.Emit.Expressions
     /// <summary>
     /// 类型转换。
     /// </summary>
-    [DebuggerDisplay("({type.Name}){body}")]
+    [DebuggerDisplay("({RuntimeType.Name}){body}")]
     public class ConvertAst : AstExpression
     {
-        private readonly Type convertToType;
         private readonly AstExpression body;
 
         /// <summary>
@@ -21,7 +19,6 @@ namespace CodeArts.Emit.Expressions
         /// <param name="convertToType">转换类型。</param>
         public ConvertAst(AstExpression body, Type convertToType) : base(convertToType)
         {
-            this.convertToType = convertToType ?? throw new ArgumentNullException(nameof(convertToType));
             this.body = body ?? throw new ArgumentNullException(nameof(body));
         }
 
@@ -33,21 +30,21 @@ namespace CodeArts.Emit.Expressions
         {
             body.Load(ilg);
 
-            Type typeFrom = body.ReturnType;
+            Type typeFrom = body.RuntimeType;
 
-            if (typeFrom == convertToType)
+            if (typeFrom == RuntimeType)
             {
                 return;
             }
 
-            if (convertToType == typeof(void))
+            if (RuntimeType == typeof(void))
             {
                 ilg.Emit(OpCodes.Pop);
 
                 return;
             }
 
-            EmitUtils.EmitConvertToType(ilg, typeFrom, convertToType.IsByRef ? convertToType.GetElementType() : convertToType, true);
+            EmitUtils.EmitConvertToType(ilg, typeFrom, RuntimeType.IsByRef ? RuntimeType.GetElementType() : RuntimeType, true);
         }
     }
 }

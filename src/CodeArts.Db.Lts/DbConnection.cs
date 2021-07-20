@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Threading;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Threading.Tasks;
 #endif
 
@@ -11,14 +11,14 @@ namespace CodeArts.Db.Lts
     /// 数据库(Close和Dispose接口虚拟，通过接口调用时不会真正关闭或释放，只有通过类调用才会真实的执行)
     /// </summary>
     public class DbConnection :
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         IAsyncDisposable,
 #endif
         IDisposable
     {
         private readonly IDbConnection connection; //数据库连接
         private readonly ISQLCorrectSettings settings;
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         private readonly System.Data.Common.DbConnection dbConnection;
 
         /// <inheritdoc />
@@ -59,7 +59,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public virtual DbTransaction BeginTransaction(IsolationLevel il) => new DbTransaction(connection.BeginTransaction(il));
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
 
         /// <inheritdoc />
         public virtual async ValueTask<DbTransactionAsync> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
@@ -113,7 +113,7 @@ namespace CodeArts.Db.Lts
             }
         }
 
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <inheritdoc />
         public async Task OpenAsync(CancellationToken cancellationToken = default)
         {
@@ -128,7 +128,7 @@ namespace CodeArts.Db.Lts
                     await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
                     break;
                 case ConnectionState.Broken:
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
                     await dbConnection.CloseAsync().ConfigureAwait(false);
 #else
                     connection.Close();
@@ -148,7 +148,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public void Close() => connection.Close();
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1_OR_GREATER
         /// <inheritdoc />
         public Task CloseAsync()
         {
@@ -176,7 +176,7 @@ namespace CodeArts.Db.Lts
         /// <inheritdoc />
         public virtual DbCommand CreateCommand()
         {
-#if NET_NORMAL || NET_CORE
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             if (IsAsynchronousSupport)
             {
                 return new DbCommand(dbConnection.CreateCommand(), settings);

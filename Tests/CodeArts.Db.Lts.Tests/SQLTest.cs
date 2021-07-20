@@ -672,11 +672,11 @@ namespace CodeArts.Db.Tests
             };
 
             DbConnectionManager.RegisterAdapter(new SqlServerLtsAdapter());
-            DbConnectionManager.RegisterProvider<CodeArtsProvider>();
+            DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
             var adapter = DbConnectionManager.Get(config.ProviderName);
             var connection = adapter.Create(config.ConnectionString);
-            var provider = DbConnectionManager.Create(adapter);
+            var provider = DbConnectionManager.GetOrCreate(adapter);
 
             var sql = new SQL(@"select 
                 replace(max(gmfmc),' ','') as gmfmc,
@@ -892,6 +892,102 @@ WHERE
             SQL sql = new SQL("INSERT INTO fphzhd_a VALUES (@ddbh,'1', @invoiceNo, Convert(decimal(14,4),@jshj), convert(varchar(10),convert(datetime,@kprq),120),@invoiceCode, @pdf,0);");
 
             var str = sql.ToString(settings);
+        }
+
+        [TestMethod]
+        public void ToOrderByCountSQL()
+        {
+            var settings = new SqlServerCorrectSettings();
+
+            string sqlstr = @"select   max(c.customer_name)  as gmfmc,
+
+
+ isnull(max(c.tax_id),'') as gmfsbh,
+ isnull(max(c.tel),'') as gmfdzdh,
+ isnull(max(c.bank),'') + isnull(max(c.account_id),'') as gmfkhhjzh,
+ isnull(max(d.remark) as remark,max(a.str_out_bill_id)) as ddbh,
+ '' as  bm,
+ '' as ywy,
+ '1' AS invoiceType,
+ '1' AS autoKp,
+
+
+ sum(d.qty * d.price) as jshj,
+'661568807294' AS machineCode,
+ isnull(max(c.tel),'') as sprsjh,
+ (select isnull(dd.zdw_erpRawPreOrderId,replace(bill_id,'YS','YSB' )) from sls_quotation_bill dd with(readpast),str_out_bill aa with(readpast)
+         where aa.xsdd_id = dd.bill_id and aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as dsddh,
+ max(a.remark) as bz,
+ (select aa.sls_tax_id from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoicecode,
+ (select aa.sls_tax_no from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoiceno,
+ (select aa.sls_tax_date from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as ywrq
+from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+ str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+where  a.str_out_type_id in('4','B')
+and a.str_out_bill_id = d.str_out_bill_id
+and    djlx_id in ('02','03')
+and  a.str_out_bill_id=@ddbh
+group by  a.str_out_bill_id
+order by a.str_out_bill_id desc";
+
+            SQL sql = new SQL(sqlstr);
+
+            var countSql = sql.ToCountSQL();
+
+            var pagedSql = sql.ToSQL(0, 10);
+
+            var str = countSql.ToString(settings);
+
+            var pagedStr = pagedSql.ToSQL(1, 20).ToString(settings);
+
+            var pagedStr2 = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
+        }
+
+        [TestMethod]
+        public void ToCountSQL()
+        {
+            var settings = new SqlServerCorrectSettings();
+
+            string sqlstr = @"select   max(c.customer_name)  as gmfmc,
+
+
+ isnull(max(c.tax_id),'') as gmfsbh,
+ isnull(max(c.tel),'') as gmfdzdh,
+ isnull(max(c.bank),'') + isnull(max(c.account_id),'') as gmfkhhjzh,
+ isnull(max(d.remark) as remark,max(a.str_out_bill_id)) as ddbh,
+ '' as  bm,
+ '' as ywy,
+ '1' AS invoiceType,
+ '1' AS autoKp,
+
+
+ sum(d.qty * d.price) as jshj,
+'661568807294' AS machineCode,
+ isnull(max(c.tel),'') as sprsjh,
+ (select isnull(dd.zdw_erpRawPreOrderId,replace(bill_id,'YS','YSB' )) from sls_quotation_bill dd with(readpast),str_out_bill aa with(readpast)
+         where aa.xsdd_id = dd.bill_id and aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as dsddh,
+ max(a.remark) as bz,
+ (select aa.sls_tax_id from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoicecode,
+ (select aa.sls_tax_no from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoiceno,
+ (select aa.sls_tax_date from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as ywrq from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+ str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+where  a.str_out_type_id in('4','B')
+and a.str_out_bill_id = d.str_out_bill_id
+and    djlx_id in ('02','03')
+and  a.str_out_bill_id=@ddbh
+group by  a.str_out_bill_id";
+
+            SQL sql = new SQL(sqlstr);
+
+            var countSql = sql.ToCountSQL();
+
+            var pagedSql = sql.ToSQL(0, 10);
+
+            var str = countSql.ToString(settings);
+
+            var pagedStr = pagedSql.ToSQL(1, 20).ToString(settings);
+
+            var pagedStr2 = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
         }
     }
 }

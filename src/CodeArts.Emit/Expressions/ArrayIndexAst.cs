@@ -8,7 +8,7 @@ namespace CodeArts.Emit.Expressions
     /// 数组索引。
     /// </summary>
     [DebuggerDisplay("{array}[{index}]")]
-    public class ArrayIndexAst : AssignAstExpression
+    public class ArrayIndexAst : AstExpression
     {
         private readonly AstExpression array;
         private readonly int index = -1;
@@ -19,7 +19,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="array">数组。</param>
         /// <param name="index">索引。</param>
-        public ArrayIndexAst(AstExpression array, int index) : base(array.ReturnType.GetElementType())
+        public ArrayIndexAst(AstExpression array, int index) : base(array.RuntimeType.GetElementType())
         {
             if (index < 0)
             {
@@ -28,7 +28,7 @@ namespace CodeArts.Emit.Expressions
 
             this.array = array ?? throw new ArgumentNullException(nameof(array));
 
-            if (array.ReturnType.IsArray && typeof(Array).IsAssignableFrom(array.ReturnType) && array.ReturnType.GetArrayRank() == 1)
+            if (array.RuntimeType.IsArray && typeof(Array).IsAssignableFrom(array.RuntimeType) && array.RuntimeType.GetArrayRank() == 1)
             {
                 this.index = index;
             }
@@ -42,10 +42,10 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="array">数组。</param>
         /// <param name="indexExp">索引。</param>
-        public ArrayIndexAst(AstExpression array, AstExpression indexExp) : base(array.ReturnType.GetElementType())
+        public ArrayIndexAst(AstExpression array, AstExpression indexExp) : base(array.RuntimeType.GetElementType())
         {
             this.array = array ?? throw new ArgumentNullException(nameof(array));
-            if (array.ReturnType.IsArray && typeof(Array).IsAssignableFrom(array.ReturnType) && array.ReturnType.GetArrayRank() == 1)
+            if (array.RuntimeType.IsArray && typeof(Array).IsAssignableFrom(array.RuntimeType) && array.RuntimeType.GetArrayRank() == 1)
             {
                 this.indexExp = indexExp ?? throw new ArgumentNullException(nameof(indexExp));
             }
@@ -55,54 +55,10 @@ namespace CodeArts.Emit.Expressions
             }
         }
 
-        private static void EmitInt(ILGenerator ilg, int value)
-        {
-            OpCode c;
-            switch (value)
-            {
-                case -1:
-                    c = OpCodes.Ldc_I4_M1;
-                    break;
-                case 0:
-                    c = OpCodes.Ldc_I4_0;
-                    break;
-                case 1:
-                    c = OpCodes.Ldc_I4_1;
-                    break;
-                case 2:
-                    c = OpCodes.Ldc_I4_2;
-                    break;
-                case 3:
-                    c = OpCodes.Ldc_I4_3;
-                    break;
-                case 4:
-                    c = OpCodes.Ldc_I4_4;
-                    break;
-                case 5:
-                    c = OpCodes.Ldc_I4_5;
-                    break;
-                case 6:
-                    c = OpCodes.Ldc_I4_6;
-                    break;
-                case 7:
-                    c = OpCodes.Ldc_I4_7;
-                    break;
-                case 8:
-                    c = OpCodes.Ldc_I4_8;
-                    break;
-                default:
-                    if (value >= -128 && value <= 127)
-                    {
-                        ilg.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
-                    }
-                    else
-                    {
-                        ilg.Emit(OpCodes.Ldc_I4, value);
-                    }
-                    return;
-            }
-            ilg.Emit(c);
-        }
+        /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public override bool CanWrite => true;
 
         /// <summary>
         /// 取值。
@@ -118,17 +74,11 @@ namespace CodeArts.Emit.Expressions
             }
             else
             {
-                EmitInt(ilg, index);
+                EmitUtils.EmitInt(ilg, index);
             }
 
-            EmitEnsureArrayIndexLoadedSafely(ilg, ReturnType);
+            EmitEnsureArrayIndexLoadedSafely(ilg, RuntimeType);
         }
-
-        /// <summary>
-        /// 赋值。
-        /// </summary>
-        /// <param name="ilg">指令。</param>
-        public override void Assign(ILGenerator ilg) => throw new NotSupportedException();
 
         /// <summary>
         /// 赋值。
@@ -162,12 +112,12 @@ namespace CodeArts.Emit.Expressions
             {
                 array.Load(ilg);
 
-                EmitInt(ilg, index);
+                EmitUtils.EmitInt(ilg, index);
             }
 
             value.Load(ilg);
 
-            EmitEnsureArrayIndexAssignedSafely(ilg, ReturnType);
+            EmitEnsureArrayIndexAssignedSafely(ilg, RuntimeType);
         }
 
         private static void EmitEnsureArrayIndexLoadedSafely(ILGenerator ilg, Type elementType)
@@ -223,7 +173,7 @@ namespace CodeArts.Emit.Expressions
 
         private static void EmitEnsureArrayIndexAssignedSafely(ILGenerator ilg, Type elementType)
         {
-            if (elementType.IsEnum)
+            if (elementType.IsValueType && elementType.IsEnum)
             {
                 ilg.Emit(OpCodes.Stelem, elementType);
             }

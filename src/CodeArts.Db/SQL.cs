@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System;
+﻿using System.Collections.Generic;
 #if NET40
 using System.Collections.ObjectModel;
 #endif
@@ -66,13 +64,35 @@ namespace CodeArts.Db
         /// <summary>
         /// 操作的表。
         /// </summary>
+        #if NETSTANDARD2_1_OR_GREATER
+        public IReadOnlyCollection<TableToken> Tables => tables ??= adpter.AnalyzeTables(sql);
+#else
         public IReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
+#endif
 
         /// <summary>
         /// 参数。
         /// </summary>
+        #if NETSTANDARD2_1_OR_GREATER
+        public IReadOnlyCollection<string> Parameters => parameters ??= adpter.AnalyzeParameters(sql);
+#else
         public IReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
 #endif
+#endif
+
+        /// <summary>
+        /// 获取总行数。
+        /// </summary>
+        /// <returns></returns>
+        public SQL ToCountSQL() => new SQL(adpter.ToCountSQL(sql));
+
+        /// <summary>
+        /// 获取分页数据。
+        /// </summary>
+        /// <param name="pageIndex">页码（从“0”开始）</param>
+        /// <param name="pageSize">分页条数。</param>
+        /// <returns></returns>
+        public SQL ToSQL(int pageIndex, int pageSize) => new SQL(adpter.ToSQL(sql, pageIndex, pageSize));
 
         /// <summary>
         /// 转为实际数据库的SQL语句。

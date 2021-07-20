@@ -1,5 +1,6 @@
 ﻿using CodeArts;
 using CodeArts.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel.DataAnnotations;
 using System.Web.Http;
 
@@ -25,6 +26,12 @@ namespace Mvc461
             {
                 return $"{context.DisplayName}为必填字段!";
             });
+        }
+
+        /// <inheritdoc />
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.UseDependencyInjection();
         }
     }
 }

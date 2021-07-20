@@ -50,6 +50,9 @@
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="Swashbuckle.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cd1bb07a5ac7c7bc, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Swashbuckle.Core.5.6.0\lib\net40\Swashbuckle.Core.dll</HintPath>
     </Reference>
@@ -75,9 +78,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\packages\Newtonsoft.Json.11.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System.Net.Http.Formatting">
       <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.5.2.7\lib\net45\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
@@ -119,6 +119,14 @@
     <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj">
       <Project>{2fe5dea1-f628-476b-bacf-0fa220537a29}</Project>
       <Name>CodeArts.Configuration</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.DependencyInjection.Abstractions\CodeArts.DependencyInjection.Abstractions.csproj">
+      <Project>{da18f111-40eb-4bc2-b98f-a1761aeb9935}</Project>
+      <Name>CodeArts.DependencyInjection.Abstractions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\CodeArts.DependencyInjection\CodeArts.DependencyInjection.csproj">
+      <Project>{03da8ee8-6aab-457d-9a3c-536d9bbcd8f6}</Project>
+      <Name>CodeArts.DependencyInjection</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.Json\CodeArts.Json.csproj">
       <Project>{769368d2-b5df-491b-acc9-f17d074463c7}</Project>

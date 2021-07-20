@@ -1,5 +1,6 @@
 ﻿using CodeArts;
 using CodeArts.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mvc45
 {
@@ -11,6 +12,12 @@ namespace Mvc45
             {
                 startup.DoStartup();
             }
+        }
+
+        /// <inheritdoc />
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.UseDependencyInjection();
         }
     }
 }

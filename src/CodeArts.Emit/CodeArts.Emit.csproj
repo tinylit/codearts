@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net461;net45;net40;netstandard2.0;netstandard2.1;</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>7.0.0.0</Version>
+		<Version>8.0.0.0</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>Provides classes that allow a compiler or tool to emit metadata and optionally generate a PE file on disk.</Description>
@@ -17,22 +17,14 @@
 		<PackageProjectUrl>https://github.com/tinylit/codearts</PackageProjectUrl>
 	</PropertyGroup>
 
-	<PropertyGroup Condition=" '$(TargetFramework)' == 'net45' Or '$(TargetFramework)' == 'net461' ">
-		<DefineConstants>$(DefineConstants);NET_NORMAL</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
-		<DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	</PropertyGroup>
-
 	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
 		<PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\CodeArts\CodeArts.csproj" />
+	  <Compile Remove="AbstractTypeEmitter - 副本.cs" />
 	</ItemGroup>
+
+
 
 </Project>

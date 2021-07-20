@@ -15,7 +15,12 @@ namespace CodeArts.Emit
         /// 构造函数。
         /// </summary>
         /// <param name="returnType">返回类型。</param>
-        protected AstExpression(Type returnType) => ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
+        protected AstExpression(Type returnType) => RuntimeType = returnType ?? throw new ArgumentNullException(nameof(returnType));
+
+        /// <summary>
+        /// 是否可写。
+        /// </summary>
+        public virtual bool CanWrite => false;
 
         /// <summary>
         /// 加载数据。
@@ -24,9 +29,74 @@ namespace CodeArts.Emit
         public abstract void Load(ILGenerator ilg);
 
         /// <summary>
+        /// 赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
+        public virtual void Assign(ILGenerator ilg, AstExpression value)
+        {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            var returnType = RuntimeType;
+
+            if (returnType == typeof(void))
+            {
+                throw new AstException("不能对无返回值类型进行赋值运算!");
+            }
+
+            if (value is ThisAst)
+            {
+                goto label_core;
+            }
+
+            var valueType = value.RuntimeType;
+
+            if (valueType == typeof(void))
+            {
+                throw new AstException("无返回值类型赋值不能用于赋值运算!");
+            }
+
+            if (valueType != returnType && !returnType.IsAssignableFrom(valueType) && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
+            {
+                throw new AstException("值表达式类型和当前表达式类型不相同!");
+            }
+
+            label_core:
+
+            if (CanWrite)
+            {
+                AssignCore(ilg, value);
+            }
+            else
+            {
+                throw new AstException("当前表达式不可写!");
+            }
+        }
+
+        /// <summary>
+        /// 赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
+        protected virtual void AssignCore(ILGenerator ilg, AstExpression value) => throw new NotImplementedException();
+
+        /// <summary>
+        /// 空表达式数组。
+        /// </summary>
+        public static readonly AstExpression[] EmptyAsts = new AstExpression[0];
+
+        /// <summary>
         /// 类型。
         /// </summary>
-        public Type ReturnType { get; private set; }
+        public Type RuntimeType { get; private set; }
+
+        /// <summary>
+        /// 当前上下文。
+        /// </summary>
+        public static ThisAst This => ThisAst.Instance;
 
         /// <summary>
         /// 类型转换。
@@ -82,27 +152,20 @@ namespace CodeArts.Emit
         public static TypeAsAst TypeAs(AstExpression body, Type bodyAsType) => new TypeAsAst(body, bodyAsType);
 
         /// <summary>
-        /// 成员本身。
-        /// </summary>
-        /// <param name="instanceType">实例类型。</param>
-        /// <returns></returns>
-        public static ThisAst This(Type instanceType) => new ThisAst(instanceType);
-
-        /// <summary>
         /// 创建实例。
         /// </summary>
         /// <param name="instanceType">实例类型。</param>
-        /// <param name="paramters">参数。</param>
+        /// <param name="parameters">参数。</param>
         /// <returns></returns>
-        public static NewInstanceAst New(Type instanceType, params AstExpression[] paramters) => new NewInstanceAst(instanceType, paramters);
+        public static NewInstanceAst New(Type instanceType, params AstExpression[] parameters) => new NewInstanceAst(instanceType, parameters);
 
         /// <summary>
         /// 创建实例。
         /// </summary>
         /// <param name="constructor">构造函数。</param>
-        /// <param name="paramters">参数。</param>
+        /// <param name="parameters">参数。</param>
         /// <returns></returns>
-        public static NewInstanceAst New(ConstructorInfo constructor, params AstExpression[] paramters) => new NewInstanceAst(constructor, paramters);
+        public static NewInstanceAst New(ConstructorInfo constructor, params AstExpression[] parameters) => new NewInstanceAst(constructor, parameters);
 
         /// <summary>
         /// 创建 object[]。
@@ -112,12 +175,27 @@ namespace CodeArts.Emit
         public static NewArrayAst NewArray(int size) => new NewArrayAst(size);
 
         /// <summary>
-        /// 创建 object[]。
+        /// 创建 <paramref name="elementType"/>[]。
         /// </summary>
         /// <param name="size">数组大小。</param>
         /// <param name="elementType">数组元素类型。</param>
         /// <returns></returns>
         public static NewArrayAst NewArray(int size, Type elementType) => new NewArrayAst(size, elementType);
+
+        /// <summary>
+        /// 创建 object[]。
+        /// </summary>
+        /// <param name="arguments">元素。</param>
+        /// <returns></returns>
+        public static ArrayAst Array(params AstExpression[] arguments) => new ArrayAst(arguments);
+
+        /// <summary>
+        /// 创建 object[]。
+        /// </summary>
+        /// <param name="elementType">元素类型。</param>
+        /// <param name="arguments">元素。</param>
+        /// <returns></returns>
+        public static ArrayAst Array(Type elementType, params AstExpression[] arguments) => new ArrayAst(arguments, elementType);
 
         /// <summary>
         /// 数组索引。
@@ -148,7 +226,7 @@ namespace CodeArts.Emit
         /// <param name="left">左表达式。</param>
         /// <param name="right">右表达式。</param>
         /// <returns></returns>
-        public static AssignAst Assign(AssignAstExpression left, AstExpression right) => new AssignAst(left, right);
+        public static AssignAst Assign(AstExpression left, AstExpression right) => new AssignAst(left, right);
 
         /// <summary>
         /// 空合并运算符。
@@ -256,19 +334,96 @@ namespace CodeArts.Emit
         public static IfThenElseAst IfThenElse(AstExpression test, AstExpression ifTrue, AstExpression ifFalse) => new IfThenElseAst(test, ifTrue, ifFalse);
 
         /// <summary>
-        /// 调用方法。
+        /// 三目运算。
         /// </summary>
-        /// <param name="method">方法。</param>
+        /// <param name="test">条件。</param>
+        /// <param name="ifTrue">为真时，执行的代码。</param>
+        /// <param name="ifFalse">为假时，执行的代码。</param>
         /// <returns></returns>
-        public static MethodAst Call(MethodInfo method) => new MethodAst(method);
+        public static ConditionAst Condition(AstExpression test, AstExpression ifTrue, AstExpression ifFalse) => new ConditionAst(test, ifTrue, ifFalse);
+
+        /// <summary>
+        /// 三目运算。
+        /// </summary>
+        /// <param name="test">条件。</param>
+        /// <param name="ifTrue">为真时，执行的代码。</param>
+        /// <param name="ifFalse">为假时，执行的代码。</param>
+        /// <param name="returnType">返回类型。</param>
+        /// <returns></returns>
+        public static ConditionAst Condition(AstExpression test, AstExpression ifTrue, AstExpression ifFalse, Type returnType) => new ConditionAst(test, ifTrue, ifFalse, returnType);
 
         /// <summary>
         /// 调用方法。
         /// </summary>
-        /// <param name="method">方法。</param>
-        /// <param name="parameters">方法参数。</param>
+        /// <param name="methodInfo">方法。</param>
         /// <returns></returns>
-        public static MethodAst Call(MethodInfo method, params AstExpression[] parameters) => new MethodAst(method, parameters);
+        public static MethodCallAst Call(MethodInfo methodInfo) => new MethodCallAst(methodInfo);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="methodInfo">方法。</param>
+        /// <param name="arguments">方法参数。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(MethodInfo methodInfo, params AstExpression[] arguments) => new MethodCallAst(methodInfo, arguments);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="methodInfo">方法。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo methodInfo) => new MethodCallAst(instanceAst, methodInfo);
+
+        /// <summary>
+        /// 调用方法。
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="methodInfo">方法。</param>
+        /// <param name="arguments">方法参数。</param>
+        /// <returns></returns>
+        public static MethodCallAst Call(AstExpression instanceAst, MethodInfo methodInfo, params AstExpression[] arguments) => new MethodCallAst(instanceAst, methodInfo, arguments);
+
+        /// <summary>
+        /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="methodInfo">方法。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(MethodInfo methodInfo, AstExpression arguments) => new InvocationAst(methodInfo, arguments);
+
+        /// <summary>
+        /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="methodInfo">方法。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression instanceAst, MethodInfo methodInfo, AstExpression arguments) => new InvocationAst(instanceAst, methodInfo, arguments);
+
+        /// <summary>
+        /// 调用静态方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="methodAst">方法表达式。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression methodAst, AstExpression arguments) => new InvocationAst(methodAst, arguments);
+
+        /// <summary>
+        /// 调用方法。<see cref="MethodBase.Invoke(object, object[])"/>
+        /// </summary>
+        /// <param name="instanceAst">实例。</param>
+        /// <param name="methodAst">方法表达式。</param>
+        /// <param name="arguments">参数<see cref="object"/>[]。</param>
+        /// <returns></returns>
+        public static InvocationAst Invoke(AstExpression instanceAst, AstExpression methodAst, AstExpression arguments) => new InvocationAst(instanceAst, methodAst, arguments);
+
+        /// <summary>
+        /// 代码块。
+        /// </summary>
+        /// <param name="returnType">返回值。</param>
+        /// <returns></returns>
+        public static BlockAst Block(Type returnType) => new BlockAst(returnType);
 
         /// <summary>
         /// 抛出异常。
@@ -278,29 +433,26 @@ namespace CodeArts.Emit
         public static ThrowAst Throw(Type exceptionType) => new ThrowAst(exceptionType);
 
         /// <summary>
-        /// 异常处理。
+        /// 抛出异常。
         /// </summary>
-        /// <param name="body">代码。</param>
-        /// <param name="catchs">异常捕获。</param>
-        /// <param name="finally">始终会执行的代码。</param>
+        /// <param name="exceptionType">异常类型。</param>
+        /// <param name="errorMsg">异常消息。</param>
         /// <returns></returns>
-        public static TryAst Try(AstExpression body, CatchAst[] catchs, FinallyAst @finally) => new TryAst(body, catchs, @finally);
+        public static ThrowAst Throw(Type exceptionType, string errorMsg) => new ThrowAst(exceptionType, errorMsg);
+
+        /// <summary>
+        /// 抛出异常。
+        /// </summary>
+        /// <param name="expression">异常表达式。</param>
+        /// <returns></returns>
+        public static ThrowAst Throw(AstExpression expression) => new ThrowAst(expression);
 
         /// <summary>
         /// 异常处理。
         /// </summary>
-        /// <param name="body">代码。</param>
-        /// <param name="catchs">异常捕获。</param>
+        /// <param name="returnType">返回值。</param>
         /// <returns></returns>
-        public static TryAst Try(AstExpression body, params CatchAst[] catchs) => new TryAst(body, catchs);
-
-        /// <summary>
-        /// 异常处理。
-        /// </summary>
-        /// <param name="body">代码。</param>
-        /// <param name="finally">始终会执行的代码。</param>
-        /// <returns></returns>
-        public static TryAst Try(AstExpression body, FinallyAst @finally) => new TryAst(body, @finally);
+        public static TryAst Try(Type returnType) => new TryAst(returnType);
 
         /// <summary>
         /// 捕获任意异常。
@@ -337,7 +489,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// 始终执行的代码。
         /// </summary>
-        /// <param name="body">代码块。</param>
+        /// <param name="body">代码。</param>
         /// <returns></returns>
         public static FinallyAst Finally(AstExpression body) => new FinallyAst(body);
 
@@ -360,7 +512,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="parameter">参数。</param>
         /// <returns></returns>
-        public static ParamterAst Paramter(ParameterInfo parameter) => new ParamterAst(parameter);
+        public static ParameterAst Paramter(ParameterInfo parameter) => new ParameterAst(parameter);
 
         /// <summary>
         /// 参数。
@@ -368,7 +520,7 @@ namespace CodeArts.Emit
         /// <param name="paramterType">参数类型。</param>
         /// <param name="position">参数位置。</param>
         /// <returns></returns>
-        public static ParamterAst Paramter(Type paramterType, int position) => new ParamterAst(paramterType, position);
+        public static ParameterAst Paramter(Type paramterType, int position) => new ParameterAst(paramterType, position);
 
         /// <summary>
         /// 清除当前堆载顶部的数据。

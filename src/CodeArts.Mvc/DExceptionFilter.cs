@@ -1,5 +1,5 @@
 ﻿using CodeArts.Exceptions;
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 #else
@@ -13,7 +13,7 @@ using System.Net;
 
 namespace CodeArts.Mvc
 {
-#if NET_CORE
+#if NETCOREAPP2_0_OR_GREATER
     /// <summary> 默认的异常处理。 </summary>
     public class DExceptionFilter : IExceptionFilter
     {
