@@ -45,7 +45,7 @@ namespace CodeArts.Emit.Tests
 
             method.Append(new AssignAst(b, new ConstantAst(GetExpression(entry => entry.Id))));
 
-            method.Append(new ReturnAst(new IfThenElseAst(new BinaryAst(pI, ExpressionType.GreaterThanOrEqual, pJ), pI, pJ)));
+            method.Append(new ReturnAst(new ConditionAst(new BinaryAst(pI, ExpressionType.GreaterThanOrEqual, pJ), pI, pJ)));
 
             var type = classType.CreateType();
 #if NET461
@@ -84,7 +84,7 @@ namespace CodeArts.Emit.Tests
 
             var callArg = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Parameter), new Type[] { typeof(Type) }), AstExpression.Constant(type));
             var callProperty = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Property), new Type[] { typeof(Expression), typeof(string) }), arg, AstExpression.Constant("Id"));
-            var callBlock = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Block), new Type[] { typeof(IEnumerable<ParameterExpression>), typeof(IEnumerable<Expression>) }));
+            //var callBlock = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Block), new Type[] { typeof(IEnumerable<ParameterExpression>), typeof(IEnumerable<Expression>) }));
 
             method.Append(AstExpression.Assign(arg, callArg));
             method.Append(AstExpression.Assign(argProperty, callProperty));

@@ -16,10 +16,23 @@ namespace CodeArts.Db.Lts
     {
         static DapperFor()
         {
+            //? linq Average 函数。
             SqlMapper.AddTypeHandler(typeof(double?), new DoubleNullableHandler());
             SqlMapper.AddTypeHandler(typeof(double), new DoubleHandler());
+            //? MySQL 动态字段，没有行数据时，bool识别为长整型的问题。
+            SqlMapper.AddTypeHandler(typeof(bool), new BooleanHandler());
         }
 
+        private class BooleanHandler : SqlMapper.ITypeHandler
+        {
+            public object Parse(Type destinationType, object value) => Convert.ChangeType(value, destinationType);
+
+            public void SetValue(IDbDataParameter parameter, object value)
+            {
+                parameter.Value = Convert.ChangeType(value, typeof(bool));
+                parameter.DbType = DbType.Boolean;
+            }
+        }
 
         private sealed class DoubleHandler : SqlMapper.ITypeHandler
         {
