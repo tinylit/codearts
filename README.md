@@ -247,7 +247,7 @@ NuGet 包
     castTo.Map<string>(sourceType => sourceType.IsValueType, source => source.ToString());
 ```
 
-### 如何使用ORM？
+### 如何使用ORM（基于Dapper实现）？
 * 定义实体。
 ``` csharp
     [DbConfig] // 设置数据库连接。
@@ -423,12 +423,24 @@ WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
     ``` csharp
     public class Startup : DStartup {
 
+        public override void ConfigureServices(IServiceCollection services)
+        {
+            base.ConfigureServices(services);
+
+            services
+                .UseDependencyInjection() //? 自动注入控制器实现。
+                .UseMiddleware(); //? IOC 中间件。
+        }
     }
     ```
     + JWT认证模式(支持JWT认证，以及普通模式的所有功能)。
     ``` csharp
     public class Startup : JwtStartup {
 
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.UseDependencyInjection(); //? 自动注入控制器实现。
+        }
     }
     ```
 
@@ -525,8 +537,8 @@ WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
   + 例一：
   ``` csharp
   var value = uri.AsRequestable()
-                    .AppendQueryString("?account=hyl&password=!pwd2021&debug=true") //? 请求参数。
-                    .Get(); // 请求方式。
+                .AppendQueryString("?account=hyl&password=!pwd2021&debug=true") //? 请求参数。
+                .Get(); // 请求方式。
   ```
   + 例二：
   ``` csharp
@@ -556,6 +568,5 @@ WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time
 ### 性能比较。
 功能|框架|性能|说明
 :--:|---|:--:|---
-MapTo|AutoMapper|~20%↑|框架是基于目标类型设计的。仅适用于简单的映射关系，需要建立复杂的映射关系，请使用AutoMapper。
+Casting|AutoMapper|~20%↑|框架是基于目标类型设计的。仅适用于简单的映射关系，需要建立复杂的映射关系，请使用AutoMapper。
 ORM|SqlSugar|~15%↑|框架支持本地linq查询，支持双模式批处理。
-ORM|Dapper|~6%↑|仅针对此ORM项目定制，如果需要使用特别复杂的操作，请使用Dapper。
