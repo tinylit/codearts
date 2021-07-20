@@ -8,7 +8,7 @@ using System.Reflection;
 namespace CodeArts.Db.Expressions
 {
     /// <summary>
-    /// <see cref="Queryable.GroupBy{TSource, TKey}(IQueryable{TSource}, System.Linq.Expressions.Expression{Func{TSource, TKey}})"/>
+    /// <see cref="Queryable.GroupBy{TSource, TKey}(IQueryable{TSource}, Expression{Func{TSource, TKey}})"/>
     /// </summary>
     public class GroupByVisitor : CoreVisitor
     {

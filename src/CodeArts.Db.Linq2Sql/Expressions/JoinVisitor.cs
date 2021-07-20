@@ -9,7 +9,7 @@ using System.Text;
 namespace CodeArts.Db.Expressions
 {
     /// <summary>
-    /// <see cref="Queryable.Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, System.Collections.Generic.IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})"/>
+    /// <see cref="Queryable.Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})"/>
     /// </summary>
     public class JoinVisitor : CoreVisitor
     {

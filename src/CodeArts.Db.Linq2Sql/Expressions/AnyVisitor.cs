@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 namespace CodeArts.Db.Expressions
 {
     /// <summary>
-    /// <see cref="Queryable.Any{TSource}(IQueryable{TSource})"/>、<seealso cref="Queryable.Any{TSource}(IQueryable{TSource}, System.Linq.Expressions.Expression{Func{TSource, bool}})"/>.
+    /// <see cref="Queryable.Any{TSource}(IQueryable{TSource})"/>、<seealso cref="Queryable.Any{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>.
     /// </summary>
     public class AnyVisitor : BaseVisitor
     {
