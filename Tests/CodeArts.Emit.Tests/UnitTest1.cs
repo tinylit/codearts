@@ -1,13 +1,12 @@
-using CodeArts.Emit.Expressions;
 using CodeArts.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts.Emit.Tests
 {
@@ -41,11 +40,41 @@ namespace CodeArts.Emit.Tests
             var pI = method.DefineParameter(typeof(int), ParameterAttributes.None, "i");
             var pJ = method.DefineParameter(typeof(int), ParameterAttributes.None, "j");
 
-            var b = method.DeclareVariable(typeof(Expression));
+            var b = Variable(typeof(Expression));
 
-            method.Append(new AssignAst(b, new ConstantAst(GetExpression(entry => entry.Id))));
+            method.Append(Assign(b, Constant(GetExpression(entry => entry.Id))));
 
-            method.Append(new ReturnAst(new ConditionAst(new BinaryAst(pI, ExpressionType.GreaterThanOrEqual, pJ), pI, pJ)));
+            var switchAst = Switch(Constant(1));
+
+            switchAst.Case(Constant(1))
+                .Append(IncrementAssign(pI));
+
+            switchAst.Case(Constant(2))
+                .Append(AddAssign(pI, Constant(5)));
+
+            var constantAst2 = Constant(1, typeof(object));
+
+            var switchAst2 = Switch(constantAst2);
+
+            var stringAst = Variable(typeof(string));
+            var intAst = Variable(typeof(int));
+
+            switchAst2.Case(stringAst);
+            switchAst2.Case(intAst)
+                .Append(Assign(pI, intAst));
+
+            var switchAst3 = Switch(Constant("ABC"), DecrementAssign(pI), typeof(void));
+
+            switchAst3.Case(Constant("A"))
+                .Append(IncrementAssign(pI));
+
+            switchAst3.Case(Constant("B"))
+                .Append(AddAssign(pI, Constant(5)));
+
+            method.Append(switchAst)
+                .Append(switchAst2)
+                .Append(switchAst3)
+                .Append(Return(Condition(GreaterThanOrEqual(pI, pJ), pI, pJ)));
 
             var type = classType.CreateType();
 #if NET461
@@ -79,38 +108,36 @@ namespace CodeArts.Emit.Tests
 
             var type = typeof(Entry);
 
-            var arg = method.DeclareVariable(typeof(ParameterExpression));
-            var argProperty = method.DeclareVariable(typeof(MemberExpression));
+            var arg = Variable(typeof(ParameterExpression));
+            var argProperty = Variable(typeof(MemberExpression));
 
-            var callArg = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Parameter), new Type[] { typeof(Type) }), AstExpression.Constant(type));
-            var callProperty = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Property), new Type[] { typeof(Expression), typeof(string) }), arg, AstExpression.Constant("Id"));
-            //var callBlock = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Block), new Type[] { typeof(IEnumerable<ParameterExpression>), typeof(IEnumerable<Expression>) }));
+            var callArg = Call(typeof(Expression).GetMethod(nameof(Expression.Parameter), new Type[] { typeof(Type) }), Constant(type));
+            var callProperty = Call(typeof(Expression).GetMethod(nameof(Expression.Property), new Type[] { typeof(Expression), typeof(string) }), arg, Constant("Id"));
+            //var callBlock = Call(typeof(Expression).GetMethod(nameof(Expression.Block), new Type[] { typeof(IEnumerable<ParameterExpression>), typeof(IEnumerable<Expression>) }));
 
-            method.Append(AstExpression.Assign(arg, callArg));
-            method.Append(AstExpression.Assign(argProperty, callProperty));
+            method.Append(Assign(arg, callArg));
+            method.Append(Assign(argProperty, callProperty));
 
-            var variable_variables = method.DeclareVariable(typeof(ParameterExpression[]));
+            var variable_variables = Variable(typeof(ParameterExpression[]));
 
-            var variables = AstExpression.NewArray(1, typeof(ParameterExpression));
+            var variables = NewArray(1, typeof(ParameterExpression));
 
-            method.Append(AstExpression.Assign(variable_variables, variables));
+            method.Append(Assign(variable_variables, variables));
 
-            method.Append(AstExpression.Assign(AstExpression.ArrayIndex(variable_variables, 0), arg));
+            method.Append(Assign(ArrayIndex(variable_variables, 0), arg));
 
-            var constantI = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Constant), new Type[] { typeof(object) }), AstExpression.Convert(pI, typeof(object)));
+            var constantI = Call(typeof(Expression).GetMethod(nameof(Expression.Constant), new Type[] { typeof(object) }), Convert(pI, typeof(object)));
 
-            var equalMethod = AstExpression.Call(typeof(Expression).GetMethod(nameof(Expression.Equal), new Type[] { typeof(Expression), typeof(Expression) }), argProperty, constantI);
+            var equalMethod = Call(typeof(Expression).GetMethod(nameof(Expression.Equal), new Type[] { typeof(Expression), typeof(Expression) }), argProperty, constantI);
 
             var lamdaMethod = typeof(Tests).GetMethod(nameof(Tests.Lambda))
                 .MakeGenericMethod(typeof(Func<Entry, bool>));
 
-            var whereLambda = method.DeclareVariable(typeof(Expression<Func<Entry, bool>>));
+            var whereLambda = Variable(typeof(Expression<Func<Entry, bool>>));
 
-            method.Append(AstExpression.Assign(whereLambda, AstExpression.Call(lamdaMethod, equalMethod, variable_variables)));
+            method.Append(Assign(whereLambda, Call(lamdaMethod, equalMethod, variable_variables)));
 
-            method.Append(AstExpression.Void());
-
-            method.Append(AstExpression.Return());
+            method.Append(ReturnVoid());
 
             classType.CreateType();
 #if NET461
@@ -138,12 +165,24 @@ namespace CodeArts.Emit.Tests
                 intercept.Run(context);
             }
 
-            public override Task RunAsync(InterceptAsyncContext context, InterceptAsync intercept)
+            public override T Run<T>(InterceptContext context, Intercept<T> intercept)
+            {
+                if (context.Main.Name == nameof(IDependency.AopTestByRef))
+                {
+                    context.Inputs[1] = -10;
+
+                    return default;
+                }
+
+                return intercept.Run(context);
+            }
+
+            public override Task RunAsync(InterceptContext context, InterceptAsync intercept)
             {
                 return intercept.RunAsync(context);
             }
 
-            public override Task<T> RunAsync<T>(InterceptAsyncContext context, InterceptAsync<T> intercept)
+            public override Task<T> RunAsync<T>(InterceptContext context, InterceptAsync<T> intercept)
             {
                 return intercept.RunAsync(context);
             }
@@ -177,16 +216,88 @@ namespace CodeArts.Emit.Tests
             /// <inheritdoc />
             public bool AopTestByRef(int i, ref int j)
             {
-                j = i * 5;
+                try
+                {
+                    return (i & 1) == 0;
+                }
+                finally
+                {
+                    j = i * 5;
+                }
 
-                return (i & 1) == 0;
             }
 
             /// <inheritdoc />
             [DependencyIntercept]
             public bool AopTestByOut(int i, out int j)
             {
-                j = i * 5;
+                switch (i)
+                {
+                    case 1:
+                        j = 5;
+                        break;
+                    case 2:
+                        j = 15;
+                        break;
+                    default:
+                        j = i * i * 5;
+                        break;
+                }
+
+
+                string str = "A";
+
+                switch (str)
+                {
+                    case "A":
+                        str = "X";
+                        break;
+                    case "B":
+                        str = "Y";
+                        break;
+                    default:
+                        break;
+                }
+
+                object value = i;
+
+                switch (value)
+                {
+                    case int i1:
+                        i = i1;
+                        break;
+                    case string text:
+                        i = 10;
+                        break;
+                    default:
+                        break;
+                }
+
+                DateTimeKind timeKind = (DateTimeKind)i;
+
+                switch (timeKind)
+                {
+                    case DateTimeKind.Local:
+                        i++;
+                        break;
+                    case DateTimeKind.Unspecified:
+                        i += 5;
+                        break;
+                    default:
+                        i--;
+                        break;
+                }
+
+                int? k = value is int ? (int?)value : default;
+
+                //var b = (i == 1) && i > 0;
+
+                //if (b)
+                //{
+                //    return true;
+                //}
+
+                j = 1;
 
                 return (i & 1) == 0;
             }
@@ -201,9 +312,9 @@ namespace CodeArts.Emit.Tests
             }
         }
 
+        [DependencyIntercept]
         public interface IDependency<T> where T : class
         {
-            [DependencyIntercept]
             T Clone(T obj);
 
             T Copy(T obj);
@@ -246,6 +357,10 @@ namespace CodeArts.Emit.Tests
             IDependency<IDependency> dependency2 = serviceProvider.GetService<IDependency<IDependency>>();
 
             int j = 10;
+
+            int i = -10;
+
+            j = +i;
 
             dependency.Flags = true;
 

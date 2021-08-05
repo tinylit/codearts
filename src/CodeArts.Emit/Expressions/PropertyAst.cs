@@ -54,7 +54,7 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
+        protected override void Assign(ILGenerator ilg, AstExpression value)
         {
             value.Load(ilg);
 

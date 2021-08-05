@@ -21,7 +21,8 @@ namespace CodeArts.Db.EntityFramework
     /// 仓库。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-    public class LinqRepository<TEntity> : ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable where TEntity : class, IEntiy
+    public class LinqRepository<TEntity> : ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable
+        where TEntity : class, IEntiy, new()
     {
         private readonly DbContext _dbContext;
         private readonly DbSet<TEntity> _dbSet;

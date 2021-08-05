@@ -17,11 +17,6 @@ namespace CodeArts.Caching
         /// </summary>
         public MemoryCachingProvider() => Caches = new ConcurrentDictionary<string, ICaching>();
 
-        /// <summary>
-        /// 获取 缓存是否可用。
-        /// </summary>
-        public bool Enabled { get; set; }
-
         /// <summary> 获取缓存对象。</summary>
         /// <param name="regionName">缓存名称。</param>
         /// <returns></returns>

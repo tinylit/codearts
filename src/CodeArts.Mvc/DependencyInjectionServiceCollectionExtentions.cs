@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (!Enum.IsDefined(typeof(ServiceLifetime), lifetime))
             {
-                throw new InvalidCastException($"“{lifetime}”不是有效的“ServiceLifetime”枚举类型！");
+                throw new InvalidCastException($"“{lifetime}”不是有效的“ServiceLifetime”枚举值！");
             }
 
             foreach (var controllerType in controllerTypes)

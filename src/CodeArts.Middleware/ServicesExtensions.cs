@@ -25,7 +25,11 @@ namespace CodeArts
                 throw new ArgumentNullException(nameof(services));
             }
 
+#if NET40_OR_GREATER && DEBUG
+            var moduleEmitter = new ModuleEmitter(true);
+#else
             var moduleEmitter = new ModuleEmitter();
+#endif
 
             for (int i = 0; i < services.Count; i++)
             {
@@ -57,6 +61,10 @@ namespace CodeArts
 
                 services[i] = byPattern.Resolve();
             }
+
+#if NET40_OR_GREATER && DEBUG
+            moduleEmitter.SaveAssembly();
+#endif
 
             return services;
         }

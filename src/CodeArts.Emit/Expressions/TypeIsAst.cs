@@ -24,6 +24,7 @@ namespace CodeArts.Emit.Expressions
         private readonly AstExpression body;
         private readonly Type isType;
 
+
         /// <summary>
         /// 构造函数。
         /// </summary>

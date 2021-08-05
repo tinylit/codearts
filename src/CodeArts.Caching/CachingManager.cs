@@ -76,10 +76,10 @@ namespace CodeArts.Caching
         /// <summary>
         /// 获取服务商的指定缓存服务（优先获取指定级别缓存，没有指定级别缓存时，使用更低级别的缓存）。
         /// </summary>
-        /// <param name="cacheName">缓存名称。</param>
+        /// <param name="slotName">缓存槽名称。</param>
         /// <param name="level">缓存等级。</param>
         /// <returns></returns>
-        public static ICaching GetCache(string cacheName, Level level = Level.First)
+        public static ICaching GetCache(string slotName, Level level = Level.First)
         {
             ICachingProvider provider;
 
@@ -89,25 +89,25 @@ namespace CodeArts.Caching
                     if (TryGetProvider(Level.First, out provider))
                     {
                         return CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
-                            .GetOrAdd(cacheName, name => provider.GetCache(name));
+                            .GetOrAdd(slotName, name => provider.GetCache(name));
                     }
                     break;
                 case Level.Second:
                     if (TryGetProvider(Level.Second, out provider))
                     {
                         return CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
-                            .GetOrAdd(cacheName, name => provider.GetCache(name));
+                            .GetOrAdd(slotName, name => provider.GetCache(name));
                     }
                     goto case Level.First;
                 case Level.Third:
                     if (TryGetProvider(Level.Second, out provider))
                     {
                         return CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
-                            .GetOrAdd(cacheName, name => provider.GetCache(name));
+                            .GetOrAdd(slotName, name => provider.GetCache(name));
                     }
                     goto case Level.Second;
                 default:
-                    var list = new List<ICaching>();
+                    var list = new List<ICaching>(3);
 
                     foreach (Level item in Enum.GetValues(typeof(Level)))
                     {
@@ -116,14 +116,32 @@ namespace CodeArts.Caching
                             if (TryGetProvider(item, out provider))
                             {
                                 list.Add(CacheDictionary.GetOrAdd(provider, _ => new ConcurrentDictionary<string, ICaching>())
-                                    .GetOrAdd(cacheName, name => provider.GetCache(name)));
+                                    .GetOrAdd(slotName, name => provider.GetCache(name)));
                             }
                         }
                     }
 
-                    if (list.Count > 0)
+                    if (list.Count > 1)
                     {
                         return new MultiCaching(list);
+                    }
+                    else if (list.Count == 1)
+                    {
+                        return list[0];
+                    }
+                    else if (level >= Level.First)
+                    {
+                        if ((level & Level.Third) == Level.Third)
+                        {
+                            return GetCache(slotName, Level.Third);
+                        }
+
+                        if ((level & Level.Second) == Level.Second)
+                        {
+                            return GetCache(slotName, Level.Second);
+                        }
+
+                        return GetCache(slotName, Level.First);
                     }
 
                     break;

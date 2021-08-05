@@ -130,7 +130,7 @@ namespace CodeArts.Mvc
         /// 用户信息。
         /// </summary>
         /// <exception cref="NotSupportedException">未找到当前用户信息。</exception>
-        public TUser MyUser
+        protected TUser MyUser
         {
             get
             {
@@ -206,7 +206,7 @@ namespace CodeArts.Mvc
         /// 用户数据。
         /// </summary>
         /// <exception cref="NotSupportedException">未找到当前用户信息。</exception>
-        public TUserData MyData
+        protected TUserData MyData
         {
             get
             {

@@ -54,16 +54,6 @@ namespace CodeArts.Emit
 
                 base.Load(ilg);
 
-                if (IsLastReturn)
-                {
-                    return;
-                }
-
-                if (!IsEmpty && RuntimeType == typeof(void))
-                {
-                    ilg.Emit(OpCodes.Nop);
-                }
-
                 ilg.Emit(OpCodes.Ret);
             }
         }
@@ -188,18 +178,17 @@ namespace CodeArts.Emit
         /// <param name="attributes">匿名函数类型。</param>
         /// <param name="baseType">匿名函数基类。</param>
         /// <param name="interfaces">匿名函数实现接口。</param>
-        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType, Type[] interfaces) : this(DefineTypeBuilder(typeEmitter, name, attributes, baseType, interfaces), typeEmitter.namingScope)
+        protected AbstractTypeEmitter(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType, Type[] interfaces) : this(DefineNestedTypeBuilder(typeEmitter.builder, name, attributes, baseType, interfaces), typeEmitter.namingScope)
         {
             typeEmitter.abstracts.Add(this);
         }
 
-
         private static readonly Regex NamingPattern = new Regex("[^0-9a-zA-Z]+", RegexOptions.Singleline | RegexOptions.Compiled);
-        private static TypeBuilder DefineTypeBuilder(AbstractTypeEmitter typeEmitter, string name, TypeAttributes attributes, Type baseType, Type[] interfaces)
+        private static TypeBuilder DefineNestedTypeBuilder(TypeBuilder typeBuilder, string name, TypeAttributes attributes, Type baseType, Type[] interfaces)
         {
-            if (typeEmitter is null)
+            if (typeBuilder is null)
             {
-                throw new ArgumentNullException(nameof(typeEmitter));
+                throw new ArgumentNullException(nameof(typeBuilder));
             }
 
             if (name is null)
@@ -223,23 +212,23 @@ namespace CodeArts.Emit
 
             if (baseType is null && interfaces is null)
             {
-                return typeEmitter.builder.DefineNestedType(name, attributes);
+                return typeBuilder.DefineNestedType(name, attributes);
             }
             else if (interfaces is null || interfaces.Length == 0)
             {
                 if (!baseType.IsGenericType)
                 {
-                    return typeEmitter.builder.DefineNestedType(name, attributes, baseType);
+                    return typeBuilder.DefineNestedType(name, attributes, baseType);
                 }
 
                 var genericArguments = baseType.GetGenericArguments();
 
                 if (!Array.Exists(genericArguments, x => x.IsGenericParameter))
                 {
-                    return typeEmitter.builder.DefineNestedType(name, attributes, baseType);
+                    return typeBuilder.DefineNestedType(name, attributes, baseType);
                 }
 
-                var builder = typeEmitter.builder.DefineNestedType(name, attributes);
+                var builder = typeBuilder.DefineNestedType(name, attributes);
 
                 var names = new List<string>(genericArguments.Length);
 
@@ -332,12 +321,12 @@ namespace CodeArts.Emit
 
                 if (names.Count == 0)
                 {
-                    return typeEmitter.builder.DefineNestedType(name, attributes, baseType, interfaces);
+                    return typeBuilder.DefineNestedType(name, attributes, baseType, interfaces);
                 }
 
                 var builder = flag
-                    ? typeEmitter.builder.DefineNestedType(name, attributes)
-                    : typeEmitter.builder.DefineNestedType(name, attributes, baseType);
+                    ? typeBuilder.DefineNestedType(name, attributes)
+                    : typeBuilder.DefineNestedType(name, attributes, baseType);
 
                 var typeParameterBuilders = builder.DefineGenericParameters(names.Values.ToArray());
 
@@ -412,7 +401,6 @@ namespace CodeArts.Emit
                 return builder;
             }
         }
-
 
         /// <summary>
         /// 静态构造函数。
@@ -1044,6 +1032,7 @@ namespace CodeArts.Emit
 
             return false;
         }
+
         private static bool HasGenericParameter(Type type, Type[] declaringTypes)
         {
             if (type.IsGenericParameter)

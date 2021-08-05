@@ -25,7 +25,7 @@ namespace CodeArts.Emit
 
         private static object GetConstant(int index) => Constants[index];
 
-        internal static bool IsNullable(this Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        internal static bool IsNullable(this Type type) => type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
         #region Convert
 
@@ -61,13 +61,78 @@ namespace CodeArts.Emit
             }
         }
 
-        private static bool AreEquivalent(Type t1, Type t2)
+        /// <summary>
+        /// 类型相同。
+        /// </summary>
+        /// <param name="t1">类型1。</param>
+        /// <param name="t2">类型2。</param>
+        /// <returns></returns>
+        public static bool AreEquivalent(Type t1, Type t2)
         {
 #if CLR2 || SILVERLIGHT
             return t1 == t2;
 #else
             return t1 == t2 || t1.IsEquivalentTo(t2);
 #endif
+        }
+
+        /// <summary>
+        /// 签名类型匹配（含泛型约束匹配）。
+        /// </summary>
+        /// <param name="t1">类型1。</param>
+        /// <param name="t2">类型2。</param>
+        /// <returns></returns>
+        public static bool EqualSignatureTypes(Type t1, Type t2)
+        {
+            if (t1.IsGenericParameter != t2.IsGenericParameter)
+            {
+                return false;
+            }
+
+            if (t1.IsGenericType != t2.IsGenericType)
+            {
+                return false;
+            }
+
+            if (t1.IsGenericParameter)
+            {
+                if (t1.GenericParameterPosition != t2.GenericParameterPosition)
+                {
+                    return false;
+                }
+            }
+            else if (t1.IsGenericType)
+            {
+                var xGenericTypeDef = t1.GetGenericTypeDefinition();
+                var yGenericTypeDef = t2.GetGenericTypeDefinition();
+
+                if (xGenericTypeDef != yGenericTypeDef)
+                {
+                    return false;
+                }
+
+                var xArgs = t1.GetGenericArguments();
+                var yArgs = t2.GetGenericArguments();
+
+                if (xArgs.Length != yArgs.Length)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < xArgs.Length; ++i)
+                {
+                    if (!EqualSignatureTypes(xArgs[i], yArgs[i]))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else if (!AreEquivalent(t1, t2))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static bool IsDelegate(Type t)
@@ -509,6 +574,174 @@ namespace CodeArts.Emit
 
         #endregion
 
+        #region Default
+        private static void Emit(ILGenerator ilg, Type type)
+        {
+            if (type.IsValueType && type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type.IsPrimitive && type != typeof(IntPtr) && type != typeof(UIntPtr))
+            {
+                switch (Type.GetTypeCode(type))
+                {
+                    case TypeCode.DBNull:
+                        ilg.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField(nameof(DBNull.Value)));
+                        break;
+                    case TypeCode.Boolean:
+                    case TypeCode.Byte:
+                    case TypeCode.SByte:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        break;
+                    case TypeCode.Char:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        break;
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        break;
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        ilg.Emit(OpCodes.Ldc_I8, 0L);
+                        break;
+
+                    case TypeCode.Single:
+                        ilg.Emit(OpCodes.Ldc_R4, 0F);
+                        break;
+
+                    case TypeCode.Double:
+                        ilg.Emit(OpCodes.Ldc_R8, 0D);
+                        break;
+
+                    case TypeCode.Decimal:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        ilg.Emit(OpCodes.Newobj, typeof(decimal).GetConstructor(new Type[] { typeof(int) }));
+                        break;
+
+                    case TypeCode.Empty:
+                    case TypeCode.String:
+                    case TypeCode.Object:
+                    case TypeCode.DateTime:
+                    default:
+                        if (type.IsValueType)
+                        {
+                            var local = ilg.DeclareLocal(type);
+                            ilg.Emit(OpCodes.Ldloca_S, local);
+                            ilg.Emit(OpCodes.Initobj, type);
+                            ilg.Emit(OpCodes.Ldloc, local);
+                        }
+                        else
+                        {
+                            ilg.Emit(OpCodes.Ldnull);
+                        }
+                        break;
+                }
+            }
+            else if (type.IsValueType || type.IsGenericParameter)
+            {
+                var local = ilg.DeclareLocal(type);
+                ilg.Emit(OpCodes.Ldloca_S, local);
+                ilg.Emit(OpCodes.Initobj, type);
+                ilg.Emit(OpCodes.Ldloc, local);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Ldnull);
+            }
+        }
+
+        private static void EmitByRef(ILGenerator ilg, Type type)
+        {
+            if (type.IsValueType && type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type.IsPrimitive && type != typeof(IntPtr) && type != typeof(UIntPtr))
+            {
+                switch (Type.GetTypeCode(type))
+                {
+                    case TypeCode.DBNull:
+                        ilg.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField(nameof(DBNull.Value)));
+
+                        ilg.Emit(OpCodes.Stobj, type);
+                        break;
+                    case TypeCode.Boolean:
+                    case TypeCode.Byte:
+                    case TypeCode.SByte:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        ilg.Emit(OpCodes.Stind_I1);
+                        break;
+                    case TypeCode.Char:
+                    case TypeCode.Int16:
+                    case TypeCode.UInt16:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        ilg.Emit(OpCodes.Stind_I2);
+                        break;
+                    case TypeCode.Int32:
+                    case TypeCode.UInt32:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        ilg.Emit(OpCodes.Stind_I4);
+                        break;
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        ilg.Emit(OpCodes.Ldc_I8, 0L);
+                        ilg.Emit(OpCodes.Stind_I8);
+                        break;
+
+                    case TypeCode.Single:
+                        ilg.Emit(OpCodes.Ldc_R4, 0F);
+                        ilg.Emit(OpCodes.Stind_R4);
+                        break;
+
+                    case TypeCode.Double:
+                        ilg.Emit(OpCodes.Ldc_R8, 0D);
+                        ilg.Emit(OpCodes.Stind_R8);
+                        break;
+
+                    case TypeCode.Decimal:
+                        ilg.Emit(OpCodes.Ldc_I4_0);
+                        ilg.Emit(OpCodes.Newobj, typeof(decimal).GetConstructor(new Type[] { typeof(int) }));
+
+                        ilg.Emit(OpCodes.Stobj, type);
+                        break;
+
+                    case TypeCode.Empty:
+                    case TypeCode.String:
+                    case TypeCode.Object:
+                    case TypeCode.DateTime:
+                    default:
+                        if (type.IsValueType)
+                        {
+                            ilg.Emit(OpCodes.Initobj, type);
+
+                            ilg.Emit(OpCodes.Stobj, type);
+                        }
+                        else
+                        {
+                            ilg.Emit(OpCodes.Ldnull);
+
+                            ilg.Emit(OpCodes.Stind_Ref);
+                        }
+                        break;
+                }
+            }
+            else if (type.IsValueType || type.IsGenericParameter)
+            {
+                ilg.Emit(OpCodes.Initobj, type);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Ldnull);
+
+                ilg.Emit(OpCodes.Stind_Ref);
+            }
+        }
+        #endregion
+
         #region Constants
 
         /// <summary>
@@ -564,7 +797,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public static void EmitShort(ILGenerator ilg, short value)
+        public static void EmitInt16(ILGenerator ilg, short value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_I2);
@@ -573,7 +806,7 @@ namespace CodeArts.Emit
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public static void EmitUShort(ILGenerator ilg, ushort value)
+        public static void EmitUInt16(ILGenerator ilg, ushort value)
         {
             EmitInt(ilg, value);
             ilg.Emit(OpCodes.Conv_U2);
@@ -740,7 +973,7 @@ namespace CodeArts.Emit
 
         private static bool TryEmitILConstant(ILGenerator ilg, object value, Type type)
         {
-            switch (Type.GetTypeCode(type))
+            switch (Type.GetTypeCode(type.IsEnum ? Enum.GetUnderlyingType(type) : type))
             {
                 case TypeCode.Boolean:
                     EmitBoolean(ilg, (bool)value);
@@ -749,7 +982,7 @@ namespace CodeArts.Emit
                     EmitSByte(ilg, (sbyte)value);
                     return true;
                 case TypeCode.Int16:
-                    EmitShort(ilg, (short)value);
+                    EmitInt16(ilg, (short)value);
                     return true;
                 case TypeCode.Int32:
                     EmitInt(ilg, (int)value);
@@ -770,7 +1003,7 @@ namespace CodeArts.Emit
                     EmitByte(ilg, (byte)value);
                     return true;
                 case TypeCode.UInt16:
-                    EmitUShort(ilg, (ushort)value);
+                    EmitUInt16(ilg, (ushort)value);
                     return true;
                 case TypeCode.UInt32:
                     EmitUInt(ilg, (uint)value);
@@ -847,7 +1080,18 @@ namespace CodeArts.Emit
         {
             if (value is null)
             {
-                ilg.Emit(OpCodes.Ldnull);
+                if (valueType is null || valueType.IsClass)
+                {
+                    ilg.Emit(OpCodes.Ldnull);
+                }
+                else if (valueType.IsNullable())
+                {
+                    EmitDefaultOfType(ilg, valueType);
+                }
+                else
+                {
+                    throw new InvalidCastException($"无法将“null”转为值类型“{valueType}”!");
+                }
             }
             else
             {
@@ -963,7 +1207,40 @@ namespace CodeArts.Emit
                             return;
                         }
 
-                        if (value.GetType() != valueType)
+                        var realType = value.GetType();
+
+                        bool isObject = valueType == typeof(object);
+
+                        if (isObject || valueType.IsNullable())
+                        {
+                            if (isObject)
+                            {
+                                valueType = realType;
+                            }
+
+                            var underlyingType = valueType.IsNullable()
+                                ? Nullable.GetUnderlyingType(valueType)
+                                : valueType;
+
+                            if ((isObject || (realType == valueType || realType == underlyingType) && !AreEquivalent(valueType, underlyingType)) && TryEmitILConstant(ilg, value, underlyingType))
+                            {
+                                if (isObject)
+                                {
+                                    if (realType.IsValueType)
+                                    {
+                                        ilg.Emit(OpCodes.Box, realType);
+                                    }
+                                }
+                                else if (valueType.IsNullable())
+                                {
+                                    ilg.Emit(OpCodes.Newobj, valueType.GetConstructor(new Type[1] { underlyingType }));
+                                }
+
+                                return;
+                            }
+                        }
+
+                        if (realType != valueType)
                         {
                             value = Convert.ChangeType(value, valueType);
                         }
@@ -1000,6 +1277,23 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
+        /// 生成类型默认值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="defaultType">类型。</param>
+        public static void EmitDefaultOfType(ILGenerator ilg, Type defaultType)
+        {
+            if (defaultType.IsByRef)
+            {
+                EmitByRef(ilg, defaultType.GetElementType());
+            }
+            else
+            {
+                Emit(ilg, defaultType);
+            }
+        }
+
+        /// <summary>
         /// 类型转换。
         /// </summary>
         /// <param name="ilg">指令。</param>
@@ -1008,7 +1302,7 @@ namespace CodeArts.Emit
         /// <param name="isChecked">类型检查。</param>
         public static void EmitConvertToType(ILGenerator ilg, Type typeFrom, Type typeTo, bool isChecked = true)
         {
-            if (AreEquivalent(typeFrom, typeTo))
+            if (EqualSignatureTypes(typeFrom, typeTo))
             {
                 return;
             }
@@ -1039,7 +1333,6 @@ namespace CodeArts.Emit
             }
             else if (typeFrom.IsArray && typeTo.IsArray)
             {
-                // See DevDiv Bugs #94657.
                 EmitCastToType(ilg, typeFrom, typeTo);
             }
             else

@@ -24,7 +24,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 #if NET40
                     Task.Factory.StartNew(() => base.RealizeService(callSite));
 #else
-
                     Task.Run(() => base.RealizeService(callSite));
 #endif
                 }

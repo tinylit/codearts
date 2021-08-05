@@ -85,9 +85,9 @@ namespace CodeArts.Proxies
                         continue;
                     }
 
-                    if (interceptMethods.ContainsKey(methodInfo))
+                    if (interceptMethods.TryGetValue(methodInfo, out var intercepts))
                     {
-                        throw new NotSupportedException($"{methodInfo.ReturnType.Name} “{methodInfo.Name}({string.Join(",", methodInfo.GetParameters().Select(x => string.Concat(x.ParameterType.Name, " ", x.Name)))})”重复定义!");
+                        interceptMethods[methodInfo] = Merge(intercepts, interceptAttributes);
                     }
                     else
                     {
@@ -219,11 +219,6 @@ namespace CodeArts.Proxies
 
                 foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
-                    if (methodInfo.IsSpecialName)
-                    {
-                        continue;
-                    }
-
                     var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
                         ? Merge(attributes, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
                         : attributes;
@@ -233,9 +228,9 @@ namespace CodeArts.Proxies
                         continue;
                     }
 
-                    if (interceptMethods.ContainsKey(methodInfo))
+                    if (interceptMethods.TryGetValue(methodInfo, out var intercepts))
                     {
-                        throw new NotSupportedException($"{methodInfo.ReturnType.Name} “{methodInfo.Name}({string.Join(",", methodInfo.GetParameters().Select(x => string.Concat(x.ParameterType.Name, " ", x.Name)))})”重复定义!");
+                        interceptMethods[methodInfo] = Merge(intercepts, interceptAttributes);
                     }
                     else
                     {
@@ -256,11 +251,6 @@ namespace CodeArts.Proxies
 
                 foreach (var methodInfo in iterationType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
-                    if (methodInfo.IsSpecialName)
-                    {
-                        continue;
-                    }
-
                     var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
                         ? Merge(intercepts, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
                         : intercepts;
@@ -272,7 +262,7 @@ namespace CodeArts.Proxies
 
                     if (interceptMethods.TryGetValue(methodInfo, out var attributes))
                     {
-                        interceptMethods[methodInfo] = Merge(interceptAttributes, attributes);
+                        interceptMethods[methodInfo] = Merge(attributes, interceptAttributes);
                     }
                     else
                     {

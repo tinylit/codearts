@@ -283,7 +283,7 @@ namespace CodeArts.Db.EntityFramework
                 foreach (var item in list)
                 {
 #if NETSTANDARD2_0_OR_GREATER
-                    await item.CommitAsync().ConfigureAwait(false);
+                    await item.CommitAsync(cancellationToken).ConfigureAwait(false);
 #else
                     item.Commit();
 #endif
@@ -294,7 +294,7 @@ namespace CodeArts.Db.EntityFramework
                 foreach (var item in list)
                 {
 #if NETSTANDARD2_0_OR_GREATER
-                    await item.RollbackAsync().ConfigureAwait(false);
+                    await item.RollbackAsync(cancellationToken).ConfigureAwait(false);
 #else
                     item.Rollback();
 #endif

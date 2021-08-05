@@ -39,7 +39,10 @@ namespace CodeArts.Emit.Expressions
                 }
             }
 
-            var parameterInfos = methodInfo.GetParameters();
+            var parameterInfos = methodInfo.IsGenericMethod
+                ? methodInfo.GetGenericMethodDefinition()
+                    .GetParameters()
+                : methodInfo.GetParameters();
 
             if (arguments.Length != parameterInfos.Length)
             {
@@ -50,7 +53,7 @@ namespace CodeArts.Emit.Expressions
             {
                 if (parameterInfos.Zip(arguments, (x, y) =>
                  {
-                     return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType) || EqualSignatureTypes(x.ParameterType, y.RuntimeType);
+                     return EmitUtils.EqualSignatureTypes(x.ParameterType, y.RuntimeType) || x.ParameterType.IsAssignableFrom(y.RuntimeType);
                  }).All(x => x))
                 {
                     return dynamicMethod.ReturnType;
@@ -148,58 +151,6 @@ namespace CodeArts.Emit.Expressions
                     ilg.Emit(OpCodes.Callvirt, methodInfo);
                 }
             }
-        }
-
-        private static bool EqualSignatureTypes(Type x, Type y)
-        {
-            if (x.IsGenericParameter != y.IsGenericParameter)
-            {
-                return false;
-            }
-            else if (x.IsGenericType != y.IsGenericType)
-            {
-                return false;
-            }
-
-            if (x.IsGenericParameter)
-            {
-                if (x.GenericParameterPosition != y.GenericParameterPosition)
-                {
-                    return false;
-                }
-            }
-            else if (x.IsGenericType)
-            {
-                var xGenericTypeDef = x.GetGenericTypeDefinition();
-                var yGenericTypeDef = y.GetGenericTypeDefinition();
-
-                if (xGenericTypeDef != yGenericTypeDef)
-                {
-                    return false;
-                }
-
-                var xArgs = x.GetGenericArguments();
-                var yArgs = y.GetGenericArguments();
-
-                if (xArgs.Length != yArgs.Length)
-                {
-                    return false;
-                }
-
-                for (var i = 0; i < xArgs.Length; ++i)
-                {
-                    if (!EqualSignatureTypes(xArgs[i], yArgs[i]))
-                        return false;
-                }
-            }
-            else
-            {
-                if (!x.Equals(y))
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }

@@ -32,7 +32,7 @@ namespace CodeArts.Db.EntityFramework
     /// 仓库。
     /// </summary>
     public interface ILinqRepository<TEntity> : IQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IEnumerable
-        where TEntity : class, IEntiy
+        where TEntity : class, IEntiy, new()
     {
         /// <summary>
         ///  Gets an Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry`1 for the given
@@ -146,8 +146,8 @@ namespace CodeArts.Db.EntityFramework
         void Delete(IEnumerable<TEntity> entities);
 
 #if NETSTANDARD2_0
-#region ForEach
-#region ToList/Array
+        #region ForEach
+        #region ToList/Array
 
         /// <summary>
         ///     Asynchronously creates a <see cref="List{T}" /> from an <see cref="IQueryable{T}" /> by enumerating it
@@ -180,7 +180,7 @@ namespace CodeArts.Db.EntityFramework
         /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
         Task<TEntity[]> ToArrayAsync(CancellationToken cancellationToken = default);
 
-#endregion
+        #endregion
 
         /// <summary>
         ///     Asynchronously enumerates the query results and performs the specified action on each element.
@@ -195,7 +195,7 @@ namespace CodeArts.Db.EntityFramework
         /// <exception cref="OperationCanceledException"> If the <see cref="CancellationToken"/> is canceled. </exception>
         Task ForEachAsync(Action<TEntity> action, CancellationToken cancellationToken = default);
 
-#endregion
+        #endregion
 #endif
     }
 
@@ -203,7 +203,7 @@ namespace CodeArts.Db.EntityFramework
     /// 仓库。
     /// </summary>
     public interface ILinqRepository<TEntity, TKey> : ILinqRepository<TEntity>, IQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IEnumerable
-        where TEntity : class, IEntiy<TKey>
+        where TEntity : class, IEntiy<TKey>, new()
         where TKey : IEquatable<TKey>, IComparable<TKey>
     {
         /// <summary>

@@ -23,11 +23,11 @@ namespace Mvc.Core
         public override void ConfigureServices(IServiceCollection services)
         {
             DbConnectionManager.RegisterAdapter(new MySqlLtsAdapter());
+            LinqConnectionManager.RegisterAdapter(new SqlServerLinqAdapter());
             DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
-            LinqConnectionManager.RegisterAdapter(new SqlServerLinqAdapter());
-
-            services.AddDefaultRepositories<EfContext>();
+            services.AddSingleton<IDbTransactionProvider, DbTransactionProvider>()
+                .AddDefaultRepositories<EfContext>();
 
             ModelValidator.CustomValidate<RequiredAttribute>((attr, context) =>
             {

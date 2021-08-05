@@ -180,9 +180,8 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
+        protected override void Assign(ILGenerator ilg, AstExpression value)
         {
-
             if (IsByRef)
             {
                 switch (Position)
@@ -210,20 +209,9 @@ namespace CodeArts.Emit.Expressions
                         ilg.Emit(OpCodes.Ldarg, Position);
                         break;
                 }
-            }
-            else if (Position < byte.MaxValue)
-            {
-                ilg.Emit(OpCodes.Starg_S, (byte)Position);
-            }
-            else
-            {
-                ilg.Emit(OpCodes.Starg, Position);
-            }
 
-            value.Load(ilg);
+                value.Load(ilg);
 
-            if (IsByRef)
-            {
                 var type = RuntimeType.GetElementType();
 
                 if (type.IsValueType && type.IsEnum)
@@ -291,6 +279,19 @@ namespace CodeArts.Emit.Expressions
                 else
                 {
                     ilg.Emit(OpCodes.Stind_Ref);
+                }
+            }
+            else
+            {
+                value.Load(ilg);
+
+                if (Position < byte.MaxValue)
+                {
+                    ilg.Emit(OpCodes.Starg_S, (byte)Position);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Starg, Position);
                 }
             }
         }

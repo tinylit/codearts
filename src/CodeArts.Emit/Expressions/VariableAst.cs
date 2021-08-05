@@ -15,27 +15,27 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 构造函数。
         /// </summary>
-        /// <param name="returnType">类型。</param>
-        public VariableAst(Type returnType) : base(returnType)
+        /// <param name="variableType">类型。</param>
+        public VariableAst(Type variableType) : base(variableType)
         {
         }
-
+#if NET40_OR_GREATER
+        private readonly string name;
         /// <summary>
-        /// 声明。
+        /// 构造函数。
         /// </summary>
-        /// <param name="ilg">指令。</param>
-        internal void Declare(ILGenerator ilg)
+        /// <param name="variableType">类型。</param>
+        /// <param name="name">变量名称。</param>
+        public VariableAst(Type variableType, string name) : base(variableType)
         {
-            if(local is null)
+            if (string.IsNullOrEmpty(name))
             {
-                local = ilg.DeclareLocal(RuntimeType);
+                throw new ArgumentException($"“{nameof(name)}”不能为 null 或空。", nameof(name));
             }
-        }
 
-        /// <summary>
-        /// 变量。
-        /// </summary>
-        internal LocalBuilder Value => local ?? throw new AstException("变量未声明!");
+            this.name = name;
+        }
+#endif
 
         /// <summary>
         /// 是否可写。
@@ -48,7 +48,18 @@ namespace CodeArts.Emit.Expressions
         /// <param name="ilg">指令。</param>
         public override void Load(ILGenerator ilg)
         {
-            ilg.Emit(OpCodes.Ldloc, Value);
+            if (local is null)
+            {
+                local = ilg.DeclareLocal(RuntimeType);
+#if NET40_OR_GREATER
+                if (name?.Length > 0)
+                {
+                    local.SetLocalSymInfo(name);
+                }
+#endif
+            }
+
+            ilg.Emit(OpCodes.Ldloc, local);
         }
 
         /// <summary>
@@ -56,11 +67,23 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
+        protected override void Assign(ILGenerator ilg, AstExpression value)
         {
             value.Load(ilg);
 
-            ilg.Emit(OpCodes.Stloc, Value);
+            if (local is null)
+            {
+                local = ilg.DeclareLocal(RuntimeType);
+
+#if NET40_OR_GREATER
+                if (name?.Length > 0)
+                {
+                    local.SetLocalSymInfo(name);
+                }
+#endif
+            }
+
+            ilg.Emit(OpCodes.Stloc, local);
         }
     }
 }

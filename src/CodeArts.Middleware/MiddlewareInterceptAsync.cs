@@ -36,7 +36,7 @@ namespace CodeArts.Middleware
         /// 调用方法。
         /// </summary>
         /// <param name="context">上下文。</param>
-        public override Task RunAsync(InterceptAsyncContext context) => middleware.RunAsync(context, intercept);
+        public override Task RunAsync(InterceptContext context) => middleware.RunAsync(context, intercept);
     }
 
     /// <summary>
@@ -72,6 +72,6 @@ namespace CodeArts.Middleware
         /// 调用方法。
         /// </summary>
         /// <param name="context">上下文。</param>
-        public override Task<T> RunAsync(InterceptAsyncContext context) => middleware.RunAsync(context, intercept);
+        public override Task<T> RunAsync(InterceptContext context) => middleware.RunAsync(context, intercept);
     }
 }

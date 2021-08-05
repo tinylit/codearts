@@ -85,28 +85,19 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        protected override void AssignCore(ILGenerator ilg, AstExpression value)
+        protected override void Assign(ILGenerator ilg, AstExpression value)
         {
             if (index == -1)
             {
-                if (indexExp is VariableAst variable)
-                {
-                    array.Load(ilg);
+                var local = ilg.DeclareLocal(typeof(int));
 
-                    ilg.Emit(OpCodes.Ldc_I4, variable.Value);
-                }
-                else
-                {
-                    var local = ilg.DeclareLocal(typeof(int));
+                indexExp.Load(ilg);
 
-                    indexExp.Load(ilg);
+                ilg.Emit(OpCodes.Stloc, local);
 
-                    ilg.Emit(OpCodes.Stloc, local);
+                array.Load(ilg);
 
-                    array.Load(ilg);
-
-                    ilg.Emit(OpCodes.Ldc_I4, local);
-                }
+                ilg.Emit(OpCodes.Ldc_I4, local);
             }
             else
             {

@@ -28,12 +28,12 @@ namespace CodeArts.Db
         string Length { get; }
 
         /// <summary>
-        /// 索引交换位置（默认：value.indexOf("x")=>IndexOfMethod(value,"x")）。
+        /// 索引交换位置（默认：value.indexOf("x") => IndexOfMethod(value,"x")）。
         /// </summary>
         bool IndexOfSwapPlaces { get; }
 
         /// <summary>
-        /// 格式化集合（用作ISQL.ToString(ISQLCorrectSimSettings settings)矫正SQL语句使用）。
+        /// 格式化集合（用作“<see cref="SQL.ToString(ISQLCorrectSettings)"/>”矫正SQL语句使用）。
         /// </summary>
         ICollection<IFormatter> Formatters { get; }
 

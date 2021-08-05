@@ -11,7 +11,6 @@ namespace Mvc.Core.Dtos
     /// </summary>
     public class UserDto
     {
-
         /// <summary>
         /// 用户ID。
         /// </summary>

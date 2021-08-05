@@ -28,13 +28,17 @@ namespace CodeArts.Emit.Expressions
         /// <param name="type">值类型。</param>
         public ConstantAst(object value, Type type) : base(type)
         {
-            if (value is null || value.GetType() == type || type.IsAssignableFrom(value.GetType()))
+            if (value is null)
             {
                 if (type.IsValueType && !type.IsNullable())
                 {
-                    throw new NotSupportedException($"常量null，不能对值类型({RuntimeType})进行转换!");
+                    throw new NotSupportedException($"常量null，不能对值类型({type})进行转换!");
                 }
 
+                this.value = value;
+            }
+            else if (value is Type returnType ? returnType == type : value.GetType() == type || type.IsAssignableFrom(value.GetType()))
+            {
                 this.value = value;
             }
             else

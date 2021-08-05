@@ -145,16 +145,6 @@ namespace CodeArts.Emit
 
             base.Load(ilg);
 
-            if (IsLastReturn)
-            {
-                return;
-            }
-
-            if (!IsEmpty && RuntimeType == typeof(void))
-            {
-                ilg.Emit(OpCodes.Nop);
-            }
-
             ilg.Emit(OpCodes.Ret);
         }
 

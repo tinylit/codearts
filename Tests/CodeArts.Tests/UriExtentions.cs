@@ -138,6 +138,7 @@ namespace CodeArts.Tests
 
             var token = await "http://localhost:56324/login".AsRequestable()
                 .AppendQueryString("?account=ljl&password=liujialin&debug=true")
+                .AssignHeader("Authorization", "Bearer 3506555d8a256b82211a62305b6dx317")
                 .TryThenAsync((requestable, e) =>
                 {
                     requestable.AppendQueryString("debug=false");
@@ -145,10 +146,10 @@ namespace CodeArts.Tests
 
                     return Task.CompletedTask;
                 })
-                .If(e => true) // 当认真过期时，才会执行上一个TryThen。
-                .And(e => true)
+                .If(e => e.Status == WebExceptionStatus.ProtocolError) // 当认真过期时，才会执行上一个TryThen。
+                .And(e => e.Response is HttpWebResponse response && response.StatusCode == HttpStatusCode.Unauthorized)
                 .TryIf(e => e.Status == WebExceptionStatus.Timeout)
-                .Or(e => true)
+                .Or(e => e.Status == WebExceptionStatus.UnknownError)
                 .RetryCount(2) // 设置重试次数
                 .RetryInterval(500)//重试间隔时长。
                 .WebCatch(e => { })
@@ -266,13 +267,16 @@ namespace CodeArts.Tests
             RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var value = await "http://localhost:49683/weatherforecast".AsRequestable()
-             .Form(new
+             .Json(new
              {
                  Date = DateTime.Now,
                  TemperatureC = 1,
                  Summary = 50
              })
-             .JsonCast(new Dictionary<string, string>())
+             .JsonCast<ServResult>()
+             .DataVerify(r => r.Success)
+             .ResendCount(2)
+             .ResendInterval((e, i) => i * i * 500)
              .PostAsync();
         }
     }

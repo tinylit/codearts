@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using static System.Linq.Expressions.Expression;
@@ -21,6 +22,21 @@ namespace CodeArts
         private static readonly ConcurrentDictionary<Type, Func<object>> EmptyCache = new ConcurrentDictionary<Type, Func<object>>();
 
         private static readonly MethodInfo EmptyMethodInfo = typeof(Emptyable).GetMethod(nameof(Empty), new Type[] { typeof(Type) });
+
+        /// <summary>
+        /// 注册类型解决方案。
+        /// </summary>
+        /// <typeparam name="T">类型。</typeparam>
+        /// <param name="instance">实例。</param>
+        public static void Register<T>(T instance) where T : class
+        {
+            if (instance is null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            DefaultCache.TryAdd(typeof(T), instance);
+        }
 
         /// <summary>
         /// 注册类型解决方案。
@@ -154,6 +170,14 @@ namespace CodeArts
         {
             if (typeEmpty.IsValueType)
             {
+                if (typeEmpty.IsNullable())
+                {
+                    return DefaultCache.GetOrAdd(typeEmpty, type =>
+                    {
+                        return Activator.CreateInstance(type, Empty(Nullable.GetUnderlyingType(type)));
+                    });
+                }
+
                 return DefaultCache.GetOrAdd(typeEmpty, Activator.CreateInstance);
             }
 
@@ -189,12 +213,14 @@ namespace CodeArts
 
             valueFactory = EmptyCache.GetOrAdd(typeEmpty, type =>
             {
-                foreach (var constructorInfo in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var constructorInfo in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                    .OrderByDescending(x => x.GetParameters().Length))
                 {
                     return DoneCreateInstance(constructorInfo);
                 }
 
-                foreach (var constructorInfo in type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance))
+                foreach (var constructorInfo in type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+                    .OrderByDescending(x => x.GetParameters().Length))
                 {
                     return DoneCreateInstance(constructorInfo);
                 }
@@ -223,11 +249,11 @@ namespace CodeArts
                 {
                     var parameterInfo = parameters[i];
 
-                    if (parameterInfo.IsOptional)
+                    if (parameterInfo.IsOptional && parameterInfo.DefaultValue != null && parameterInfo.DefaultValue != DBNull.Value)
                     {
                         expressions[i] = Constant(parameterInfo.DefaultValue);
                     }
-                    else if (parameterInfo.ParameterType.IsValueType)
+                    else if (parameterInfo.ParameterType.IsValueType && !parameterInfo.ParameterType.IsNullable())
                     {
                         expressions[i] = Default(parameterInfo.ParameterType);
                     }
@@ -254,6 +280,11 @@ namespace CodeArts
 
             if (type.IsValueType)
             {
+                if (type.IsNullable())
+                {
+                    return (T)Empty(type);
+                }
+
                 return default;
             }
 

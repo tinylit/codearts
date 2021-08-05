@@ -11,7 +11,7 @@ namespace CodeArts.Emit.Expressions
         /// <summary>
         /// 引用。
         /// </summary>
-        public AstExpression Expression { set; get; } = ThisAst.Instance;
+        public AstExpression Expression { set; get; } = This;
 
         /// <summary>
         /// 构造函数。
@@ -61,49 +61,18 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="value">值。</param>
-        public sealed override void Assign(ILGenerator ilg, AstExpression value)
+        protected virtual void AssignCore(ILGenerator ilg, AstExpression value) => throw new NotImplementedException();
+
+        /// <summary>
+        /// 赋值。
+        /// </summary>
+        /// <param name="ilg">指令。</param>
+        /// <param name="value">值。</param>
+        protected sealed override void Assign(ILGenerator ilg, AstExpression value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            Expression?.Load(ilg);
 
-            var returnType = RuntimeType;
-
-            if (returnType == typeof(void))
-            {
-                throw new AstException("不能对无返回值类型进行赋值运算!");
-            }
-
-            if (value is ThisAst)
-            {
-                goto label_core;
-            }
-
-            var valueType = value.RuntimeType;
-
-            if (valueType == typeof(void))
-            {
-                throw new AstException("无返回值类型赋值不能用于赋值运算!");
-            }
-
-            if (valueType != returnType && !returnType.IsAssignableFrom(valueType) && (valueType.IsByRef ? valueType.GetElementType() : valueType) != (returnType.IsByRef ? returnType.GetElementType() : returnType))
-            {
-                throw new AstException("值表达式类型和当前表达式类型不相同!");
-            }
-
-            label_core:
-
-            if (CanWrite)
-            {
-                Expression?.Load(ilg);
-
-                AssignCore(ilg, value);
-            }
-            else
-            {
-                throw new AstException("当前表达式不可写!");
-            }
+            AssignCore(ilg, value);
         }
     }
 }

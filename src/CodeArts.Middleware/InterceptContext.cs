@@ -35,10 +35,5 @@ namespace CodeArts.Middleware
         /// 输入参数。
         /// </summary>
         public object[] Inputs { get; }
-
-        /// <summary>
-        /// 返回值。
-        /// </summary>
-        public object ReturnValue { get; set; }
     }
 }

@@ -11,7 +11,7 @@ namespace CodeArts.Emit
     /// <summary>
     /// 参数成员。
     /// </summary>
-    [DebuggerDisplay("{ReturnType.Name} {ParameterName}")]
+    [DebuggerDisplay("{RuntimeType.Name} {ParameterName}")]
     public class ParameterEmitter : ParameterAst
     {
         private object defaultValue;

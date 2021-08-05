@@ -1,22 +1,60 @@
 ﻿#if NETSTANDARD2_0_OR_GREATER
+using Microsoft.EntityFrameworkCore;
+#else
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Data.Entity;
+#endif
+using System;
 using CodeArts.Db;
 using CodeArts.Db.EntityFramework;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// EF 注入。
+    /// EF/EF Core 注入。
     /// </summary>
     public static class EntityFrameworkServiceCollectionExtentions
     {
         private static readonly Type DbContextType = typeof(DbContext);
+        private static readonly Type IEntiyType = typeof(IEntiy);
+        private static readonly Type IEntity_T1_TypeDefinition = typeof(IEntiy<>);
+        private static readonly Type ILinqRepository_T1_TypeDefinition = typeof(ILinqRepository<>);
+        private static readonly Type ILinqRepository_T1_T2_TypeDefinition = typeof(ILinqRepository<,>);
+        private static readonly Type LinqRepository_T1_T2_TypeDefinition = typeof(LinqRepository<,>);
+        private static readonly Type LinqRepository_T1_T2_T3_TypeDefinition = typeof(LinqRepository<,,>);
 
+        private class LinqRepository<TContext, TEntity> : LinqRepository<TEntity>, ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable
+            where TContext : DbContext
+            where TEntity : class, IEntiy, new()
+        {
+            public LinqRepository(TContext context) : base(context)
+            {
+            }
+        }
+
+        private class LinqRepository<TContext, TEntity, TKey> : CodeArts.Db.EntityFramework.LinqRepository<TEntity, TKey>, ILinqRepository<TEntity, TKey>, ILinqRepository<TEntity>, ILinqRepository, IQueryable<TEntity>, IOrderedQueryable<TEntity>, IEnumerable<TEntity>, IQueryable, IOrderedQueryable, IEnumerable
+            where TContext : DbContext
+            where TEntity : class, IEntiy<TKey>, new()
+            where TKey : IEquatable<TKey>, IComparable<TKey>
+        {
+            public LinqRepository(TContext context) : base(context)
+            {
+            }
+        }
+
+#if NET40_OR_GREATER
+        /// <summary>
+        /// 注册上下文（并注册上下文中数据表的仓库支持）。
+        /// </summary>
+        /// <typeparam name="TContext">数据库上下文。</typeparam>
+        /// <param name="services">服务集合。</param>
+        /// <param name="lifetime">在容器中注册仓库和DbContext服务的生存期。</param>
+        /// <returns></returns>
+        public static IServiceCollection AddDefaultRepositories<TContext>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped) where TContext : DbContext
+#else
         /// <summary>
         /// 注册上下文（并注册上下文中数据表的仓库支持）。
         /// </summary>
@@ -26,6 +64,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="optionsLifetime">在容器中注册DbContextOptions服务的生存期。</param>
         /// <returns></returns>
         public static IServiceCollection AddDefaultRepositories<TContext>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped, ServiceLifetime optionsLifetime = ServiceLifetime.Scoped) where TContext : DbContext
+#endif
         {
             var contextType = typeof(TContext);
 
@@ -37,7 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     var entityType = x.PropertyType.GetGenericArguments()[0];
 
-                    if (!typeof(IEntiy).IsAssignableFrom(entityType))
+                    if (!IEntiyType.IsAssignableFrom(entityType))
                     {
                         return;
                     }
@@ -54,7 +93,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         {
                             foreach (var interfaceType in interfaces)
                             {
-                                if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IEntiy<>))
+                                if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == IEntity_T1_TypeDefinition)
                                 {
                                     keyType = interfaceType.GetGenericArguments()[0];
 
@@ -65,61 +104,36 @@ namespace Microsoft.Extensions.DependencyInjection
                             }
                         }
 
-                        targetType = targetType.BaseType;
-
-                        if (flag || targetType is null || targetType == typeof(object))
+                        if (flag)
                         {
                             break;
                         }
 
-                    } while (true);
+                        targetType = targetType.BaseType;
+
+                    } while (!(targetType is null || targetType == typeof(object)));
 
                     if (flag)
                     {
-                        var repositoryType2 = typeof(LinqRepository<,>).MakeGenericType(entityType, keyType);
-
-                        services.Add(new ServiceDescriptor(typeof(ILinqRepository<,>).MakeGenericType(entityType, keyType), CreateNewInstance(repositoryType2, contextType), lifetime));
+                        services.Add(new ServiceDescriptor(
+                            ILinqRepository_T1_T2_TypeDefinition.MakeGenericType(entityType, keyType),
+                            LinqRepository_T1_T2_T3_TypeDefinition.MakeGenericType(contextType, entityType, keyType),
+                            lifetime));
                     }
 
-                    var repositoryType = typeof(LinqRepository<>).MakeGenericType(entityType);
-
-                    services.Add(new ServiceDescriptor(typeof(ILinqRepository<>).MakeGenericType(entityType), CreateNewInstance(repositoryType, contextType), lifetime));
+                    services.Add(new ServiceDescriptor(
+                        ILinqRepository_T1_TypeDefinition.MakeGenericType(entityType),
+                        LinqRepository_T1_T2_TypeDefinition.MakeGenericType(contextType, entityType),
+                        lifetime));
                 });
 
+#if NET40_OR_GREATER
+            services.TryAdd(new ServiceDescriptor(typeof(TContext), typeof(TContext), lifetime));
+
+            return services;
+#else
             return services.AddDbContext<TContext>(lifetime, optionsLifetime);
-        }
-
-        private readonly static MethodInfo GetServiceMtd = typeof(IServiceProvider).GetMethod(nameof(IServiceProvider.GetService));
-
-        private static Func<IServiceProvider, object> CreateNewInstance(Type repositoryType, Type contextType)
-        {
-            foreach (var item in repositoryType.GetConstructors())
-            {
-                var parameters = item.GetParameters();
-
-                if (parameters.Length != 1)
-                {
-                    continue;
-                }
-
-                if (!parameters.All(x => contextType == x.ParameterType || x.ParameterType == DbContextType))
-                {
-                    continue;
-                }
-
-                var serviceProExp = Expression.Parameter(typeof(IServiceProvider));
-
-                var callExp = Expression.Call(serviceProExp, GetServiceMtd, Expression.Constant(contextType));
-
-                var newExp = Expression.New(item, new Expression[1] { Expression.Convert(callExp, contextType) });
-
-                var lambdaEx = Expression.Lambda<Func<IServiceProvider, object>>(newExp, serviceProExp);
-
-                return lambdaEx.Compile();
-            }
-
-            throw new NotSupportedException($"默认仓库未声明{repositoryType.Name}({contextType.Name} context)构造函数！");
+#endif
         }
     }
 }
-#endif
