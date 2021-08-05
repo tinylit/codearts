@@ -69,8 +69,6 @@ namespace CodeArts.Emit.Expressions
         /// <param name="value">值。</param>
         protected override void Assign(ILGenerator ilg, AstExpression value)
         {
-            value.Load(ilg);
-
             if (local is null)
             {
                 local = ilg.DeclareLocal(RuntimeType);
@@ -82,6 +80,8 @@ namespace CodeArts.Emit.Expressions
                 }
 #endif
             }
+
+            value.Load(ilg);
 
             ilg.Emit(OpCodes.Stloc, local);
         }

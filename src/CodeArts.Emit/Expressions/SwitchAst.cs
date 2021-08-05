@@ -103,9 +103,16 @@ namespace CodeArts.Emit.Expressions
 
             public void EmitEqual(ILGenerator ilg)
             {
-                if (variableAst.RuntimeType.IsNullable())
+                if (variableAst.RuntimeType.IsValueType)
                 {
-                    ilg.Emit(OpCodes.Isinst, Nullable.GetUnderlyingType(variableAst.RuntimeType));
+                    if (variableAst.RuntimeType.IsNullable())
+                    {
+                        ilg.Emit(OpCodes.Isinst, Nullable.GetUnderlyingType(variableAst.RuntimeType));
+                    }
+                    else
+                    {
+                        ilg.Emit(OpCodes.Isinst, variableAst.RuntimeType);
+                    }
                 }
                 else
                 {
@@ -113,7 +120,7 @@ namespace CodeArts.Emit.Expressions
                 }
             }
 
-            public OpCode Equal_S => OpCodes.Brtrue_S;
+            public OpCode Equal_S => variableAst.RuntimeType.IsValueType ? OpCodes.Brfalse_S : OpCodes.Brtrue_S;
 
             ICaseHandler ICaseHandler.Append(AstExpression code)
             {
@@ -123,7 +130,7 @@ namespace CodeArts.Emit.Expressions
             }
             void IPrivateCaseHandler.Emit(ILGenerator ilg, MyVariableAst variable, LocalBuilder local, Label label)
             {
-                Assign(variableAst, TypeAs(variable, variableAst.RuntimeType))
+                Assign(variableAst, Convert(variable, variableAst.RuntimeType))
                     .Load(ilg);
 
                 Emit(ilg, local, label);
@@ -131,7 +138,7 @@ namespace CodeArts.Emit.Expressions
 
             void IPrivateCaseHandler.EmitVoid(ILGenerator ilg, MyVariableAst variable, Label label)
             {
-                Assign(variableAst, TypeAs(variable, variableAst.RuntimeType))
+                Assign(variableAst, Convert(variable, variableAst.RuntimeType))
                     .Load(ilg);
 
                 EmitVoid(ilg, label);
@@ -372,8 +379,9 @@ namespace CodeArts.Emit.Expressions
         /// 发行变量和代码块(无返回值)。
         /// </summary>
         /// <param name="ilg">指令。</param>
-        /// <param name="label">跳转位置。</param>
-        protected virtual void EmitVoid(ILGenerator ilg, Label label)
+        /// <param name="labelBreak">跳转位置。</param>
+        /// <param name="labelReturn">返回结果。</param>
+        protected virtual void EmitVoid(ILGenerator ilg, Label labelBreak, Label labelReturn)
         {
             LocalBuilder variable = ilg.DeclareLocal(switchValue.RuntimeType);
 
@@ -398,27 +406,31 @@ namespace CodeArts.Emit.Expressions
 
                 switchCase.EmitEqual(ilg);
 
-                var caseLabel = ilg.DefineLabel();
+                if (switchCase.Equal_S == OpCodes.Brfalse_S)
+                {
+                    ilg.Emit(switchCase.Equal_S, labels[i]);
 
-                ilg.Emit(switchCase.Equal_S, caseLabel);
+                    switchCase.EmitVoid(ilg, new MyVariableAst(variable), labelReturn);
+                }
+                else
+                {
+                    var caseLabel = ilg.DefineLabel();
 
-                ilg.Emit(OpCodes.Br_S, labels[i]);
+                    ilg.Emit(switchCase.Equal_S, caseLabel);
 
-                ilg.MarkLabel(caseLabel);
+                    ilg.Emit(OpCodes.Br_S, labels[i]);
 
-                switchCase.EmitVoid(ilg, new MyVariableAst(variable), label);
+                    ilg.MarkLabel(caseLabel);
 
-                ilg.Emit(OpCodes.Br_S, label);
+                    switchCase.EmitVoid(ilg, new MyVariableAst(variable), labelReturn);
+                }
+
+                ilg.Emit(OpCodes.Br_S, labelBreak);
 
                 ilg.MarkLabel(labels[i]);
             }
 
-            if (defaultAst is null)
-            {
-                return;
-            }
-
-            FlowControl(defaultAst, ilg, label);
+            FlowControl(defaultAst, ilg, labelReturn);
         }
 
         /// <summary>
@@ -429,7 +441,7 @@ namespace CodeArts.Emit.Expressions
         {
             Label label = ilg.DefineLabel();
 
-            EmitVoid(ilg, label);
+            EmitVoid(ilg, label, label);
 
             ilg.MarkLabel(label);
         }
@@ -439,8 +451,9 @@ namespace CodeArts.Emit.Expressions
         /// </summary>
         /// <param name="ilg">指令。</param>
         /// <param name="local">存储结果的变量。</param>
-        /// <param name="label">跳转位置。</param>
-        protected virtual void Emit(ILGenerator ilg, LocalBuilder local, Label label)
+        /// <param name="labelBreak">跳转位置。</param>
+        /// <param name="labelReturn">返回结果。</param>
+        protected virtual void Emit(ILGenerator ilg, LocalBuilder local, Label labelBreak, Label labelReturn)
         {
             LocalBuilder variable = ilg.DeclareLocal(switchValue.RuntimeType);
 
@@ -473,19 +486,14 @@ namespace CodeArts.Emit.Expressions
 
                 ilg.MarkLabel(caseLabel);
 
-                switchCase.Emit(ilg, new MyVariableAst(variable), local, label);
+                switchCase.Emit(ilg, new MyVariableAst(variable), local, labelReturn);
 
-                ilg.Emit(OpCodes.Br_S, label);
+                ilg.Emit(OpCodes.Br_S, labelBreak);
 
                 ilg.MarkLabel(labels[i]);
             }
 
-            if (defaultAst is null)
-            {
-                return;
-            }
-
-            FlowControl(defaultAst, ilg, local, label);
+            FlowControl(defaultAst, ilg, local, labelReturn);
         }
 
         /// <summary>
@@ -498,7 +506,7 @@ namespace CodeArts.Emit.Expressions
 
             Label label = ilg.DefineLabel();
 
-            Emit(ilg, variable, label);
+            Emit(ilg, variable, label, label);
 
             ilg.MarkLabel(label);
 

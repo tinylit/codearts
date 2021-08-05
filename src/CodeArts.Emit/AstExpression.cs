@@ -213,8 +213,22 @@ namespace CodeArts.Emit
                 this.variable = variable;
                 this.label = label;
             }
-            protected override void Emit(ILGenerator ilg) => Emit(ilg, variable, label);
-            protected override void EmitVoid(ILGenerator ilg) => EmitVoid(ilg, label);
+            protected override void Emit(ILGenerator ilg)
+            {
+                var label = ilg.DefineLabel();
+
+                Emit(ilg, variable, label, this.label);
+
+                ilg.MarkLabel(label);
+            }
+            protected override void EmitVoid(ILGenerator ilg)
+            {
+                var label = ilg.DefineLabel();
+
+                EmitVoid(ilg, label, this.label);
+
+                ilg.MarkLabel(label);
+            }
         }
 
         private class VoidSwitchAst : SwitchAst
@@ -225,8 +239,23 @@ namespace CodeArts.Emit
             {
                 this.label = label;
             }
-            protected override void Emit(ILGenerator ilg) => EmitVoid(ilg, label);
-            protected override void EmitVoid(ILGenerator ilg) => EmitVoid(ilg, label);
+            
+            protected override void Emit(ILGenerator ilg)
+            {
+                var label = ilg.DefineLabel();
+
+                EmitVoid(ilg, label, this.label);
+
+                ilg.MarkLabel(label);
+            }
+            protected override void EmitVoid(ILGenerator ilg)
+            {
+                var label = ilg.DefineLabel();
+
+                EmitVoid(ilg, label, this.label);
+
+                ilg.MarkLabel(label);
+            }
         }
 
 

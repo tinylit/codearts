@@ -31,14 +31,13 @@ namespace CodeArts.Emit.Expressions
         {
             if (RuntimeType.IsValueType)
             {
-                var underlyingType = RuntimeType.IsNullable()
-                    ? Nullable.GetUnderlyingType(RuntimeType)
-                    : RuntimeType;
-
                 var local = ilg.DeclareLocal(RuntimeType);
 
                 var label = ilg.DefineLabel();
-                var leave = ilg.DefineLabel();
+
+                var underlyingType = RuntimeType.IsNullable()
+                    ? Nullable.GetUnderlyingType(RuntimeType)
+                    : RuntimeType;
 
                 body.Load(ilg);
 
@@ -49,15 +48,7 @@ namespace CodeArts.Emit.Expressions
 
                 ilg.Emit(OpCodes.Isinst, underlyingType);
 
-                ilg.Emit(OpCodes.Brtrue_S, label);
-
-                EmitUtils.EmitDefaultOfType(ilg, RuntimeType);
-
-                ilg.Emit(OpCodes.Stloc, local);
-
-                ilg.Emit(OpCodes.Br_S, leave);
-
-                ilg.MarkLabel(label);
+                ilg.Emit(OpCodes.Brfalse_S, label);
 
                 body.Load(ilg);
 
@@ -69,7 +60,8 @@ namespace CodeArts.Emit.Expressions
                 ilg.Emit(OpCodes.Unbox_Any, RuntimeType);
 
                 ilg.Emit(OpCodes.Stloc, local);
-                ilg.MarkLabel(leave);
+
+                ilg.MarkLabel(label);
 
                 ilg.Emit(OpCodes.Ldloc, local);
             }

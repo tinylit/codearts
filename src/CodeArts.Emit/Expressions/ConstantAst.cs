@@ -37,7 +37,7 @@ namespace CodeArts.Emit.Expressions
 
                 this.value = value;
             }
-            else if (value is Type returnType ? returnType == type : value.GetType() == type || type.IsAssignableFrom(value.GetType()))
+            else if (value is Type ? type == typeof(Type) : value.GetType() == type || type.IsAssignableFrom(value.GetType()))
             {
                 this.value = value;
             }
