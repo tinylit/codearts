@@ -96,6 +96,7 @@ DbValidator.CustomValidate<RequiredAttribute>((attr, context) =>
 * 支持特殊函数扩展（自定义“ICustomVisitor”接口，添加到适配器中即可）。
 * 使用“SqlCapture”可捕获范围内分析的SQL语句以及参数。
 * 支持大多数常见的字符串属性和函数，以及可空的类型支持。有关详细信息，请参阅单元测试。
+* 详情请查阅：["CodeArts.Db.Linq2Sql"是什么？](./CodeArts.Db.Linq2Sql.md)
   - Unit testing.
     + [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/SqlServerTest.cs)
     + [MySQL](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/MySqlTest.cs)

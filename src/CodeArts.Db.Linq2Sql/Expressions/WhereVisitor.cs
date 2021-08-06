@@ -518,7 +518,7 @@ namespace CodeArts.Db.Expressions
 
             writer.And();
 
-            VisitTail(node.IfTrue);
+            VisitTail(node.IfFalse);
 
             writer.CloseBrace();
         }

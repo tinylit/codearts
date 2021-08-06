@@ -605,7 +605,24 @@ namespace CodeArts.Db
         /// <param name="alias">别名。</param>
         public virtual void NameWhiteSpace(string name, string alias)
         {
-            Name(name);
+            if (name.IndexOf('.') == -1)
+            {
+                Name(name);
+            }
+            else
+            {
+                var names = name.Split('.');
+
+                for (int i = 0, len = names.Length; i <= len; i++)
+                {
+                    Name(names[i]);
+
+                    if (len > i)
+                    {
+                        Write(".");
+                    }
+                }
+            }
 
             if (string.IsNullOrEmpty(alias))
             {
