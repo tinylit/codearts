@@ -1115,20 +1115,43 @@ namespace UnitTest
         {
             var user = new UserRepository();
 
-            var entry = new FeiUsers
+            var list = new List<FeiUsers>(10);
+
+            for (int i = 0; i < 10; i++)
             {
-                Bcid = 0,
-                Username = "admin",
-                Userstatus = 1,
+                list.Add(new FeiUsers
+                {
+                    Bcid = 0,
+                    Username = "admin",
+                    Userstatus = 1,
+                    Mobile = "18980861011",
+                    Email = "tinylit@foxmail.com",
+                    Password = "123456",
+                    Salt = string.Empty,
+                    CreatedTime = DateTime.Now,
+                    ModifiedTime = DateTime.Now
+                });
+            }
+
+            var l = user.AsInsertable(list)
+                .UseTransaction()
+                .ExecuteCommand();
+        }
+
+        [TestMethod]
+        public void InsertRouteTest()
+        {
+            var user = new UserRepository();
+            var details = new UserDetailsRepository();
+
+            var l = user.Insert(details.Take(10).Select(x => new FeiUsers
+            {
+                Username = x.Nickname,
                 Mobile = "18980861011",
                 Email = "tinylit@foxmail.com",
                 Password = "123456",
-                Salt = string.Empty,
-                CreatedTime = DateTime.Now,
-                ModifiedTime = DateTime.Now
-            };
-
-            var i = user.AsInsertable(entry).ExecuteCommand();
+                Salt = string.Empty
+            }));
         }
 
         [TestMethod]
@@ -1200,7 +1223,9 @@ namespace UnitTest
                 .Where(x => x.Username)
                 .ExecuteCommand(120);
 
-            var x2 = user.Delete(x => x.Username == "admi");
+            var username = "admi";
+
+            var x2 = user.Delete(x => x.Username == username);
         }
 
         [TestMethod]

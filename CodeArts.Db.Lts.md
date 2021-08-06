@@ -87,6 +87,220 @@ DbValidator.CustomValidate<RequiredAttribute>((attr, context) =>
 });
 ```
 
+### 特殊语法。
+
+```c#
+/// <summary>
+/// 用户实体。
+/// </summary>
+[Naming(NamingType.UrlCase, Name = "fei_users")]
+public class FeiUsers : BaseEntity<int>
+{
+    /// <summary>
+    /// 用户ID。
+    /// </summary>
+    [Key]
+    [Naming("uid")] // 真实的数据库字段。
+    [ReadOnly(true)]
+    public override int Id { get; set; }
+
+    /// <summary>
+    /// 公司ID。
+    /// </summary>
+    public int Bcid { get; set; }
+
+    /// <summary>
+    /// 用户名。
+    /// </summary>
+    public string Username { get; set; }
+
+    /// <summary>
+    /// 邮箱。
+    /// </summary>
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; }
+
+    /// <summary>
+    /// 电话。
+    /// </summary>
+    public string Mobile { get; set; }
+
+    /// <summary>
+    /// 密码。
+    /// </summary>
+    [Required]
+    public string Password { get; set; }
+
+    /// <summary>
+    /// 角色组。
+    /// </summary>
+    public short Mallagid { get; set; }
+
+    /// <summary>
+    /// 盐。
+    /// </summary>
+    public string Salt { get; set; }
+
+    /// <summary>
+    /// 状态。
+    /// </summary>
+    public int? Userstatus { get; set; }
+
+    /// <summary>
+    /// 创建时间。
+    /// </summary>
+    public DateTime CreatedTime { get; set; }
+
+    /// <summary>
+    /// 修改时间。
+    /// </summary>
+    [DateTimeToken] // Token 在更新时，始终作为更新条件，以达到数据幂等。
+    public DateTime ModifiedTime { get; set; }
+}
+```
+
+- 更新。
+
+  - 数据库路由更新。
+
+    ```c#
+    await user
+        .From(x => x.TableName)
+        .Where(x => x.Username == "admin")
+        .UpdateAsync(x => new FeiUsers
+        {
+              Mallagid = 2,
+              Username = x.Username.Substring(0, 4) // 数据库字段幂等更新。
+        });
+    ```
+
+    ```sql
+    UPDATE [x] SET [mallagid]=2,[username]= CASE WHEN [x].[username] IS NULL THEN NULL WHEN LEN([x].[username]) < 4 THEN @__variable_2 ELSE SUBSTRING([x].[username],1,4) END,[modified_time]=@__variable_3 FROM [fei_users] [x] WHERE ([x].[username] = @__variable_1)
+    ```
+
+    - @__variable_1："admin"
+    - @__variable_2：string.Empty
+    - @__variable_3：字段`ModifiedTime`的`DateTimeToken`标记生成的值。
+
+  - 指定更新。
+
+    ```c#
+    var entry = new FeiUsers
+    {
+        Id = 1011,
+        Bcid = 0,
+        Userstatus = 1,
+        Mobile = "18980861011",
+        Email = "tinylit@foxmail.com",
+        Password = "123456",
+        Salt = string.Empty,
+        CreatedTime = DateTime.Now,
+        ModifiedTime = DateTime.Now
+    };
+    await user.AsUpdateable(entry) // 主键始终会作为更新条件。
+        .Limit(x => x.Password) // 指定更新字段。
+        .Where(x => x.Username ?? x.Mobile) // Username 为null时，使用 Mobile 作为条件。
+        .ExecuteCommandAsync();
+    ```
+    
+    ```sql
+    UPDATE [fei_users] SET [password]=@password,[modified_time]=@__token_modified_time WHERE [uid]=@id AND [mobile]=@mobile AND [modified_time]=@modified_time;
+    ```
+    
+    - 支持批量更新。
+    - @id：主键条件始终生效。
+    - @password：实体的`Password`属性值。
+    - @__token_modified_time：字段`ModifiedTime`的`DateTimeToken`标记生成的值。
+    - @username/@mobile：实体的`Username`属性值为`null`时，生成【mobile】字段条件，否则生成【username】字段条件。
+    - @modified_time：字段`ModifiedTime`的传入值。
+
+- 插入。
+
+  - 数据库路由插入。
+
+    ```c#
+    await user.InsertAsync(details.Take(10).Select(x => new FeiUsers
+    {
+    	Username = x.Nickname,
+    	Mobile = "18980861011",
+    	Email = "tinylit@foxmail.com",
+    	Password = "123456",
+    	Salt = string.Empty
+    }))
+    ```
+
+    ```sql
+    INSERT INTO [fei_users]([username],[mobile],[email],[password],[salt])
+    SELECT TOP (10) [x].[nickname],@__variable_1,@__variable_2,@__variable_3,@__variable_empty FROM [fei_userdetails] [x]
+    ```
+
+    - 只生成指定的字段。
+
+  - 指定插入。
+
+    ```c#
+    var list = new List<FeiUsers>(10);
+    
+    for (int i = 0; i < 10; i++)
+    {
+        list.Add(new FeiUsers
+        {
+            Bcid = 0,
+            Username = "admin",
+            Userstatus = 1,
+            Mobile = "18980861011",
+            Email = "tinylit@foxmail.com",
+            Password = "123456",
+            Salt = string.Empty,
+            CreatedTime = DateTime.Now,
+            ModifiedTime = DateTime.Now
+        });
+    }
+    await user.AsInsertable(list)
+        .UseTransaction() // 启用事务。
+        .ExecuteCommandAsync();
+    ```
+
+    ```sql
+    INSERT INTO [fei_users]([bcid],[username],[email],[mobile],[password],[mallagid],[salt],[userstatus],[created_time],[modified_time]) VALUES (@bcid,@username,@email,@mobile,@password,@mallagid,@salt,@userstatus,@created_time,@modified_time),(@bcid_1,@username_1,@email_1,@mobile_1,@password_1,@mallagid_1,@salt_1,@userstatus_1,@created_time_1,@modified_time_1),(@bcid_2,@username_2,@email_2,@mobile_2,@password_2,@mallagid_2,@salt_2,@userstatus_2,@created_time_2,@modified_time_2),(@bcid_3,@username_3,@email_3,@mobile_3,@password_3,@mallagid_3,@salt_3,@userstatus_3,@created_time_3,@modified_time_3),(@bcid_4,@username_4,@email_4,@mobile_4,@password_4,@mallagid_4,@salt_4,@userstatus_4,@created_time_4,@modified_time_4),(@bcid_5,@username_5,@email_5,@mobile_5,@password_5,@mallagid_5,@salt_5,@userstatus_5,@created_time_5,@modified_time_5),(@bcid_6,@username_6,@email_6,@mobile_6,@password_6,@mallagid_6,@salt_6,@userstatus_6,@created_time_6,@modified_time_6),(@bcid_7,@username_7,@email_7,@mobile_7,@password_7,@mallagid_7,@salt_7,@userstatus_7,@created_time_7,@modified_time_7),(@bcid_8,@username_8,@email_8,@mobile_8,@password_8,@mallagid_8,@salt_8,@userstatus_8,@created_time_8,@modified_time_8),(@bcid_9,@username_9,@email_9,@mobile_9,@password_9,@mallagid_9,@salt_9,@userstatus_9,@created_time_9,@modified_time_9)
+    ```
+
+    - 只读主键，代表由数据库生成，不在SQL中体现。
+
+- 批量删除。
+
+  - 数据库路由删除。
+
+    ```c#
+    string username = "admi";
+    await user.DeleteAsync(x => x.Username == username);
+    ```
+
+    ```c#
+    DELETE [x] FROM [fei_users] [x] WHERE ([x].[username] = @username)
+    ```
+
+    - @username：参数名称优先使用变量名称、参数名称或常量名称。
+
+  - 指定删除。
+
+    ```c#
+    var entry = new FeiUsers
+    {
+        Id = 1011
+    };
+    await user.AsDeleteable(entry)
+        .ExecuteCommandAsync()
+    ```
+
+    ```sql
+    DELETE FROM [fei_users] WHERE uid=@id
+    ```
+
+    - 通过主键删除数据。
+    - 支持批量删除。
+
 #### 说明：
 
 * 参数分析，当实体属性为值类型，且不为Nullable类型时，比较的参数为NULL时，自动忽略该条件。
