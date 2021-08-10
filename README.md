@@ -350,7 +350,7 @@ string value = "{a + b}".PropSugar(new { A = 1, B = 2 }, NamingType.CamelCase); 
 
 * 不能生成非`null`空实例时，抛出异常。
 
-#### 标星历程图。
+### 标星历程图。
 
 [![Stargazers over time](https://starchart.cc/tinylit/CodeArts.svg)](https://starchart.cc/tinylit/CodeArts)
 
