@@ -12,7 +12,6 @@ skip_commits:
     - '**/*.svg'
     - '**/*.json'
     - '**/*.config'
-    - '**/*.sln'
     - '**/*.csproj'
     - '**/*.csproj.user'
     - '*.yml'
