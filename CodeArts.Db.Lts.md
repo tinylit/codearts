@@ -333,7 +333,7 @@ public class DateTimeTicksAttribute : TokenAttribute
 }
 ```
 
-> 实用于任何更新方式。
+> 实用于指定更新方式，**数据库路由也会更新令牌属性**。
 
 #### 说明：
 
