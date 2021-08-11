@@ -474,6 +474,7 @@ await user.AsDeleteable(new User { Id = 1011, Name = "影子和树", Version = 1
     + [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/SqlServerTest.cs)
     + [MySQL](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/MySqlTest.cs)
 
+摘要:
 [^1]:将Id为1101的数据，Name更新为"影子和树"、Version递增，时间戳刷新。
 [^2]:指定字段在排查字段中时，指定字段也会被忽略；只读字段不会被插入。
 [^3]:使用Id作为更新条件，且不更新Id，Name；主键或`TokenAttribute`标记字段，自动作为更新条件。
