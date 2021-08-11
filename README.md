@@ -21,21 +21,22 @@ NuGet 包
 
 | Package | NuGet | Downloads | Jane Says |
 | ------- | ----- | --------- | --------- |
-| [CodeArts](https://www.nuget.org/packages/CodeArts/) | [![CodeArts](https://img.shields.io/nuget/v/CodeArts.svg)](https://www.nuget.org/packages/CodeArts/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts) | Core universal design. |
-| [CodeArts.Middleware](https://www.nuget.org/packages/CodeArts.Middleware/) | [![CodeArts.Middleware](https://img.shields.io/nuget/v/CodeArts.Middleware.svg)](https://www.nuget.org/packages/CodeArts.Middleware/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Middleware) | [IOC middleware.](./CodeArts.Middleware.md) |
-| [CodeArts.Caching](https://www.nuget.org/packages/CodeArts.Caching/) | [![CodeArts.Caching](https://img.shields.io/nuget/v/CodeArts.Caching.svg)](https://www.nuget.org/packages/CodeArts.Caching/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Caching) | [Caching rules.](./CodeArts.Caching.md) |
-| [CodeArts.Casting](https://www.nuget.org/packages/CodeArts.Casting/) | [![CodeArts.Casting](https://img.shields.io/nuget/v/CodeArts.Casting.svg)](https://www.nuget.org/packages/CodeArts.Casting/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Casting) | [Type conversion, cloning, mapping.](./CodeArts.Casting.md) |
-| [CodeArts.Configuration](https://www.nuget.org/packages/CodeArts.Configuration/) | [![CodeArts.Configuration](https://img.shields.io/nuget/v/CodeArts.Configuration.svg)](https://www.nuget.org/packages/CodeArts.Configuration/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Configuration) | [Read configuration file.](./CodeArts.Configuration.md) |
-| [CodeArts.Json](https://www.nuget.org/packages/CodeArts.Json/) | [![CodeArts.Json](https://img.shields.io/nuget/v/CodeArts.Json.svg)](https://www.nuget.org/packages/CodeArts.Json/) | ![Nuget](https://img.shields.io/nuget/dt/Codearts.Json) | [JSON read and write processing.](./CodeArts.Json.md) |
-| [CodeArts.Net](https://www.nuget.org/packages/CodeArts.Net/) | [![CodeArts.Net](https://img.shields.io/nuget/v/CodeArts.Net.svg)](https://www.nuget.org/packages/CodeArts.Net/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Net) | [Request component of HTTP/HTTPS.](./CodeArts.Net.md) |
-| [CodeArts.Emit](https://www.nuget.org/packages/CodeArts.Emit/) | [![CodeArts.Emit](https://img.shields.io/nuget/v/CodeArts.Emit.svg)](https://www.nuget.org/packages/CodeArts.Emit/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Emit) | Abstract Syntax Tree(AST). |
-| [CodeArts.Mvc](https://www.nuget.org/packages/CodeArts.Mvc/) | [![CodeArts.Mvc](https://img.shields.io/nuget/v/CodeArts.Mvc.svg)](https://www.nuget.org/packages/CodeArts.Mvc/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Mvc) | [Model View Controller(MVC).](./CodeArts.Mvc.md) |
-| [CodeArts.Db](https://www.nuget.org/packages/CodeArts.Db/) | [![CodeArts.Db](https://img.shields.io/nuget/v/CodeArts.Db.svg)](https://www.nuget.org/packages/CodeArts.Db/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db) | [Database operation base library.](./CodeArts.Db.md) |
-| [CodeArts.Db.Lts](https://www.nuget.org/packages/CodeArts.Db.Lts/) | [![CodeArts.Db.Lts](https://img.shields.io/nuget/v/CodeArts.Db.Lts.svg)](https://www.nuget.org/packages/CodeArts.Db.Lts/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Lts) | [Independent research and development and long term maintenance of ORM.](./CodeArts.Db.Lts.md) |
-| [CodeArts.Db.EntityFramework](https://www.nuget.org/packages/CodeArts.Db.EntityFramework/) | [![CodeArts.Db.EntityFramework](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework) | [EF/EFCore simple package.](./CodeArts.Db.EntityFramework.md) |
-| [CodeArts.Db.Linq2Sql](https://www.nuget.org/packages/CodeArts.Db.Linq2Sql/) | [![CodeArts.Db.Linq2Sql](https://img.shields.io/nuget/v/CodeArts.Db.Linq2Sql.svg)](https://www.nuget.org/packages/CodeArts.Db.Linq2Sql/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Linq2Sql) | [Linq to SQL.](./CodeArts.Db.Linq2Sql.md) |
+| CodeArts | [![CodeArts](https://img.shields.io/nuget/v/CodeArts.svg)](https://www.nuget.org/packages/CodeArts/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts) | Core universal design. |
+| CodeArts.Middleware | [![CodeArts.Middleware](https://img.shields.io/nuget/v/CodeArts.Middleware.svg)](https://www.nuget.org/packages/CodeArts.Middleware/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Middleware) | [IOC middleware.](./CodeArts.Middleware.md) |
+| CodeArts.Caching | [![CodeArts.Caching](https://img.shields.io/nuget/v/CodeArts.Caching.svg)](https://www.nuget.org/packages/CodeArts.Caching/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Caching) | [Caching rules.](./CodeArts.Caching.md) |
+| CodeArts.Casting | [![CodeArts.Casting](https://img.shields.io/nuget/v/CodeArts.Casting.svg)](https://www.nuget.org/packages/CodeArts.Casting/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Casting) | [Type conversion, cloning, mapping.](./CodeArts.Casting.md) |
+| CodeArts.Configuration | [![CodeArts.Configuration](https://img.shields.io/nuget/v/CodeArts.Configuration.svg)](https://www.nuget.org/packages/CodeArts.Configuration/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Configuration) | [Read configuration file.](./CodeArts.Configuration.md) |
+| CodeArts.Json | [![CodeArts.Json](https://img.shields.io/nuget/v/CodeArts.Json.svg)](https://www.nuget.org/packages/CodeArts.Json/) | ![Nuget](https://img.shields.io/nuget/dt/Codearts.Json) | [JSON read and write processing.](./CodeArts.Json.md) |
+| CodeArts.Net | [![CodeArts.Net](https://img.shields.io/nuget/v/CodeArts.Net.svg)](https://www.nuget.org/packages/CodeArts.Net/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Net) | [Request component of HTTP/HTTPS.](./CodeArts.Net.md) |
+| CodeArts.Emit | [![CodeArts.Emit](https://img.shields.io/nuget/v/CodeArts.Emit.svg)](https://www.nuget.org/packages/CodeArts.Emit/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Emit) | Abstract Syntax Tree(AST). |
+| CodeArts.Mvc | [![CodeArts.Mvc](https://img.shields.io/nuget/v/CodeArts.Mvc.svg)](https://www.nuget.org/packages/CodeArts.Mvc/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Mvc) | [Model View Controller(MVC).](./CodeArts.Mvc.md) |
+| CodeArts.Db | [![CodeArts.Db](https://img.shields.io/nuget/v/CodeArts.Db.svg)](https://www.nuget.org/packages/CodeArts.Db/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db) | [Database operation base library.](./CodeArts.Db.md) |
+| CodeArts.Db.Lts | [![CodeArts.Db.Lts](https://img.shields.io/nuget/v/CodeArts.Db.Lts.svg)](https://www.nuget.org/packages/CodeArts.Db.Lts/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Lts) | [Independent research and development and long term maintenance of ORM.](./CodeArts.Db.Lts.md) |
+| CodeArts.Db.EntityFramework | [![CodeArts.Db.EntityFramework](https://img.shields.io/nuget/v/CodeArts.Db.EntityFramework.svg)](https://www.nuget.org/packages/CodeArts.Db.EntityFramework/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.EntityFramework) | [EF/EFCore simple package.](./CodeArts.Db.EntityFramework.md) |
+| CodeArts.Db.Linq2Sql | [![CodeArts.Db.Linq2Sql](https://img.shields.io/nuget/v/CodeArts.Db.Linq2Sql.svg)](https://www.nuget.org/packages/CodeArts.Db.Linq2Sql/) | ![Nuget](https://img.shields.io/nuget/dt/CodeArts.Db.Linq2Sql) | [Linq to SQL.](./CodeArts.Db.Linq2Sql.md) |
 
 ### 引包即用？
+
 * 引包即用是指，安装 `NuGet` 包后，自动注入配置信息。
 * 在启动方法中添加如下代码即可：
 ``` csharp
@@ -353,4 +354,3 @@ string value = "{a + b}".PropSugar(new { A = 1, B = 2 }, NamingType.CamelCase); 
 ### 标星历程图。
 
 [![Stargazers over time](https://starchart.cc/tinylit/CodeArts.svg)](https://starchart.cc/tinylit/CodeArts)
-
