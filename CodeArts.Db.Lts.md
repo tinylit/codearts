@@ -301,6 +301,40 @@ public class FeiUsers : BaseEntity<int>
     - 通过主键删除数据。
     - 支持批量删除。
 
+### 乐观锁。
+
+​		CA、CB客户查阅并修改同一份数据，CA更新数据{A:"123",B:true}，然后CB更新数据{B:true,C:100}，解决CA更新的{A:"123"}被还原的问题。
+
+​		乐观锁的原理，是利用实体某字段。如：long Version，前端更新时，将查询接口返回的`Version`传回后端，更新时，ORM会自动将`Version`作为更新条件，并刷新`Version`值。更新失败时，返回影响行为<kbd>0</kbd>。
+
+​		实体可以有任意多个乐观锁属性，每次更新，属性都会被作为更新条件，在属性前标记特性：`TokenAttribute`的实现类即可。
+
+```c#
+/// <summary>
+/// 令牌（作为更新数据库的唯一标识，会体现在更新的条件语句中）。
+/// </summary>
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+public abstract class TokenAttribute : Attribute
+{
+    /// <summary>
+    /// 创建新令牌。
+    /// </summary>
+    /// <returns></returns>
+    public abstract object Create();
+}
+
+/// <summary>
+/// 时间戳令牌。
+/// </summary>
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+public class DateTimeTicksAttribute : TokenAttribute
+{
+    public override object Create() => DateTime.Now.Ticks;
+}
+```
+
+> 实用于任何更新方式。
+
 #### 说明：
 
 * 参数分析，当实体属性为值类型，且不为Nullable类型时，比较的参数为NULL时，自动忽略该条件。
