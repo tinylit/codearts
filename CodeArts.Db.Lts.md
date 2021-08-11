@@ -335,6 +335,131 @@ public class DateTimeTicksAttribute : TokenAttribute
 
 > 实用于指定更新方式，**数据库路由也会更新令牌属性**。
 
+### CRUD（异步支持：.NET 45+|.NETSTANDARD2_0+）。
+
+#### 数据库路由：无需查询，生成执行语句，在数据库中完成操作。
+
+##### 公共方法。
+
+|  方法   |           返回值            | 参数                           | 描述                                     |
+| :-----: | :-------------------------: | :----------------------------- | :--------------------------------------- |
+|  From   | IDRepository&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt; | 指定插入的表名称，默认：实体分析的名称。 |
+| TimeOut | IDRepository&lt;TEntity&gt; | int                            | 设置当前命令执行超时时间。               |
+
+##### 新增。
+
+|  方法  | 返回值 | 参数                      | 描述                       |
+| :----: | :----: | :------------------------ | :------------------------- |
+| Insert |  int   | IQueryable&lt;TEntity&gt; | 执行插入命令，返回影响行。 |
+
+例如：
+
+```c#
+await user.InsertAsync(userEx
+                 .Where(x=>x.Id > 10000 && x.Id < 1101)
+                 .Select(x=> new User {
+    				Id = x.UserId,
+                    Name = x.UserName,
+                    Version = x.Version + 10000,
+                    Timestamp = DateTime.Now.Ticks
+                 }).Skip(100).Take(50)
+    );
+```
+
+
+
+##### 查询：支持linq语法。
+
+##### 修改。
+
+|  方法  |           返回值            | 参数                                           | 描述                                           |
+| :----: | :-------------------------: | ---------------------------------------------- | ---------------------------------------------- |
+| Where  | IDRepository&lt;TEntity&gt; | Expression&lt;Func&lt;TEntity, bool&gt;&gt;    | 限定更新范围。                                 |
+| Update |             int             | Expression&lt;Func&lt;TEntity, TEntity&gt;&gt; | 指定更新字段和值，并执行更新命令，返回影响行。 |
+
+例如[^1]：
+
+```c#
+await user.Where(x=>x.Id == 1101) // 更新条件。
+    .UpdateAsync(x=>new User { Name = "影子和树", Version = x.Version + 1, Timestamp = DateTime.Now.Ticks });
+```
+
+##### 删除。
+
+|  方法  |           返回值            | 参数                                        | 描述                                       |
+| :----: | :-------------------------: | ------------------------------------------- | ------------------------------------------ |
+| Where  | IDRepository&lt;TEntity&gt; | Expression&lt;Func&lt;TEntity, bool&gt;&gt; | 限定删除范围。                             |
+| Delete |             int             |                                             | 执行删除命令。                             |
+| Delete |             int             | Expression&lt;Func&lt;TEntity, bool&gt;&gt; | 限定删除范围，并执行删除命令，返回影响行。 |
+
+例如：
+
+```c#
+await user.DeleteAsync(x=>x.Id == 1101);
+```
+
+#### 指定实体：主键始终为条件，额外指定的条件作为幂等条件。
+
+##### 公共方法。
+
+|      方法      |             返回值              | 参数           | 描述                   |
+| :------------: | :-----------------------------: | :------------- | :--------------------- |
+| UseTransaction | IDbRouteExecuter&lt;TEntity&gt; |                | 默认事务级别提交。     |
+| UseTransaction | IDbRouteExecuter&lt;TEntity&gt; | IsolationLevel | 指定事务级别提交。     |
+| ExecuteCommand |               int               | [int?]         | 执行命令，返回影响行。 |
+
+##### 插入。
+
+|     方法     |           返回值           | 参数                                                     | 描述                                           |
+| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------- |
+| AsInsertable | IInsertable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定插入能力。 |
+|     From     | IInsertable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定插入表名称，默认：实体分析的名称。         |
+|    Limit     | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                 |
+|    Except    | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                 |
+
+例如[^2]：
+
+```c#
+user.AsInsertable(new User { Id = 1011, Name = "影子和树", Version = 1, Timestamp = DateTime.Now.Ticks})
+    .Limit(x=>new { x.Id, x.Name, x.Timestamp }) // 指定插入的字段。
+    .Except(x=> x.Id) // 不插入的字段。
+    .ExecuteCommand();
+```
+
+##### 修改。
+
+|     方法     |           返回值           | 参数                                                     | 描述                                                 |
+| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------------- |
+| AsUpdateable | IUpdateable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定更新能力。       |
+|     From     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。               |
+|     From     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
+|    Where     | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定更新条件字段。                                   |
+|    Limit     | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                       |
+|    Except    | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                       |
+
+例如[^3]：
+
+```c#
+await user.AsUpdateable(new User { Id = 1011, Name = "影子和树", Version = 1, Timestamp = DateTime.Now.Ticks})
+    .Except(x=> new {x.Id, x.Name})
+    .ExecuteCommandAsync();
+```
+
+##### 删除。
+
+|     方法     |           返回值           | 参数                                                     | 描述                                           |
+| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------- |
+| AsDeleteable | IDeleteable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定删除能力。 |
+|     From     | IDeleteable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。         |
+|    Where     | IDeleteable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定删除条件字段。                             |
+
+例如：
+
+```c#
+await user.AsDeleteable(new User { Id = 1011, Name = "影子和树", Version = 1, Timestamp = DateTime.Now.Ticks})
+    .ExecuteCommandAsync();
+```
+
 #### 说明：
 
 * 参数分析，当实体属性为值类型，且不为Nullable类型时，比较的参数为NULL时，自动忽略该条件。
@@ -348,3 +473,7 @@ public class DateTimeTicksAttribute : TokenAttribute
   - Unit testing.
     + [SqlServer](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/SqlServerTest.cs)
     + [MySQL](https://github.com/tinylit/codearts/blob/master/Tests/CodeArts.Db.Tests/MySqlTest.cs)
+
+[^1]:将Id为1101的数据，Name更新为"影子和树"、Version递增，时间戳刷新。
+[^2]:指定字段在排查字段中时，指定字段也会被忽略；只读字段不会被插入。
+[^3]:使用Id作为更新条件，且不更新Id，Name；主键或`TokenAttribute`标记字段，自动作为更新条件。
