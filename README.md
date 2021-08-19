@@ -1,5 +1,7 @@
 ![CodeArts](http://oss.jschar.com/codearts.png 'Logo')
 
+<h5 align="right"><a href="./issues">Welcome to submit issues.</a></h5>
+
 ![GitHub](https://img.shields.io/github/license/tinylit/codearts.svg)
 ![language](https://img.shields.io/github/languages/top/tinylit/codearts.svg)
 ![codeSize](https://img.shields.io/github/languages/code-size/tinylit/codearts.svg)
@@ -7,6 +9,7 @@
 ![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/codearts.svg?compact_message)
 
 ### “CodeArts”是什么？
+
 CodeArts 是一套简单、高效的轻量级框架（涵盖了类型转换、实体复制、实体映射、动态代理类，以及基于Linq分析实现的、支持分表和读写分离的ORM框架）。
 
 ### 如何安装？
