@@ -7,7 +7,7 @@
 ![codeSize](https://img.shields.io/github/languages/code-size/tinylit/codearts.svg)
 ![appveyor-ci](https://img.shields.io/appveyor/ci/tinylit/codearts.svg)
 ![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/codearts.svg?compact_message)
-[![GitHub issues](https://img.shields.io/github/issues-raw/tinylit/codearts)](../../issue)
+[![GitHub issues](https://img.shields.io/github/issues-raw/tinylit/codearts)](../../issues)
 
 
 
