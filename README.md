@@ -1,14 +1,13 @@
 ![CodeArts](http://oss.jschar.com/codearts.png 'Logo')
 
-<h5 align="right"><a href="./issues">Welcome to submit issues.</a></h5>
+[![Gitee](https://gitee.com/static/images/logo-en.svg)](https://gitee.com/tinylit/codearts)
 
 ![GitHub](https://img.shields.io/github/license/tinylit/codearts.svg)
 ![language](https://img.shields.io/github/languages/top/tinylit/codearts.svg)
 ![codeSize](https://img.shields.io/github/languages/code-size/tinylit/codearts.svg)
 ![appveyor-ci](https://img.shields.io/appveyor/ci/tinylit/codearts.svg)
-![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/codearts.svg?compact_message)![GitHub issues](https://img.shields.io/github/issues-raw/tinylit/codearts)
-
-[![Gitee](https://gitee.com/static/images/logo-en.svg)](https://gitee.com/tinylit/codearts)
+![AppVeyor tests (compact)](https://img.shields.io/appveyor/tests/tinylit/codearts.svg?compact_message)
+[![GitHub issues](https://img.shields.io/github/issues-raw/tinylit/codearts)](issue)
 
 
 
