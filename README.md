@@ -1,7 +1,7 @@
 ![CodeArts](http://oss.jschar.com/codearts.png 'Logo')
 
 [![Gitee](https://gitee.com/static/images/logo-en.svg)](https://gitee.com/tinylit/codearts)
-[![Github](http://oss.jschar.com/logo_github1.png)](https://github.com/tinylit/codearts)
+[![Github](http://oss.jschar.com/logo_github.png)](https://github.com/tinylit/codearts)
 
 ![GitHub](https://img.shields.io/github/license/tinylit/codearts.svg)
 ![language](https://img.shields.io/github/languages/top/tinylit/codearts.svg)
