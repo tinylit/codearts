@@ -115,9 +115,9 @@ namespace CodeArts.Db.Dapper
         /// 查询分页数据。
         /// </summary>
         /// <typeparam name="T">集合元素类型。</typeparam>
-        /// <param name="sql"></param>
-        /// <param name="pageIndex"></param>
-        /// <param name="pageSize"></param>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="pageIndex">页面，索引从“0”开始。</param>
+        /// <param name="pageSize">一页显示多少条。</param>
         /// <param name="param">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
@@ -144,9 +144,9 @@ namespace CodeArts.Db.Dapper
         /// 查询分页数据。
         /// </summary>
         /// <typeparam name="T">集合元素类型。</typeparam>
-        /// <param name="sql"></param>
-        /// <param name="pageIndex"></param>
-        /// <param name="pageSize"></param>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="pageIndex">页面，索引从“0”开始。</param>
+        /// <param name="pageSize">一页显示多少条。</param>
         /// <param name="param">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
         /// <returns></returns>
