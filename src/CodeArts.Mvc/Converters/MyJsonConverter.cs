@@ -564,13 +564,23 @@ namespace CodeArts.Mvc.Converters
 
                 if (conversionType.IsEnum)
                 {
+#if NET40_OR_GREATER
+                    try
+                    {
+                        return Enum.Parse(conversionType, value, true);
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
+#else
                     if (Enum.TryParse(conversionType, value, true, out object result))
                     {
                         return result;
                     }
 
                     return null;
-
+#endif
                 }
 
                 if (conversionType == typeof(bool))
@@ -625,40 +635,39 @@ namespace CodeArts.Mvc.Converters
 
                     return null;
                 }
-            }
 
-            string sourceStr = source.ToString();
-
-            if (conversionType == typeof(Guid))
-            {
-                if (Guid.TryParse(sourceStr, out Guid guid))
+                if (conversionType == typeof(Guid))
                 {
-                    return guid;
-                }
+                    if (Guid.TryParse(value, out Guid guid))
+                    {
+                        return guid;
+                    }
 
-                return null;
-            }
-            else if (conversionType == typeof(DateTime))
-            {
-                if (DateTime.TryParse(sourceStr, out DateTime date))
+                    return null;
+                }
+                else if (conversionType == typeof(DateTime))
                 {
-                    return date;
-                }
+                    if (DateTime.TryParse(value, out DateTime date))
+                    {
+                        return date;
+                    }
 
-                return null;
-            }
-            else if (conversionType == typeof(DateTimeOffset))
-            {
-                if (DateTimeOffset.TryParse(sourceStr, out DateTimeOffset timeOffset))
+                    return null;
+                }
+                else if (conversionType == typeof(DateTimeOffset))
                 {
-                    return timeOffset;
-                }
+                    if (DateTimeOffset.TryParse(value, out DateTimeOffset timeOffset))
+                    {
+                        return timeOffset;
+                    }
 
-                return null;
+                    return null;
+                }
             }
-            else if (conversionType == typeof(string))
+
+            if (conversionType == typeof(string))
             {
-                return sourceStr;
+                return source.ToString();
             }
 
             throw new InvalidCastException($"无法将“{source}”转换成“{conversionType}”类型!");
