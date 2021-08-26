@@ -62,10 +62,36 @@ namespace CodeArts.Mvc.Converters
         /// <returns></returns>
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
             => typeToConvert.IsArray
-            ? (JsonConverter)Activator.CreateInstance(typeof(JsonConverterForArrayOfT<>).MakeGenericType(new Type[] { typeToConvert.GetElementType() }))
+            ? typeToConvert == typeof(byte[])
+                ? JsonConverterForArrayOfByte.Instance
+                : (JsonConverter)Activator.CreateInstance(typeof(JsonConverterForArrayOfT<>).MakeGenericType(new Type[] { typeToConvert.GetElementType() }))
             : typeToConvert.IsNullable()
             ? (JsonConverter)Activator.CreateInstance(typeof(MyNullableJsonConverter<>).MakeGenericType(new Type[] { Nullable.GetUnderlyingType(typeToConvert) }))
             : (JsonConverter)Activator.CreateInstance(typeof(JsonConverterIEnumerableOfT<>).MakeGenericType(typeToConvert.GetGenericArguments()));
+
+        private class JsonConverterForArrayOfByte : JsonConverter<byte[]>
+        {
+            private JsonConverterForArrayOfByte() { }
+
+            public override bool CanConvert(Type typeToConvert) => true;
+
+            public override byte[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Null || !reader.TryGetBytesFromBase64(out byte[] buffer))
+                {
+                    return null;
+                }
+
+                return buffer;
+            }
+
+            public override void Write(Utf8JsonWriter writer, byte[] value, JsonSerializerOptions options)
+            {
+                writer.WriteBase64StringValue(value);
+            }
+
+            public static readonly JsonConverterForArrayOfByte Instance = new JsonConverterForArrayOfByte();
+        }
 
         private class MyNullableJsonConverter<T> : JsonConverter<T?> where T : struct
         {
@@ -301,66 +327,65 @@ namespace CodeArts.Mvc.Converters
         {
             bool flag = true;
 
-            try
+            switch (Type.GetTypeCode(typeToConvert))
             {
-                switch (Type.GetTypeCode(typeToConvert))
-                {
-                    case TypeCode.DBNull:
-                        value = null;
-                        break;
-                    case TypeCode.Boolean:
-                        value = reader.GetBoolean();
-                        break;
-                    case TypeCode.SByte:
-                        value = reader.GetSByte();
-                        break;
-                    case TypeCode.Byte:
-                        value = reader.GetByte();
-                        break;
-                    case TypeCode.Int16:
-                        value = reader.GetInt16();
-                        break;
-                    case TypeCode.UInt16:
-                        value = reader.GetUInt16();
-                        break;
-                    case TypeCode.Int32:
-                        value = reader.GetInt32();
-                        break;
-                    case TypeCode.UInt32:
-                        value = reader.GetUInt32();
-                        break;
-                    case TypeCode.Int64:
-                        value = reader.GetInt64();
-                        break;
-                    case TypeCode.UInt64:
-                        value = reader.GetUInt64();
-                        break;
-                    case TypeCode.Single:
-                        value = reader.GetSingle();
-                        break;
-                    case TypeCode.Double:
-                        value = reader.GetDouble();
-                        break;
-                    case TypeCode.Decimal:
-                        value = reader.GetDecimal();
-                        break;
-                    case TypeCode.DateTime:
-                        value = reader.GetDateTime();
-                        break;
-                    case TypeCode.String:
-                        value = reader.GetString();
-                        break;
-                    case TypeCode.Char:
-                    default:
+                case TypeCode.DBNull:
+                    value = null;
+                    break;
+                case TypeCode.Boolean:
+                    value = reader.GetBoolean();
+                    break;
+                case TypeCode.SByte when reader.TryGetSByte(out sbyte sb):
+                    value = sb;
+                    break;
+                case TypeCode.Byte when reader.TryGetByte(out byte b):
+                    value = b;
+                    break;
+                case TypeCode.Int16 when reader.TryGetInt16(out short i16):
+                    value = i16;
+                    break;
+                case TypeCode.UInt16 when reader.TryGetUInt16(out ushort u16):
+                    value = u16;
+                    break;
+                case TypeCode.Int32 when reader.TryGetInt32(out int i):
+                    value = i;
+                    break;
+                case TypeCode.UInt32 when reader.TryGetUInt32(out uint u):
+                    value = u;
+                    break;
+                case TypeCode.Int64 when reader.TryGetInt64(out long l):
+                    value = l;
+                    break;
+                case TypeCode.UInt64 when reader.TryGetUInt64(out ulong ul):
+                    value = ul;
+                    break;
+                case TypeCode.Single when reader.TryGetSingle(out float f):
+                    value = f;
+                    break;
+                case TypeCode.Double when reader.TryGetDouble(out double d):
+                    value = d;
+                    break;
+                case TypeCode.Decimal when reader.TryGetDecimal(out decimal de):
+                    value = de;
+                    break;
+                case TypeCode.DateTime when reader.TryGetDateTime(out DateTime dt):
+                    value = dt;
+                    break;
+                case TypeCode.String:
+                    value = reader.GetString();
+                    break;
+                case TypeCode.Char:
+                default:
+                    if (typeToConvert == typeof(Guid) && reader.TryGetGuid(out Guid guid))
+                    {
+                        value = guid;
+                    }
+                    else
+                    {
                         value = null;
                         flag = false;
-                        break;
-                }
-            }
-            catch
-            {
-                value = null;
-                flag = false;
+                    }
+                    break;
             }
 
             return flag;
@@ -417,6 +442,7 @@ namespace CodeArts.Mvc.Converters
             if (value is null)
             {
                 writer.WriteNullValue();
+
                 return;
             }
 
@@ -440,8 +466,14 @@ namespace CodeArts.Mvc.Converters
                 case int i32:
                     writer.WriteNumberValue(i32);
                     break;
+                case uint u32:
+                    writer.WriteNumberValue(u32);
+                    break;
                 case long i64 when i64 >= -9007199254740991L && i64 <= 9007199254740991L:
                     writer.WriteNumberValue(i64);
+                    break;
+                case ulong u64 when u64 <= 9007199254740991uL:
+                    writer.WriteNumberValue(u64);
                     break;
                 case float f when f >= -9007199254740991F && f <= 9007199254740991F:
                     writer.WriteNumberValue(f);
@@ -452,14 +484,29 @@ namespace CodeArts.Mvc.Converters
                 case decimal m when m >= -9007199254740991M && m <= 9007199254740991M:
                     writer.WriteNumberValue(m);
                     break;
-                case ulong u64 when u64 <= 9007199254740991uL:
+                case long i64:
+                    writer.WriteNumberValue(i64);
+                    break;
+                case ulong u64:
                     writer.WriteNumberValue(u64);
                     break;
-                case uint u32:
-                    writer.WriteNumberValue(u32);
+                case float f:
+                    writer.WriteNumberValue(f);
+                    break;
+                case double d:
+                    writer.WriteNumberValue(d);
+                    break;
+                case decimal m:
+                    writer.WriteNumberValue(m);
                     break;
                 case DateTime date:
                     writer.WriteStringValue(date.ToString(Consts.DateFormatString));
+                    break;
+                case Guid guid:
+                    writer.WriteStringValue(guid);
+                    break;
+                case DateTimeOffset dateTimeOffset:
+                    writer.WriteStringValue(dateTimeOffset);
                     break;
                 default:
                     writer.WriteStringValue(value.ToString());
@@ -494,7 +541,7 @@ namespace CodeArts.Mvc.Converters
         /// <returns></returns>
         private object ChangeType(object source, Type conversionType)
         {
-            if (source is null) 
+            if (source is null)
                 return source;
 
             if (source.GetType() == conversionType)
@@ -517,14 +564,13 @@ namespace CodeArts.Mvc.Converters
 
                 if (conversionType.IsEnum)
                 {
-                    try
+                    if (Enum.TryParse(conversionType, value, true, out object result))
                     {
-                        return Enum.Parse(conversionType, value, true);
+                        return result;
                     }
-                    catch
-                    {
-                        return null;
-                    }
+
+                    return null;
+
                 }
 
                 if (conversionType == typeof(bool))
@@ -543,6 +589,7 @@ namespace CodeArts.Mvc.Converters
                     {
                         if (conversionType == typeof(bool))
                             return result > 0;
+
                         return Convert.ChangeType(result, conversionType);
                     }
 
@@ -555,6 +602,7 @@ namespace CodeArts.Mvc.Converters
                     {
                         return result;
                     }
+
                     return null;
                 }
 
@@ -564,6 +612,7 @@ namespace CodeArts.Mvc.Converters
                     {
                         return result;
                     }
+
                     return null;
                 }
 
@@ -573,12 +622,44 @@ namespace CodeArts.Mvc.Converters
                     {
                         return result;
                     }
+
                     return null;
                 }
             }
 
-            if (conversionType == typeof(string))
-                return source.ToString();
+            string sourceStr = source.ToString();
+
+            if (conversionType == typeof(Guid))
+            {
+                if (Guid.TryParse(sourceStr, out Guid guid))
+                {
+                    return guid;
+                }
+
+                return null;
+            }
+            else if (conversionType == typeof(DateTime))
+            {
+                if (DateTime.TryParse(sourceStr, out DateTime date))
+                {
+                    return date;
+                }
+
+                return null;
+            }
+            else if (conversionType == typeof(DateTimeOffset))
+            {
+                if (DateTimeOffset.TryParse(sourceStr, out DateTimeOffset timeOffset))
+                {
+                    return timeOffset;
+                }
+
+                return null;
+            }
+            else if (conversionType == typeof(string))
+            {
+                return sourceStr;
+            }
 
             throw new InvalidCastException($"无法将“{source}”转换成“{conversionType}”类型!");
         }
@@ -597,6 +678,7 @@ namespace CodeArts.Mvc.Converters
             {
                 return null;
             }
+
             return ChangeType(reader.Value, objectType);
         }
 
