@@ -17,7 +17,7 @@ namespace CodeArts.Emit.Expressions
         /// 构造函数。
         /// </summary>
         /// <param name="value">值。</param>
-        public ConstantAst(object value) : this(value, value is MethodInfo ? typeof(MethodInfo) : value is Type ? typeof(Type) : value?.GetType() ?? typeof(object))
+        public ConstantAst(object value) : this(value, (value is MethodInfo || value is MethodEmitter) ? typeof(MethodInfo) : value is Type ? typeof(Type) : value?.GetType() ?? typeof(object))
         {
         }
 
@@ -37,7 +37,7 @@ namespace CodeArts.Emit.Expressions
 
                 this.value = value;
             }
-            else if (value is Type ? type == typeof(Type) : value.GetType() == type || type.IsAssignableFrom(value.GetType()))
+            else if (value is Type ? type == typeof(Type) : value is MethodEmitter ? type == typeof(MethodInfo) : value.GetType() == type || type.IsAssignableFrom(value.GetType()))
             {
                 this.value = value;
             }

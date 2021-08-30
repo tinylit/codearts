@@ -68,18 +68,7 @@ namespace CodeArts.Emit
 
             public MethodOverrideEmitter(MethodBuilder methodBuilder, MethodInfo methodInfoDeclaration, Type returnType) : base(methodBuilder.Name, methodBuilder.Attributes, returnType)
             {
-                if (methodBuilder is null)
-                {
-                    throw new ArgumentNullException(nameof(methodBuilder));
-                }
-
-                if (methodInfoDeclaration is null)
-                {
-                    throw new ArgumentNullException(nameof(methodInfoDeclaration));
-                }
-
                 this.methodBuilder = methodBuilder;
-
                 this.methodInfoDeclaration = methodInfoDeclaration;
             }
 
@@ -183,7 +172,7 @@ namespace CodeArts.Emit
             typeEmitter.abstracts.Add(this);
         }
 
-        private static readonly Regex NamingPattern = new Regex("[^0-9a-zA-Z]+", RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex NamingPattern = new Regex("[^0-9a-zA-Z]+[1-9][0-9]*", RegexOptions.Singleline | RegexOptions.Compiled);
         private static TypeBuilder DefineNestedTypeBuilder(TypeBuilder typeBuilder, string name, TypeAttributes attributes, Type baseType, Type[] interfaces)
         {
             if (typeBuilder is null)
@@ -218,7 +207,7 @@ namespace CodeArts.Emit
             {
                 if (!baseType.IsGenericType)
                 {
-                    return typeBuilder.DefineNestedType(name, attributes, baseType);
+                    return typeBuilder.DefineNestedType(name, attributes, baseType, baseType.GetAllInterfaces());
                 }
 
                 var genericArguments = baseType.GetGenericArguments();
@@ -227,8 +216,6 @@ namespace CodeArts.Emit
                 {
                     return typeBuilder.DefineNestedType(name, attributes, baseType);
                 }
-
-                var builder = typeBuilder.DefineNestedType(name, attributes);
 
                 var names = new List<string>(genericArguments.Length);
 
@@ -239,6 +226,8 @@ namespace CodeArts.Emit
                         names.Add(x.Name);
                     }
                 });
+
+                var builder = typeBuilder.DefineNestedType($"{name}`{names.Count}", attributes);
 
                 var typeParameterBuilders = builder.DefineGenericParameters(names.ToArray());
 
@@ -281,7 +270,17 @@ namespace CodeArts.Emit
                     }
                 }
 
-                builder.SetParent(baseType.GetGenericTypeDefinition().MakeGenericType(genericArguments));
+                var destinationType = baseType.GetGenericTypeDefinition()
+                    .MakeGenericType(genericArguments);
+
+                builder.SetParent(destinationType);
+
+                var destinationTypes = destinationType.GetAllInterfaces();
+
+                for (int i = 0; i < destinationTypes.Length; i++)
+                {
+                    builder.AddInterfaceImplementation(destinationTypes[i]);
+                }
 
                 return builder;
             }
@@ -319,14 +318,21 @@ namespace CodeArts.Emit
                     }
                 });
 
+
                 if (names.Count == 0)
                 {
-                    return typeBuilder.DefineNestedType(name, attributes, baseType, interfaces);
+                    Type[] types = new Type[interfaces.Length + 1];
+
+                    types[0] = baseType;
+
+                    Array.Copy(interfaces, 0, types, 1, interfaces.Length);
+
+                    return typeBuilder.DefineNestedType(name, attributes, baseType, types.GetAllInterfaces());
                 }
 
                 var builder = flag
-                    ? typeBuilder.DefineNestedType(name, attributes)
-                    : typeBuilder.DefineNestedType(name, attributes, baseType);
+                    ? typeBuilder.DefineNestedType($"{name}`{names.Count}", attributes)
+                    : typeBuilder.DefineNestedType($"{name}`{names.Count}", attributes, baseType);
 
                 var typeParameterBuilders = builder.DefineGenericParameters(names.Values.ToArray());
 
@@ -357,6 +363,8 @@ namespace CodeArts.Emit
                     }
                 }
 
+                Type destinationType = baseType;
+
                 if (flag)
                 {
                     var genericArguments = baseType.GetGenericArguments();
@@ -371,26 +379,33 @@ namespace CodeArts.Emit
                         }
                     }
 
-                    builder.SetParent(baseType.GetGenericTypeDefinition().MakeGenericType(genericArguments));
+                    builder.SetParent(destinationType = baseType.GetGenericTypeDefinition().MakeGenericType(genericArguments));
                 }
 
-                Array.ForEach(interfaces, x =>
+                var destinationTypes = new Type[interfaces.Length + 1];
+
+                destinationTypes[0] = baseType;
+
+                Array.Copy(interfaces, 0, destinationTypes, 1, interfaces.Length);
+
+                Array.ForEach(destinationTypes.GetAllInterfaces(), x =>
                 {
                     if (x.IsGenericType)
                     {
                         var genericArguments = x.GetGenericArguments();
 
-                        for (int i = 0; i < genericArguments.Length; i++)
+                        for (int j = 0; j < genericArguments.Length; j++)
                         {
-                            int index = Array.IndexOf(genericTypes, genericArguments[i]);
+                            int index = Array.IndexOf(genericTypes, genericArguments[j]);
 
                             if (index > -1)
                             {
-                                genericArguments[i] = typeParameterBuilders[index];
+                                genericArguments[j] = typeParameterBuilders[index];
                             }
                         }
 
-                        builder.AddInterfaceImplementation(x.GetGenericTypeDefinition().MakeGenericType(genericArguments));
+                        builder.AddInterfaceImplementation(x.GetGenericTypeDefinition()
+                            .MakeGenericType(genericArguments));
                     }
                     else
                     {
@@ -399,6 +414,20 @@ namespace CodeArts.Emit
                 });
 
                 return builder;
+            }
+        }
+        private sealed class TypeNameComparer : IComparer<Type>
+        {
+            public static readonly TypeNameComparer Instance = new TypeNameComparer();
+
+            public int Compare(Type x, Type y)
+            {
+                // Comparing by `type.AssemblyQualifiedName` would give the same result,
+                // but it performs a hidden concatenation (and therefore string allocation)
+                // of `type.FullName` and `type.Assembly.FullName`. We can avoid this
+                // overhead by comparing the two properties separately.
+                int result = string.CompareOrdinal(x.FullName, y.FullName);
+                return result != 0 ? result : string.CompareOrdinal(x.Assembly.FullName, y.Assembly.FullName);
             }
         }
 
@@ -893,8 +922,6 @@ namespace CodeArts.Emit
                 emitter.Emit(builder.DefineField(emitter.Name, emitter.RuntimeType, emitter.Attributes));
             }
 
-            TypeInitializer.Emit(builder.DefineTypeInitializer());
-
             if (!builder.IsInterface && constructors.Count == 0)
             {
                 DefineDefaultConstructor();
@@ -919,6 +946,8 @@ namespace CodeArts.Emit
             {
                 emitter.Emit(builder.DefineProperty(emitter.Name, emitter.Attributes, emitter.RuntimeType, emitter.ParameterTypes));
             }
+
+            TypeInitializer.Emit(builder.DefineTypeInitializer());
 
 #if NETSTANDARD2_0_OR_GREATER
             return builder.CreateTypeInfo().AsType();

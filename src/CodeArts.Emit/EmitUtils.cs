@@ -15,7 +15,7 @@ namespace CodeArts.Emit
     {
         private static readonly ConstructorInfo GuidConstructorInfo = typeof(Guid).GetConstructor(new Type[1] { typeof(string) });
 
-        private static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
+        internal static readonly MethodInfo GetTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
 
         private static readonly MethodInfo GetMethodFromHandle = typeof(MethodBase).GetMethod(nameof(MethodBase.GetMethodFromHandle), new[] { typeof(RuntimeMethodHandle), typeof(RuntimeTypeHandle) });
 
@@ -1097,7 +1097,7 @@ namespace CodeArts.Emit
             {
                 if (valueType is null)
                 {
-                    valueType = value.GetType();
+                    valueType = value is Type ? typeof(Type) : (value is MethodInfo || value is MethodEmitter) ? typeof(MethodInfo) : value.GetType();
                 }
 
                 switch (value)
@@ -1108,6 +1108,22 @@ namespace CodeArts.Emit
 
                         ilg.Emit(OpCodes.Castclass, valueType);
                         break;
+                    case MethodEmitter methodEmitter:
+                        {
+                            MethodInfo methodInfo = methodEmitter.AsRuntimeMethod();
+
+                            Debug.Assert(methodInfo.DeclaringType != null);
+
+                            ilg.Emit(OpCodes.Ldtoken, methodInfo);
+
+                            ilg.Emit(OpCodes.Ldtoken, methodInfo.DeclaringType);
+
+                            ilg.Emit(OpCodes.Call, GetMethodFromHandle);
+
+                            ilg.Emit(OpCodes.Castclass, valueType);
+
+                            break;
+                        }
                     case MethodInfo methodInfo:
                         Debug.Assert(methodInfo.DeclaringType != null);
 

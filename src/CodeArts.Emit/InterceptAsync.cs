@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace CodeArts.Middleware
+namespace CodeArts.Emit
 {
     /// <summary>
     /// 拦截执行方法。

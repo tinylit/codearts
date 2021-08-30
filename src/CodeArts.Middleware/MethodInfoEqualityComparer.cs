@@ -92,7 +92,8 @@ namespace CodeArts
             {
                 return false;
             }
-            else if (x.IsGenericType != y.IsGenericType)
+            
+            if (x.IsGenericType != y.IsGenericType)
             {
                 return false;
             }

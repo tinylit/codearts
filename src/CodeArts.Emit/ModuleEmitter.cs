@@ -272,7 +272,7 @@ namespace CodeArts.Emit
             return new ClassEmitter(DefineTypeBuilder(moduleBuilder, namingScope.GetUniqueName(name), attr, parent, interfaces), namingScope);
         }
 
-        private static readonly Regex NamingPattern = new Regex("[^0-9a-zA-Z]+", RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex NamingPattern = new Regex("[^0-9a-zA-Z]+[1-9][0-9]*", RegexOptions.Singleline | RegexOptions.Compiled);
 
         private static TypeBuilder DefineTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type baseType, Type[] interfaces)
         {
@@ -301,8 +301,6 @@ namespace CodeArts.Emit
                     return moduleBuilder.DefineType(name, attributes, baseType);
                 }
 
-                var builder = moduleBuilder.DefineType(name, attributes);
-
                 var names = new List<string>(genericArguments.Length);
 
                 Array.ForEach(genericArguments, x =>
@@ -312,6 +310,8 @@ namespace CodeArts.Emit
                         names.Add(x.Name);
                     }
                 });
+
+                var builder = moduleBuilder.DefineType($"{name}`{names.Count}", attributes);
 
                 var typeParameterBuilders = builder.DefineGenericParameters(names.ToArray());
 
@@ -380,12 +380,18 @@ namespace CodeArts.Emit
 
                 if (names.Count == 0)
                 {
-                    return moduleBuilder.DefineType(name, attributes, baseType, interfaces);
+                    Type[] types = new Type[interfaces.Length + 1];
+
+                    types[0] = baseType;
+
+                    Array.Copy(interfaces, 0, types, 1, interfaces.Length);
+
+                    return moduleBuilder.DefineType(name, attributes, baseType, types.GetAllInterfaces());
                 }
 
                 var builder = flag
-                    ? moduleBuilder.DefineType(name, attributes)
-                    : moduleBuilder.DefineType(name, attributes, baseType);
+                    ? moduleBuilder.DefineType($"{name}`{names.Count}", attributes)
+                    : moduleBuilder.DefineType($"{name}`{names.Count}", attributes, baseType);
 
                 var typeParameterBuilders = builder.DefineGenericParameters(names.Values.ToArray());
 
@@ -419,23 +425,30 @@ namespace CodeArts.Emit
                     builder.SetParent(baseType.GetGenericTypeDefinition().MakeGenericType(genericArguments));
                 }
 
-                Array.ForEach(interfaces, x =>
+                var destinationTypes = new Type[interfaces.Length + 1];
+
+                destinationTypes[0] = baseType;
+
+                Array.Copy(interfaces, 0, destinationTypes, 1, interfaces.Length);
+
+                Array.ForEach(destinationTypes.GetAllInterfaces(), x =>
                 {
                     if (x.IsGenericType)
                     {
                         var genericArguments = x.GetGenericArguments();
 
-                        for (int i = 0; i < genericArguments.Length; i++)
+                        for (int j = 0; j < genericArguments.Length; j++)
                         {
-                            int index = Array.IndexOf(genericTypes, genericArguments[i]);
+                            int index = Array.IndexOf(genericTypes, genericArguments[j]);
 
                             if (index > -1)
                             {
-                                genericArguments[i] = typeParameterBuilders[index];
+                                genericArguments[j] = typeParameterBuilders[index];
                             }
                         }
 
-                        builder.AddInterfaceImplementation(x.GetGenericTypeDefinition().MakeGenericType(genericArguments));
+                        builder.AddInterfaceImplementation(x.GetGenericTypeDefinition()
+                            .MakeGenericType(genericArguments));
                     }
                     else
                     {

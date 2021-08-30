@@ -126,7 +126,38 @@ namespace CodeArts.Emit.Expressions
 
             foreach (var item in arguments)
             {
-                item.Load(ilg);
+                if (item is ParameterAst parameterAst && parameterAst.IsByRef) //? 仅加载参数位置。
+                {
+                    switch (parameterAst.Position)
+                    {
+                        case 0:
+                            ilg.Emit(OpCodes.Ldarg_0);
+                            break;
+                        case 1:
+                            ilg.Emit(OpCodes.Ldarg_1);
+                            break;
+                        case 2:
+                            ilg.Emit(OpCodes.Ldarg_2);
+                            break;
+                        case 3:
+                            ilg.Emit(OpCodes.Ldarg_3);
+                            break;
+                        default:
+                            if (parameterAst.Position < byte.MaxValue)
+                            {
+                                ilg.Emit(OpCodes.Ldarg_S, parameterAst.Position);
+
+                                break;
+                            }
+
+                            ilg.Emit(OpCodes.Ldarg, parameterAst.Position);
+                            break;
+                    }
+                }
+                else
+                {
+                    item.Load(ilg);
+                }
             }
 
             if (methodInfo is DynamicMethod dynamicMethod)

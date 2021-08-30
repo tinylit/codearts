@@ -158,8 +158,13 @@ namespace CodeArts.Emit.Tests
              */
         }
 
+        [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
         public class DependencyInterceptAttribute : InterceptAttribute
         {
+            static DependencyInterceptAttribute()
+            {
+
+            }
             public override void Run(InterceptContext context, Intercept intercept)
             {
                 intercept.Run(context);
@@ -197,10 +202,10 @@ namespace CodeArts.Emit.Tests
             /// <inheritdoc />
             bool AopTest();
 
-            //[DependencyIntercept]
+            [DependencyIntercept]
             bool AopTestByRef(int i, ref int j);
 
-            [DependencyIntercept]
+            //[DependencyIntercept]
             bool AopTestByOut(int i, out int j);
 
             T Get<T>() where T : struct;
@@ -228,8 +233,7 @@ namespace CodeArts.Emit.Tests
             }
 
             /// <inheritdoc />
-            [DependencyIntercept]
-            public bool AopTestByOut(int i, out int j)
+            public virtual bool AopTestByOut(int i, out int j)
             {
                 switch (i)
                 {
@@ -312,7 +316,22 @@ namespace CodeArts.Emit.Tests
             }
         }
 
-        [DependencyIntercept]
+        public class DependencyP : Dependency
+        {
+            private readonly Dependency dependencyz;
+
+            public DependencyP(Dependency dependencyz)
+            {
+                this.dependencyz = dependencyz;
+            }
+
+            public override bool AopTestByOut(int i, out int j)
+            {
+                return dependencyz.AopTestByOut(i, out j);
+            }
+        }
+
+        //[DependencyIntercept]
         public interface IDependency<T> where T : class
         {
             T Clone(T obj);
@@ -324,6 +343,8 @@ namespace CodeArts.Emit.Tests
 
         public class Dependency<T> : IDependency<T> where T : class
         {
+            private static readonly Type __destinationProxyType__;
+
             public T Clone(T obj)
             {
                 //... ¿ËÂ¡µÄÂß¼­¡£
@@ -339,6 +360,11 @@ namespace CodeArts.Emit.Tests
             public T2 New<T2>() where T2 : T, new()
             {
                 return new T2();
+            }
+
+            static Dependency()
+            {
+                __destinationProxyType__ = typeof(Dependency<T>);
             }
         }
 

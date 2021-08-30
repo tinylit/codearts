@@ -83,23 +83,23 @@ namespace CodeArts.Proxies
                 constructorEmitter.Append(Assign(instanceAst, Convert(New(constructorInfo, parameterEmiters), serviceType)));
             }
 
-            var interceptMethods = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
+            var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
 
             foreach (var type in interfaces)
             {
                 bool flag = type.IsDefined(InterceptAttributeType, false);
 
                 var attributes = flag
-                    ? (InterceptAttribute[])type.GetCustomAttributes(InterceptAttributeType, false)
-                    : new InterceptAttribute[0];
+                    ? type.GetCustomAttributesData()
+                    : new CustomAttributeData[0];
 
                 foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
                     var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
-                        ? Merge(attributes, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
+                        ? Merge(attributes, methodInfo.GetCustomAttributesData())
                         : attributes;
 
-                    if (interceptAttributes.Length == 0)
+                    if (interceptAttributes.Count == 0)
                     {
                         continue;
                     }
@@ -127,7 +127,7 @@ namespace CodeArts.Proxies
 
                     propertyMethods.Add(readMethod);
 
-                    propertyEmitter.SetGetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, readMethod, null));
+                    propertyEmitter.SetGetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, readMethod, new CustomAttributeData[0]));
                 }
 
                 if (propertyInfo.CanWrite)
@@ -136,7 +136,7 @@ namespace CodeArts.Proxies
 
                     propertyMethods.Add(writeMethod);
 
-                    propertyEmitter.SetSetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, writeMethod, null));
+                    propertyEmitter.SetSetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, writeMethod, new CustomAttributeData[0]));
                 }
             }
 
@@ -153,7 +153,7 @@ namespace CodeArts.Proxies
                 }
                 else
                 {
-                    InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, null);
+                    InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, new CustomAttributeData[0]);
                 }
             }
 
@@ -164,25 +164,26 @@ namespace CodeArts.Proxies
             return new ServiceDescriptor(serviceType, classEmitter.CreateType(), lifetime);
         }
 
-        private static T[] Merge<T>(T[] arrays, T[] arrays2)
+        private static IList<CustomAttributeData> Merge(IList<CustomAttributeData> arrays, IList<CustomAttributeData> arrays2)
         {
-            if (arrays.Length == 0)
+            if (arrays.Count == 0)
             {
                 return arrays2;
             }
 
-            if (arrays2.Length == 0)
+            if (arrays2.Count == 0)
             {
                 return arrays;
             }
 
-            var results = new T[arrays.Length + arrays2.Length];
-
-            System.Array.Copy(arrays, results, arrays.Length);
-
-            System.Array.Copy(arrays2, 0, results, arrays.Length, arrays2.Length);
-
-            return results;
+            return arrays
+                .Union(arrays2)
+#if NET40
+                .Where(x => InterceptAttributeType.IsAssignableFrom(x.Constructor.DeclaringType))
+#else
+                .Where(x => InterceptAttributeType.IsAssignableFrom(x.AttributeType))
+#endif
+                .ToList();
         }
 
         private ServiceDescriptor ResolveIsClass()
@@ -208,23 +209,23 @@ namespace CodeArts.Proxies
                 constructorEmitter.InvokeBaseConstructor(constructorInfo, parameterEmiters);
             }
 
-            var interceptMethods = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
+            var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
 
             foreach (var type in interfaces)
             {
                 bool flag = type.IsDefined(InterceptAttributeType, false);
 
                 var attributes = flag
-                    ? (InterceptAttribute[])type.GetCustomAttributes(InterceptAttributeType, false)
-                    : new InterceptAttribute[0];
+                    ? type.GetCustomAttributesData()
+                    : new CustomAttributeData[0];
 
                 foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
                     var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
-                        ? Merge(attributes, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
+                        ? Merge(attributes, methodInfo.GetCustomAttributesData())
                         : attributes;
 
-                    if (interceptAttributes.Length == 0)
+                    if (interceptAttributes.Count == 0)
                     {
                         continue;
                     }
@@ -244,30 +245,20 @@ namespace CodeArts.Proxies
 
             do
             {
-                bool isDefined = iterationType.IsDefined(InterceptAttributeType, false);
-
-                var intercepts = isDefined
-                    ? (InterceptAttribute[])iterationType.GetCustomAttributes(InterceptAttributeType, false)
-                    : new InterceptAttribute[0];
-
-                foreach (var methodInfo in iterationType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                if (iterationType.IsDefined(InterceptAttributeType, false))
                 {
-                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
-                        ? Merge(intercepts, (InterceptAttribute[])methodInfo.GetCustomAttributes(InterceptAttributeType, false))
-                        : intercepts;
+                    var intercepts = iterationType.GetCustomAttributesData();
 
-                    if (interceptAttributes.Length == 0)
+                    foreach (var methodInfo in iterationType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                     {
-                        continue;
-                    }
-
-                    if (interceptMethods.TryGetValue(methodInfo, out var attributes))
-                    {
-                        interceptMethods[methodInfo] = Merge(interceptAttributes, attributes);
-                    }
-                    else
-                    {
-                        interceptMethods.Add(methodInfo, interceptAttributes);
+                        if (interceptMethods.TryGetValue(methodInfo, out var attributes))
+                        {
+                            interceptMethods[methodInfo] = Merge(intercepts, attributes);
+                        }
+                        else
+                        {
+                            interceptMethods.Add(methodInfo, intercepts);
+                        }
                     }
                 }
 

@@ -124,6 +124,27 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
+        /// 转为方法。
+        /// </summary>
+        /// <returns></returns>
+        public virtual MethodInfo AsRuntimeMethod()
+        {
+            if (methodBuilder.DeclaringType.IsGenericType)
+            {
+                MethodInfo methodInfoDeclaration = TypeBuilder.GetMethod(methodBuilder.DeclaringType, methodBuilder);
+
+                if (methodInfoDeclaration.IsGenericMethod)
+                {
+                    return methodInfoDeclaration.MakeGenericMethod(methodBuilder.GetGenericArguments());
+                }
+
+                return methodInfoDeclaration;
+            }
+
+            return methodBuilder;
+        }
+
+        /// <summary>
         /// 发行方法。
         /// </summary>
         /// <param name="methodBuilder">方法。</param>

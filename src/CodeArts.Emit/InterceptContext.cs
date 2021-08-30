@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace CodeArts.Middleware
+namespace CodeArts.Emit
 {
     /// <summary>
     /// 拦截上下文。

@@ -2,11 +2,12 @@
 using CodeArts.Emit;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using static CodeArts.Emit.AstExpression;
 using CodeArts.Emit.Expressions;
+using static CodeArts.Emit.AstExpression;
 
 namespace CodeArts
 {
@@ -17,17 +18,36 @@ namespace CodeArts
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
 
-        private static readonly Dictionary<MethodInfo, InterceptAttribute[]> InterceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>();
-        private static readonly Dictionary<Type, Dictionary<MethodInfo, InterceptAttribute[]>> GenericInterceptCache = new Dictionary<Type, Dictionary<MethodInfo, InterceptAttribute[]>>();
+        private static readonly Type[] ContextTypes = new Type[] { typeof(MethodInfo), typeof(object), typeof(MethodInfo), typeof(object[]) };
 
-        private static readonly Type[] ContextTypes = new Type[] { typeof(object), typeof(MethodInfo), typeof(object[]) };
+        private static readonly ConcurrentDictionary<MethodInfo, InterceptAttribute[]> InterceptCache = new ConcurrentDictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance);
+        private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<MethodInfo, InterceptAttribute[]>> GenericInterceptCache = new ConcurrentDictionary<Type, ConcurrentDictionary<MethodInfo, InterceptAttribute[]>>();
 
-        private static readonly ConstructorInfo InterceptContextCtor = typeof(InterceptContext).GetConstructor(ContextTypes);
+        private static readonly ConstructorInfo InterceptContextCtor = typeof(NestedInterceptContext).GetConstructor(ContextTypes);
 
         private static readonly MethodInfo InterceptMethodCall;
         private static readonly MethodInfo InterceptGenericMethodCall;
         private static readonly MethodInfo InterceptAsyncMethodCall;
         private static readonly MethodInfo InterceptAsyncGenericMethodCall;
+
+        /// <summary>
+        /// IL 使用，不对外使用。
+        /// </summary>
+        public sealed class NestedInterceptContext : InterceptContext
+        {
+            /// <summary>
+            /// <inheritdoc/>
+            /// </summary>
+            public NestedInterceptContext(MethodInfo destinationProxyMethod, object target, MethodInfo main, object[] inputs) : base(target, main, inputs)
+            {
+                DestinationProxyMethod = destinationProxyMethod;
+            }
+
+            /// <summary>
+            /// <inheritdoc/>
+            /// </summary>
+            public MethodInfo DestinationProxyMethod { get; }
+        }
 
         static InterceptCore()
         {
@@ -42,62 +62,15 @@ namespace CodeArts
             InterceptAsyncGenericMethodCall = methodInfos.Single(x => x.Name == nameof(InterceptAsync) && x.IsGenericMethod);
         }
 
-        private static bool TryGetValue(MethodInfo methodInfo, out InterceptAttribute[] attributes)
+        private static InterceptAttribute[] GetInterceptAttributes(MethodInfo methodInfo)
         {
             if (methodInfo.DeclaringType.IsGenericType)
             {
-                var typeDefinition = methodInfo.DeclaringType.GetGenericTypeDefinition();
-
-                if (GenericInterceptCache.TryGetValue(typeDefinition, out Dictionary<MethodInfo, InterceptAttribute[]> interceptCache))
-                {
-                    if (methodInfo.IsGenericMethod)
-                    {
-                        methodInfo = methodInfo.GetGenericMethodDefinition();
-                    }
-
-                    return interceptCache.TryGetValue(methodInfo, out attributes);
-                }
-
-                attributes = new InterceptAttribute[0];
-
-                return false;
+                return GenericInterceptCache.GetOrAdd(methodInfo.DeclaringType.GetGenericTypeDefinition(), x => new ConcurrentDictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance))
+                    .GetOrAdd(methodInfo, x => (InterceptAttribute[])x.GetCustomAttributes(InterceptAttributeType, true));
             }
 
-            if (methodInfo.IsGenericMethod)
-            {
-                methodInfo = methodInfo.GetGenericMethodDefinition();
-            }
-
-            return InterceptCache.TryGetValue(methodInfo, out attributes);
-        }
-
-        private static void InterceptAdd(MethodInfo methodInfo, InterceptAttribute[] attributes)
-        {
-            if (methodInfo.DeclaringType.IsGenericType)
-            {
-                var typeDefinition = methodInfo.DeclaringType.GetGenericTypeDefinition();
-
-                if (!GenericInterceptCache.TryGetValue(typeDefinition, out Dictionary<MethodInfo, InterceptAttribute[]> interceptCache))
-                {
-                    GenericInterceptCache.Add(typeDefinition, interceptCache = new Dictionary<MethodInfo, InterceptAttribute[]>(MethodInfoEqualityComparer.Instance));
-                }
-
-                if (methodInfo.IsGenericMethod)
-                {
-                    methodInfo = methodInfo.GetGenericMethodDefinition();
-                }
-
-                interceptCache[methodInfo] = attributes;
-            }
-            else
-            {
-                if (methodInfo.IsGenericMethod)
-                {
-                    methodInfo = methodInfo.GetGenericMethodDefinition();
-                }
-
-                InterceptCache[methodInfo] = attributes;
-            }
+            return InterceptCache.GetOrAdd(methodInfo, x => (InterceptAttribute[])x.GetCustomAttributes(InterceptAttributeType, true));
         }
 
         /// <summary>
@@ -105,16 +78,13 @@ namespace CodeArts
         /// </summary>
         /// <param name="context">上下文。</param>
         /// <returns></returns>
-        public static void Intercept(InterceptContext context)
+        public static void Intercept(NestedInterceptContext context)
         {
             var intercept = new Intercept();
 
-            if (TryGetValue(context.Main, out var attributes))
+            foreach (InterceptAttribute attribute in GetInterceptAttributes(context.DestinationProxyMethod))
             {
-                foreach (var attribute in attributes)
-                {
-                    intercept = new MiddlewareIntercept(attribute, intercept);
-                }
+                intercept = new MiddlewareIntercept(attribute, intercept);
             }
 
             intercept.Run(context);
@@ -125,16 +95,13 @@ namespace CodeArts
         /// </summary>
         /// <param name="context">上下文。</param>
         /// <returns></returns>
-        public static T Intercept<T>(InterceptContext context)
+        public static T Intercept<T>(NestedInterceptContext context)
         {
             var intercept = new Intercept<T>();
 
-            if (TryGetValue(context.Main, out var attributes))
+            foreach (InterceptAttribute attribute in GetInterceptAttributes(context.DestinationProxyMethod))
             {
-                foreach (var attribute in attributes)
-                {
-                    intercept = new MiddlewareIntercept<T>(attribute, intercept);
-                }
+                intercept = new MiddlewareIntercept<T>(attribute, intercept);
             }
 
             return intercept.Run(context);
@@ -145,16 +112,13 @@ namespace CodeArts
         /// </summary>
         /// <param name="context">上下文。</param>
         /// <returns></returns>
-        public static Task InterceptAsync(InterceptContext context)
+        public static Task InterceptAsync(NestedInterceptContext context)
         {
             var intercept = new InterceptAsync();
 
-            if (TryGetValue(context.Main, out var attributes))
+            foreach (InterceptAttribute attribute in GetInterceptAttributes(context.DestinationProxyMethod))
             {
-                foreach (var attribute in attributes)
-                {
-                    intercept = new MiddlewareInterceptAsync(attribute, intercept);
-                }
+                intercept = new MiddlewareInterceptAsync(attribute, intercept);
             }
 
             return intercept.RunAsync(context);
@@ -166,16 +130,13 @@ namespace CodeArts
         /// <typeparam name="T">返回值类型。</typeparam>
         /// <param name="context">上下文。</param>
         /// <returns></returns>
-        public static Task<T> InterceptAsync<T>(InterceptContext context)
+        public static Task<T> InterceptAsync<T>(NestedInterceptContext context)
         {
             var intercept = new InterceptAsync<T>();
 
-            if (TryGetValue(context.Main, out var attributes))
+            foreach (InterceptAttribute attribute in GetInterceptAttributes(context.DestinationProxyMethod))
             {
-                foreach (var attribute in attributes)
-                {
-                    intercept = new MiddlewareInterceptAsync<T>(attribute, intercept);
-                }
+                intercept = new MiddlewareInterceptAsync<T>(attribute, intercept);
             }
 
             return intercept.RunAsync(context);
@@ -187,8 +148,8 @@ namespace CodeArts
         /// <param name="instanceAst">方法“this”上下文。</param>
         /// <param name="classEmitter">类。</param>
         /// <param name="methodInfo">被重写的方法。</param>
-        /// <param name="attributes">拦截器。</param>
-        public static MethodEmitter DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, InterceptAttribute[] attributes)
+        /// <param name="attributeDatas">属性。</param>
+        public static MethodEmitter DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, IList<CustomAttributeData> attributeDatas)
         {
             var methodAttributes = methodInfo.Attributes;
 
@@ -197,21 +158,27 @@ namespace CodeArts
                 methodAttributes ^= MethodAttributes.Abstract;
             }
 
+            bool flag = true;
+
             var overrideEmitter = classEmitter.DefineMethodOverride(ref methodInfo, methodAttributes);
 
             var paramterEmitters = overrideEmitter.GetParameters();
 
-            foreach (var attributeData in methodInfo.GetCustomAttributesData())
+#if NET40
+            foreach (var attributeData in attributeDatas.Where(x => InterceptAttributeType.IsAssignableFrom(x.Constructor.DeclaringType)))
+#else
+            foreach (var attributeData in attributeDatas.Where(x => InterceptAttributeType.IsAssignableFrom(x.AttributeType)))
+#endif
             {
-                if (InterceptAttributeType.IsAssignableFrom(attributeData.Constructor.ReflectedType))
+                if (flag)
                 {
-                    continue;
+                    flag = false;
                 }
 
                 overrideEmitter.SetCustomAttribute(attributeData);
             }
 
-            if (attributes is null || attributes.Length == 0)
+            if (flag && !methodInfo.DeclaringType.IsInterface && !methodInfo.IsDefined(InterceptAttributeType, true))
             {
                 overrideEmitter.Append(Call(instanceAst, methodInfo, paramterEmitters));
 
@@ -226,15 +193,19 @@ namespace CodeArts
 
             if (overrideEmitter.IsGenericMethod)
             {
-                arguments = new AstExpression[] { instanceAst, Constant(methodInfo), variable };
+                arguments = new AstExpression[] { Constant(overrideEmitter), instanceAst, Constant(methodInfo), variable };
             }
             else
             {
-                var fieldEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+                var tokenEmitter = classEmitter.DefineField($"____token__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
 
-                classEmitter.TypeInitializer.Append(Assign(fieldEmitter, Constant(methodInfo)));
+                classEmitter.TypeInitializer.Append(Assign(tokenEmitter, Constant(methodInfo)));
 
-                arguments = new AstExpression[] { instanceAst, fieldEmitter, variable };
+                var proxyEmitter = classEmitter.DefineField($"____proxy__{methodInfo.Name}", typeof(MethodInfo), FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+                classEmitter.TypeInitializer.Append(Assign(proxyEmitter, Constant(overrideEmitter)));
+
+                arguments = new AstExpression[] { proxyEmitter, instanceAst, tokenEmitter, variable };
             }
 
             BlockAst blockAst;
@@ -283,8 +254,6 @@ namespace CodeArts
             }
 
             overrideEmitter.Append(blockAst);
-
-            InterceptAdd(methodInfo, attributes);
 
             return overrideEmitter;
         }
