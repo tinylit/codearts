@@ -109,40 +109,39 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, ServiceLifetime lifetime)
         {
-            if (services.Any(x => x.ServiceType == serviceType))
-            {
-                return true;
-            }
-
             if (serviceType == typeof(IServiceProvider))
             {
                 return true;
             }
 
+            bool isSingle = true;
+
             //? 集合获取。
             if (serviceType.IsGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
+                isSingle = false;
+
                 serviceType = serviceType.GetGenericArguments()[0];
             }
 
-            if (depth >= maxDepth)
+            if (services.Any(x => x.ServiceType == serviceType)) //? 人为注入时，不再自动注入。
             {
-                if (serviceType.IsGenericType)
+                return true;
+            }
+
+            if (serviceType.IsGenericType)
+            {
+                var typeDefinition = serviceType.GetGenericTypeDefinition();
+
+                if (services.Any(x => x.ServiceType == typeDefinition)) //? 人为注入时，不再自动注入。
                 {
-                    var typeDefinition = serviceType.GetGenericTypeDefinition();
-
-                    if (services.Any(x => x.ServiceType == typeDefinition))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-
-                return false;
             }
 
             var implementationTypes = (serviceType.IsInterface || serviceType.IsAbstract)
                 ? assemblyTypes
-                    .Where(y => y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y))
+                    .Where(y => y.IsPublic && y.IsClass && !y.IsAbstract && serviceType.IsAssignableFrom(y))
                     .ToList()
                 : new List<Type> { serviceType };
 
@@ -150,8 +149,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             foreach (var implementationType in implementationTypes)
             {
-                foreach (var constructorInfo in implementationType.GetConstructors().Where(x => x.IsPublic))
+                foreach (var constructorInfo in implementationType.GetConstructors())
                 {
+                    if (!constructorInfo.IsPublic)
+                    {
+                        continue;
+                    }
+
                     flag = true;
 
                     foreach (var parameterInfo in constructorInfo.GetParameters())
@@ -159,6 +163,13 @@ namespace Microsoft.Extensions.DependencyInjection
                         if (parameterInfo.IsOptional)
                         {
                             continue;
+                        }
+
+                        if (serviceType.IsAssignableFrom(parameterInfo.ParameterType)) //? 避免循环依赖。
+                        {
+                            flag = false;
+
+                            break;
                         }
 
                         if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, lifetime))
@@ -193,7 +204,10 @@ namespace Microsoft.Extensions.DependencyInjection
                             break;
                     }
 
-                    break;
+                    if (isSingle) //? 注入一个支持。
+                    {
+                        break;
+                    }
                 }
             }
 
