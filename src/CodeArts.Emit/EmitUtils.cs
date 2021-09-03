@@ -1097,13 +1097,19 @@ namespace CodeArts.Emit
             {
                 if (valueType is null)
                 {
-                    valueType = value is Type ? typeof(Type) : (value is MethodInfo || value is MethodEmitter) ? typeof(MethodInfo) : value.GetType();
+                    valueType = (value is Type || value is AbstractTypeEmitter) ? typeof(Type) : (value is MethodInfo || value is MethodEmitter) ? typeof(MethodInfo) : value.GetType();
                 }
 
                 switch (value)
                 {
                     case Type type:
                         ilg.Emit(OpCodes.Ldtoken, type);
+                        ilg.Emit(OpCodes.Call, GetTypeFromHandle);
+
+                        ilg.Emit(OpCodes.Castclass, valueType);
+                        break;
+                    case AbstractTypeEmitter typeEmitter:
+                        ilg.Emit(OpCodes.Ldtoken, typeEmitter.AsRumtimeType());
                         ilg.Emit(OpCodes.Call, GetTypeFromHandle);
 
                         ilg.Emit(OpCodes.Castclass, valueType);

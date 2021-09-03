@@ -331,7 +331,7 @@ namespace CodeArts.Emit.Tests
             }
         }
 
-        //[DependencyIntercept]
+        [DependencyIntercept]
         public interface IDependency<T> where T : class
         {
             T Clone(T obj);

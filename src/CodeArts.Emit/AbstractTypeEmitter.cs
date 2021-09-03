@@ -464,6 +464,31 @@ namespace CodeArts.Emit
         }
 
         /// <summary>
+        /// 转为运行时类型。
+        /// </summary>
+        /// <returns></returns>
+        public virtual Type AsRumtimeType()
+        {
+            Type runtimeType;
+
+            if (builder.DeclaringType is null)
+            {
+                runtimeType = builder.Module.GetType(builder.Name, true);
+            }
+            else
+            {
+                runtimeType = builder.DeclaringType.GetNestedType(builder.Name);
+            }
+
+            if (runtimeType.IsGenericType)
+            {
+                runtimeType = runtimeType.MakeGenericType(builder.GetGenericArguments());
+            }
+
+            return runtimeType;
+        }
+
+        /// <summary>
         /// 创建字段。
         /// </summary>
         /// <param name="fieldInfo">字段。</param>
