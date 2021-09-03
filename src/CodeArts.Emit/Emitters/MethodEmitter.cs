@@ -127,7 +127,7 @@ namespace CodeArts.Emit
         /// 转为方法。
         /// </summary>
         /// <returns></returns>
-        public virtual MethodInfo AsRuntimeMethod()
+        protected internal virtual MethodInfo AsRuntimeMethod()
         {
             if (methodBuilder.DeclaringType.IsGenericType)
             {

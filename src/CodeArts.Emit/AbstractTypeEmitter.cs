@@ -467,7 +467,7 @@ namespace CodeArts.Emit
         /// 转为运行时类型。
         /// </summary>
         /// <returns></returns>
-        public virtual Type AsRumtimeType()
+        protected internal virtual Type AsRumtimeType()
         {
             Type runtimeType;
 
