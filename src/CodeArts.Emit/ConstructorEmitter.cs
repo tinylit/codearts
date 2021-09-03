@@ -1,6 +1,7 @@
 ﻿using CodeArts.Emit.Expressions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -18,26 +19,47 @@ namespace CodeArts.Emit
         private class ConstructorExpression : AstExpression
         {
             private readonly ConstructorInfo constructor;
-            private readonly ParameterEmitter[] parameters;
+            private readonly AstExpression[] parameters;
 
             public ConstructorExpression(ConstructorInfo constructor) : base(constructor.DeclaringType)
             {
                 this.constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
             }
-            public ConstructorExpression(ConstructorInfo constructor, ParameterEmitter[] parameters) : this(constructor)
+            public ConstructorExpression(ConstructorInfo constructor, AstExpression[] parameters) : this(constructor)
             {
+                ArgumentsCheck(constructor, parameters);
+
                 this.parameters = parameters;
+            }
+
+            private static void ArgumentsCheck(ConstructorInfo constructorInfo, AstExpression[] arguments)
+            {
+                var parameterInfos = constructorInfo.GetParameters();
+
+                if (arguments?.Length != parameterInfos.Length)
+                {
+                    throw new AstException("指定参数和构造函数参数个数不匹配!");
+                }
+
+                if (!parameterInfos.Zip(arguments, (x, y) =>
+                {
+                    return x.ParameterType == y.RuntimeType || x.ParameterType.IsAssignableFrom(y.RuntimeType);
+
+                }).All(x => x))
+                {
+                    throw new AstException("指定参数和构造函数参数类型不匹配!");
+                }
             }
 
             public override void Load(ILGenerator ilg)
             {
                 ilg.Emit(OpCodes.Ldarg_0);
 
-                if (parameters != null)
+                if (parameters?.Length > 0)
                 {
-                    foreach (var exp in parameters)
+                    foreach (var expression in parameters)
                     {
-                        exp.Load(ilg);
+                        expression.Load(ilg);
                     }
                 }
 
@@ -155,7 +177,7 @@ namespace CodeArts.Emit
         /// </summary>
         /// <param name="constructor">构造函数。</param>
         /// <param name="parameters">参数。</param>
-        public void InvokeBaseConstructor(ConstructorInfo constructor, params ParameterEmitter[] parameters) => Append(new ConstructorExpression(constructor, parameters));
+        public void InvokeBaseConstructor(ConstructorInfo constructor, params AstExpression[] parameters) => Append(new ConstructorExpression(constructor, parameters));
 
         /// <summary>
         /// 发行。

@@ -436,6 +436,20 @@ namespace CodeArts.Emit
         /// 创建实例。
         /// </summary>
         /// <param name="instanceType">实例类型。</param>
+        /// <returns></returns>
+        public static NewInstanceAst New(Type instanceType) => new NewInstanceAst(instanceType);
+
+        /// <summary>
+        /// 创建实例。
+        /// </summary>
+        /// <param name="constructor">构造函数。</param>
+        /// <returns></returns>
+        public static NewInstanceAst New(ConstructorInfo constructor) => new NewInstanceAst(constructor);
+
+        /// <summary>
+        /// 创建实例。
+        /// </summary>
+        /// <param name="instanceType">实例类型。</param>
         /// <param name="parameters">参数。</param>
         /// <returns></returns>
         public static NewInstanceAst New(Type instanceType, params AstExpression[] parameters) => new NewInstanceAst(instanceType, parameters);

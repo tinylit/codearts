@@ -5,7 +5,7 @@
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>8.1.2</Version>
+		<Version>8.1.2.1</Version>
 		<Authors>Tiny Lit</Authors>
 		<Company>Tiny Lit</Company>
 		<Description>Provides classes that allow a compiler or tool to emit metadata and optionally generate a PE file on disk.</Description>
@@ -20,11 +20,4 @@
 	<ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
 		<PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Remove="AbstractTypeEmitter - 副本.cs" />
-	</ItemGroup>
-
-
-
 </Project>
