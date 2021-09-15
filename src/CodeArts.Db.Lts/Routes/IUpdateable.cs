@@ -14,12 +14,6 @@ namespace CodeArts.Db.Lts.Routes
     public interface IUpdateable<TEntity> : IUpdateableByFrom<TEntity> where TEntity : class, IEntiy
     {
         /// <summary>
-        /// 跳过幂等验证。
-        /// </summary>
-        /// <returns></returns>
-        IUpdateable<TEntity> SkipIdempotentValid();
-
-        /// <summary>
         /// 数据源。
         /// </summary>
         /// <param name="tableGetter">表名称。</param>
@@ -75,6 +69,11 @@ namespace CodeArts.Db.Lts.Routes
     /// <typeparam name="TEntity"></typeparam>
     public interface IUpdateableByLimit<TEntity> : IUpdateableByWhere<TEntity> where TEntity : class, IEntiy
     {
+        /// <summary>
+        /// 跳过幂等验证。
+        /// </summary>
+        /// <returns></returns>
+        IUpdateableByWhere<TEntity> SkipIdempotentValid();
     }
 
     /// <summary>

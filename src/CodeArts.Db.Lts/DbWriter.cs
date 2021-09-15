@@ -972,7 +972,7 @@ namespace CodeArts.Db.Lts
                 return this;
             }
 
-            public IDeleteable<TEntity> SkipIdempotentValid()
+            public IDeleteableByWhere<TEntity> SkipIdempotentValid()
             {
                 foreach (var key in tableInfo.Tokens.Keys)
                 {
@@ -1385,7 +1385,7 @@ namespace CodeArts.Db.Lts
                 return this;
             }
 
-            public IUpdateable<TEntity> SkipIdempotentValid()
+            public IUpdateableByWhere<TEntity> SkipIdempotentValid()
             {
                 foreach (var key in tableInfo.Tokens.Keys)
                 {

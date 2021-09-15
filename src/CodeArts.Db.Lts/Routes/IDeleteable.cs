@@ -14,12 +14,6 @@ namespace CodeArts.Db.Lts.Routes
     public interface IDeleteable<TEntity> : IDeleteableByFrom<TEntity> where TEntity : class, IEntiy
     {
         /// <summary>
-        /// 跳过幂等验证。
-        /// </summary>
-        /// <returns></returns>
-        IDeleteable<TEntity> SkipIdempotentValid();
-
-        /// <summary>
         /// 数据源。
         /// </summary>
         /// <param name="tableGetter">表名称。</param>
@@ -40,7 +34,11 @@ namespace CodeArts.Db.Lts.Routes
     /// <typeparam name="TEntity">实体类型。</typeparam>
     public interface IDeleteableByFrom<TEntity> : IDeleteableByWhere<TEntity> where TEntity : class, IEntiy
     {
-
+        /// <summary>
+        /// 跳过幂等验证。
+        /// </summary>
+        /// <returns></returns>
+        IDeleteableByWhere<TEntity> SkipIdempotentValid();
     }
 
     /// <summary>
