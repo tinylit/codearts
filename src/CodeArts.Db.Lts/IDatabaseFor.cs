@@ -26,7 +26,7 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">查询语句。</param>
         /// <returns></returns>
-        T Single<T>(IDbConnection connection, CommandSql<T> commandSql);
+        T Read<T>(IDbConnection connection, CommandSql<T> commandSql);
 
         /// <summary>
         /// 读取数据。
@@ -46,7 +46,7 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">查询语句。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        Task<T> SingleAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken = default);
+        Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// 读取数据。

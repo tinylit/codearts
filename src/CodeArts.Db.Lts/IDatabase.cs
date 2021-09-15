@@ -34,7 +34,7 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="T">返回类型。</typeparam>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        T Single<T>(Expression expression);
+        T Read<T>(Expression expression);
 
         /// <summary>
         /// 读取数据。
@@ -57,7 +57,18 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="T">返回类型。</typeparam>
         /// <param name="commandSql">查询语句。</param>
         /// <returns></returns>
-        T Single<T>(CommandSql<T> commandSql);
+        T Read<T>(CommandSql<T> commandSql);
+
+        /// <summary>
+        /// 读取数据。
+        /// </summary>
+        /// <typeparam name="T">返回类型。</typeparam>
+        /// <param name="sql">执行语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="missingMsg">未找到数据异常。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        T Single<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null);
 
         /// <summary>
         /// 读取数据。
@@ -68,7 +79,29 @@ namespace CodeArts.Db.Lts
         /// <param name="commandTimeout">超时时间。</param>
         /// <param name="defaultValue">默认值。</param>
         /// <returns></returns>
-        T Single<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default);
+        T SingleOrDefault<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default);
+
+        /// <summary>
+        /// 读取数据。
+        /// </summary>
+        /// <typeparam name="T">返回类型。</typeparam>
+        /// <param name="sql">执行语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="missingMsg">未找到数据异常。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        T First<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null);
+
+        /// <summary>
+        /// 读取数据。
+        /// </summary>
+        /// <typeparam name="T">返回类型。</typeparam>
+        /// <param name="sql">执行语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="defaultValue">默认值。</param>
+        /// <returns></returns>
+        T FirstOrDefault<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default);
 
         /// <summary>
         /// 读取数据。

@@ -20,13 +20,13 @@ namespace CodeArts.Db.Expressions
 
         private int? timeOut;
 
-        private bool required;
-
         private bool hasDefaultValue;
 
         private object defaultValue;
 
         private string mssingDataError;
+
+        private RowStyle rowStyle = RowStyle.None;
 
         private readonly ICustomVisitorList visitors;
 
@@ -80,7 +80,8 @@ namespace CodeArts.Db.Expressions
                 case MethodCall.Min:
                 case MethodCall.Max:
                 case MethodCall.Average:
-                    required = true;
+
+                    rowStyle = RowStyle.Single;
 
                     base.VisitCore(node);
 
@@ -122,9 +123,19 @@ namespace CodeArts.Db.Expressions
                     break;
                 case MethodCall.Last:
                 case MethodCall.First:
+                    rowStyle = RowStyle.First;
+                    break;
+                case MethodCall.LastOrDefault:
+                case MethodCall.FirstOrDefault:
+                    rowStyle = RowStyle.FirstOrDefault;
+                    break;
                 case MethodCall.Single:
                 case MethodCall.ElementAt:
-                    required = true;
+                    rowStyle = RowStyle.Single;
+                    goto default;
+                case MethodCall.SingleOrDefault:
+                case MethodCall.ElementAtOrDefault:
+                    rowStyle = RowStyle.SingleOrDefault;
                     goto default;
                 default:
                     base.VisitCore(node);
@@ -165,7 +176,7 @@ namespace CodeArts.Db.Expressions
                     break;
                 case MethodCall.NoResultError:
 
-                    if (!required)
+                    if (rowStyle == RowStyle.None || rowStyle == RowStyle.FirstOrDefault || rowStyle == RowStyle.SingleOrDefault)
                     {
                         throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链以“Min”、“Max”、“Average”、“Last”、“First”、“Single”或“ElementAt”结尾时，可用！");
                     }
@@ -182,7 +193,6 @@ namespace CodeArts.Db.Expressions
                     break;
                 default:
                     base.VisitOfLts(node);
-
                     break;
             }
         }
@@ -284,14 +294,7 @@ namespace CodeArts.Db.Expressions
                 }
             }
 
-            string sql = writer.ToSQL();
-
-            if (required)
-            {
-                return new CommandSql<T>(sql, writer.Parameters, timeOut, hasDefaultValue, defaultValue, mssingDataError);
-            }
-
-            return new CommandSql<T>(sql, writer.Parameters, timeOut, defaultValue);
+            return new CommandSql<T>(writer.ToSQL(), writer.Parameters, rowStyle, hasDefaultValue, defaultValue, timeOut, mssingDataError);
         }
 
         /// <summary>

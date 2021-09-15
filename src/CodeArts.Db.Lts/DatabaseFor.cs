@@ -76,7 +76,7 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        public abstract T Single<T>(IDbConnection connection, CommandSql<T> commandSql);
+        public abstract T Read<T>(IDbConnection connection, CommandSql<T> commandSql);
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
@@ -88,7 +88,7 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public abstract Task<T> SingleAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken);
+        public abstract Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken);
 #endif
 
         /// <summary>

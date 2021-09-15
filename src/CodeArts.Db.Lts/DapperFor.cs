@@ -295,11 +295,28 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        public override T Single<T>(IDbConnection connection, CommandSql<T> commandSql)
+        public override T Read<T>(IDbConnection connection, CommandSql<T> commandSql)
         {
+            object value;
             var type = typeof(T);
+            var conversionType = type.IsValueType && !type.IsNullable()
+                ? typeof(Nullable<>).MakeGenericType(type)
+                : type;
 
-            var value = connection.QuerySingleOrDefault(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+            switch (commandSql.RowStyle)
+            {
+                case RowStyle.None:
+                case RowStyle.First:
+                case RowStyle.FirstOrDefault:
+                    value = connection.QueryFirstOrDefault(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+                    break;
+                case RowStyle.Single:
+                case RowStyle.SingleOrDefault:
+                    value = connection.QuerySingleOrDefault(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
 
             if (value is null)
             {
@@ -318,11 +335,28 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public override async Task<T> SingleAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken)
+        public override async Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken)
         {
+            object value;
             var type = typeof(T);
+            var conversionType = type.IsValueType && !type.IsNullable()
+                ? typeof(Nullable<>).MakeGenericType(type)
+                : type;
 
-            var value = await connection.QuerySingleOrDefaultAsync(type.IsValueType && !type.IsNullable() ? typeof(Nullable<>).MakeGenericType(type) : type, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+            switch (commandSql.RowStyle)
+            {
+                case RowStyle.None:
+                case RowStyle.First:
+                case RowStyle.FirstOrDefault:
+                    value = await connection.QueryFirstOrDefaultAsync(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+                    break;
+                case RowStyle.Single:
+                case RowStyle.SingleOrDefault:
+                    value = await connection.QuerySingleOrDefaultAsync(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
 
             if (value is null)
             {

@@ -197,7 +197,7 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="expression">表达式。</param>
         /// <returns></returns>
-        object IQueryProvider.Execute(Expression expression) => Database.Single<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
+        object IQueryProvider.Execute(Expression expression) => Database.Read<T>(expression ?? throw new ArgumentNullException(nameof(expression)));
 
         /// <summary>
         /// 执行结果。
@@ -222,7 +222,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return Database.Single<TResult>(expression);
+            return Database.Read<TResult>(expression);
         }
 
         /// <summary>
@@ -282,7 +282,7 @@ namespace CodeArts.Db.Lts
                 throw new NotSupportedException(nameof(expression));
             }
 
-            return Database.SingleAsync<TResult>(expression);
+            return Database.ReadAsync<TResult>(expression);
         }
 
         private IAsyncEnumerable<T> AsyncEnumerable;

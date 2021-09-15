@@ -157,9 +157,9 @@ namespace CodeArts.Db.Lts
 
             public void Dispose() => connection?.Dispose();
 
-            public T Single<T>(Expression expression)
+            public T Read<T>(Expression expression)
             {
-                return Single(databaseFor.Read<T>(expression));
+                return Read(databaseFor.Read<T>(expression));
             }
 
             public IEnumerable<T> Query<T>(Expression expression)
@@ -173,9 +173,9 @@ namespace CodeArts.Db.Lts
             }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            public Task<T> ReadAsync<T>(Expression expression, CancellationToken cancellationToken = default)
             {
-                return SingleAsync(databaseFor.Read<T>(expression), cancellationToken);
+                return ReadAsync(databaseFor.Read<T>(expression), cancellationToken);
             }
 
             public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
@@ -189,27 +189,42 @@ namespace CodeArts.Db.Lts
             }
 #endif
 
-            public T Single<T>(CommandSql<T> commandSql)
+            public T Read<T>(CommandSql<T> commandSql)
             {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
                     {
-                        return databaseFor.Single<T>(dbConnection, commandSql);
+                        return databaseFor.Read<T>(dbConnection, commandSql);
                     }
                 }
 
                 if (transactions.Count == 0)
                 {
-                    return databaseFor.Single<T>(connection, commandSql);
+                    return databaseFor.Read<T>(connection, commandSql);
                 }
 
-                return databaseFor.Single<T>(this, commandSql);
+                return databaseFor.Read<T>(this, commandSql);
             }
 
-            public T Single<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            public T Single<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null)
             {
-                return Single(new CommandSql<T>(sql, param, commandTimeout, defaultValue));
+                return Read(new CommandSql<T>(sql, param, RowStyle.Single, missingMsg, commandTimeout));
+            }
+
+            public T SingleOrDefault<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            {
+                return Read(new CommandSql<T>(sql, param, RowStyle.SingleOrDefault, defaultValue, commandTimeout));
+            }
+
+            public T First<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null)
+            {
+                return Read(new CommandSql<T>(sql, param, RowStyle.First, missingMsg, commandTimeout));
+            }
+
+            public T FirstOrDefault<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            {
+                return Read(new CommandSql<T>(sql, param, RowStyle.FirstOrDefault, defaultValue, commandTimeout));
             }
 
             public IEnumerable<T> Query<T>(CommandSql commandSql)
@@ -260,27 +275,42 @@ namespace CodeArts.Db.Lts
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
-            public Task<T> SingleAsync<T>(CommandSql<T> commandSql, CancellationToken cancellationToken = default)
+            public Task<T> ReadAsync<T>(CommandSql<T> commandSql, CancellationToken cancellationToken = default)
             {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
                     {
-                        return databaseFor.SingleAsync(dbConnection, commandSql, cancellationToken);
+                        return databaseFor.ReadAsync(dbConnection, commandSql, cancellationToken);
                     }
                 }
 
                 if (transactions.Count == 0)
                 {
-                    return databaseFor.SingleAsync(connection, commandSql, cancellationToken);
+                    return databaseFor.ReadAsync(connection, commandSql, cancellationToken);
                 }
 
-                return databaseFor.SingleAsync(this, commandSql, cancellationToken);
+                return databaseFor.ReadAsync(this, commandSql, cancellationToken);
             }
 
-            public Task<T> SingleAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
+            public Task<T> SingleAsync<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
             {
-                return SingleAsync(new CommandSql<T>(sql, param, commandTimeout, defaultValue), cancellationToken);
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.Single, missingMsg, commandTimeout), cancellationToken);
+            }
+
+            public Task<T> SingleOrDefaultAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
+            {
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.SingleOrDefault, defaultValue, commandTimeout), cancellationToken);
+            }
+
+            public Task<T> FirstAsync<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+            {
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.First, missingMsg, commandTimeout), cancellationToken);
+            }
+
+            public Task<T> FirstOrDefaultAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
+            {
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.FirstOrDefault, defaultValue, commandTimeout), cancellationToken);
             }
 
             public IAsyncEnumerable<T> QueryAsync<T>(CommandSql commandSql)
@@ -505,9 +535,10 @@ namespace CodeArts.Db.Lts
 
                 base.Dispose(disposing);
             }
-            public T Single<T>(Expression expression)
+            
+            public T Read<T>(Expression expression)
             {
-                return Single(databaseFor.Read<T>(expression));
+                return Read(databaseFor.Read<T>(expression));
             }
 
             public IEnumerable<T> Query<T>(Expression expression)
@@ -521,9 +552,9 @@ namespace CodeArts.Db.Lts
             }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            public Task<T> ReadAsync<T>(Expression expression, CancellationToken cancellationToken = default)
             {
-                return SingleAsync(databaseFor.Read<T>(expression), cancellationToken);
+                return ReadAsync(databaseFor.Read<T>(expression), cancellationToken);
             }
 
             public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
@@ -537,27 +568,42 @@ namespace CodeArts.Db.Lts
             }
 #endif
 
-            public T Single<T>(CommandSql<T> commandSql)
+            public T Read<T>(CommandSql<T> commandSql)
             {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
                     {
-                        return databaseFor.Single<T>(dbConnection, commandSql);
+                        return databaseFor.Read<T>(dbConnection, commandSql);
                     }
                 }
 
                 if (transactions.Count == 0)
                 {
-                    return databaseFor.Single<T>(connection, commandSql);
+                    return databaseFor.Read<T>(connection, commandSql);
                 }
 
-                return databaseFor.Single<T>(this, commandSql);
+                return databaseFor.Read<T>(this, commandSql);
             }
 
-            public T Single<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            public T Single<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null)
             {
-                return Single(new CommandSql<T>(sql, param, commandTimeout, defaultValue));
+                return Read(new CommandSql<T>(sql, param, RowStyle.Single, missingMsg, commandTimeout));
+            }
+
+            public T SingleOrDefault<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            {
+                return Read(new CommandSql<T>(sql, param, RowStyle.SingleOrDefault, defaultValue, commandTimeout));
+            }
+
+            public T First<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null)
+            {
+                return Read(new CommandSql<T>(sql, param, RowStyle.First, missingMsg, commandTimeout));
+            }
+
+            public T FirstOrDefault<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            {
+                return Read(new CommandSql<T>(sql, param, RowStyle.FirstOrDefault, defaultValue, commandTimeout));
             }
 
             public IEnumerable<T> Query<T>(CommandSql commandSql)
@@ -608,27 +654,42 @@ namespace CodeArts.Db.Lts
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
-            public Task<T> SingleAsync<T>(CommandSql<T> commandSql, CancellationToken cancellationToken = default)
+            public Task<T> ReadAsync<T>(CommandSql<T> commandSql, CancellationToken cancellationToken = default)
             {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
                     {
-                        return databaseFor.SingleAsync(dbConnection, commandSql, cancellationToken);
+                        return databaseFor.ReadAsync(dbConnection, commandSql, cancellationToken);
                     }
                 }
 
                 if (transactions.Count == 0)
                 {
-                    return databaseFor.SingleAsync(connection, commandSql, cancellationToken);
+                    return databaseFor.ReadAsync(connection, commandSql, cancellationToken);
                 }
 
-                return databaseFor.SingleAsync(this, commandSql, cancellationToken);
+                return databaseFor.ReadAsync(this, commandSql, cancellationToken);
             }
 
-            public Task<T> SingleAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
+            public Task<T> SingleAsync<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
             {
-                return SingleAsync(new CommandSql<T>(sql, param, commandTimeout, defaultValue), cancellationToken);
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.Single, missingMsg, commandTimeout), cancellationToken);
+            }
+
+            public Task<T> SingleOrDefaultAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
+            {
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.SingleOrDefault, defaultValue, commandTimeout), cancellationToken);
+            }
+
+            public Task<T> FirstAsync<T>(string sql, object param = null, string missingMsg = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+            {
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.First, missingMsg, commandTimeout), cancellationToken);
+            }
+
+            public Task<T> FirstOrDefaultAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
+            {
+                return ReadAsync(new CommandSql<T>(sql, param, RowStyle.FirstOrDefault, defaultValue, commandTimeout), cancellationToken);
             }
 
             public IAsyncEnumerable<T> QueryAsync<T>(CommandSql commandSql)

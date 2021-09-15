@@ -42,6 +42,33 @@ namespace CodeArts.Db
     }
 
     /// <summary>
+    /// 查询行。
+    /// </summary>
+    public enum RowStyle
+    {
+        /// <summary>
+        /// 不限。
+        /// </summary>
+        None = -1,
+        /// <summary>
+        /// 取第一条。
+        /// </summary>
+        First = 0,
+        /// <summary>
+        /// 取第一条或默认。
+        /// </summary>
+        FirstOrDefault = 1,
+        /// <summary>
+        /// 有且仅有一条。
+        /// </summary>
+        Single = 2,
+        /// <summary>
+        /// 只有一条，或没有。
+        /// </summary>
+        SingleOrDefault = 3
+    }
+
+    /// <summary>
     /// 命令SQL。
     /// </summary>
     public class CommandSql<T> : CommandSql
@@ -51,9 +78,11 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="sql">SQL。</param>
         /// <param name="param">参数。</param>
+        /// <param name="rowStyle">数据风格。</param>
+        /// <param name="missingMsg">异常信息。</param>
         /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="defaultValue">默认值。</param>
-        public CommandSql(string sql, object param = null, int? commandTimeout = null, T defaultValue = default) : this(sql, param, commandTimeout, true, defaultValue)
+        public CommandSql(string sql, object param, RowStyle rowStyle = RowStyle.None, string missingMsg = null, int? commandTimeout = null)
+            : this(sql, param, rowStyle, false, default, commandTimeout, missingMsg)
         {
         }
 
@@ -62,16 +91,36 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="sql">SQL。</param>
         /// <param name="param">参数。</param>
+        /// <param name="rowStyle">数据风格。</param>
+        /// <param name="defaultValue">默认值。</param>
         /// <param name="commandTimeout">超时时间。</param>
-        /// <param name="hasDefaultValue">是否包含默认值。</param>
+        public CommandSql(string sql, object param, RowStyle rowStyle, T defaultValue, int? commandTimeout = null)
+            : this(sql, param, rowStyle, true, defaultValue, commandTimeout, null)
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="hasDefaultValue">有指定默认值。</param>
+        /// <param name="rowStyle">数据风格。</param>
+        /// <param name="commandTimeout">超时时间。</param>
         /// <param name="defaultValue">默认值。</param>
         /// <param name="missingMsg">未找到数据异常消息。</param>
-        public CommandSql(string sql, object param, int? commandTimeout, bool hasDefaultValue, T defaultValue = default, string missingMsg = null) : base(sql, param, commandTimeout)
+        public CommandSql(string sql, object param, RowStyle rowStyle, bool hasDefaultValue, T defaultValue = default, int? commandTimeout = null, string missingMsg = null) : base(sql, param, commandTimeout)
         {
             HasDefaultValue = hasDefaultValue;
             DefaultValue = defaultValue;
             MissingMsg = missingMsg;
+            RowStyle = rowStyle;
         }
+
+        /// <summary>
+        /// 数据风格。
+        /// </summary>
+        public RowStyle RowStyle { get; }
 
         /// <summary>
         /// 是否包含默认值。
