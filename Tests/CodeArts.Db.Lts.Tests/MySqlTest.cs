@@ -209,7 +209,7 @@ namespace UnitTest
             };
 
             UserSingleton.AsUpdateable(entry)
-            .Limit(x => x.Account)
+            .Set(x => x.Account)
             .Where(x => new { x.Tel, x.Mail })
             .ExecuteCommand();
         }
@@ -245,7 +245,7 @@ namespace UnitTest
             };
 
             int i = UserSingleton.AsDeleteable(entry)
-            .Where(x => x.Account ?? x.Tel)
+            .Where(x => x.Account)
             .ExecuteCommand();
         }
 

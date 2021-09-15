@@ -11,15 +11,8 @@ namespace CodeArts.Db.Lts.Routes
     /// 更新能力。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-    public interface IUpdateable<TEntity> : IUpdateableByTransaction<TEntity> where TEntity : class, IEntiy
+    public interface IUpdateable<TEntity> : IUpdateableByFrom<TEntity> where TEntity : class, IEntiy
     {
-        /// <summary>
-        /// SQL 监视。
-        /// </summary>
-        /// <param name="watchSql">监视器。</param>
-        /// <returns></returns>
-        IUpdateable<TEntity> WatchSql(Action<CommandSql> watchSql);
-
         /// <summary>
         /// 跳过幂等验证。
         /// </summary>
@@ -27,40 +20,18 @@ namespace CodeArts.Db.Lts.Routes
         IUpdateable<TEntity> SkipIdempotentValid();
 
         /// <summary>
-        /// 开启事务保护，使用数据库默认隔离级别。
-        /// <see cref="System.Data.IDbConnection.BeginTransaction()"/>
-        /// </summary>
-        /// <returns></returns>
-        IUpdateableByTransaction<TEntity> UseTransaction();
-
-        /// <summary>
-        /// 开启事务保护，设置事务隔离级别。
-        /// <see cref="System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel)"/>
-        /// </summary>
-        /// <param name="isolationLevel">隔离级别。</param>
-        /// <returns></returns>
-        IUpdateableByTransaction<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel);
-    }
-
-    /// <summary>
-    /// 更新能力。
-    /// </summary>
-    /// <typeparam name="TEntity">实体类型。</typeparam>
-    public interface IUpdateableByTransaction<TEntity> : IUpdateableByFrom<TEntity> where TEntity : class, IEntiy
-    {
-        /// <summary>
         /// 数据源。
         /// </summary>
         /// <param name="tableGetter">表名称。</param>
         /// <returns></returns>
-        IUpdateableByFrom<TEntity> From(Func<ITableInfo, string> tableGetter);
+        IUpdateableByFrom<TEntity> Table(Func<ITableInfo, string> tableGetter);
 
         /// <summary>
         /// 数据源。
         /// </summary>
         /// <param name="tableGetter">表名称。</param>
         /// <returns></returns>
-        IUpdateableByFrom<TEntity> From(Func<ITableInfo, TEntity, string> tableGetter);
+        IUpdateableByFrom<TEntity> Table(Func<ITableInfo, TEntity, string> tableGetter);
     }
 
     /// <summary>
@@ -74,28 +45,28 @@ namespace CodeArts.Db.Lts.Routes
         /// </summary>
         /// <param name="columns">字段。</param>
         /// <returns></returns>
-        IUpdateableByLimit<TEntity> Limit(string[] columns);
+        IUpdateableByLimit<TEntity> Set(string[] columns);
 
         /// <summary>
         /// 只更新的字段。
         /// </summary>
         /// <param name="columns">字段。</param>
         /// <returns></returns>
-        IUpdateableByLimit<TEntity> Limit<TColumn>(Expression<Func<TEntity, TColumn>> columns);
+        IUpdateableByLimit<TEntity> Set<TColumn>(Expression<Func<TEntity, TColumn>> columns);
 
         /// <summary>
         /// 不更新的字段。
         /// </summary>
         /// <param name="columns">字段。</param>
         /// <returns></returns>
-        IUpdateableByLimit<TEntity> Except(string[] columns);
+        IUpdateableByLimit<TEntity> SetExcept(string[] columns);
 
         /// <summary>
         /// 不更新的字段。
         /// </summary>
         /// <param name="columns">字段。</param>
         /// <returns></returns>
-        IUpdateableByLimit<TEntity> Except<TColumn>(Expression<Func<TEntity, TColumn>> columns);
+        IUpdateableByLimit<TEntity> SetExcept<TColumn>(Expression<Func<TEntity, TColumn>> columns);
     }
 
     /// <summary>
@@ -133,6 +104,28 @@ namespace CodeArts.Db.Lts.Routes
     /// <typeparam name="TEntity">实体类型。</typeparam>
     public interface IUpdateableByCommit<TEntity> where TEntity : class, IEntiy
     {
+        /// <summary>
+        /// SQL 监视。
+        /// </summary>
+        /// <param name="watchSql">监视器。</param>
+        /// <returns></returns>
+        IUpdateableByCommit<TEntity> WatchSql(Action<CommandSql> watchSql);
+
+        /// <summary>
+        /// 开启事务保护，使用数据库默认隔离级别。
+        /// <see cref="System.Data.IDbConnection.BeginTransaction()"/>
+        /// </summary>
+        /// <returns></returns>
+        IUpdateableByCommit<TEntity> Transaction();
+
+        /// <summary>
+        /// 开启事务保护，设置事务隔离级别。
+        /// <see cref="System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel)"/>
+        /// </summary>
+        /// <param name="isolationLevel">隔离级别。</param>
+        /// <returns></returns>
+        IUpdateableByCommit<TEntity> Transaction(System.Data.IsolationLevel isolationLevel);
+
         /// <summary>
         /// 执行指令。
         /// </summary>

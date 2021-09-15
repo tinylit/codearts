@@ -11,43 +11,14 @@ namespace CodeArts.Db.Lts.Routes
     /// 删除能力。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-    public interface IDeleteable<TEntity> : IDeleteableByTransaction<TEntity> where TEntity : class, IEntiy
+    public interface IDeleteable<TEntity> : IDeleteableByFrom<TEntity> where TEntity : class, IEntiy
     {
-        /// <summary>
-        /// SQL 监视。
-        /// </summary>
-        /// <param name="watchSql">监视器。</param>
-        /// <returns></returns>
-        IDeleteable<TEntity> WatchSql(Action<CommandSql> watchSql);
-
         /// <summary>
         /// 跳过幂等验证。
         /// </summary>
         /// <returns></returns>
         IDeleteable<TEntity> SkipIdempotentValid();
 
-        /// <summary>
-        /// 开启事务保护，使用数据库默认隔离级别。
-        /// <see cref="System.Data.IDbConnection.BeginTransaction()"/>
-        /// </summary>
-        /// <returns></returns>
-        IDeleteableByTransaction<TEntity> UseTransaction();
-
-        /// <summary>
-        /// 开启事务保护，设置事务隔离级别。
-        /// <see cref="System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel)"/>
-        /// </summary>
-        /// <param name="isolationLevel">隔离级别。</param>
-        /// <returns></returns>
-        IDeleteableByTransaction<TEntity> UseTransaction(System.Data.IsolationLevel isolationLevel);
-    }
-
-    /// <summary>
-    /// 删除能力。
-    /// </summary>
-    /// <typeparam name="TEntity">实体类型。</typeparam>
-    public interface IDeleteableByTransaction<TEntity> : IDeleteableByFrom<TEntity> where TEntity : class, IEntiy
-    {
         /// <summary>
         /// 数据源。
         /// </summary>
@@ -69,6 +40,7 @@ namespace CodeArts.Db.Lts.Routes
     /// <typeparam name="TEntity">实体类型。</typeparam>
     public interface IDeleteableByFrom<TEntity> : IDeleteableByWhere<TEntity> where TEntity : class, IEntiy
     {
+
     }
 
     /// <summary>
@@ -98,6 +70,27 @@ namespace CodeArts.Db.Lts.Routes
     /// <typeparam name="TEntity">实体类型。</typeparam>
     public interface IDeleteableByCommit<TEntity> where TEntity : class, IEntiy
     {
+        /// <summary>
+        /// SQL 监视。
+        /// </summary>
+        /// <param name="watchSql">监视器。</param>
+        /// <returns></returns>
+        IDeleteableByCommit<TEntity> WatchSql(Action<CommandSql> watchSql);
+
+        /// <summary>
+        /// 开启事务保护，使用数据库默认隔离级别。
+        /// <see cref="System.Data.IDbConnection.BeginTransaction()"/>
+        /// </summary>
+        /// <returns></returns>
+        IDeleteableByCommit<TEntity> Transaction();
+
+        /// <summary>
+        /// 开启事务保护，设置事务隔离级别。
+        /// <see cref="System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel)"/>
+        /// </summary>
+        /// <param name="isolationLevel">隔离级别。</param>
+        /// <returns></returns>
+        IDeleteableByCommit<TEntity> Transaction(System.Data.IsolationLevel isolationLevel);
         /// <summary>
         /// 执行指令。
         /// </summary>

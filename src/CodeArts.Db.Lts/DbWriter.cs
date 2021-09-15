@@ -565,10 +565,10 @@ namespace CodeArts.Db.Lts
             public IInsertableByCommit<TEntity> Except<TColumn>(Expression<Func<TEntity, TColumn>> columns)
                 => Except(DbRouter<TEntity>.Instance.Except(columns));
 
-            public IInsertableByFrom<TEntity> From(Func<ITableInfo, string> tableGetter)
+            public IInsertableByFrom<TEntity> Into(Func<ITableInfo, string> tableGetter)
                 => new InsertableByFrom(this, tableGetter);
 
-            public IInsertableByFrom<TEntity> From(Func<ITableInfo, TEntity, string> tableGetter)
+            public IInsertableByFrom<TEntity> Into(Func<ITableInfo, TEntity, string> tableGetter)
                 => new InsertableByAnalyseFrom(this, tableGetter);
 
             public IInsertableByCommit<TEntity> Limit(string[] columns)
@@ -581,21 +581,21 @@ namespace CodeArts.Db.Lts
             public IInsertableByCommit<TEntity> Limit<TColumn>(Expression<Func<TEntity, TColumn>> columns)
                 => Limit(DbRouter.Limit(columns));
 
-            public IInsertable<TEntity> WatchSql(Action<CommandSql> watchSql)
+            public IInsertableByCommit<TEntity> WatchSql(Action<CommandSql> watchSql)
             {
                 SetWatchSql(watchSql);
 
                 return this;
             }
 
-            public IInsertableByTransaction<TEntity> UseTransaction()
+            public IInsertableByCommit<TEntity> Transaction()
             {
                 SetTransaction(IsolationLevel.ReadCommitted);
 
                 return this;
             }
 
-            public IInsertableByTransaction<TEntity> UseTransaction(IsolationLevel isolationLevel)
+            public IInsertableByCommit<TEntity> Transaction(IsolationLevel isolationLevel)
             {
                 SetTransaction(isolationLevel);
 
@@ -830,14 +830,14 @@ namespace CodeArts.Db.Lts
             public IDeleteableByWhere<TEntity> Where<TColumn>(Expression<Func<TEntity, TColumn>> columns)
                 => Where(DbRouter.Where(columns));
 
-            public IDeleteableByTransaction<TEntity> UseTransaction()
+            public IDeleteableByCommit<TEntity> Transaction()
             {
                 SetTransaction(IsolationLevel.ReadCommitted);
 
                 return this;
             }
 
-            public IDeleteableByTransaction<TEntity> UseTransaction(IsolationLevel isolationLevel)
+            public IDeleteableByCommit<TEntity> Transaction(IsolationLevel isolationLevel)
             {
                 SetTransaction(isolationLevel);
 
@@ -965,7 +965,7 @@ namespace CodeArts.Db.Lts
                 return new Tuple<string, Dictionary<string, ParameterValue>>(sb.ToString(), parameters);
             }
 
-            public IDeleteable<TEntity> WatchSql(Action<CommandSql> watchSql)
+            public IDeleteableByCommit<TEntity> WatchSql(Action<CommandSql> watchSql)
             {
                 SetWatchSql(watchSql);
 
@@ -1223,31 +1223,31 @@ namespace CodeArts.Db.Lts
                 }
             }
 
-            public IUpdateableByLimit<TEntity> Except(string[] columns)
+            public IUpdateableByLimit<TEntity> SetExcept(string[] columns)
             {
                 Aw_Except(columns);
 
                 return this;
             }
 
-            public IUpdateableByLimit<TEntity> Except<TColumn>(Expression<Func<TEntity, TColumn>> columns)
-                => Except(DbRouter.Except(columns));
+            public IUpdateableByLimit<TEntity> SetExcept<TColumn>(Expression<Func<TEntity, TColumn>> columns)
+                => SetExcept(DbRouter.Except(columns));
 
-            public IUpdateableByFrom<TEntity> From(Func<ITableInfo, string> tableGetter)
+            public IUpdateableByFrom<TEntity> Table(Func<ITableInfo, string> tableGetter)
                 => new UpdateableByFrom(this, tableGetter);
 
-            public IUpdateableByFrom<TEntity> From(Func<ITableInfo, TEntity, string> tableGetter)
+            public IUpdateableByFrom<TEntity> Table(Func<ITableInfo, TEntity, string> tableGetter)
                 => new UpdateableByAnalyseFrom(this, tableGetter);
 
-            public IUpdateableByLimit<TEntity> Limit(string[] columns)
+            public IUpdateableByLimit<TEntity> Set(string[] columns)
             {
                 Aw_Limit(columns);
 
                 return this;
             }
 
-            public IUpdateableByLimit<TEntity> Limit<TColumn>(Expression<Func<TEntity, TColumn>> columns)
-                => Limit(DbRouter.Limit(columns));
+            public IUpdateableByLimit<TEntity> Set<TColumn>(Expression<Func<TEntity, TColumn>> columns)
+                => Set(DbRouter.Limit(columns));
 
             public IUpdateableByWhere<TEntity> Where(string[] columns)
             {
@@ -1378,7 +1378,7 @@ namespace CodeArts.Db.Lts
                 return results;
             }
 
-            public IUpdateable<TEntity> WatchSql(Action<CommandSql> watchSql)
+            public IUpdateableByCommit<TEntity> WatchSql(Action<CommandSql> watchSql)
             {
                 SetWatchSql(watchSql);
 
@@ -1395,14 +1395,14 @@ namespace CodeArts.Db.Lts
                 return this;
             }
 
-            public IUpdateableByTransaction<TEntity> UseTransaction()
+            public IUpdateableByCommit<TEntity> Transaction()
             {
                 SetTransaction(IsolationLevel.ReadCommitted);
 
                 return this;
             }
 
-            public IUpdateableByTransaction<TEntity> UseTransaction(IsolationLevel isolationLevel)
+            public IUpdateableByCommit<TEntity> Transaction(IsolationLevel isolationLevel)
             {
                 SetTransaction(isolationLevel);
 

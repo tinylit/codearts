@@ -1134,7 +1134,8 @@ namespace UnitTest
             }
 
             _ = user.AsInsertable(list)
-                .UseTransaction()
+                .Into(x => x.TableName)
+                .Transaction()
                 .ExecuteCommand();
         }
 
@@ -1172,15 +1173,17 @@ namespace UnitTest
             };
 
             var i = user.AsUpdateable(entry)
+                .Table(x => x.TableName)
+                .SetExcept(x => x.Bcid)
                 .WatchSql(x =>
                 {
                     Debug.WriteLine(x.Sql);
                 })
-                .UseTransaction()
+                .Transaction()
                 .ExecuteCommand();
 
             var j = user.AsUpdateable(entry)
-                .Limit(x => x.Password)
+                .Set(x => x.Password)
                 .Where(x => x.Mobile)
                 .ExecuteCommand();
 

@@ -190,9 +190,9 @@ namespace CodeArts.Db.Expressions
         /// <inheritdoc />
         protected override void Constant(Type conversionType, object value)
         {
-            if (buildWatchSql && value is Action<CommandSql> watchSql)
+            if (buildWatchSql)
             {
-                this.watchSql = watchSql;
+                watchSql = (Action<CommandSql>)value;
             }
             else
             {

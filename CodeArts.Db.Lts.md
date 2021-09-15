@@ -402,27 +402,29 @@ await user.DeleteAsync(x=>x.Id == 1101);
 
 ##### 公共方法。
 
-|      方法      |             返回值              | 参数           | 描述                   |
-| :------------: | :-----------------------------: | :------------- | :--------------------- |
-| UseTransaction | IDbRouteExecuter&lt;TEntity&gt; |                | 默认事务级别提交。     |
-| UseTransaction | IDbRouteExecuter&lt;TEntity&gt; | IsolationLevel | 指定事务级别提交。     |
-| ExecuteCommand |               int               | [int?]         | 执行命令，返回影响行。 |
+|      方法      |             返回值              | 参数                     | 描述                   |
+| :------------: | :-----------------------------: | :----------------------- | :--------------------- |
+|    WatchSql    | ICommandByCommit&lt;TEntity&gt; | Action&lt;CommandSql&gt; | 执行语句监视。         |
+|  Transaction   | ICommandByCommit&lt;TEntity&gt; |                          | 默认事务级别提交。     |
+|  Transaction   | ICommandByCommit&lt;TEntity&gt; | IsolationLevel           | 指定事务级别提交。     |
+| ExecuteCommand |               int               | [int?]                   | 执行命令，返回影响行。 |
 
 ##### 插入。
 
-|     方法     |           返回值           | 参数                                                     | 描述                                           |
-| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------- |
-| AsInsertable | IInsertable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定插入能力。 |
-|     From     | IInsertable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定插入表名称，默认：实体分析的名称。         |
-|    Limit     | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                 |
-|    Except    | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                 |
+|     方法     |           返回值           | 参数                                                     | 描述                                                 |
+| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------------- |
+| AsInsertable | IInsertable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定插入能力。       |
+|     Into     | IInsertable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定插入表名称，默认：实体分析的名称。               |
+|     Into     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
+|    Limit     | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                       |
+|    Except    | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                       |
 
 例如[^2]：
 
 ```c#
 user.AsInsertable(new User { Id = 1011, Name = "影子和树", Version = 1, Timestamp = DateTime.Now.Ticks})
     .Limit(x=>new { x.Id, x.Name, x.Timestamp }) // 指定插入的字段。
-    .Except(x=> x.Id) // 不插入的字段。
+    //.Except(x=> x.Id) // 不插入的字段。
     .ExecuteCommand();
 ```
 
@@ -431,17 +433,17 @@ user.AsInsertable(new User { Id = 1011, Name = "影子和树", Version = 1, Time
 |     方法     |           返回值           | 参数                                                     | 描述                                                 |
 | :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------------- |
 | AsUpdateable | IUpdateable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定更新能力。       |
-|     From     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。               |
-|     From     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
+|    Table     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。               |
+|    Table     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
 |    Where     | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定更新条件字段。                                   |
-|    Limit     | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                       |
-|    Except    | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                       |
+|     Set      | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                       |
+|  SetExcept   | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                       |
 
 例如[^3]：
 
 ```c#
 await user.AsUpdateable(new User { Id = 1011, Name = "影子和树", Version = 1, Timestamp = DateTime.Now.Ticks})
-    .Except(x=> new {x.Id, x.Name})
+    .SetExcept(x=> new {x.Id, x.Name})
     .ExecuteCommandAsync();
 ```
 
