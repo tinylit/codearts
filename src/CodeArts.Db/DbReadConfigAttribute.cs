@@ -5,8 +5,8 @@ namespace CodeArts.Db
     /// <summary>
     /// 只读连接。
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
-    public class DbReadConfigAttribute : DbConfigAttribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
+    public sealed class DbReadConfigAttribute : DbConfigAttribute
     {
         /// <summary>
         /// 构造函数。

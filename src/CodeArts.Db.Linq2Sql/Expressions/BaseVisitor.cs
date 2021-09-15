@@ -160,7 +160,7 @@ namespace CodeArts.Db.Expressions
             {
                 if (isNewWriter)
                 {
-                    visitor.writer.Write(ToSQL());
+                    visitor.writer.Write(ToString());
                 }
             }
         }
@@ -892,7 +892,11 @@ namespace CodeArts.Db.Expressions
 
             var value = (node.Value as ConstantExpression ?? node).GetValueFromExpression();
 
-            if (value is Expression expression)
+            if (value is null)
+            {
+                writer.Null();
+            }
+            else if (value is Expression expression)
             {
                 Visit(expression);
             }
@@ -916,20 +920,33 @@ namespace CodeArts.Db.Expressions
                     }
                 }
             }
-            else if (node.Type.IsValueType || node.Type == typeof(string) || node.Type == typeof(Version))
-            {
-                writer.Parameter(value);
-            }
-            else if (buildFrom && value is Func<ITableInfo, string> valueFn)
-            {
-                tableGetter = valueFn;
-            }
             else
             {
-                throw new DSyntaxErrorException($"{node.Type.FullName}类型的常量（{value}）不被支持!");
+                Constant(node.Type, value);
             }
 
             return node;
+        }
+
+        /// <summary>
+        /// 常量。
+        /// </summary>
+        /// <param name="conversionType">常量类型。</param>
+        /// <param name="value">值。</param>
+        protected virtual void Constant(Type conversionType, object value)
+        {
+            if (conversionType.IsValueType || conversionType == typeof(string) || conversionType == typeof(Version))
+            {
+                writer.Parameter(value);
+            }
+            else if (buildFrom && value is Func<ITableInfo, string> tableGetter)
+            {
+                this.tableGetter = tableGetter;
+            }
+            else
+            {
+                throw new DSyntaxErrorException($"{conversionType.FullName}类型的常量（{value}）不被支持!");
+            }
         }
 
         /// <summary>
@@ -2528,7 +2545,7 @@ namespace CodeArts.Db.Expressions
                     isConditionBalance = false;
                 }
 
-                label_core:
+            label_core:
 
                 if (flag)
                 {
@@ -2759,15 +2776,10 @@ namespace CodeArts.Db.Expressions
 
         #region SQL
         /// <summary>
-        /// 参数集合。
-        /// </summary>
-        public Dictionary<string, object> Parameters => writer.Parameters;
-
-        /// <summary>
         /// 生成SQL语句。
         /// </summary>
         /// <returns></returns>
-        public virtual string ToSQL() => writer.ToSQL();
+        public override string ToString() => writer.ToSQL();
         #endregion
 
         #region IDisposable Support

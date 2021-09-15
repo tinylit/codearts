@@ -9,6 +9,8 @@ namespace CodeArts.Db.Expressions
     /// </summary>
     public class ExecuteVisitor : BaseVisitor, IExecuteVisitor
     {
+        private Action<CommandSql> watchSql;
+        private int? timeOut;
         private readonly ICustomVisitorList visitors;
 
         /// <inheritdoc />
@@ -16,6 +18,24 @@ namespace CodeArts.Db.Expressions
         {
             this.visitors = visitors;
         }
+
+        /// <summary>
+        /// 创建插入访问器。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual InsertVisitor CreateInsertVisitor() => new InsertVisitor(this);
+
+        /// <summary>
+        /// 创建更新访问器。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual UpdateVisitor CreateUpdateVisitor() => new UpdateVisitor(this);
+
+        /// <summary>
+        /// 创建删除访问器。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual DeleteVisitor CreateDeleteVisitor() => new DeleteVisitor(this);
 
         /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node)
@@ -26,13 +46,21 @@ namespace CodeArts.Db.Expressions
         /// </summary>
         public void SetTimeOut(int timeOut)
         {
-            if (TimeOut.HasValue)
+            if (this.timeOut.HasValue)
             {
-                timeOut += TimeOut.Value;
+                this.timeOut += timeOut;
             }
-
-            TimeOut = new int?(timeOut);
+            else
+            {
+                this.timeOut = new int?(timeOut);
+            }
         }
+
+        /// <summary>
+        /// SQL监视。
+        /// </summary>
+        /// <param name="watchSql">SQL监视。</param>
+        public void WatchSql(Action<CommandSql> watchSql) => this.watchSql = watchSql;
 
         /// <inheritdoc />
         protected override IEnumerable<ICustomVisitor> GetCustomVisitors() => visitors;
@@ -43,24 +71,19 @@ namespace CodeArts.Db.Expressions
             switch (node.Method.Name)
             {
                 case MethodCall.Insert:
-                    Behavior = ActionBehavior.Insert;
-
-                    using (var visitor = new InsertVisitor(this))
+                    using (var visitor = CreateInsertVisitor())
                     {
                         visitor.Startup(node);
                     }
                     break;
                 case MethodCall.Update:
-                    Behavior = ActionBehavior.Update;
-
-                    using (var visitor = new UpdateVisitor(this))
+                    using (var visitor = CreateUpdateVisitor())
                     {
-                       visitor.Startup(node);
+                        visitor.Startup(node);
                     }
                     break;
                 case MethodCall.Delete:
-                    Behavior = ActionBehavior.Delete;
-                    using (var visitor = new DeleteVisitor(this))
+                    using (var visitor = CreateDeleteVisitor())
                     {
                         visitor.Startup(node);
                     }
@@ -71,13 +94,16 @@ namespace CodeArts.Db.Expressions
         }
 
         /// <summary>
-        /// 指令行为。
+        /// 转SQL。
         /// </summary>
-        public ActionBehavior Behavior { private set; get; }
+        /// <returns></returns>
+        public CommandSql ToSQL()
+        {
+            var sql = new CommandSql(writer.ToSQL(), writer.Parameters, timeOut);
 
-        /// <summary>
-        /// 获取或设置在终止尝试执行命令并生成错误之前的等待时间。
-        /// </summary>
-        public int? TimeOut { private set; get; }
+            watchSql?.Invoke(sql);
+
+            return sql;
+        }
     }
 }

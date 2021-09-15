@@ -113,30 +113,9 @@ namespace CodeArts.Db.Lts
         {
             using (var visitor = Create())
             {
-                T defaultValue = default;
-
                 visitor.Startup(expression);
 
-                if (visitor.HasDefaultValue)
-                {
-                    if (visitor.DefaultValue is T value)
-                    {
-                        defaultValue = value;
-                    }
-                    else if (visitor.DefaultValue != null)
-                    {
-                        throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({visitor.DefaultValue.GetType()})无法进行默认转换!");
-                    }
-                }
-
-                string sql = visitor.ToSQL();
-
-                if (visitor.Required)
-                {
-                    return new CommandSql<T>(sql, visitor.Parameters, visitor.TimeOut, visitor.HasDefaultValue, defaultValue, visitor.MissingDataError);
-                }
-
-                return new CommandSql<T>(sql, visitor.Parameters, visitor.TimeOut, defaultValue);
+                return visitor.ToSQL<T>();
             }
         }
 
@@ -151,9 +130,7 @@ namespace CodeArts.Db.Lts
             {
                 visitor.Startup(expression);
 
-                string sql = visitor.ToSQL();
-
-                return new CommandSql(sql, visitor.Parameters, visitor.TimeOut);
+                return visitor.ToSQL();
             }
         }
     }

@@ -44,6 +44,19 @@ namespace System.Linq
         /// <br/><seealso cref="Queryable.Single{TSource}(IQueryable{TSource})"/>
         /// <br/><seealso cref="Queryable.Single{TSource}(IQueryable{TSource}, Expression{Func{TSource, bool}})"/>
         /// <br/><seealso cref="Queryable.ElementAt{TSource}(IQueryable{TSource}, int)"/>
+        /// <br/><seealso cref="Queryable.Max{TSource}(IQueryable{TSource})"/>
+        /// <br/><seealso cref="Queryable.Max{TSource, TResult}(IQueryable{TSource}, Expression{Func{TSource, TResult}})"/>
+        /// <br/><seealso cref="Queryable.Min{TSource}(IQueryable{TSource})"/>
+        /// <br/><seealso cref="Queryable.Min{TSource, TResult}(IQueryable{TSource}, Expression{Func{TSource, TResult}})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{decimal})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{decimal?})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{double})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{double?})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{float})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{float?})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{int})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{long})"/>
+        /// <br/><seealso cref="Queryable.Average(IQueryable{long?})"/>
         /// </summary>
         /// <typeparam name="TSource">资源类型。</typeparam>
         /// <param name="source">查询器。</param>
@@ -53,6 +66,19 @@ namespace System.Linq
         => source.Provider.CreateQuery<TSource>(Expression.Call(null, QueryableMethods.NoResultError.MakeGenericMethod(typeof(TSource)), new Expression[2] {
             source.Expression,
             Expression.Constant(errMsg)
+        }));
+
+        /// <summary>
+        /// SQL监视器。
+        /// </summary>
+        /// <typeparam name="TSource">资源类型。</typeparam>
+        /// <param name="source">查询器。</param>
+        /// <param name="watchSql">监视器。</param>
+        /// <returns></returns>
+        public static IQueryable<TSource> WatchSql<TSource>(this IQueryable<TSource> source, Action<CommandSql> watchSql)
+        => source.Provider.CreateQuery<TSource>(Expression.Call(null, QueryableMethods.WatchSql.MakeGenericMethod(typeof(TSource)), new Expression[2] {
+                    source.Expression,
+                    Expression.Constant(watchSql)
         }));
     }
 }

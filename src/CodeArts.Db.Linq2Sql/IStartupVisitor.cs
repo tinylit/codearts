@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace CodeArts.Db
@@ -15,16 +14,5 @@ namespace CodeArts.Db
         /// <param name="node">分析表达式。</param>
         /// <returns></returns>
         void Startup(Expression node);
-
-        /// <summary>
-        /// 参数。
-        /// </summary>
-        Dictionary<string, object> Parameters { get; }
-
-        /// <summary>
-        /// SQL语句。
-        /// </summary>
-        /// <returns></returns>
-        string ToSQL();
     }
 }

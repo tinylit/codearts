@@ -34,6 +34,7 @@ namespace CodeArts.Db.Lts
         private static readonly MethodInfo DeleteMethod = QueryableMethods.Delete.MakeGenericMethod(TypeSelfEntity);
         private static readonly MethodInfo DeleteWithPredicateMethod = QueryableMethods.DeleteWithPredicate.MakeGenericMethod(TypeSelfEntity);
         private static readonly MethodInfo InsertMethod = QueryableMethods.Insert.MakeGenericMethod(TypeSelfEntity);
+        private static readonly MethodInfo WatchSqlMethod = QueryableMethods.WatchSql.MakeGenericMethod(TypeSelfEntity);
 
         /// <summary>
         /// 构造函数。
@@ -74,18 +75,38 @@ namespace CodeArts.Db.Lts
         {
             if (connectionConfig is null)
             {
-                var attr = DbConfigCache.GetOrAdd(GetType(), type =>
-                {
-                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbWriteConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
-                }) ?? DbConfigCache.GetOrAdd(ElementType, type =>
-                {
-                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbWriteConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
-                });
+                var attr = DbConfigCache.GetOrAdd(GetType(), Aw_GetDbConfig) ?? DbConfigCache.GetOrAdd(ElementType, Aw_GetDbConfig);
 
-                return attr.GetConfig();
+                return attr?.GetConfig();
             }
 
             return connectionConfig;
+        }
+
+
+        private static DbConfigAttribute Aw_GetDbConfig(Type type)
+        {
+            var attributes = Attribute.GetCustomAttributes(type, typeof(DbConfigAttribute));
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbWriteConfigAttribute writeConfigAttribute)
+                {
+                    return writeConfigAttribute;
+                }
+            }
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbReadConfigAttribute)
+                {
+                    continue;
+                }
+
+                return (DbConfigAttribute)attribute;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -95,7 +116,12 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public IDRepository<TEntity> From(Func<ITableInfo, string> table)
         {
-            return new DRepository<TEntity>(Database, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table ?? throw new ArgumentNullException(nameof(table))) }));
+            if (table is null)
+            {
+                throw new ArgumentNullException(nameof(table));
+            }
+
+            return new DRepository<TEntity>(Database, Expression.Call(null, FromMethod, new Expression[2] { Expression, Expression.Constant(table) }));
         }
 
         /// <summary>
@@ -116,6 +142,21 @@ namespace CodeArts.Db.Lts
         public IDRepository<TEntity> TimeOut(int commandTimeout)
         {
             return new DRepository<TEntity>(Database, Expression.Call(null, TimeOutMethod, new Expression[2] { Expression, Expression.Constant(commandTimeout) }));
+        }
+
+        /// <summary>
+        /// SQL监视器。
+        /// </summary>
+        /// <param name="watchSql">监视器。</param>
+        /// <returns></returns>
+        public IDRepository<TEntity> WatchSql(Action<CommandSql> watchSql)
+        {
+            if (watchSql is null)
+            {
+                throw new ArgumentNullException(nameof(watchSql));
+            }
+
+            return new DRepository<TEntity>(Database, Expression.Call(null, WatchSqlMethod, new Expression[2] { Expression, Expression.Constant(watchSql) }));
         }
 
         /// <summary>

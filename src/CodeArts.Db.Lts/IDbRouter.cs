@@ -15,7 +15,7 @@ namespace CodeArts.Db.Lts
         /// <typeparam name="TColumn">获取字段的类型。</typeparam>
         /// <param name="columns">字段。</param>
         /// <returns></returns>
-        Func<TEntity, string[]> Where<TColumn>(Expression<Func<TEntity, TColumn>> columns);
+        string[] Where<TColumn>(Expression<Func<TEntity, TColumn>> columns);
 
         /// <summary>
         /// 动作需要操作的字段。

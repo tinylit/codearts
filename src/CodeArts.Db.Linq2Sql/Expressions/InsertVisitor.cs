@@ -12,6 +12,7 @@ namespace CodeArts.Db.Expressions
     /// </summary>
     public class InsertVisitor : BaseVisitor
     {
+        private bool buildWatchSql = false;
         private readonly ExecuteVisitor visitor;
 
         private class InsertSelectVisitor : SelectVisitor
@@ -61,6 +62,16 @@ namespace CodeArts.Db.Expressions
                     visitor.SetTimeOut((int)node.Arguments[1].GetValueFromExpression());
 
                     base.Visit(node.Arguments[0]);
+
+                    break;
+                case MethodCall.WatchSql:
+                    buildWatchSql = true;
+
+                    Visit(node.Arguments[1]);
+
+                    buildWatchSql = false;
+
+                    Visit(node.Arguments[0]);
 
                     break;
                 case MethodCall.Insert:
@@ -114,6 +125,19 @@ namespace CodeArts.Db.Expressions
                     base.VisitOfLts(node);
 
                     break;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void Constant(Type conversionType, object value)
+        {
+            if (buildWatchSql && value is Action<CommandSql> watchSql)
+            {
+                visitor.WatchSql(watchSql);
+            }
+            else
+            {
+                base.Constant(conversionType, value);
             }
         }
     }

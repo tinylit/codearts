@@ -93,6 +93,8 @@ namespace CodeArts.Db.Lts
 
             public ISQLCorrectSettings Settings => adapter.Settings;
 
+            public string Format(SQL sql) => sql?.ToString(adapter.Settings);
+
             public string ConnectionString { get => Connection.ConnectionString; set => Connection.ConnectionString = value; }
 
             public int ConnectionTimeout => Connection.ConnectionTimeout;
@@ -133,7 +135,7 @@ namespace CodeArts.Db.Lts
                 return transaction;
             }
 
-            public void Close() => connection.Close();
+            public void Close() => connection?.Close();
 
             public void ChangeDatabase(string databaseName) => Connection.ChangeDatabase(databaseName);
 
@@ -157,27 +159,61 @@ namespace CodeArts.Db.Lts
 
             public T Single<T>(Expression expression)
             {
-                var commandSql = databaseFor.Read<T>(expression);
-
-                SqlCapture.Current?.Capture(commandSql);
-
-                if (connection is null)
-                {
-                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
-                    {
-                        return databaseFor.Single(dbConnection, commandSql);
-                    }
-                }
-
-                return databaseFor.Single(this, commandSql);
+                return Single(databaseFor.Read<T>(expression));
             }
 
             public IEnumerable<T> Query<T>(Expression expression)
             {
-                var commandSql = databaseFor.Read<T>(expression);
+                return Query<T>(databaseFor.Read<T>(expression));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
+            public int Execute(Expression expression)
+            {
+                return Execute(databaseFor.Execute(expression));
+            }
 
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            {
+                return SingleAsync(databaseFor.Read<T>(expression), cancellationToken);
+            }
+
+            public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
+            {
+                return QueryAsync<T>(databaseFor.Read<T>(expression));
+            }
+
+            public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
+            {
+                return ExecuteAsync(databaseFor.Execute(expression), cancellationToken);
+            }
+#endif
+
+            public T Single<T>(CommandSql<T> commandSql)
+            {
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Single<T>(dbConnection, commandSql);
+                    }
+                }
+
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.Single<T>(connection, commandSql);
+                }
+
+                return databaseFor.Single<T>(this, commandSql);
+            }
+
+            public T Single<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            {
+                return Single(new CommandSql<T>(sql, param, commandTimeout, defaultValue));
+            }
+
+            public IEnumerable<T> Query<T>(CommandSql commandSql)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -186,15 +222,21 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.Query<T>(connection, commandSql);
+                }
+
                 return databaseFor.Query<T>(this, commandSql);
             }
 
-            public int Execute(Expression expression)
+            public IEnumerable<T> Query<T>(string sql, object param = null, int? commandTimeout = null)
             {
-                var commandSql = databaseFor.Execute(expression);
+                return Query<T>(new CommandSql(sql, param, commandTimeout));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
-
+            public int Execute(CommandSql commandSql)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -203,16 +245,23 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.Execute(connection, commandSql);
+                }
+
                 return databaseFor.Execute(this, commandSql);
             }
 
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            public int Execute(string sql, object param = null, int? commandTimeout = null)
             {
-                var commandSql = databaseFor.Read<T>(expression);
+                return Execute(new CommandSql(sql, param, commandTimeout));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
+            public Task<T> SingleAsync<T>(CommandSql<T> commandSql, CancellationToken cancellationToken = default)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -221,15 +270,21 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.SingleAsync(connection, commandSql, cancellationToken);
+                }
+
                 return databaseFor.SingleAsync(this, commandSql, cancellationToken);
             }
 
-            public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
+            public Task<T> SingleAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
             {
-                var commandSql = databaseFor.Read<T>(expression);
+                return SingleAsync(new CommandSql<T>(sql, param, commandTimeout, defaultValue), cancellationToken);
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
-
+            public IAsyncEnumerable<T> QueryAsync<T>(CommandSql commandSql)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -238,15 +293,21 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.QueryAsync<T>(connection, commandSql);
+                }
+
                 return databaseFor.QueryAsync<T>(this, commandSql);
             }
 
-            public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
+            public IAsyncEnumerable<T> QueryAsync<T>(string sql, object param = null, int? commandTimeout = null)
             {
-                var commandSql = databaseFor.Execute(expression);
+                return QueryAsync<T>(new CommandSql(sql, param, commandTimeout));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
-
+            public Task<int> ExecuteAsync(CommandSql commandSql, CancellationToken cancellationToken = default)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -255,7 +316,17 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.ExecuteAsync(connection, commandSql, cancellationToken);
+                }
+
                 return databaseFor.ExecuteAsync(this, commandSql, cancellationToken);
+            }
+
+            public Task<int> ExecuteAsync(string sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+            {
+                return ExecuteAsync(new CommandSql(sql, param, commandTimeout), cancellationToken);
             }
 #endif
         }
@@ -335,6 +406,8 @@ namespace CodeArts.Db.Lts
             public string ProviderName => adapter.ProviderName;
 
             public ISQLCorrectSettings Settings => adapter.Settings;
+
+            public string Format(SQL sql) => sql?.ToString(adapter.Settings);
 
             public override string ConnectionString { get => Connection.ConnectionString; set => Connection.ConnectionString = value; }
 
@@ -432,30 +505,63 @@ namespace CodeArts.Db.Lts
 
                 base.Dispose(disposing);
             }
-
             public T Single<T>(Expression expression)
             {
-                var commandSql = databaseFor.Read<T>(expression);
-
-                SqlCapture.Current?.Capture(commandSql);
-
-                if (connection is null)
-                {
-                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
-                    {
-                        return databaseFor.Single(dbConnection, commandSql);
-                    }
-                }
-
-                return databaseFor.Single(this, commandSql);
+                return Single(databaseFor.Read<T>(expression));
             }
 
             public IEnumerable<T> Query<T>(Expression expression)
             {
-                var commandSql = databaseFor.Read<T>(expression);
+                return Query<T>(databaseFor.Read<T>(expression));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
+            public int Execute(Expression expression)
+            {
+                return Execute(databaseFor.Execute(expression));
+            }
 
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            {
+                return SingleAsync(databaseFor.Read<T>(expression), cancellationToken);
+            }
+
+            public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
+            {
+                return QueryAsync<T>(databaseFor.Read<T>(expression));
+            }
+
+            public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
+            {
+                return ExecuteAsync(databaseFor.Execute(expression), cancellationToken);
+            }
+#endif
+
+            public T Single<T>(CommandSql<T> commandSql)
+            {
+                if (connection is null)
+                {
+                    using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
+                    {
+                        return databaseFor.Single<T>(dbConnection, commandSql);
+                    }
+                }
+
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.Single<T>(connection, commandSql);
+                }
+
+                return databaseFor.Single<T>(this, commandSql);
+            }
+
+            public T Single<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default)
+            {
+                return Single(new CommandSql<T>(sql, param, commandTimeout, defaultValue));
+            }
+
+            public IEnumerable<T> Query<T>(CommandSql commandSql)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -464,15 +570,21 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.Query<T>(connection, commandSql);
+                }
+
                 return databaseFor.Query<T>(this, commandSql);
             }
 
-            public int Execute(Expression expression)
+            public IEnumerable<T> Query<T>(string sql, object param = null, int? commandTimeout = null)
             {
-                var commandSql = databaseFor.Execute(expression);
+                return Query<T>(new CommandSql(sql, param, commandTimeout));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
-
+            public int Execute(CommandSql commandSql)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -481,16 +593,23 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.Execute(connection, commandSql);
+                }
+
                 return databaseFor.Execute(this, commandSql);
             }
 
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public Task<T> SingleAsync<T>(Expression expression, CancellationToken cancellationToken = default)
+            public int Execute(string sql, object param = null, int? commandTimeout = null)
             {
-                var commandSql = databaseFor.Read<T>(expression);
+                return Execute(new CommandSql(sql, param, commandTimeout));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
+            public Task<T> SingleAsync<T>(CommandSql<T> commandSql, CancellationToken cancellationToken = default)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -499,15 +618,21 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.SingleAsync(connection, commandSql, cancellationToken);
+                }
+
                 return databaseFor.SingleAsync(this, commandSql, cancellationToken);
             }
 
-            public IAsyncEnumerable<T> QueryAsync<T>(Expression expression)
+            public Task<T> SingleAsync<T>(string sql, object param = null, int? commandTimeout = null, T defaultValue = default, CancellationToken cancellationToken = default)
             {
-                var commandSql = databaseFor.Read<T>(expression);
+                return SingleAsync(new CommandSql<T>(sql, param, commandTimeout, defaultValue), cancellationToken);
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
-
+            public IAsyncEnumerable<T> QueryAsync<T>(CommandSql commandSql)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -516,15 +641,21 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.QueryAsync<T>(connection, commandSql);
+                }
+
                 return databaseFor.QueryAsync<T>(this, commandSql);
             }
 
-            public Task<int> ExecuteAsync(Expression expression, CancellationToken cancellationToken = default)
+            public IAsyncEnumerable<T> QueryAsync<T>(string sql, object param = null, int? commandTimeout = null)
             {
-                var commandSql = databaseFor.Execute(expression);
+                return QueryAsync<T>(new CommandSql(sql, param, commandTimeout));
+            }
 
-                SqlCapture.Current?.Capture(commandSql);
-
+            public Task<int> ExecuteAsync(CommandSql commandSql, CancellationToken cancellationToken = default)
+            {
                 if (connection is null)
                 {
                     using (var dbConnection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, adapter, true))
@@ -533,7 +664,17 @@ namespace CodeArts.Db.Lts
                     }
                 }
 
+                if (transactions.Count == 0)
+                {
+                    return databaseFor.ExecuteAsync(connection, commandSql, cancellationToken);
+                }
+
                 return databaseFor.ExecuteAsync(this, commandSql, cancellationToken);
+            }
+
+            public Task<int> ExecuteAsync(string sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+            {
+                return ExecuteAsync(new CommandSql(sql, param, commandTimeout), cancellationToken);
             }
 #endif
         }

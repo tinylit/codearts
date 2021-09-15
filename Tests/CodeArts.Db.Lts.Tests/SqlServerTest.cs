@@ -541,26 +541,26 @@ namespace UnitTest
             var user = new UserRepository();
             var result = user.Where(x => x.Id > 100 && x.CreatedTime < DateTime.Now && x.Username.IndexOf("m", 2, 2) > 1)
                 .Select(x => new { x.Id, Name = x.Username, Time = DateTime.Now.Ticks, OldId = x.Id + 1, Date = x.CreatedTime });
-            var list = result.ToList();
+            _ = result.ToList();
         }
         [TestMethod]
         public void MaxTest()
         {
             var user = new UserRepository();
-            var result = user.Max();
+            _ = user.Max();
         }
         [TestMethod]
         public void MaxWithTest()
         {
             var user = new UserRepository();
-            var result = user.Max(x => x.Id);
+            _ = user.Max(x => x.Id);
         }
 
         [TestMethod]
         public void WhereMaxTest()
         {
             var user = new UserRepository();
-            var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now).Max();
+            _ = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now).Max();
         }
 
         [TestMethod]
@@ -568,7 +568,7 @@ namespace UnitTest
         {
             var user = new UserRepository();
             var result = user.Distinct();
-            var list = result.ToList();
+            _ = result.ToList();
         }
 
         [TestMethod]
@@ -576,7 +576,7 @@ namespace UnitTest
         {
             var user = new UserRepository();
             var result = user.Distinct().Select(x => x.Id);
-            var list = result.ToList();
+            _ = result.ToList();
         }
 
         [TestMethod]
@@ -584,7 +584,7 @@ namespace UnitTest
         {
             var user = new UserRepository();
             var result = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now).Distinct();
-            var list = result.ToList();
+            _ = result.ToList();
         }
 
         [TestMethod]
@@ -883,7 +883,7 @@ namespace UnitTest
         {
 
             var user = new UserRepository();
-            var userEntity = user.FirstOrDefault();
+            _ = user.FirstOrDefault();
         }
         [TestMethod]
         public void FirstOrDefaultWhereTest()
@@ -1133,7 +1133,7 @@ namespace UnitTest
                 });
             }
 
-            var l = user.AsInsertable(list)
+            _ = user.AsInsertable(list)
                 .UseTransaction()
                 .ExecuteCommand();
         }
@@ -1172,12 +1172,16 @@ namespace UnitTest
             };
 
             var i = user.AsUpdateable(entry)
-                .UseTransaction(System.Data.IsolationLevel.ReadCommitted)
+                .WatchSql(x =>
+                {
+                    Debug.WriteLine(x.Sql);
+                })
+                .UseTransaction()
                 .ExecuteCommand();
 
             var j = user.AsUpdateable(entry)
                 .Limit(x => x.Password)
-                .Where(x => x.Username ?? x.Mobile)
+                .Where(x => x.Mobile)
                 .ExecuteCommand();
 
             var k = user
@@ -1621,71 +1625,24 @@ namespace UnitTest
                            y.Mallagid
                        };
 
-            using (var c = new SqlCapture
+            var results = linq.WatchSql(x =>
             {
-                Captured = context =>
-                {
-                    Debug.WriteLine(context.Sql);
-                }
-            })
-            {
-                var results = linq.ToList();
-            }
+                Debug.WriteLine(x.Sql);
+            }).ToList();
+
         }
 
         [TestMethod]
         public void SqlCaptureTest2()
         {
             var user = new UserRepository();
-            var userdetails = new UserDetailsRepository();
 
-            var unionRight = (from x in user
-                              join y in userdetails
-                              on x.Id equals y.Id
-                              where x.Id < 10000
-                              select x)
-                              .Union(from x in user
-                                     join y in userdetails
-                                     on x.Id equals y.Id
-                                     where x.Id >= 10000
-                                     select x);
-
-            var linq = from x in user
-                       join y in unionRight.Where(y => y.Mallagid > 0)
-                       on x.Id equals y.Id
-                       where y.Mallagid > 0
-                       orderby y.Mallagid
-                       orderby x.Id
-                       orderby y.Id
-                       select new
-                       {
-                           x.Id,
-                           y.Mallagid
-                       };
-
-            using (var c = new SqlCapture
-            {
-                Captured = context =>
-                {
-                    Debug.WriteLine($"1:{context.Sql}");
-                }
-            })
-            {
-                var results = userdetails.Where(x => x.Id > 100)
-                 .Where(x => user.Any(y => x.Id == y.Id))
-                 .ToList();
-
-                using (var c2 = new SqlCapture
-                {
-                    Captured = context =>
-                    {
-                        Debug.WriteLine($"2:{context.Sql}");
-                    }
-                })
-                {
-                    var results2 = linq.ToList();
-                }
-            }
+            _ = user.Where(x => x.Id == 0)
+                 .WatchSql(x =>
+                 {
+                     Debug.WriteLine(x.Sql);
+                 })
+                 .Delete();
         }
 
         /// <summary>
@@ -2190,7 +2147,7 @@ namespace UnitTest
                 ModifiedTime = DateTime.Now
             };
 
-            var i = await user.AsUpdateable(entry)
+            _ = await user.AsUpdateable(entry)
                 .ExecuteCommandAsync();
         }
 
@@ -2216,16 +2173,7 @@ namespace UnitTest
 
             using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                using (var c2 = new SqlCapture
-                {
-                    Captured = context =>
-                    {
-                        Debug.WriteLine($"2:{context.Sql}");
-                    }
-                })
-                {
-                    var results = await user.ToListAsync();
-                }
+                var results = await user.ToListAsync();
             }
         }
 

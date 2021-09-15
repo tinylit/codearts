@@ -112,6 +112,13 @@ namespace CodeArts.Db.Dapper
         }
 
         /// <summary>
+        /// 将SQL转化为当前数据库规范的语句。
+        /// </summary>
+        /// <param name="sql">语句。</param>
+        /// <returns></returns>
+        public string FormatSql(SQL sql) => sql?.ToString(Settings);
+
+        /// <summary>
         /// 查询分页数据。
         /// </summary>
         /// <typeparam name="T">集合元素类型。</typeparam>
@@ -191,7 +198,6 @@ namespace CodeArts.Db.Dapper
                 disposedValue = true;
             }
         }
-
 
         /// <summary>
         /// // TODO: 仅当“Dispose(bool disposing)”拥有用于释放未托管资源的代码时才替代终结器

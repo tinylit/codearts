@@ -5,7 +5,7 @@ namespace CodeArts.Db
     /// <summary>
     /// 数据库连接。
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     public class DbConfigAttribute : Attribute
     {
         private readonly string configName;

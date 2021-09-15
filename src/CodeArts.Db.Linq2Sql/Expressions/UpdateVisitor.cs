@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db.Exceptions;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,6 +11,7 @@ namespace CodeArts.Db.Expressions
     /// </summary>
     public class UpdateVisitor : CoreVisitor
     {
+        private bool buildWatchSql = false;
         private readonly ExecuteVisitor visitor;
 
         /// <inheritdoc />
@@ -31,6 +33,16 @@ namespace CodeArts.Db.Expressions
                     visitor.SetTimeOut((int)node.Arguments[1].GetValueFromExpression());
 
                     base.Visit(node.Arguments[0]);
+
+                    break;
+                case MethodCall.WatchSql:
+                    buildWatchSql = true;
+
+                    Visit(node.Arguments[1]);
+
+                    buildWatchSql = false;
+
+                    Visit(node.Arguments[0]);
 
                     break;
                 case MethodCall.Update:
@@ -201,6 +213,19 @@ namespace CodeArts.Db.Expressions
             else
             {
                 throw new DException("未指定更新字段!");
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void Constant(Type conversionType, object value)
+        {
+            if (buildWatchSql && value is Action<CommandSql> watchSql)
+            {
+                visitor.WatchSql(watchSql);
+            }
+            else
+            {
+                base.Constant(conversionType, value);
             }
         }
     }

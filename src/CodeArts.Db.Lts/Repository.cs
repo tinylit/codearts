@@ -89,18 +89,37 @@ namespace CodeArts.Db.Lts
         {
             if (connectionConfig is null)
             {
-                var attr = DbConfigCache.GetOrAdd(GetType(), type =>
-                {
-                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbReadConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
-                }) ?? DbConfigCache.GetOrAdd(ElementType, type =>
-                {
-                    return (DbConfigAttribute)(Attribute.GetCustomAttribute(type, typeof(DbReadConfigAttribute)) ?? Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute)));
-                });
+                var attr = DbConfigCache.GetOrAdd(GetType(), Aw_GetDbConfig) ?? DbConfigCache.GetOrAdd(ElementType, Aw_GetDbConfig);
 
-                return attr.GetConfig();
+                return attr?.GetConfig();
             }
 
             return connectionConfig;
+        }
+
+        private static DbConfigAttribute Aw_GetDbConfig(Type type)
+        {
+            var attributes = Attribute.GetCustomAttributes(type, typeof(DbConfigAttribute));
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbReadConfigAttribute readConfigAttribute)
+                {
+                    return readConfigAttribute;
+                }
+            }
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbWriteConfigAttribute)
+                {
+                    continue;
+                }
+
+                return (DbConfigAttribute)attribute;
+            }
+
+            return null;
         }
 
         /// <summary>

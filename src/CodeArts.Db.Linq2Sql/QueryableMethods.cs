@@ -474,6 +474,13 @@ namespace System.Linq
         /// </summary>
         public static MethodInfo Insert { get; }
 
+        /// <summary>
+        ///     The <see cref="RepositoryExtentions" /> for
+        ///     <see
+        ///         cref="RepositoryExtentions.WatchSql{TSource}(IQueryable{TSource}, Action{CommandSql})" />
+        /// </summary>
+        public static MethodInfo WatchSql { get; }
+
         static QueryableMethods()
         {
             var queryableMethods = typeof(Queryable)
@@ -803,6 +810,7 @@ namespace System.Linq
             Update = repositoryMethods.Single(mi => mi.Name == nameof(RepositoryExtentions.Update));
             Delete = repositoryMethods.Single(mi => mi.Name == nameof(RepositoryExtentions.Delete) && mi.GetParameters().Length == 1);
             DeleteWithPredicate = repositoryMethods.Single(mi => mi.Name == nameof(RepositoryExtentions.Delete) && mi.GetParameters().Length == 2);
+            WatchSql = repositoryMethods.Single(mi => mi.Name == nameof(RepositoryExtentions.WatchSql));
         }
     }
 }

@@ -171,7 +171,7 @@ namespace UnitTest
                 Modified = modified
             };
 
-            int i = UserSingleton.AsInsertable(entry)
+            _ = UserSingleton.AsInsertable(entry)
                   .ExecuteCommand();
         }
 
@@ -209,8 +209,8 @@ namespace UnitTest
             };
 
             UserSingleton.AsUpdateable(entry)
-            .Where(x => new { x.Tel, x.Mail })
             .Limit(x => x.Account)
+            .Where(x => new { x.Tel, x.Mail })
             .ExecuteCommand();
         }
 
@@ -279,11 +279,11 @@ namespace UnitTest
                 });
             }
 
-            var j = ormTest.AsInsertable(list).ExecuteCommand();
+            _ = ormTest.AsInsertable(list).ExecuteCommand();
 
-            var results = ormTest.ToList();
+            _ = ormTest.ToList();
 
-            var k = ormTest.AsDeleteable(list).ExecuteCommand();
+            _ = ormTest.AsDeleteable(list).ExecuteCommand();
         }
 
         [TestMethod]

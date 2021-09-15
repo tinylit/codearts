@@ -152,7 +152,7 @@ CodeArts.Net 是HTTP/HTTPS请求工具，涵盖了刷新认证、重试、序列
   - JsonCast&lt;T&gt;：接收JSON格式数据，并自动反序列化为`T`类型，需要提供`IJsonHelper`接口支持，可以使用`CodeArts.Json`包。
   - String：接收任意格式结果。
 * 刷新认证。
-  - Then/ThenAsync/TryThen/TryThenAsync：请求异常刷新认证(每个设置，最多执行异常)。
+  - Then/ThenAsync/TryThen/TryThenAsync：请求异常刷新认证(每个设置，最多执行一次)。
   - If/And：需要刷新认证的条件。
 * 重试。
   - TryIf/Or：重试条件（返回`true`代表需要重试）。

@@ -176,7 +176,7 @@ namespace CodeArts.Db.Tests
         {
             var insert = "insert into dzfphx VALUES('invoiceNo',@requestId);";
 
-            SQL insert2 = new SQL(insert);
+            _ = new SQL(insert);
 
             string sql = "select * from fei_users a , fei_data , fei_userdetails b on a.uid=b.uid where a.uid < 100";
 
@@ -193,7 +193,7 @@ namespace CodeArts.Db.Tests
                 group by ywdjid
                 having sum(spje)!=0 ";
 
-            SQL sQL2 = new SQL(sql2);
+            _ = new SQL(sql2);
 
             SQL sQL1 = new SQL(@"
             /*
@@ -435,7 +435,7 @@ namespace CodeArts.Db.Tests
 
             var settings = new MySqlCorrectSettings();
 
-            var query = sQL.Add(sQL1).ToString(settings);
+            _ = sQL.Add(sQL1).ToString(settings);
             /**
             *select * from `fei_users` `a` , `fei_data` , `fei_userdetails` `b` on `a`.`uid`=`b`.`uid` where `a`.`uid` < 100;
             *            SET NAMES utf8mb4;
@@ -539,7 +539,7 @@ namespace CodeArts.Db.Tests
             sqlSettings.Formatters.Add(new CreateIfFormatter());
             sqlSettings.Formatters.Add(new DropIfFormatter());
 
-            var query2 = sQL.ToString(sqlSettings);
+            _ = sQL.ToString(sqlSettings);
             /**
             *select * from [fei_users] [a] , [fei_data] , [fei_userdetails] [b] on [a].[uid]=[b].[uid] where [a].[uid] < 100;
             *            SET NAMES utf8mb4;
@@ -659,7 +659,7 @@ namespace CodeArts.Db.Tests
             *            SET FOREIGN_KEY_CHECKS = 1;
             */
 
-            var sql3 = new SQL("SELECT ywdjid as requestid FROM dzfp  GROUP BY ywdjid");
+            _ = new SQL("SELECT ywdjid as requestid FROM dzfp  GROUP BY ywdjid");
         }
 
         [TestMethod]
@@ -675,8 +675,6 @@ namespace CodeArts.Db.Tests
             DbConnectionManager.RegisterDatabaseFor<DapperFor>();
 
             var adapter = DbConnectionManager.Get(config.ProviderName);
-            var connection = adapter.Create(config.ConnectionString);
-            var provider = DbConnectionManager.GetOrCreate(adapter);
 
             var sql = new SQL(@"select 
                 replace(max(gmfmc),' ','') as gmfmc,
@@ -723,7 +721,7 @@ VALUES
 
             var settings = new SqlServerCorrectSettings();
 
-            var sql2 = new SQL(@"PRAGMA foreign_keys = OFF;
+            _ = new SQL(@"PRAGMA foreign_keys = OFF;
 
                                 -- ----------------------------
                                 -- Table structure for yep_work_cache
@@ -734,7 +732,7 @@ VALUES
 		                            PRIMARY KEY ([Id])
                                 )");
 
-            var value = sql.ToString(settings);
+            _ = sql.ToString(settings);
         }
 
 
@@ -755,7 +753,7 @@ VALUES
             CLOSE cursor_name --关闭游标
             DEALLOCATE cursor_name --释放游标";
 
-            var sql = new SQL(sqlstr);
+            _ = new SQL(sqlstr);
 
             /**
              * DECLARE {username} varchar(20),{UserId} varchar(100)
@@ -779,7 +777,7 @@ VALUES
 
             var settings = new SqlServerCorrectSettings();
 
-            var sql1 = new SQL(@"select 
+            _ = new SQL(@"select 
             replace(ywdjid,' ','') as ddbh
             from  vw_youe_dzfp
             where datediff(dd, ywrq, getdate()) < 10
@@ -788,7 +786,7 @@ VALUES
             having sum(spje) != 0 ")
                 .ToString(settings);
 
-            var sql2 = new SQL(@"select
+            _ = new SQL(@"select
 replace(max(GMFMC),' ','') as gmfmc,
 sum(spje) as jshj,
 max(YWRQ) as ywrq,
@@ -807,7 +805,7 @@ WHERE YWDJID =@ddbh
 group by YWDJID
 having sum(SPJE)<>0").ToString(settings);
 
-            var sql3 = new SQL(@"select
+            _ = new SQL(@"select
 '0' as fphxz,
 replace(max(SPMC),' ','') as spmc,
 case when SUM(SPSL)=0 then 1 else SUM(SPSL) end as spsl,
@@ -860,7 +858,7 @@ group by  a.str_out_bill_id";
             sqlSettings.Formatters.Add(new CreateIfFormatter());
             sqlSettings.Formatters.Add(new DropIfFormatter());
 
-            var query2 = sql.ToString(sqlSettings);
+            _ = sql.ToString(sqlSettings);
         }
 
         [TestMethod]
@@ -880,7 +878,7 @@ WHERE
  AND djlx_id IN ( '02', '03' ) 
  AND a.sls_tax_date > '2020-06-01'");
 
-            var str = sql.ToString(settings);
+            _ = sql.ToString(settings);
 
         }
 
@@ -891,7 +889,7 @@ WHERE
 
             SQL sql = new SQL("INSERT INTO fphzhd_a VALUES (@ddbh,'1', @invoiceNo, Convert(decimal(14,4),@jshj), convert(varchar(10),convert(datetime,@kprq),120),@invoiceCode, @pdf,0);");
 
-            var str = sql.ToString(settings);
+            _ = sql.ToString(settings);
         }
 
         [TestMethod]
@@ -936,11 +934,11 @@ order by a.str_out_bill_id desc";
 
             var pagedSql = sql.ToSQL(0, 10);
 
-            var str = countSql.ToString(settings);
+            _ = countSql.ToString(settings);
 
-            var pagedStr = pagedSql.ToSQL(1, 20).ToString(settings);
+            _ = pagedSql.ToSQL(1, 20).ToString(settings);
 
-            var pagedStr2 = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
+            _ = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
         }
 
         [TestMethod]
@@ -983,11 +981,11 @@ group by  a.str_out_bill_id";
 
             var pagedSql = sql.ToSQL(0, 10);
 
-            var str = countSql.ToString(settings);
+            _ = countSql.ToString(settings);
 
-            var pagedStr = pagedSql.ToSQL(1, 20).ToString(settings);
+            _ = pagedSql.ToSQL(1, 20).ToString(settings);
 
-            var pagedStr2 = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
+            _ = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
         }
     }
 }

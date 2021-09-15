@@ -38,6 +38,13 @@ namespace CodeArts.Db.Lts
         IDRepository<TEntity> TimeOut(int commandTimeout);
 
         /// <summary>
+        /// SQL监视器。
+        /// </summary>
+        /// <param name="watchSql">监视器。</param>
+        /// <returns></returns>
+        IDRepository<TEntity> WatchSql(Action<CommandSql> watchSql);
+
+        /// <summary>
         /// 更新数据。
         /// </summary>
         /// <param name="updateExp">更新的字段和值。</param>

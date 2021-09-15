@@ -58,11 +58,13 @@ namespace Mvc.Core.Controllers
     public class Dependency : IDependency
     {
         private readonly UserRepository user;
+        private readonly ILogger<Dependency> logger;
 
         /// <inheritdoc />
         public Dependency(UserRepository user, ILogger<Dependency> logger)
         {
             this.user = user;
+            this.logger = logger;
         }
 
         /// <inheritdoc />

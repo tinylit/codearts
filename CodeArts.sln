@@ -91,8 +91,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Linq2Sql", "src
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Middleware", "src\CodeArts.Middleware\CodeArts.Middleware.csproj", "{F05FBC01-A93E-45F0-A5D8-6777147F09A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.Dapper", "src\CodeArts.Db.Dapper\CodeArts.Db.Dapper.csproj", "{607046A6-7C4C-48BB-AB54-EAF1021390CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Dapper", "src\CodeArts.Db.Dapper\CodeArts.Db.Dapper.csproj", "{607046A6-7C4C-48BB-AB54-EAF1021390CA}"
+<<<<<<< .mine
 EndProject
+=======
+EndProject
+>>>>>>> .theirs
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

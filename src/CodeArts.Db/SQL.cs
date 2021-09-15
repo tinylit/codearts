@@ -37,13 +37,29 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="sql">SQL。</param>
         /// <returns></returns>
-        public SQL Add(string sql) => new SQL(string.Concat(ToString(), ";", sql));
+        public SQL Add(string sql)
+        {
+            if (string.IsNullOrEmpty(sql))
+            {
+                return this;
+            }
+
+            return new SQL(string.Concat(ToString(), ";", sql));
+        }
 
         /// <summary>
         /// 添加语句。
         /// </summary>
         /// <param name="sql">SQL。</param>
-        public SQL Add(SQL sql) => new SQL(string.Concat(ToString(), ";", sql.ToString()));
+        public SQL Add(SQL sql)
+        {
+            if (sql is null)
+            {
+                return this;
+            }
+
+            return Add(sql.ToString());
+        }
 
 #if NET40
         private ReadOnlyCollection<TableToken> tables;
@@ -64,7 +80,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 操作的表。
         /// </summary>
-        #if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER
         public IReadOnlyCollection<TableToken> Tables => tables ??= adpter.AnalyzeTables(sql);
 #else
         public IReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
@@ -73,7 +89,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 参数。
         /// </summary>
-        #if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER
         public IReadOnlyCollection<string> Parameters => parameters ??= adpter.AnalyzeParameters(sql);
 #else
         public IReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
@@ -115,9 +131,14 @@ namespace CodeArts.Db
         /// <returns></returns>
         public static SQL operator +(SQL left, SQL right)
         {
-            if (left is null || right is null)
+            if (left is null)
             {
-                return right ?? left;
+                return right;
+            }
+
+            if (right is null)
+            {
+                return left;
             }
 
             return left.Add(right);

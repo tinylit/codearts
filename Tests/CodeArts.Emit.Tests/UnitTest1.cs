@@ -235,72 +235,6 @@ namespace CodeArts.Emit.Tests
             /// <inheritdoc />
             public virtual bool AopTestByOut(int i, out int j)
             {
-                switch (i)
-                {
-                    case 1:
-                        j = 5;
-                        break;
-                    case 2:
-                        j = 15;
-                        break;
-                    default:
-                        j = i * i * 5;
-                        break;
-                }
-
-
-                string str = "A";
-
-                switch (str)
-                {
-                    case "A":
-                        str = "X";
-                        break;
-                    case "B":
-                        str = "Y";
-                        break;
-                    default:
-                        break;
-                }
-
-                object value = i;
-
-                switch (value)
-                {
-                    case int i1:
-                        i = i1;
-                        break;
-                    case string text:
-                        i = 10;
-                        break;
-                    default:
-                        break;
-                }
-
-                DateTimeKind timeKind = (DateTimeKind)i;
-
-                switch (timeKind)
-                {
-                    case DateTimeKind.Local:
-                        i++;
-                        break;
-                    case DateTimeKind.Unspecified:
-                        i += 5;
-                        break;
-                    default:
-                        i--;
-                        break;
-                }
-
-                int? k = value is int ? (int?)value : default;
-
-                //var b = (i == 1) && i > 0;
-
-                //if (b)
-                //{
-                //    return true;
-                //}
-
                 j = 1;
 
                 return (i & 1) == 0;
@@ -381,27 +315,24 @@ namespace CodeArts.Emit.Tests
 
             IDependency dependency = serviceProvider.GetService<IDependency>();
             IDependency<IDependency> dependency2 = serviceProvider.GetService<IDependency<IDependency>>();
-
-            int j = 10;
-
             int i = -10;
 
-            j = +i;
+            int j = +i;
 
             dependency.Flags = true;
 
-            var k = dependency.AopTestByRef(3, ref j);
+            _ = dependency.AopTestByRef(3, ref j);
 
-            var k2 = dependency.AopTestByOut(4, out j);
+            _ = dependency.AopTestByOut(4, out j);
 
-            var k3 = dependency.Get<long>();
+            _ = dependency.Get<long>();
 
-            var k4 = dependency.GetAsync<Dependency>().GetAwaiter().GetResult();
+            _ = dependency.GetAsync<Dependency>().GetAwaiter().GetResult();
 
-            var dependency3 = dependency2.Clone(dependency);
-            var dependency4 = dependency2.Copy(dependency);
+            _ = dependency2.Clone(dependency);
+            _ = dependency2.Copy(dependency);
 
-            var dependency5 = dependency2.New<Dependency>();
+            _ = dependency2.New<Dependency>();
 
         }
     }

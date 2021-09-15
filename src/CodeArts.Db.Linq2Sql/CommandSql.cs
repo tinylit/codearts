@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CodeArts.Db.Lts
+namespace CodeArts.Db
 {
     /// <summary>
     /// 命令SQL。
@@ -13,7 +13,7 @@ namespace CodeArts.Db.Lts
         /// <param name="sql">SQL。</param>
         /// <param name="parameters">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
-        public CommandSql(string sql, object parameters, int? commandTimeout)
+        public CommandSql(string sql, object parameters = null, int? commandTimeout = null)
         {
             if (string.IsNullOrEmpty(sql))
             {
@@ -53,7 +53,7 @@ namespace CodeArts.Db.Lts
         /// <param name="param">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
         /// <param name="defaultValue">默认值。</param>
-        public CommandSql(string sql, object param, int? commandTimeout, T defaultValue = default) : this(sql, param, commandTimeout, true, defaultValue)
+        public CommandSql(string sql, object param = null, int? commandTimeout = null, T defaultValue = default) : this(sql, param, commandTimeout, true, defaultValue)
         {
         }
 
@@ -66,7 +66,7 @@ namespace CodeArts.Db.Lts
         /// <param name="hasDefaultValue">是否包含默认值。</param>
         /// <param name="defaultValue">默认值。</param>
         /// <param name="missingMsg">未找到数据异常消息。</param>
-        public CommandSql(string sql, object param, int? commandTimeout, bool hasDefaultValue, T defaultValue, string missingMsg = null) : base(sql, param, commandTimeout)
+        public CommandSql(string sql, object param, int? commandTimeout, bool hasDefaultValue, T defaultValue = default, string missingMsg = null) : base(sql, param, commandTimeout)
         {
             HasDefaultValue = hasDefaultValue;
             DefaultValue = defaultValue;

@@ -1031,7 +1031,7 @@ namespace CodeArts.Db.Expressions
 
                     throw new DSyntaxErrorException($"成员“{member.Member.Name}”未设置默认值!");
 
-                    label_break:
+                label_break:
 
                     break;
 
@@ -1208,7 +1208,7 @@ namespace CodeArts.Db.Expressions
             }
         }
 
-#region SELECT
+        #region SELECT
         /// <summary>
         /// Select。
         /// </summary>
@@ -1265,15 +1265,15 @@ namespace CodeArts.Db.Expressions
 
             return node;
         }
-#endregion
+        #endregion
 
-#region SQL
+        #region SQL
         /// <summary>
         /// SQL
         /// </summary>
         /// <returns></returns>
-        public override string ToSQL() => writer.ToSQL(take, skip);
-#endregion
+        public override string ToString() => writer.ToSQL(take, skip);
+        #endregion
 
         /// <inheritdoc />
         protected override void Dispose(bool disposing)

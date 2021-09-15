@@ -200,7 +200,7 @@ public class FeiUsers : BaseEntity<int>
     };
     await user.AsUpdateable(entry) // 主键始终会作为更新条件。
         .Limit(x => x.Password) // 指定更新字段。
-        .Where(x => x.Username ?? x.Mobile) // Username 为null时，使用 Mobile 作为条件。
+        .Where(x => x.Mobile) // 使用 Mobile 作为条件。
         .ExecuteCommandAsync();
     ```
     

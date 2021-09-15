@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace System.Linq
@@ -158,6 +159,28 @@ namespace System.Linq
             if (querable is null)
             {
                 throw new ArgumentNullException(nameof(querable));
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// SQL监视。
+        /// </summary>
+        /// <typeparam name="TSource">资源类型。</typeparam>
+        /// <param name="source">查询器。</param>
+        /// <param name="watchSql">监视SQL。</param>
+        /// <returns></returns>
+        internal static IQueryable<TSource> WatchSql<TSource>(IQueryable<TSource> source, Action<CommandSql> watchSql)
+        {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (watchSql is null)
+            {
+                throw new ArgumentNullException(nameof(watchSql));
             }
 
             throw new NotImplementedException();

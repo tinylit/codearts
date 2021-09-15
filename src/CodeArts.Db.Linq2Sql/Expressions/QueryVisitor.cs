@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CodeArts.Db.Exceptions;
+using System;
 using System.Collections.Generic;
 #if NET40
 using System.Collections.ObjectModel;
@@ -13,6 +14,20 @@ namespace CodeArts.Db.Expressions
     /// </summary>
     public class QueryVisitor : SelectVisitor, IQueryVisitor
     {
+        private bool buildWatchSql = false;
+
+        private Action<CommandSql> watchSql;
+
+        private int? timeOut;
+
+        private bool required;
+
+        private bool hasDefaultValue;
+
+        private object defaultValue;
+
+        private string mssingDataError;
+
         private readonly ICustomVisitorList visitors;
 
         private QueryVisitor(BaseVisitor baseVisitor) : base(baseVisitor)
@@ -47,17 +62,17 @@ namespace CodeArts.Db.Expressions
             switch (node.Method.Name)
             {
                 case MethodCall.DefaultIfEmpty:
-                    if (HasDefaultValue)
+                    if (hasDefaultValue)
                     {
                         throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链最多只能出现一次！");
                     }
 
                     if (node.Arguments.Count > 1)
                     {
-                        DefaultValue = node.Arguments[1].GetValueFromExpression();
+                        defaultValue = node.Arguments[1].GetValueFromExpression();
                     }
 
-                    HasDefaultValue = true;
+                    hasDefaultValue = true;
 
                     Visit(node.Arguments[0]);
 
@@ -65,7 +80,7 @@ namespace CodeArts.Db.Expressions
                 case MethodCall.Min:
                 case MethodCall.Max:
                 case MethodCall.Average:
-                    Required = true;
+                    required = true;
 
                     base.VisitCore(node);
 
@@ -74,9 +89,9 @@ namespace CodeArts.Db.Expressions
                         break;
                     }
 
-                    if (HasDefaultValue)
+                    if (hasDefaultValue)
                     {
-                        if (DefaultValue is null)
+                        if (defaultValue is null)
                         {
                             if (node.Type.IsValueType && !node.Type.IsNullable())
                             {
@@ -86,7 +101,7 @@ namespace CodeArts.Db.Expressions
                         else
                         {
                             var argType = node.Arguments[0].Type.GetGenericArguments()[0];//? 获取泛型参数。
-                            var defaultType = DefaultValue.GetType();
+                            var defaultType = defaultValue.GetType();
 
                             var parameterExp = Expression.Parameter(argType);
 
@@ -96,7 +111,7 @@ namespace CodeArts.Db.Expressions
 
                             if (argType == defaultType || defaultType.IsAssignableFrom(argType))
                             {
-                                DefaultValue = expression.GetValueFromExpression(DefaultValue);
+                                defaultValue = expression.GetValueFromExpression(defaultValue);
                             }
                             else
                             {
@@ -109,7 +124,7 @@ namespace CodeArts.Db.Expressions
                 case MethodCall.First:
                 case MethodCall.Single:
                 case MethodCall.ElementAt:
-                    Required = true;
+                    required = true;
                     goto default;
                 default:
                     base.VisitCore(node);
@@ -126,20 +141,31 @@ namespace CodeArts.Db.Expressions
 
                     int timeOut = (int)node.Arguments[1].GetValueFromExpression();
 
-                    if (TimeOut.HasValue)
+                    if (this.timeOut.HasValue)
                     {
-                        timeOut += TimeOut.Value;
+                        this.timeOut += timeOut;
                     }
-
-                    TimeOut = new int?(timeOut);
+                    else
+                    {
+                        this.timeOut = new int?(timeOut);
+                    }
 
                     Visit(node.Arguments[0]);
 
                     break;
+                case MethodCall.WatchSql:
+                    buildWatchSql = true;
 
+                    Visit(node.Arguments[1]);
+
+                    buildWatchSql = false;
+
+                    Visit(node.Arguments[0]);
+
+                    break;
                 case MethodCall.NoResultError:
 
-                    if (!Required)
+                    if (!required)
                     {
                         throw new NotSupportedException($"函数“{node.Method.Name}”仅在表达式链以“Min”、“Max”、“Average”、“Last”、“First”、“Single”或“ElementAt”结尾时，可用！");
                     }
@@ -148,7 +174,7 @@ namespace CodeArts.Db.Expressions
 
                     if (valueObj is string text)
                     {
-                        MissingDataError = text;
+                        mssingDataError = text;
                     }
 
                     Visit(node.Arguments[0]);
@@ -158,6 +184,19 @@ namespace CodeArts.Db.Expressions
                     base.VisitOfLts(node);
 
                     break;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void Constant(Type conversionType, object value)
+        {
+            if (buildWatchSql && value is Action<CommandSql> watchSql)
+            {
+                this.watchSql = watchSql;
+            }
+            else
+            {
+                base.Constant(conversionType, value);
             }
         }
 
@@ -225,24 +264,48 @@ namespace CodeArts.Db.Expressions
         }
 
         /// <summary>
-        /// 执行超时时间。
+        /// 获取执行语句。
         /// </summary>
-        public int? TimeOut { private set; get; }
+        /// <typeparam name="T">类型。</typeparam>
+        /// <returns></returns>
+        protected virtual CommandSql<T> ToSql<T>()
+        {
+            T defaultValue = default;
+
+            if (hasDefaultValue)
+            {
+                if (this.defaultValue is T value)
+                {
+                    defaultValue = value;
+                }
+                else if (this.defaultValue != null)
+                {
+                    throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({this.defaultValue.GetType()})无法进行默认转换!");
+                }
+            }
+
+            string sql = writer.ToSQL();
+
+            if (required)
+            {
+                return new CommandSql<T>(sql, writer.Parameters, timeOut, hasDefaultValue, defaultValue, mssingDataError);
+            }
+
+            return new CommandSql<T>(sql, writer.Parameters, timeOut, defaultValue);
+        }
+
         /// <summary>
-        /// 是否必须。
+        /// 获取执行语句。
         /// </summary>
-        public bool Required { private set; get; }
-        /// <summary>
-        /// 有默认值。
-        /// </summary>
-        public bool HasDefaultValue { private set; get; }
-        /// <summary>
-        /// 默认值。
-        /// </summary>
-        public object DefaultValue { private set; get; }
-        /// <summary>
-        /// 未找到数据异常。
-        /// </summary>
-        public string MissingDataError { private set; get; }
+        /// <typeparam name="T">类型。</typeparam>
+        /// <returns></returns>
+        public CommandSql<T> ToSQL<T>()
+        {
+            var sql = ToSql<T>();
+
+            watchSql?.Invoke(sql);
+
+            return sql;
+        }
     }
 }

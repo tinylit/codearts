@@ -268,5 +268,10 @@ namespace CodeArts.Db
         /// 插入。
         /// </summary>
         public const string Insert = nameof(RepositoryExtentions.Insert); // "Insert";
+
+        /// <summary>
+        /// 监视SQL。
+        /// </summary>
+        public const string WatchSql = nameof(RepositoryExtentions.WatchSql); // "WatchSql";
     }
 }

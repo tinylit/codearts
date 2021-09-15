@@ -611,9 +611,9 @@ namespace CodeArts.Db
             }
             else
             {
-                var names = name.Split('.');
+                var names = Split(name);
 
-                for (int i = 0, len = names.Length; i <= len; i++)
+                for (int i = 0, len = names.Length; i < len; i++)
                 {
                     Name(names[i]);
 
@@ -632,6 +632,80 @@ namespace CodeArts.Db
             WhiteSpace();
 
             Alias(alias);
+        }
+
+        private static string[] Split(string name) //? 解决数据库名称包含【.】的问题。
+        {
+            List<string> names = new List<string>(3);
+
+            if (TrySplit(name, '[', ']', names)) //? SQL Server
+            {
+                return names.ToArray();
+            }
+
+            if (TrySplit(name, '`', '`', names)) //? MySQL
+            {
+                return names.ToArray();
+            }
+
+            if (TrySplit(name, '"', '"', names)) //? Oracle
+            {
+                return names.ToArray();
+            }
+
+            return name.Split('.');
+        }
+
+        private static bool TrySplit(string name, char start, char end, List<string> names)
+        {
+            int indexOf = name.IndexOf(start);
+
+            if (indexOf == -1)
+            {
+                return false;
+            }
+
+            int indexOfEnd = name.IndexOf(end, indexOf + 1);
+
+            if (indexOfEnd == -1)
+            {
+                return false;
+            }
+
+            if (indexOf > 1)
+            {
+                names.AddRange(name.Substring(0, indexOf - 1).Split(new char[1] { '.' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            int charAtIndex;
+
+            do
+            {
+                charAtIndex = indexOfEnd;
+
+                names.Add(name.Substring(indexOf + 1, indexOfEnd - indexOf - 1));
+
+                indexOf = name.IndexOf(start, indexOfEnd + 1);
+
+                if (indexOf == -1)
+                {
+                    break;
+                }
+
+                indexOfEnd = name.IndexOf(end, indexOf + 1);
+
+            } while (indexOfEnd > -1);
+
+            if (name.Length > (charAtIndex + 2))
+            {
+#if NETSTANDARD2_1_OR_GREATER
+                names.AddRange(name[(charAtIndex + 2)..].Split(new char[1] { '.' }, StringSplitOptions.RemoveEmptyEntries));
+#else
+                names.AddRange(name.Substring(charAtIndex + 2).Split(new char[1] { '.' }, StringSplitOptions.RemoveEmptyEntries));
+#endif
+            }
+
+            return true;
         }
 
         /// <summary>

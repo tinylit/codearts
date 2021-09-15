@@ -14,6 +14,32 @@ namespace CodeArts.Db.Lts
     /// </summary>
     public class DapperFor : DatabaseFor
     {
+        private static readonly Dictionary<Type, DbType> typeMap;
+
+        private static DbType LookupDbType(Type dataType)
+        {
+            if (dataType.IsNullable())
+            {
+                dataType = Nullable.GetUnderlyingType(dataType);
+            }
+
+            if (dataType.IsEnum)
+            {
+                dataType = Enum.GetUnderlyingType(dataType);
+            }
+
+            if (typeMap.TryGetValue(dataType, out DbType dbType))
+            {
+                return dbType;
+            }
+
+            if (dataType.FullName == "System.Data.Linq.Binary")
+            {
+                return DbType.Binary;
+            }
+
+            return DbType.Object;
+        }
         static DapperFor()
         {
             //? linq Average 函数。
@@ -21,6 +47,30 @@ namespace CodeArts.Db.Lts
             SqlMapper.AddTypeHandler(typeof(double), new DoubleHandler());
             //? MySQL 动态字段，没有行数据时，bool识别为长整型的问题。
             SqlMapper.AddTypeHandler(typeof(bool), new BooleanHandler());
+
+            typeMap = new Dictionary<Type, DbType>
+            {
+                [typeof(byte)] = DbType.Byte,
+                [typeof(sbyte)] = DbType.SByte,
+                [typeof(short)] = DbType.Int16,
+                [typeof(ushort)] = DbType.UInt16,
+                [typeof(int)] = DbType.Int32,
+                [typeof(uint)] = DbType.UInt32,
+                [typeof(long)] = DbType.Int64,
+                [typeof(ulong)] = DbType.UInt64,
+                [typeof(float)] = DbType.Single,
+                [typeof(double)] = DbType.Double,
+                [typeof(decimal)] = DbType.Decimal,
+                [typeof(bool)] = DbType.Boolean,
+                [typeof(string)] = DbType.String,
+                [typeof(char)] = DbType.StringFixedLength,
+                [typeof(Guid)] = DbType.Guid,
+                [typeof(DateTime)] = DbType.DateTime,
+                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan)] = DbType.Time,
+                [typeof(byte[])] = DbType.Binary,
+                [typeof(object)] = DbType.Object
+            };
         }
 
         private class BooleanHandler : SqlMapper.ITypeHandler
@@ -72,106 +122,47 @@ namespace CodeArts.Db.Lts
             }
         }
 
-        private sealed class TypeNullParameter : SqlMapper.ICustomQueryParameter
-        {
-            private static readonly Dictionary<Type, DbType> typeMap;
-
-            static TypeNullParameter()
-            {
-                typeMap = new Dictionary<Type, DbType>
-                {
-                    [typeof(byte)] = DbType.Byte,
-                    [typeof(sbyte)] = DbType.SByte,
-                    [typeof(short)] = DbType.Int16,
-                    [typeof(ushort)] = DbType.UInt16,
-                    [typeof(int)] = DbType.Int32,
-                    [typeof(uint)] = DbType.UInt32,
-                    [typeof(long)] = DbType.Int64,
-                    [typeof(ulong)] = DbType.UInt64,
-                    [typeof(float)] = DbType.Single,
-                    [typeof(double)] = DbType.Double,
-                    [typeof(decimal)] = DbType.Decimal,
-                    [typeof(bool)] = DbType.Boolean,
-                    [typeof(string)] = DbType.String,
-                    [typeof(char)] = DbType.StringFixedLength,
-                    [typeof(Guid)] = DbType.Guid,
-                    [typeof(DateTime)] = DbType.DateTime,
-                    [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                    [typeof(TimeSpan)] = DbType.Time,
-                    [typeof(byte[])] = DbType.Binary,
-                    [typeof(object)] = DbType.Object
-                };
-            }
-
-            private static DbType LookupDbType(Type dataType)
-            {
-                if (dataType.IsNullable())
-                {
-                    dataType = Nullable.GetUnderlyingType(dataType);
-                }
-
-                if (dataType.IsEnum)
-                {
-                    dataType = Enum.GetUnderlyingType(dataType);
-                }
-
-                if (typeMap.TryGetValue(dataType, out DbType dbType))
-                {
-                    return dbType;
-                }
-
-                if (dataType.FullName == "System.Data.Linq.Binary")
-                {
-                    return DbType.Binary;
-                }
-
-                return DbType.Object;
-            }
-
-            private readonly Type parameterType;
-
-            public TypeNullParameter(Type parameterType)
-            {
-                this.parameterType = parameterType;
-            }
-            public void AddParameter(IDbCommand command, string name)
-            {
-                var parameter = command.CreateParameter();
-
-                parameter.ParameterName = name;
-                parameter.Value = DBNull.Value;
-                parameter.DbType = LookupDbType(parameterType);
-
-                command.Parameters.Add(parameter);
-            }
-        }
-
         private static object FixParameters(object parameters)
         {
             switch (parameters)
             {
                 case IEnumerable<KeyValuePair<string, ParameterValue>> parameterValues:
                     {
-                        var results = new Dictionary<string, object>();
+                        var results = new DynamicParameters();
+
                         foreach (var kv in parameterValues)
                         {
-                            results[kv.Key] = kv.Value.IsNull ? new TypeNullParameter(kv.Value.ValueType) : kv.Value.Value;
+                            if (kv.Value.IsNull)
+                            {
+                                results.Add(kv.Key, DBNull.Value, LookupDbType(kv.Value.ValueType));
+                            }
+                            else
+                            {
+                                results.Add(kv.Key, kv.Value.Value);
+                            }
                         }
                         return results;
                     }
                 case IEnumerable<KeyValuePair<string, object>> keyValuePairs when keyValuePairs.Any(x => x.Value is ParameterValue):
                     {
-                        var results = new Dictionary<string, object>();
+                        var results = new DynamicParameters();
 
                         foreach (var kv in keyValuePairs)
                         {
                             if (kv.Value is ParameterValue parameterValue)
                             {
-                                results[kv.Key] = parameterValue.IsNull ? new TypeNullParameter(parameterValue.ValueType) : parameterValue.Value;
+                                if (parameterValue.IsNull)
+                                {
+                                    results.Add(kv.Key, DBNull.Value, LookupDbType(parameterValue.ValueType));
+                                }
+                                else
+                                {
+                                    results.Add(kv.Key, parameterValue.Value);
+                                }
                             }
                             else
                             {
-                                results[kv.Key] = kv.Value;
+                                results.Add(kv.Key, kv.Value);
                             }
                         }
 
@@ -278,7 +269,7 @@ namespace CodeArts.Db.Lts
             {
                 if (enumerator is null)
                 {
-                    var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, null, CommandFlags.Buffered, cancellationToken));
+                    var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
 
                     enumerator = results.GetEnumerator();
                 }
