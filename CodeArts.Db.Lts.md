@@ -415,7 +415,7 @@ await user.DeleteAsync(x=>x.Id == 1101);
 | :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------------- |
 | AsInsertable | IInsertable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定插入能力。       |
 |     Into     | IInsertable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定插入表名称，默认：实体分析的名称。               |
-|     Into     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
+|     Into     | IInsertable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
 |    Limit     | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                       |
 |    Except    | IInsertable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                       |
 
@@ -430,14 +430,15 @@ user.AsInsertable(new User { Id = 1011, Name = "影子和树", Version = 1, Time
 
 ##### 修改。
 
-|     方法     |           返回值           | 参数                                                     | 描述                                                 |
-| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------------- |
-| AsUpdateable | IUpdateable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定更新能力。       |
-|    Table     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。               |
-|    Table     | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;                   | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
-|    Where     | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定更新条件字段。                                   |
-|     Set      | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定字段插入。                                       |
-|  SetExcept   | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 排除字段插入。                                       |
+|        方法         |           返回值           | 参数                                               | 描述                                                 |
+| :-----------------: | :------------------------: | -------------------------------------------------- | ---------------------------------------------------- |
+|    AsUpdateable     | IUpdateable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;            | 通过`IDbRepository<TEntity>`获得指定更新能力。       |
+| SkipIdempotentValid | IUpdateable&lt;TEntity&gt; |                                                    | 跳过幂等验证。                                       |
+|        Table        | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                     | 指定更新表名称，默认：实体分析的名称。               |
+|        Table        | IUpdateable&lt;TEntity&gt; | Func&lt;ITableInfo,TEntity, string&gt;             | 指定特定规则实体的更新表名称，默认：实体分析的名称。 |
+|        Where        | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, T&gt;&gt; | 指定更新条件字段。                                   |
+|         Set         | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, T&gt;&gt; | 指定字段插入。                                       |
+|      SetExcept      | IUpdateable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, T&gt;&gt; | 排除字段插入。                                       |
 
 例如[^3]：
 
@@ -449,11 +450,12 @@ await user.AsUpdateable(new User { Id = 1011, Name = "影子和树", Version = 1
 
 ##### 删除。
 
-|     方法     |           返回值           | 参数                                                     | 描述                                           |
-| :----------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------- |
-| AsDeleteable | IDeleteable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定删除能力。 |
-|     From     | IDeleteable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。         |
-|    Where     | IDeleteable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定删除条件字段。                             |
+|        方法         |           返回值           | 参数                                                     | 描述                                           |
+| :-----------------: | :------------------------: | -------------------------------------------------------- | ---------------------------------------------- |
+|    AsDeleteable     | IDeleteable&lt;TEntity&gt; | TEntity\|TEntity[]\|List&lt;TEntity&gt;                  | 通过`IDbRepository<TEntity>`获得指定删除能力。 |
+| SkipIdempotentValid | IDeleteable&lt;TEntity&gt; |                                                          | 跳过幂等验证。                                 |
+|        From         | IDeleteable&lt;TEntity&gt; | Func&lt;ITableInfo, string&gt;                           | 指定更新表名称，默认：实体分析的名称。         |
+|        Where        | IDeleteable&lt;TEntity&gt; | string[]\|Expression&lt;Func&lt;TEntity, TColumn&gt;&gt; | 指定删除条件字段。                             |
 
 例如：
 

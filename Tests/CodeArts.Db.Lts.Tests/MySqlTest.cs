@@ -283,7 +283,9 @@ namespace UnitTest
 
             _ = ormTest.ToList();
 
-            _ = ormTest.AsDeleteable(list).ExecuteCommand();
+            _ = ormTest.AsDeleteable(list)
+                .SkipIdempotentValid()
+                .ExecuteCommand();
         }
 
         [TestMethod]
