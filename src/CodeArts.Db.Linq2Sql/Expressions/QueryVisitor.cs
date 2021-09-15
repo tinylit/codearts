@@ -124,11 +124,11 @@ namespace CodeArts.Db.Expressions
                 case MethodCall.Last:
                 case MethodCall.First:
                     rowStyle = RowStyle.First;
-                    break;
+                    goto default;
                 case MethodCall.LastOrDefault:
                 case MethodCall.FirstOrDefault:
                     rowStyle = RowStyle.FirstOrDefault;
-                    break;
+                    goto default;
                 case MethodCall.Single:
                 case MethodCall.ElementAt:
                     rowStyle = RowStyle.Single;

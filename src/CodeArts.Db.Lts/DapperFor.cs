@@ -320,7 +320,17 @@ namespace CodeArts.Db.Lts
 
             if (value is null)
             {
-                return commandSql.HasDefaultValue ? commandSql.DefaultValue : throw new DRequiredException(commandSql.MissingMsg);
+                if (commandSql.HasDefaultValue)
+                {
+                    return commandSql.DefaultValue;
+                }
+
+                if ((commandSql.RowStyle & RowStyle.FirstOrDefault) == RowStyle.FirstOrDefault)
+                {
+                    return default;
+                }
+
+                throw new DRequiredException(commandSql.MissingMsg);
             }
 
             return (T)value;
@@ -360,7 +370,17 @@ namespace CodeArts.Db.Lts
 
             if (value is null)
             {
-                return commandSql.HasDefaultValue ? commandSql.DefaultValue : throw new DRequiredException(commandSql.MissingMsg);
+                if (commandSql.HasDefaultValue)
+                {
+                    return commandSql.DefaultValue;
+                }
+
+                if ((commandSql.RowStyle & RowStyle.FirstOrDefault) == RowStyle.FirstOrDefault)
+                {
+                    return default;
+                }
+
+                throw new DRequiredException(commandSql.MissingMsg);
             }
 
             return (T)value;
