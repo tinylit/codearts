@@ -6,14 +6,14 @@ namespace CodeArts
     /// <summary>
     /// 属性转换器。
     /// </summary>
-    public abstract class PropConverter
+    public interface IConverter
     {
         /// <summary>
         /// 是否支持此类型的转换。
         /// </summary>
-        /// <param name="typeToConvert">解决类型。</param>
+        /// <param name="propertyItem">属性。</param>
         /// <returns></returns>
-        public abstract bool CanConvert(Type typeToConvert);
+        bool CanConvert(PropertyItem propertyItem);
 
         /// <summary>
         /// 替换内容（解决对象类型）。
@@ -21,21 +21,21 @@ namespace CodeArts
         /// <param name="propertyItem">属性。</param>
         /// <param name="value">属性值。</param>
         /// <returns></returns>
-        public abstract string Convert(PropertyItem propertyItem, object value);
+        string Convert(PropertyItem propertyItem, object value);
     }
 
     /// <summary>
     /// 属性转换器。
     /// </summary>
     /// <typeparam name="T">数据类型。</typeparam>
-    public abstract class PropConverter<T> : PropConverter
+    public abstract class Converter<T> : IConverter
     {
         /// <summary>
         /// 是否支持此类型的转换。
         /// </summary>
-        /// <param name="typeToConvert">解决类型。</param>
+        /// <param name="propertyItem">属性。</param>
         /// <returns></returns>
-        public sealed override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(T);
+        public bool CanConvert(PropertyItem propertyItem) => propertyItem.MemberType == typeof(T);
 
         /// <summary>
         /// 替换内容。
@@ -43,7 +43,7 @@ namespace CodeArts
         /// <param name="propertyItem">属性。</param>
         /// <param name="value">属性值。</param>
         /// <returns></returns>
-        public sealed override string Convert(PropertyItem propertyItem, object value)
+        public string Convert(PropertyItem propertyItem, object value)
         {
             if (value is T typeValue)
             {

@@ -51,14 +51,14 @@ namespace CodeArts
             set => dateFormatString = value;
         }
 
-        private ICollection<PropConverter> converters;
+        private ICollection<IConverter> converters;
         /// <summary>
         /// 设置 【PropConverter】 将在内容替换期间使用到它。
         /// </summary>
 #if NETSTANDARD2_1_OR_GREATER
-        public ICollection<PropConverter> Converters => converters ??= new List<PropConverter>();
+        public ICollection<IConverter> Converters => converters ??= new List<IConverter>();
 #else
-        public ICollection<PropConverter> Converters => converters ?? (converters = new List<PropConverter>());
+        public ICollection<IConverter> Converters => converters ?? (converters = new List<IConverter>());
 #endif
 
         /// <summary>
@@ -151,9 +151,9 @@ namespace CodeArts
         /// <returns></returns>
         public string Convert(PropertyItem propertyItem, object value)
         {
-            foreach (PropConverter converter in Converters)
+            foreach (IConverter converter in Converters)
             {
-                if (converter.CanConvert(propertyItem.MemberType))
+                if (converter.CanConvert(propertyItem))
                 {
                     return ValuePackaging(converter.Convert(propertyItem, value), propertyItem.MemberType);
                 }
