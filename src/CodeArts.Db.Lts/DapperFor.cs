@@ -299,6 +299,7 @@ namespace CodeArts.Db.Lts
         {
             object value;
             var type = typeof(T);
+
             var conversionType = type.IsValueType && !type.IsNullable()
                 ? typeof(Nullable<>).MakeGenericType(type)
                 : type;

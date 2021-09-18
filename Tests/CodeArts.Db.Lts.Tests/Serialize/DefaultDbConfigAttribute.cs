@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db;
+using CodeArts.Db.Lts.Tests;
 using System;
 
 namespace UnitTest.Serialize
@@ -19,7 +20,11 @@ namespace UnitTest.Serialize
             {
                 Name = "yep.v3.auth",
                 ProviderName = "MySql",
-                ConnectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;"//? 数据库链接
+                ConnectionString = string.Format("server={0};port=3306;user={2};password={3};database={1};"
+                , MySqlConsts.Domain
+                , MySqlConsts.Database
+                , MySqlConsts.User
+                , MySqlConsts.Password)//? 数据库链接
             };
         }
     }

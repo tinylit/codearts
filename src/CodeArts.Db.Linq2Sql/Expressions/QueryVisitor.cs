@@ -20,6 +20,8 @@ namespace CodeArts.Db.Expressions
 
         private int? timeOut;
 
+        private bool isAverage;
+
         private bool hasDefaultValue;
 
         private object defaultValue;
@@ -120,6 +122,8 @@ namespace CodeArts.Db.Expressions
                             }
                         }
                     }
+
+                    isAverage = node.Method.Name == MethodCall.Average;
                     break;
                 case MethodCall.Last:
                 case MethodCall.First:
@@ -287,6 +291,10 @@ namespace CodeArts.Db.Expressions
                 if (this.defaultValue is T value)
                 {
                     defaultValue = value;
+                }
+                else if (isAverage)
+                {
+                    defaultValue = (T)this.defaultValue;
                 }
                 else if (this.defaultValue != null)
                 {

@@ -5,7 +5,7 @@
  Source Server Type    : SQL Server
  Source Server Version : 10501600
  Source Host           : 120.78.143.144:1433
- Source Catalog        : FEI_MALL_FLASH
+ Source Catalog        : yep_sky_orm
  Source Schema         : dbo
 
  Target Server Type    : SQL Server
@@ -14,6 +14,15 @@
 
  Date: 16/10/2019 09:36:23
 */
+
+USE master;
+
+IF NOT EXISTS(SELECT * FROM sysdatabases WHERE name = 'yep_sky_orm')
+BEGIN
+	CREATE DATABASE yep_sky_orm;
+END
+
+USE yep_sky_orm;
 
 -- ----------------------------
 -- Table structure for fei_users

@@ -3,6 +3,7 @@ using CodeArts.Casting;
 using CodeArts.Db;
 using CodeArts.Db.Lts;
 using CodeArts.Db.Lts.MySql;
+using CodeArts.Db.Lts.Tests;
 using CodeArts.Db.Tests.Domain;
 using CodeArts.Db.Tests.Domain.Entities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -39,7 +40,9 @@ namespace UnitTest
 
             if (isCompleted) return;
 
-            var connectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;";
+            var connectionString = string.Format("server={0};port=3306;user=root;password={1};database=mysql;"
+                , MySqlConsts.Domain
+                , MySqlConsts.Password);
 
             using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
             {

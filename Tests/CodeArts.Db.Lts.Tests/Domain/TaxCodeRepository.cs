@@ -1,5 +1,6 @@
 ﻿using CodeArts.Db;
 using CodeArts.Db.Lts;
+using CodeArts.Db.Lts.Tests;
 using UnitTest.Domain.Entities;
 
 namespace UnitTest.Domain
@@ -15,7 +16,11 @@ namespace UnitTest.Domain
             {
                 Name = "yep.v3.invoice",
                 ProviderName = "MySql",
-                ConnectionString = "server=127.0.0.1;port=3306;user=root;password=Password12!;database=mysql;"
+                ConnectionString = string.Format("server={0};port=3306;user={2};password={3};database={1};"
+                , MySqlConsts.Domain
+                , MySqlConsts.Database
+                , MySqlConsts.User
+                , MySqlConsts.Password)//? 数据库链接
             };
         }
     }

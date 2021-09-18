@@ -47,10 +47,8 @@ namespace UnitTest
 
             if (isCompleted) return;
 
-            var connectionString = string.Format(@"Server={0};Database={1};User ID={2};Password={3}",
+            var connectionString = string.Format(@"Server={0};Database=master;User ID=sa;Password={1}",
                 SqlServerConsts.Domain,
-                SqlServerConsts.Database,
-                SqlServerConsts.User,
                 SqlServerConsts.Password);
 
             using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
@@ -249,7 +247,9 @@ namespace UnitTest
         public void AvgTest()
         {
             var user = new UserRepository();
-            var avg = user.Where(x => x.Id < 100).Average(x => x.Id);
+            var avg = user.Where(x => x.Id < 100)
+                .DefaultIfEmpty(new FeiUsers { Id = 5 })
+                .Average(x => x.Id);
         }
 
         [TestMethod]
@@ -553,14 +553,18 @@ namespace UnitTest
         public void MaxWithTest()
         {
             var user = new UserRepository();
-            _ = user.Max(x => x.Id);
+            _ = user
+                .DefaultIfEmpty(new FeiUsers { Id = 5 })
+                .Max(x => x.Id);
         }
 
         [TestMethod]
         public void WhereMaxTest()
         {
             var user = new UserRepository();
-            _ = user.Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now).Max();
+            _ = user
+                .Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
+                .Max();
         }
 
         [TestMethod]
@@ -2186,10 +2190,15 @@ namespace UnitTest
             var bucket = "hys-good-skus";
 
             var buckets = new DbRepository<OssBuckets>();
-
-            var ossBucket = buckets
-             .NoResultError($"未找到桶({bucket})的相关信息!")
-             .First(x => x.Name == bucket && x.Enabled);
+            try
+            {
+                var ossBucket = buckets
+                 .NoResultError($"未找到桶({bucket})的相关信息!")
+                 .First(x => x.Name == bucket && x.Enabled);
+            }
+            catch (DRequiredException)
+            {
+            }
         }
 
         [TestMethod]
@@ -2199,9 +2208,15 @@ namespace UnitTest
 
             var buckets = new DbRepository<OssBuckets>();
 
-            var ossBucket = buckets
-             .NoResultError($"未找到桶({bucket})的相关信息!")
-             .First(x => x.Name == bucket && x.Enabled == true);
+            try
+            {
+                var ossBucket = buckets
+                 .NoResultError($"未找到桶({bucket})的相关信息!")
+                 .First(x => x.Name == bucket && x.Enabled == true);
+            }
+            catch (DRequiredException)
+            {
+            }
         }
 
         [TestMethod]
@@ -2210,10 +2225,15 @@ namespace UnitTest
             var bucket = "hys-good-skus";
 
             var buckets = new DbRepository<OssBuckets>();
-
-            var ossBucket = buckets
-             .NoResultError($"未找到桶({bucket})的相关信息!")
-             .First(x => x.Name == bucket && x.Enabled != false);
+            try
+            {
+                var ossBucket = buckets
+                 .NoResultError($"未找到桶({bucket})的相关信息!")
+                 .First(x => x.Name == bucket && x.Enabled != false);
+            }
+            catch (DRequiredException)
+            {
+            }
         }
 
         [TestMethod]

@@ -14,6 +14,12 @@
     Date: 16/10/2019 09:30:09
 */
 
+USE mysql;
+
+CREATE DATABASE IF NOT EXISTS `yep_sky_orm` CHARACTER SET UTF8;
+
+USE yep_sky_orm;
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
