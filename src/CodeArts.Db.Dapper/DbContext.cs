@@ -56,7 +56,7 @@ namespace CodeArts.Db.Dapper
         /// <summary>
         /// SQL 矫正。
         /// </summary>
-        public ISQLCorrectSettings Settings => DbAdapter.Settings;
+        protected ISQLCorrectSettings Settings => DbAdapter.Settings;
 
         private IDbConnectionAdapter connectionAdapter;
         private bool disposedValue;

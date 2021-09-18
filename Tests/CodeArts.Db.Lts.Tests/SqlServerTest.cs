@@ -564,6 +564,7 @@ namespace UnitTest
             var user = new UserRepository();
             _ = user
                 .Where(x => x.Id < 100 && x.CreatedTime < DateTime.Now)
+                .DefaultIfEmpty(new FeiUsers { Id = 5 })
                 .Max();
         }
 

@@ -292,15 +292,34 @@ namespace CodeArts.Db.Expressions
                 {
                     defaultValue = value;
                 }
-                else if (isAverage)
+                else if (isAverage) //? linq 平均值用浮点数。
                 {
-                    defaultValue = (T)this.defaultValue;
+                    var conversionType = typeof(T);
+
+                    if (this.defaultValue is null)
+                    {
+                        if (conversionType.IsNullable())
+                        {
+                            goto label_core;
+                        }
+
+                        throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({this.defaultValue.GetType()})无法进行默认转换!");
+                    }
+
+                    if (conversionType.IsNullable())
+                    {
+                        conversionType = Nullable.GetUnderlyingType(conversionType);
+                    }
+
+                    defaultValue = (T)Convert.ChangeType(this.defaultValue, conversionType);
                 }
                 else if (this.defaultValue != null)
                 {
                     throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({this.defaultValue.GetType()})无法进行默认转换!");
                 }
             }
+
+        label_core:
 
             return new CommandSql<T>(writer.ToSQL(), writer.Parameters, rowStyle, hasDefaultValue, defaultValue, timeOut, mssingDataError);
         }
