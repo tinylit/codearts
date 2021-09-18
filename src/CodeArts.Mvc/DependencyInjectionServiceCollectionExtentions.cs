@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, ServiceLifetime lifetime)
         {
-            if (serviceType == typeof(IServiceProvider))
+            if (serviceType == typeof(IServiceProvider) || serviceType == typeof(IServiceScopeFactory))
             {
                 return true;
             }

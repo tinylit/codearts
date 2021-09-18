@@ -47,8 +47,9 @@ namespace UnitTest
 
             if (isCompleted) return;
 
-            var connectionString = string.Format(@"Server={0};Database=master;User ID=sa;Password={1}",
+            var connectionString = string.Format(@"Server={0};Database=master;User ID={1};Password={2}",
                 SqlServerConsts.Domain,
+                SqlServerConsts.User,
                 SqlServerConsts.Password);
 
             using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter))
