@@ -68,14 +68,14 @@ namespace CodeArts.Db
         private class DbConnection : IDispatchConnection
         {
             private readonly IDbConnection connection; //数据库连接
-            private readonly double? connectionHeartbeat; //心跳
+            private readonly double connectionHeartbeat; //心跳
             private readonly bool useCache;
             private ConnectionState connectionState = ConnectionState.Closed;
             private Thread isActiveThread = Thread.CurrentThread;
             public DbConnection(IDbConnection connection, double connectionHeartbeat, bool useCache)
             {
                 this.connection = connection;
-                this.connectionHeartbeat = new double?(connectionHeartbeat);
+                this.connectionHeartbeat = connectionHeartbeat;
                 this.useCache = useCache;
             }
 
@@ -132,7 +132,7 @@ namespace CodeArts.Db
                     return;
                 }
 
-                if (connectionHeartbeat.HasValue && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat.Value))
+                if (connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
                 {
                     return;
                 }
@@ -204,7 +204,7 @@ namespace CodeArts.Db
         {
             private readonly System.Data.Common.DbConnection connection;
 
-            private readonly double? connectionHeartbeat; //心跳
+            private readonly double connectionHeartbeat; //心跳
             private readonly bool useCache;
             private ConnectionState connectionState = ConnectionState.Closed;
             private Thread isActiveThread = Thread.CurrentThread;
@@ -212,7 +212,7 @@ namespace CodeArts.Db
             public DispatchConnection(System.Data.Common.DbConnection connection, double connectionHeartbeat, bool useCache)
             {
                 this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-                this.connectionHeartbeat = new double?(connectionHeartbeat);
+                this.connectionHeartbeat = connectionHeartbeat;
                 this.useCache = useCache;
             }
 
@@ -256,7 +256,7 @@ namespace CodeArts.Db
                     return;
                 }
 
-                if (connectionHeartbeat.HasValue && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat.Value))
+                if (connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
                 {
                     return;
                 }

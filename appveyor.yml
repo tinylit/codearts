@@ -21,10 +21,10 @@ configuration: Release
 clone_depth: 5
 environment:
   DEV-DATABASE-SQLSEVER-DOMAIN:
-    secure: 9IImh4RogvkVfyUWS5C6vA==
-  DEV-DATABASE-SQLSEVER-USER: sa
+    secure: gDFNTcGbJURYooTneY4HWA==
+  DEV-DATABASE-SQLSEVER-USER: orm
   DEV-DATABASE-SQLSEVER-PASSWORD:
-    secure: bdbqnyciwLRXc406k+KDJQ==
+    secure: EBwfqG8uz9iVmvOZfc7+wQ==
   DEV-DATABASE-SQLSERVER-DATABASE: yep_sky_orm
   DEV-DATABASE-MYSQL-DOMAIN:
     secure: OMbUydo/+vdnkmdHRkBNag==
