@@ -524,15 +524,10 @@ namespace CodeArts.Db
                 {
                     lock (connections)
                     {
-                        var now = DateTime.Now.AddMinutes(Math.Min(-2 * adapter.ConnectionHeartbeat, -10D));
-
                         connection = connections //? 线程已关闭的。
                              .FirstOrDefault(x => !x.IsThreadActive) ?? connections
                              .Where(x => !x.IsActive)
                              .OrderBy(x => x.ActiveTime) //? 移除最长时间不活跃的链接。
-                             .FirstOrDefault() ?? connections
-                             .Where(x => x.ActiveTime > now)
-                             .OrderBy(x => x.ActiveTime)
                              .FirstOrDefault() ?? throw new DException($"链接数超限(最大连接数：{adapter.MaxPoolSize})!");
 
                         return connection.ReuseConnection();
