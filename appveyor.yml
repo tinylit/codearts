@@ -14,7 +14,6 @@ skip_commits:
     - '**/*.config'
     - '**/*.csproj'
     - '**/*.csproj.user'
-    - '*.yml'
     - 'Tests/'
 image: Visual Studio 2019
 configuration: Release
