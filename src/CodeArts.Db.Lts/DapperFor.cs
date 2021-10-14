@@ -319,7 +319,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
             }
 
-            if (value is null)
+            if (value == null)
             {
                 if (commandSql.HasDefaultValue)
                 {
