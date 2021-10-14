@@ -31,12 +31,6 @@ namespace CodeArts.Db.Expressions
             }
 
             /// <inheritdoc />
-            protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
-            {
-                insertFields.Add(GetMemberNaming(memberOfHostType, member.Member));
-            }
-
-            /// <inheritdoc />
             protected override void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
             {
                 insertFields.Add(GetMemberNaming(memberOfHostType, memberInfo));

@@ -3,6 +3,7 @@ using CodeArts.Db.Lts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace CodeArts.Db.Tests
 {
@@ -946,7 +947,7 @@ order by a.str_out_bill_id desc";
         {
             var settings = new SqlServerCorrectSettings();
 
-            string sqlstr = @"select   max(c.customer_name)  as gmfmc,
+            string sqlstr = @"select distinct  max(c.customer_name)  as gmfmc,
 
 
  isnull(max(c.tax_id),'') as gmfsbh,
@@ -979,6 +980,8 @@ group by  a.str_out_bill_id";
 
             var countSql = sql.ToCountSQL();
 
+            var countSql2 = countSql.ToCountSQL();
+
             var pagedSql = sql.ToSQL(0, 10);
 
             _ = countSql.ToString(settings);
@@ -986,6 +989,39 @@ group by  a.str_out_bill_id";
             _ = pagedSql.ToSQL(1, 20).ToString(settings);
 
             _ = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
+        }
+
+        [TestMethod]
+        public void MyTestMethod()
+        {
+            string mainSql = "select * from table";
+
+            int i = 6;/* 跳过 SELECT 的计算 */
+
+            for (int length = mainSql.Length; i < length; i++)
+            {
+                char c = mainSql[i];
+
+                if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'))
+                {
+                    break;
+                }
+            }
+
+            var sb = new StringBuilder();
+
+            sb.Append(mainSql.Substring(0, i));
+
+            if (mainSql[i] != ' ')
+            {
+                sb.Append(' ');
+            }
+
+            string value = sb.Append("SQL_CALC_FOUND_ROWS")
+                 .Append(mainSql.Substring(i))
+                 .Append(';')
+                 .Append("SELECT FOUND_ROWS()")
+                 .ToString();
         }
     }
 }

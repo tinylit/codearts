@@ -50,7 +50,7 @@ namespace CodeArts.Db.Expressions
 
         /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node)
-        => node.Method.DeclaringType == Types.Queryable;
+            => node.Method.DeclaringType == Types.Queryable;
 
         /// <inheritdoc />
         protected override void StartupCore(MethodCallExpression node)

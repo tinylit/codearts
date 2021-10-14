@@ -1,8 +1,6 @@
 ﻿#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using CodeArts;
-using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,17 +11,6 @@ namespace System.LinqAsync
     /// </summary>
     public static class QueryableAsyncExtentions
     {
-        /// <summary>
-        /// 转为集合。
-        /// </summary>
-        /// <typeparam name="T">源。</typeparam>
-        /// <param name="source">源。</param>
-        /// <param name="predicate">条件。</param>
-        /// <param name="cancellationToken">取消。</param>
-        /// <returns></returns>
-        public static Task<List<T>> ToListAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
-            => source.Where(predicate).ToListAsync(cancellationToken);
-
         /// <summary>
         /// 转分页数据。
         /// </summary>

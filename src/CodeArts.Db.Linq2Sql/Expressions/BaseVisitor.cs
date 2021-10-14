@@ -118,7 +118,6 @@ namespace CodeArts.Db.Expressions
         private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<MemberInfo, string>> MemberNamingCache = new ConcurrentDictionary<Type, ConcurrentDictionary<MemberInfo, string>>();
 
         private static readonly ConcurrentDictionary<Type, bool> CanResolveCache = new ConcurrentDictionary<Type, bool>();
-        private static MethodInfo GetMethodInfo(Func<MethodCallExpression, bool> func) => func.Method;
 
         /// <summary>
         /// 启动。
@@ -127,43 +126,49 @@ namespace CodeArts.Db.Expressions
         /// <returns></returns>
         public virtual void Startup(Expression node)
         {
-            try
+            switch (node)
             {
-                switch (node)
-                {
-                    case MethodCallExpression callExpression:
-                        if (CanResolve(callExpression))
-                        {
-                            StartupCore(callExpression);
+                case MethodCallExpression callExpression:
+                    if (CanResolve(callExpression))
+                    {
+                        StartupCore(callExpression);
 
-                            break;
+                        if (isNewWriter)
+                        {
+                            visitor.WriteFragment(this);
                         }
 
-                        throw new NotSupportedException();
-                    default:
-                        if (CanResolveCache.GetOrAdd(GetType(), _ =>
-                        {
-                            var method = GetMethodInfo(CanResolve);
+                        break;
+                    }
 
-                            return method.DeclaringType == BaseVisitorType;
-                        }))
-                        {
-                            Visit(node);
+                    throw new NotSupportedException();
+                default:
+                    if (CanResolveCache.GetOrAdd(GetType(), declaringType =>
+                    {
+                        var method = declaringType.GetMethod(nameof(CanResolve), new Type[] { typeof(MethodCallExpression) });
 
-                            break;
+                        return method.DeclaringType == BaseVisitorType;
+                    }))
+                    {
+                        Visit(node);
+
+                        if (isNewWriter)
+                        {
+                            visitor.WriteFragment(this);
                         }
 
-                        throw new NotSupportedException();
-                }
-            }
-            finally
-            {
-                if (isNewWriter)
-                {
-                    visitor.writer.Write(ToString());
-                }
+                        break;
+                    }
+
+                    throw new NotSupportedException();
             }
         }
+
+        /// <summary>
+        /// 写入SQL片段。
+        /// </summary>
+        /// <param name="visitor">表达式。</param>
+        protected virtual void WriteFragment(BaseVisitor visitor) => writer.Write(visitor.ToString());
 
         /// <summary>
         /// 启动核心流程。
@@ -338,19 +343,19 @@ namespace CodeArts.Db.Expressions
                 baseType = baseType.BaseType;
             };
 
+            if (baseType is null)
+            {
+                goto label_core;
+            }
+
             if (baseType.IsGrouping())
             {
                 return baseType;
             }
 
-            if (baseType is null || baseType.IsValueType || !baseType.IsClass || baseType == typeof(string))
+            if (baseType.IsValueType || !baseType.IsClass || baseType == typeof(string))
             {
-                if (throwsError)
-                {
-                    throw new TypeAccessInvalidException($"访问类型({repositoryType.Namespace}.{repositoryType.Name})无效!");
-                }
-
-                return null;
+                goto label_core;
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(baseType))
@@ -359,6 +364,15 @@ namespace CodeArts.Db.Expressions
             }
 
             return baseType;
+
+        label_core:
+
+            if (throwsError)
+            {
+                throw new TypeAccessInvalidException($"访问类型({repositoryType.Namespace}.{repositoryType.Name})无效!");
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1110,11 +1124,20 @@ namespace CodeArts.Db.Expressions
 
                     void Done(MemberInfo memberInfo)
                     {
-                        VisitNewMember(memberInfo, node.Arguments[node.Members.IndexOf(memberInfo)]);
+                        var argument = node.Arguments[node.Members.IndexOf(memberInfo)];
+
+                        VisitNewMember(memberInfo, argument);
 
                         if (DoneAs(memberInfo))
                         {
-                            DefNewMemberAs(memberInfo, memberOfHostType);
+                            if (argument is MemberExpression member)
+                            {
+                                DefNewMemberAs(memberInfo, member.Expression?.Type ?? memberOfHostType);
+                            }
+                            else
+                            {
+                                DefNewMemberAs(memberInfo, memberOfHostType);
+                            }
                         }
                     }
                 }
@@ -1142,9 +1165,7 @@ namespace CodeArts.Db.Expressions
         /// <param name="member">成员。</param>
         /// <param name="memberOfHostType">成员所在类型。</param>
 
-        protected virtual void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
-        {
-        }
+        protected virtual void DefMemberBindingAs(MemberBinding member, Type memberOfHostType) => DefNewMemberAs(member.Member, memberOfHostType);
 
         /// <inheritdoc />
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)

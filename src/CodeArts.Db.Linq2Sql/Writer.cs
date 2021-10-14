@@ -897,7 +897,7 @@ namespace CodeArts.Db
         {
             if (take > 0 || skip > 0)
             {
-                return settings.ToSQL(sb.ToString(), take, skip, sbOrder.ToString());
+                return settings.ToSQL(sb.ToString(), Math.Max(take, 0), Math.Max(skip, 0), sbOrder.ToString());
             }
 
             return ToSQL();

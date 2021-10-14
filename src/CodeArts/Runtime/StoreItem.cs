@@ -133,6 +133,7 @@ namespace CodeArts.Runtime
     /// </summary>
     public abstract class StoreItem : IStoreItem
     {
+        private readonly Type declaringType;
         private readonly Func<Attribute[]> invokeAttr;
 
         /// <summary>
@@ -150,7 +151,7 @@ namespace CodeArts.Runtime
 
             CustomAttributes = info.GetCustomAttributesData();
 
-            this.invokeAttr = () => Attribute.GetCustomAttributes(info);
+            invokeAttr = () => Attribute.GetCustomAttributes(info);
         }
 
         /// <summary>
@@ -168,7 +169,7 @@ namespace CodeArts.Runtime
 
             CustomAttributes = info.GetCustomAttributesData();
 
-            this.invokeAttr = () => Attribute.GetCustomAttributes(info);
+            invokeAttr = () => Attribute.GetCustomAttributes(info);
         }
 
         /// <summary>
@@ -182,6 +183,8 @@ namespace CodeArts.Runtime
                 throw new ArgumentNullException(nameof(info));
             }
 
+            declaringType = info.DeclaringType;
+
             CustomAttributes = info.GetCustomAttributesData();
 
 #if NET40
@@ -190,7 +193,7 @@ namespace CodeArts.Runtime
             NamingAttribute = info.GetCustomAttribute<NamingAttribute>();
 #endif
 
-            this.invokeAttr = () => Attribute.GetCustomAttributes(info);
+            invokeAttr = () => Attribute.GetCustomAttributes(info);
         }
 
         private IEnumerable<Attribute> attributes;
@@ -237,7 +240,19 @@ namespace CodeArts.Runtime
 
                 if (namingAttr is null)
                 {
-                    return _Naming = Name;
+                    if (declaringType is null)
+                    {
+                        return _Naming = Name;
+                    }
+
+                    namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(declaringType, typeof(NamingAttribute));
+
+                    if (namingAttr is null)
+                    {
+                        return _Naming = Name;
+                    }
+
+                    return _Naming = Name.ToNamingCase(namingAttr.NamingType);
                 }
 
                 return _Naming = namingAttr.Name ?? Name.ToNamingCase(namingAttr.NamingType);
@@ -254,9 +269,9 @@ namespace CodeArts.Runtime
         /// <summary>
         /// 获取自定义类型属性标记。
         /// </summary>
-        /// <typeparam name="T">属性类型。</typeparam>
+        /// <typeparam name="TAttribute">属性类型。</typeparam>
         /// <returns></returns>
-        public T GetCustomAttribute<T>() where T : Attribute => (T)GetCustomAttribute(typeof(T));
+        public TAttribute GetCustomAttribute<TAttribute>() where TAttribute : Attribute => (TAttribute)GetCustomAttribute(typeof(TAttribute));
 
         /// <summary>
         /// 是否定义了指定类型属性标记。
@@ -271,9 +286,9 @@ namespace CodeArts.Runtime
         /// <summary>
         /// 是否定义了指定类型属性标记。
         /// </summary>
-        /// <typeparam name="T">属性类型。</typeparam>
+        /// <typeparam name="TAttribute">属性类型。</typeparam>
         /// <returns></returns>
-        public bool IsDefined<T>() where T : Attribute => IsDefined(typeof(T));
+        public bool IsDefined<TAttribute>() where TAttribute : Attribute => IsDefined(typeof(TAttribute));
     }
 
     /// <summary>
@@ -295,42 +310,6 @@ namespace CodeArts.Runtime
         /// 名称。
         /// </summary>
         public override string Name => Member.Name;
-
-        private string _Naming = null;
-
-        /// <summary>
-        /// 命名规范名称。
-        /// </summary>
-        public override string Naming
-        {
-            get
-            {
-                if (_Naming is null)
-                {
-                    var namingAttr = NamingAttribute;
-
-                    if (namingAttr is null)
-                    {
-                        namingAttr = (NamingAttribute)Attribute.GetCustomAttribute(Member.DeclaringType, typeof(NamingAttribute));
-
-                        if (namingAttr is null)
-                        {
-                            _Naming = Name;
-                        }
-                        else
-                        {
-                            _Naming = Name.ToNamingCase(namingAttr.NamingType);
-                        }
-                    }
-                    else
-                    {
-                        _Naming = namingAttr.Name ?? Name.ToNamingCase(namingAttr.NamingType);
-                    }
-                }
-
-                return _Naming;
-            }
-        }
 
         /// <summary>
         /// 成员。
@@ -373,15 +352,7 @@ namespace CodeArts.Runtime
         /// <param name="attributeType">属性类型。</param>
         /// <param name="inherit">如果为 true，则指定还在 element 的祖先中搜索自定义属性。</param>
         /// <returns></returns>
-        public Attribute GetCustomAttribute(Type attributeType, bool inherit)
-        {
-            if (inherit)
-            {
-                return Attribute.GetCustomAttribute(Member, attributeType, inherit);
-            }
-
-            return GetCustomAttribute(attributeType);
-        }
+        public Attribute GetCustomAttribute(Type attributeType, bool inherit) => Attribute.GetCustomAttribute(Member, attributeType, inherit);
 
         /// <summary>
         /// 获取指定属性类型的属性标记。
@@ -397,7 +368,7 @@ namespace CodeArts.Runtime
         /// <param name="attributeType">属性类型。</param>
         /// <param name="inherit">如果为 true，则指定还在 element 的祖先中搜索自定义属性。</param>
         /// <returns></returns>
-        public bool IsDefined(Type attributeType, bool inherit) => inherit ? Attribute.IsDefined(Member, attributeType, inherit) : IsDefined(attributeType);
+        public bool IsDefined(Type attributeType, bool inherit) => Attribute.IsDefined(Member, attributeType, inherit);
 
         /// <summary>
         /// 是否声明了指定属性类型标记。

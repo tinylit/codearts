@@ -19,7 +19,7 @@ namespace CodeArts.Db.Expressions
         public override bool CanResolve(MethodCallExpression node) => node.Method.DeclaringType == Types.Queryable && node.Method.Name == MethodCall.All;
 
         /// <inheritdoc />
-        protected override Expression Select(ConstantExpression node)
+        protected override void Select(ConstantExpression node)
         {
             var parameterType = TypeToUltimateType(node.Type);
 
@@ -31,7 +31,7 @@ namespace CodeArts.Db.Expressions
 
             var members = FilterMembers(tableInfo.ReadOrWrites);
 
-            var existsMembers = new List<KeyValuePair<string, string>>();
+            var keyMembers = new List<KeyValuePair<string, string>>();
 
             if (tableInfo.Keys.Count > 0)
             {
@@ -39,14 +39,14 @@ namespace CodeArts.Db.Expressions
                 {
                     if (tableInfo.Keys.Contains(item.Key))
                     {
-                        existsMembers.Add(item);
+                        keyMembers.Add(item);
                     }
                 }
             }
 
-            if (existsMembers.Count == tableInfo.Keys.Count)
+            if (keyMembers.Count == tableInfo.Keys.Count)
             {
-                WriteMembers(prefix, existsMembers);
+                WriteMembers(prefix, keyMembers);
             }
             else
             {
@@ -56,8 +56,6 @@ namespace CodeArts.Db.Expressions
             writer.From();
 
             WriteTableName(tableInfo, prefix);
-
-            return node;
         }
 
         /// <inheritdoc />

@@ -93,12 +93,6 @@ namespace CodeArts.Db.Expressions
         }
 
         /// <inheritdoc />
-        protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
-        {
-            writer.As(member.Member.Name);
-        }
-
-        /// <inheritdoc />
         protected virtual void VisitMax(Expression node)
         {
             switch (node)
@@ -108,6 +102,24 @@ namespace CodeArts.Db.Expressions
                     writer.OpenBrace();
 
                     visitor.Visit(member);
+
+                    writer.CloseBrace();
+                    break;
+                case BinaryExpression binary:
+                    writer.Write(FnName);
+
+                    writer.OpenBrace();
+
+                    visitor.Visit(binary);
+
+                    writer.CloseBrace();
+                    break;
+                case MethodCallExpression methodCall:
+                    writer.Write(FnName);
+
+                    writer.OpenBrace();
+
+                    visitor.Visit(methodCall);
 
                     writer.CloseBrace();
                     break;

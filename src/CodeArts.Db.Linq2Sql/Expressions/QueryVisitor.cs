@@ -1,6 +1,7 @@
 ﻿using CodeArts.Db.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 #if NET40
 using System.Collections.ObjectModel;
 #endif
@@ -32,18 +33,17 @@ namespace CodeArts.Db.Expressions
 
         private readonly ICustomVisitorList visitors;
 
-        private QueryVisitor(BaseVisitor baseVisitor) : base(baseVisitor)
+        /// <inheritdoc />
+        public QueryVisitor(BaseVisitor visitor) : base(visitor)
         {
         }
+
 
         /// <inheritdoc />
         public QueryVisitor(ISQLCorrectSettings settings, ICustomVisitorList visitors) : base(settings)
         {
             this.visitors = visitors;
         }
-
-        /// <inheritdoc />
-        public override SelectVisitor CreateInstance(BaseVisitor baseVisitor) => new QueryVisitor(baseVisitor);
 
         /// <inheritdoc />
         public override void Startup(Expression node)
@@ -147,6 +147,13 @@ namespace CodeArts.Db.Expressions
             }
         }
 
+        /// <summary>
+        /// 创建条件实列。
+        /// </summary>
+        /// <param name="baseVisitor">参数。</param>
+        /// <returns></returns>
+        public override SelectVisitor CreateInstance(BaseVisitor baseVisitor) => new QueryVisitor(baseVisitor);
+
         /// <inheritdoc />
         protected override void VisitOfLts(MethodCallExpression node)
         {
@@ -202,19 +209,6 @@ namespace CodeArts.Db.Expressions
         }
 
         /// <inheritdoc />
-        protected override void Constant(Type conversionType, object value)
-        {
-            if (buildWatchSql)
-            {
-                watchSql = (Action<CommandSql>)value;
-            }
-            else
-            {
-                base.Constant(conversionType, value);
-            }
-        }
-
-        /// <inheritdoc />
         protected override void DefMemberAs(string field, string alias)
         {
             if (field != alias)
@@ -230,9 +224,16 @@ namespace CodeArts.Db.Expressions
         }
 
         /// <inheritdoc />
-        protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
+        protected override void Constant(Type conversionType, object value)
         {
-            writer.As(member.Member.Name);
+            if (buildWatchSql)
+            {
+                watchSql = (Action<CommandSql>)value;
+            }
+            else
+            {
+                base.Constant(conversionType, value);
+            }
         }
 
         /// <summary>
@@ -303,7 +304,7 @@ namespace CodeArts.Db.Expressions
                             goto label_core;
                         }
 
-                        throw new DSyntaxErrorException($"查询结果类型({typeof(T)})和指定的默认值类型({this.defaultValue.GetType()})无法进行默认转换!");
+                        throw new DSyntaxErrorException($"查询结果类型({conversionType})和指定的默认值类型({this.defaultValue.GetType()})无法进行默认转换!");
                     }
 
                     if (conversionType.IsNullable())
@@ -321,7 +322,7 @@ namespace CodeArts.Db.Expressions
 
         label_core:
 
-            return new CommandSql<T>(writer.ToSQL(), writer.Parameters, rowStyle, hasDefaultValue, defaultValue, timeOut, mssingDataError);
+            return new CommandSql<T>(ToString(), writer.Parameters, rowStyle, hasDefaultValue, defaultValue, timeOut, mssingDataError);
         }
 
         /// <summary>

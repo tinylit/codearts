@@ -302,7 +302,7 @@ namespace CodeArts.Db.Expressions
 
                 writer.OpenBrace();
 
-                using (var visitor = new SelectVisitor(this))
+                using (var visitor = new JoinSelectVisitor(this))
                 {
                     visitor.Startup(rightNode);
                 }

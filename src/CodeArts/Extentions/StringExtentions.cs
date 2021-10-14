@@ -401,12 +401,17 @@ public static class StringExtentions
                         return double.Parse(propertyName);
                     }
 
-                    return long.Parse(propertyName);
+                    if (propertyName.Length > 9)
+                    {
+                        return long.Parse(propertyName);
+                    }
+
+                    return int.Parse(propertyName);
                 }
 
                 return settings.IgnoreCase
-                ? Nested<T>.IgnoreCasePropertyValueGetter(source, propertyName, settings)
-                : Nested<T>.PropertyValueGetter(source, propertyName, settings);
+                    ? Nested<T>.IgnoreCasePropertyValueGetter(source, propertyName, settings)
+                    : Nested<T>.PropertyValueGetter(source, propertyName, settings);
             }
 
             return settings.Convert(result);

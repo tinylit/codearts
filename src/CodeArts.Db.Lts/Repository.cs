@@ -212,12 +212,14 @@ namespace CodeArts.Db.Lts
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            if (!typeof(TResult).IsAssignableFrom(expression.Type))
+            var resultType = typeof(TResult);
+
+            if (!resultType.IsAssignableFrom(expression.Type))
             {
                 throw new NotImplementedException(nameof(expression));
             }
 
-            if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
+            if (typeof(IEnumerable<T>).IsAssignableFrom(resultType))
             {
                 throw new NotSupportedException(nameof(expression));
             }
@@ -271,13 +273,14 @@ namespace CodeArts.Db.Lts
             {
                 throw new ArgumentNullException(nameof(expression));
             }
+            var resultType = typeof(TResult);
 
-            if (!typeof(TResult).IsAssignableFrom(expression.Type))
+            if (!resultType.IsAssignableFrom(expression.Type))
             {
                 throw new NotImplementedException(nameof(expression));
             }
 
-            if (typeof(IEnumerable<T>).IsAssignableFrom(typeof(TResult)))
+            if (typeof(IEnumerable<T>).IsAssignableFrom(resultType))
             {
                 throw new NotSupportedException(nameof(expression));
             }

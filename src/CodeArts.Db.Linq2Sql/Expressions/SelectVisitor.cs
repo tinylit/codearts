@@ -18,6 +18,13 @@ namespace CodeArts.Db.Expressions
     /// </summary>
     public class SelectVisitor : CoreVisitor
     {
+        private class CountVisitor : BaseVisitor
+        {
+            public CountVisitor(SelectVisitor visitor) : base(visitor, false)
+            {
+            }
+        }
+
         #region 匿名内部类。
         /// <summary>
         /// 智能开关。
@@ -78,6 +85,11 @@ namespace CodeArts.Db.Expressions
         private bool buildedSelect = false;
 
         /// <summary>
+        /// 包裹统计查询。
+        /// </summary>
+        private bool buildWrapCount = false;
+
+        /// <summary>
         /// 是否构建From。
         /// </summary>
         private bool buildFrom = true;
@@ -121,11 +133,6 @@ namespace CodeArts.Db.Expressions
         /// 使用了OrderBy
         /// </summary>
         private bool useOrderBy = false;
-
-        /// <summary>
-        /// 使用了统计函数。
-        /// </summary>
-        private bool useCount = false;
 
         /// <summary>
         /// 使用了聚合函数。
@@ -214,7 +221,7 @@ namespace CodeArts.Db.Expressions
 
         /// <inheritdoc />
         public override bool CanResolve(MethodCallExpression node)
-        => node.Method.DeclaringType == Types.Queryable || node.Method.DeclaringType == Types.RepositoryExtentions;
+            => node.Method.DeclaringType == Types.Queryable || node.Method.DeclaringType == Types.RepositoryExtentions;
 
         /// <inheritdoc />
         protected override void StartupCore(MethodCallExpression node)
@@ -224,6 +231,51 @@ namespace CodeArts.Db.Expressions
             if (buildSelect)
             {
                 throw new DSyntaxErrorException();
+            }
+        }
+
+        private void SetTake(int take)
+        {
+            if (take < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(take), "参数值必须大于零!");
+            }
+
+            if (this.take > 0 && take < this.take)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            if (skip > -1)
+            {
+                if (skip > take)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+
+                take -= skip;
+            }
+
+            if (this.take == -1)
+            {
+                this.take = take;
+            }
+        }
+
+        private void SetSkip(int skip)
+        {
+            if (skip < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(skip), "参数值不能小于零!");
+            }
+
+            if (this.skip == -1)
+            {
+                this.skip = skip;
+            }
+            else
+            {
+                this.skip += skip;
             }
         }
 
@@ -245,6 +297,7 @@ namespace CodeArts.Db.Expressions
                     case MethodCall.Concat:
                     case MethodCall.Except:
                     case MethodCall.Intersect:
+                    case MethodCall.Count when node.Arguments.Count == 1:
                         break;
                     default:
                         isNoPackage = false;
@@ -267,14 +320,14 @@ namespace CodeArts.Db.Expressions
                         throw new IndexOutOfRangeException();
                     }
 
-                    if (this.take > 0 && index < this.take)
+                    if (take > 0 && index < take)
                     {
                         throw new IndexOutOfRangeException();
                     }
 
-                    this.take = 1;
+                    take = 1;
 
-                    this.skip += index;
+                    skip += index;
 
                     break;
                 case MethodCall.Take:
@@ -290,32 +343,7 @@ namespace CodeArts.Db.Expressions
                         reverseOrder ^= true;
                     }
 
-                    int take = (int)node.Arguments[1].GetValueFromExpression();
-
-                    if (take < 1)
-                    {
-                        throw new ArgumentOutOfRangeException($"使用{name}函数,参数值必须大于零!");
-                    }
-
-                    if (this.take > 0 && take < this.take)
-                    {
-                        throw new IndexOutOfRangeException();
-                    }
-
-                    if (this.skip > -1)
-                    {
-                        if (this.skip > take)
-                        {
-                            throw new IndexOutOfRangeException();
-                        }
-
-                        take -= this.skip;
-                    }
-
-                    if (this.take == -1)
-                    {
-                        this.take = take;
-                    }
+                    SetTake((int)node.Arguments[1].GetValueFromExpression());
 
                     base.Visit(node.Arguments[0]);
 
@@ -331,7 +359,7 @@ namespace CodeArts.Db.Expressions
                 case MethodCall.SingleOrDefault:
 
                     // TOP(1)
-                    this.take = 1;
+                    take = 1;
 
                     if (node.Arguments.Count > 1)
                     {
@@ -347,7 +375,7 @@ namespace CodeArts.Db.Expressions
                 case MethodCall.LastOrDefault:
 
                     // TOP(..)
-                    this.take = 1;
+                    take = 1;
 
                     reverseOrder ^= true;
 
@@ -404,14 +432,58 @@ namespace CodeArts.Db.Expressions
                     break;
                 case MethodCall.Count:
                 case MethodCall.LongCount:
-                    useCount = true;
-                    buildSelect = false;
-                    buildedSelect = true;
+
                     useAggregation = true;
-                    using (var visitor = new CountVisitor(this))
+
+                    Workflow(() =>
                     {
-                        visitor.Startup(node);
+                        buildedSelect = true;
+
+                        if (buildWrapCount || buildSelect)
+                        {
+                            writer.Select();
+
+                            writer.Write("COUNT");
+
+                            writer.OpenBrace();
+
+                            writer.Write("1");
+
+                            writer.CloseBrace();
+
+                            writer.From();
+
+                            if (buildWrapCount)
+                            {
+                                writer.OpenBrace();
+                            }
+                            else if (!hasJoin && !hasCombination)
+                            {
+                                WriteTableName(node.Arguments[0].Type);
+                            }
+                        }
+
+                    }, () =>
+                    {
+                        if (node.Arguments.Count == 1)
+                        {
+                            Visit(node.Arguments[0]);
+                        }
+                        else
+                        {
+                            VisitCondition(node);
+                        }
+                    });
+
+                    if (buildWrapCount)
+                    {
+                        writer.CloseBrace();
+
+                        writer.WhiteSpace();
+
+                        writer.Name("xRows");
                     }
+
                     break;
                 case MethodCall.Skip:
                 case MethodCall.SkipLast:
@@ -426,21 +498,7 @@ namespace CodeArts.Db.Expressions
                         reverseOrder ^= true;
                     }
 
-                    int skip = (int)node.Arguments[1].GetValueFromExpression();
-
-                    if (skip < 0)
-                    {
-                        throw new ArgumentOutOfRangeException($"使用({name})函数,参数值不能小于零!");
-                    }
-
-                    if (this.skip == -1)
-                    {
-                        this.skip = skip;
-                    }
-                    else
-                    {
-                        this.skip += skip;
-                    }
+                    SetSkip((int)node.Arguments[1].GetValueFromExpression());
 
                     base.Visit(node.Arguments[0]);
 
@@ -484,9 +542,31 @@ namespace CodeArts.Db.Expressions
                     break;
                 case MethodCall.Select:
 
-                    if (useCount)
+                    buildedSelect = true;
+
+                    if (useAggregation)
                     {
-                        base.Visit(node.Arguments[0]);
+                        if (isDistinct && buildSelect) //? Distinct().Select(x=>//...).Count()
+                        {
+                            buildSelect = buildFrom = false;
+
+                            Workflow(() =>
+                            {
+                                VisitCount(node.Arguments[1]);
+
+                                writer.From();
+
+                                if (!hasJoin && !hasCombination)
+                                {
+                                    WriteTableName(node.Arguments[0].Type);
+                                }
+
+                            }, () => base.Visit(node.Arguments[0]));
+                        }
+                        else
+                        {
+                            base.Visit(node.Arguments[0]);
+                        }
 
                         break;
                     }
@@ -530,32 +610,6 @@ namespace CodeArts.Db.Expressions
                     hasJoin = true;
 
                     var parameterExp = Join(node.Arguments[2], true);
-
-                    bool DoneLeftJoin(ParameterExpression parameter, Expression expression)
-                    {
-                        if (expression.NodeType == ExpressionType.MemberAccess)
-                        {
-                            return false;
-                        }
-
-                        switch (expression)
-                        {
-                            case UnaryExpression unary:
-                                return DoneLeftJoin(parameter, unary.Operand);
-                            case LambdaExpression lambda when lambda.Parameters.Count == 1:
-                                return DoneLeftJoin(parameter, lambda.Body);
-                            case MethodCallExpression methodCall when methodCall.Method.Name == MethodCall.DefaultIfEmpty:
-
-                                if (methodCall.Arguments.Count > 1)
-                                {
-                                    defaultCache.Add(Tuple.Create(parameter.Type, parameter.Name), methodCall.Arguments[1]);
-                                }
-
-                                return true;
-                            default:
-                                throw new DSyntaxErrorException();
-                        }
-                    }
 
                     using (var visitor = new GroupJoinVisitor(this, parameterExp, DoneLeftJoin(parameterExp, node.Arguments[1])))
                     {
@@ -702,9 +756,15 @@ namespace CodeArts.Db.Expressions
                     {
                         buildSelect = false;
                         buildedSelect = true;
+
                         using (var visitor = new CombinationVisitor(this))
                         {
                             visitor.Startup(node);
+                        }
+
+                        if (useAggregation) //Union(...).Count()
+                        {
+                            buildWrapCount = true;
                         }
 
                         break;
@@ -724,12 +784,22 @@ namespace CodeArts.Db.Expressions
 
                             writer.Select();
 
-                            if (isDistinct)
+                            if (useAggregation)
                             {
-                                writer.Distinct();
+                                writer.Write("COUNT");
+                                writer.OpenBrace();
+                                writer.Write("1");
+                                writer.CloseBrace();
                             }
+                            else
+                            {
+                                if (isDistinct)
+                                {
+                                    writer.Distinct();
+                                }
 
-                            WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
+                                WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
+                            }
 
                         }, Done);
 
@@ -755,47 +825,227 @@ namespace CodeArts.Db.Expressions
 
                         writer.WhiteSpace();
 
-                        writer.Name(prefix = GetEntryAlias(node.Arguments[0].Type, "x"));
+                        writer.Name(prefix = GetEntryAlias(node.Arguments[0].Type, prefix));
                     }
                 default:
                     base.VisitCore(node);
-
                     break;
             }
+        }
 
-            ParameterExpression Join(Expression expression, bool isJoin)
+        private bool DoneLeftJoin(ParameterExpression parameter, Expression expression)
+        {
+            if (expression.NodeType == ExpressionType.MemberAccess)
             {
-                switch (expression)
-                {
-                    case UnaryExpression unary:
-                        return Join(unary.Operand, isJoin);
-                    case LambdaExpression lambda when lambda.Parameters.Count == 1 || lambda.Parameters.Count == 2:
+                return false;
+            }
+
+            switch (expression)
+            {
+                case UnaryExpression unary:
+                    return DoneLeftJoin(parameter, unary.Operand);
+                case LambdaExpression lambda when lambda.Parameters.Count == 1:
+                    return DoneLeftJoin(parameter, lambda.Body);
+                case MethodCallExpression methodCall when methodCall.Method.Name == MethodCall.DefaultIfEmpty:
+
+                    if (methodCall.Arguments.Count > 1)
+                    {
+                        defaultCache.Add(Tuple.Create(parameter.Type, parameter.Name), methodCall.Arguments[1]);
+                    }
+
+                    return true;
+                default:
+                    throw new DSyntaxErrorException();
+            }
+        }
+
+        private ParameterExpression Join(Expression expression, bool isJoin)
+        {
+            switch (expression)
+            {
+                case UnaryExpression unary:
+                    return Join(unary.Operand, isJoin);
+                case LambdaExpression lambda when lambda.Parameters.Count == 1 || lambda.Parameters.Count == 2:
 #if NETSTANDARD2_1_OR_GREATER
                         var parameter = lambda.Parameters[^1];
 #else
-                        var parameter = lambda.Parameters[lambda.Parameters.Count - 1];
+                    var parameter = lambda.Parameters[lambda.Parameters.Count - 1];
 #endif
 
-                        if (isJoin)
-                        {
-                            var parameterType = TypeToUltimateType(parameter.Type);
+                    if (isJoin)
+                    {
+                        var parameterType = TypeToUltimateType(parameter.Type);
 
-                            if (!joinCache.TryGetValue(parameterType, out List<string> results))
-                            {
-                                joinCache.Add(parameterType, results = new List<string>());
-                            }
-
-                            results.Add(parameter.Name);
-                        }
-                        else
+                        if (!joinCache.TryGetValue(parameterType, out List<string> results))
                         {
-                            AnalysisAlias(parameter);
+                            joinCache.Add(parameterType, results = new List<string>());
                         }
-                        return parameter;
-                    default:
-                        throw new DSyntaxErrorException();
-                }
+
+                        results.Add(parameter.Name);
+                    }
+                    else
+                    {
+                        AnalysisAlias(parameter);
+                    }
+                    return parameter;
+                default:
+                    throw new DSyntaxErrorException();
             }
+        }
+
+        private void VisitCount(Expression node)
+        {
+            switch (node)
+            {
+                case MemberExpression member:
+
+                    writer.Select();
+
+                    writer.Write("COUNT");
+
+                    writer.OpenBrace();
+
+                    if (isDistinct)
+                    {
+                        writer.Distinct();
+                    }
+
+                    VisitMember(member);
+
+                    writer.CloseBrace();
+
+                    break;
+                case BinaryExpression binary:
+                    writer.Select();
+
+                    writer.Write("COUNT");
+
+                    writer.OpenBrace();
+
+                    if (isDistinct)
+                    {
+                        writer.Distinct();
+                    }
+
+                    VisitBinary(binary);
+
+                    writer.CloseBrace();
+                    break;
+                case MethodCallExpression methodCall:
+                    writer.Select();
+
+                    writer.Write("COUNT");
+
+                    writer.OpenBrace();
+
+                    VisitMethodCall(methodCall);
+
+                    writer.CloseBrace();
+                    break;
+                case MemberInitExpression memberInit:
+                    writer.Select();
+
+                    writer.Write("COUNT");
+
+                    writer.OpenBrace();
+
+                    if (isDistinct)
+                    {
+                        writer.Distinct();
+                    }
+
+                    using (var visitor = new CountVisitor(this))
+                    {
+                        visitor.Startup(memberInit);
+                    }
+
+                    writer.CloseBrace();
+                    break;
+                case NewExpression newExpression:
+
+                    writer.Select();
+
+                    if (settings.Engine == DatabaseEngine.MySQL)
+                    {
+                        writer.Write("COUNT");
+
+                        writer.OpenBrace();
+                    }
+
+                    if (isDistinct)
+                    {
+                        writer.Distinct();
+                    }
+
+                    inSelect = true;
+
+                    using (var visitor = new CountVisitor(this))
+                    {
+                        visitor.Startup(newExpression);
+                    }
+
+                    inSelect = false;
+
+                    if (settings.Engine == DatabaseEngine.MySQL)
+                    {
+                        writer.CloseBrace();
+                    }
+                    else
+                    {
+                        buildWrapCount = true;
+                    }
+                    break;
+                case ParameterExpression parameter:
+
+                    writer.Select();
+
+                    writer.Write("COUNT");
+
+                    var tableInfo = MakeTableInfo(parameter.Type);
+
+                    var prefix = GetEntryAlias(tableInfo.TableType, parameter.Name);
+
+                    writer.OpenBrace();
+
+                    if (tableInfo.Keys.Count == 1)
+                    {
+                        string key = tableInfo.Keys.First();
+
+                        if (isDistinct)
+                        {
+                            writer.Distinct();
+                        }
+
+                        foreach (var kv in tableInfo.ReadOrWrites)
+                        {
+                            if (kv.Key == key)
+                            {
+                                writer.NameDot(prefix, kv.Value);
+
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        writer.Write("1");
+                    }
+
+                    writer.CloseBrace();
+                    break;
+                case LambdaExpression lambda:
+                    VisitCount(lambda.Body);
+                    break;
+                case UnaryExpression unary:
+                    VisitCount(unary.Operand);
+                    break;
+                case InvocationExpression invocation:
+                    VisitCount(invocation.Expression);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+
         }
 
         /// <inheritdoc />
@@ -829,13 +1079,6 @@ namespace CodeArts.Db.Expressions
             }
         }
 
-        /// <summary>
-        /// 创建条件实列。
-        /// </summary>
-        /// <param name="baseVisitor">参数。</param>
-        /// <returns></returns>
-        public virtual SelectVisitor CreateInstance(BaseVisitor baseVisitor) => new SelectVisitor(baseVisitor);
-
         /// <inheritdoc />
         protected override Expression VisitConstant(ConstantExpression node)
         {
@@ -851,10 +1094,9 @@ namespace CodeArts.Db.Expressions
                     buildSelect = buildFrom = false;
                     buildedSelect = true;
 
-                    return Select(node);
+                    Select(node);
                 }
-
-                if (buildFrom)
+                else if (buildFrom)
                 {
                     buildFrom = false;
 
@@ -871,18 +1113,6 @@ namespace CodeArts.Db.Expressions
             }
 
             return base.VisitConstant(node);
-        }
-
-        /// <inheritdoc />
-        protected override void DefMemberBindingAs(MemberBinding member, Type memberOfHostType)
-        {
-            writer.As(GetMemberNaming(memberOfHostType, member.Member));
-        }
-
-        /// <inheritdoc />
-        protected override void DefNewMemberAs(MemberInfo memberInfo, Type memberOfHostType)
-        {
-            writer.As(GetMemberNaming(memberOfHostType, memberInfo));
         }
 
         /// <inheritdoc />
@@ -1208,12 +1438,37 @@ namespace CodeArts.Db.Expressions
             }
         }
 
+        /// <summary>
+        /// 创建条件实列。
+        /// </summary>
+        /// <param name="baseVisitor">参数。</param>
+        /// <returns></returns>
+        public virtual SelectVisitor CreateInstance(BaseVisitor baseVisitor) => new SelectVisitor(baseVisitor);
+
         #region SELECT
         /// <summary>
         /// Select。
         /// </summary>
         /// <param name="node">节点。</param>
-        protected virtual Expression Select(ConstantExpression node)
+        protected virtual void Select(ConstantExpression node)
+        {
+            if (useAggregation)
+            {
+                SelectCount(node);
+            }
+            else if (isExists)
+            {
+                SelectExists(node);
+            }
+            else
+            {
+                SelectSimple(node);
+            }
+        }
+        /// <summary>
+        /// .Count();
+        /// </summary>
+        protected virtual void SelectCount(ConstantExpression node)
         {
             var parameterType = TypeToUltimateType(node.Type);
 
@@ -1223,16 +1478,11 @@ namespace CodeArts.Db.Expressions
 
             writer.Select();
 
-            if (isDistinct && !isExists)
+            if (isDistinct)
             {
-                writer.Distinct();
-            }
+                var members = FilterMembers(tableInfo.ReadOrWrites);
 
-            var members = FilterMembers(tableInfo.ReadOrWrites);
-
-            if (isExists)
-            {
-                var existsMembers = new List<KeyValuePair<string, string>>();
+                var keyMembers = new List<KeyValuePair<string, string>>();
 
                 if (tableInfo.Keys.Count > 0)
                 {
@@ -1240,19 +1490,113 @@ namespace CodeArts.Db.Expressions
                     {
                         if (tableInfo.Keys.Contains(item.Key))
                         {
-                            existsMembers.Add(item);
+                            keyMembers.Add(item);
                         }
                     }
                 }
 
-                if (existsMembers.Count == tableInfo.Keys.Count)
+                bool distinctFlag = tableInfo.Keys.Count == 0 || settings.Engine == DatabaseEngine.MySQL;
+
+                if (distinctFlag)
                 {
-                    WriteMembers(prefix, existsMembers);
+                    writer.Write("COUNT");
+
+                    writer.OpenBrace();
+                    writer.Distinct();
+                }
+
+                if (keyMembers.Count == tableInfo.Keys.Count)
+                {
+                    WriteMemberNoAs(prefix, keyMembers);
                 }
                 else
                 {
-                    WriteMembers(prefix, members);
+                    WriteMemberNoAs(prefix, members);
                 }
+
+                if (distinctFlag)
+                {
+                    writer.CloseBrace();
+                }
+                else
+                {
+                    buildWrapCount = true;
+                }
+            }
+            else
+            {
+                writer.Write("COUNT(1)");
+            }
+
+            writer.From();
+
+            WriteTableName(tableInfo, prefix);
+        }
+
+        private void WriteMemberNoAs(string prefix, IEnumerable<KeyValuePair<string, string>> members)
+        {
+            var enumerator = members.GetEnumerator();
+
+            if (enumerator.MoveNext())
+            {
+                do
+                {
+                    WriteMember(prefix, enumerator.Current.Value);
+
+                    if (enumerator.MoveNext())
+                    {
+                        writer.Delimiter();
+
+                        continue;
+                    }
+
+                    break;
+
+                } while (true);
+            }
+            else
+            {
+                throw new DException("未指定查询字段!");
+            }
+        }
+        
+        /// <summary>
+        /// .Any();
+        /// .All();
+        /// </summary>
+        protected virtual void SelectExists(ConstantExpression node)
+        {
+            var parameterType = TypeToUltimateType(node.Type);
+
+            var prefix = GetEntryAlias(parameterType, string.Empty);
+
+            var tableInfo = MakeTableInfo(parameterType);
+
+            writer.Select();
+
+            if (isDistinct)
+            {
+                writer.Distinct();
+            }
+
+            var members = FilterMembers(tableInfo.ReadOrWrites);
+
+            var keyMembers = new List<KeyValuePair<string, string>>();
+
+            if (tableInfo.Keys.Count > 0)
+            {
+                foreach (var item in members)
+                {
+                    if (tableInfo.Keys.Contains(item.Key))
+                    {
+                        keyMembers.Add(item);
+                    }
+                }
+            }
+
+            if (keyMembers.Count == tableInfo.Keys.Count)
+            {
+                WriteMembers(prefix, keyMembers);
             }
             else
             {
@@ -1262,8 +1606,31 @@ namespace CodeArts.Db.Expressions
             writer.From();
 
             WriteTableName(tableInfo, prefix);
+        }
+        
+        /// <summary>
+        /// 不是 .Count()、.Any()、.All() 的情况。
+        /// </summary>
+        protected virtual void SelectSimple(ConstantExpression node)
+        {
+            var parameterType = TypeToUltimateType(node.Type);
 
-            return node;
+            var prefix = GetEntryAlias(parameterType, string.Empty);
+
+            var tableInfo = MakeTableInfo(parameterType);
+
+            writer.Select();
+
+            if (isDistinct)
+            {
+                writer.Distinct();
+            }
+
+            WriteMembers(prefix, FilterMembers(tableInfo.ReadOrWrites));
+
+            writer.From();
+
+            WriteTableName(tableInfo, prefix);
         }
         #endregion
 

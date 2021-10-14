@@ -581,8 +581,47 @@ namespace UnitTest
         public void DistinctSelectTest()
         {
             var user = new UserRepository();
-            var result = user.Distinct().Select(x => x.Id);
+            var result = user.Select(x => x.Id).Distinct();
             _ = result.ToList();
+        }
+
+        [TestMethod]
+        public void DistinctCountSelectTest1()
+        {
+            var y = 100;
+            var user = new UserRepository();
+
+            var result = user
+                .Where(x => x.Id > 0 && x.Id < y)
+                .Select(x => x.Id)
+                .Distinct()
+                .Count();//.Where(x => x.Id > 0 && x.Id < y);
+        }
+
+        [TestMethod]
+        public void DistinctCountSelectTest2()
+        {
+            var y = 100;
+            var user = new UserRepository();
+
+            var result = user
+                .Where(x => x.Id > 0 && x.Id < y)
+                .Select(x => new { x.Id, x.Bcid })
+                .Distinct()
+                .Count();//.Where(x => x.Id > 0 && x.Id < y);
+        }
+
+        [TestMethod]
+        public void DistinctCountSelectTest3()
+        {
+            var y = 100;
+            var user = new UserRepository();
+
+            var result = user
+                .Where(x => x.Id > 0 && x.Id < y)
+                .Select(x => x.Id % 10)
+                .Distinct()
+                .Count();//.Where(x => x.Id > 0 && x.Id < y);
         }
 
         [TestMethod]
@@ -1005,7 +1044,7 @@ namespace UnitTest
 
             var result2 = details.Where(x => x.Id > 0 && x.Id < y).Select(x => new { x.Id, Username = x.Realname });
 
-            var Count = result.Union(result2).Count();
+            var Count = result.Union(result2).Cast<UserSimDto>().Count();
         }
 
         [TestMethod]
@@ -1021,6 +1060,7 @@ namespace UnitTest
             var list = result.Intersect(result2).Cast<UserSimDto>().Take(10).ToList();
 
         }
+
         [TestMethod]
         public void IntersectCountTest()
         {
@@ -1060,7 +1100,6 @@ namespace UnitTest
         [TestMethod]
         public void CountWithArgumentsTest()
         {
-
             var user = new UserRepository();
 
             var count = user.Count(x => x.Mallagid == 2);
@@ -1359,6 +1398,38 @@ namespace UnitTest
         }
 
         [TestMethod]
+        public void UnoinInJoinCountTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var unionRight = (from x in user
+                              join y in userdetails
+                              on x.Id equals y.Id
+                              where x.Id < 10000
+                              select x)
+                              .Union(from x in user
+                                     join y in userdetails
+                                     on x.Id equals y.Id
+                                     where x.Id >= 10000
+                                     select x);
+
+            var linq = from x in user
+                       join y in unionRight
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+            var count = linq.Count();
+        }
+
+        [TestMethod]
         public void JoinInUnoinTest()
         {
             var user = new UserRepository();
@@ -1384,6 +1455,34 @@ namespace UnitTest
                                });
 
             var results = linq.ToList();
+        }
+
+        [TestMethod]
+        public void JoinInUnoinCountTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var linq = (from x in user
+                        join y in userdetails
+                        on x.Id equals y.Id
+                        where x.Id < 10000
+                        select new
+                        {
+                            x.Id,
+                            x.Bcid
+                        })
+                        .Union(from x in user
+                               join y in userdetails
+                               on x.Id equals y.Id
+                               where x.Id < 10000
+                               select new
+                               {
+                                   x.Id,
+                                   x.Bcid
+                               });
+
+            var count = linq.Count();
         }
 
         [TestMethod]
@@ -1426,6 +1525,48 @@ namespace UnitTest
                        };
 
             var results = linq.ToList();
+        }
+
+        [TestMethod]
+        public void UnoinSelectInJoinCountTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var unionRight = (from x in user
+                              join y in userdetails
+                              on x.Id equals y.Id
+                              where x.Id < 10000
+                              select new
+                              {
+                                  x.Id,
+                                  x.Bcid,
+                                  x.Mallagid
+                              })
+                              .Union(from x in user
+                                     join y in userdetails
+                                     on x.Id equals y.Id
+                                     where x.Id >= 10000
+                                     select new
+                                     {
+                                         x.Id,
+                                         x.Bcid,
+                                         x.Mallagid
+                                     });
+
+            var linq = from x in user
+                       join y in unionRight
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+            var count = linq.Count();
         }
 
         [TestMethod]
@@ -1518,6 +1659,39 @@ namespace UnitTest
                        };
 
             var results = linq.ToList();
+        }
+
+        [TestMethod]
+        public void UnoinWhereInJoinCountTest()
+        {
+            var user = new UserRepository();
+            var userdetails = new UserDetailsRepository();
+
+            var unionRight = (from x in user
+                              join y in userdetails
+                              on x.Id equals y.Id
+                              where x.Id < 10000
+                              select x)
+                              .Union(from x in user
+                                     join y in userdetails
+                                     on x.Id equals y.Id
+                                     where x.Id >= 10000
+                                     select x);
+
+            var linq = from x in user
+                       join y in unionRight.Where(y => y.Mallagid > 0)
+                       on x.Id equals y.Id
+                       where y.Mallagid > 0
+                       orderby y.Mallagid
+                       orderby x.Id
+                       orderby y.Id
+                       select new
+                       {
+                           x.Id,
+                           y.Mallagid
+                       };
+
+            var count = linq.Count();
         }
 
         [TestMethod]
@@ -2247,6 +2421,21 @@ namespace UnitTest
             {
                 Id = 100
             }).Max(x => x.Id);
+        }
+
+        [TestMethod]
+        public void ToListTest()
+        {
+            var y = 100;
+            var user = new UserRepository();
+
+            var result = user
+                .Where(x => x.Id > 0 && x.Id < y)
+                .Select(x => x.Id)
+                .Distinct();//.Where(x => x.Id > 0 && x.Id < y);
+
+            var list = result.ToList(0, 10);
+
         }
     }
 }

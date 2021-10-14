@@ -123,7 +123,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 查询语句所有字段。
         /// </summary>
-        private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<distinct>distinct[\x20\t\r\n\f]+)?(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         /// <summary>
         /// 查询语句排序内容。
         /// </summary>
@@ -762,7 +762,7 @@ namespace CodeArts.Db
                 if (nameGrp.Index == item.Index && nameGrp.Length == item.Length)
                     return value;
 
-                return item.Value.Substring(0, nameGrp.Index - item.Index) + 
+                return item.Value.Substring(0, nameGrp.Index - item.Index) +
                 value +
 #if NETSTANDARD2_1_OR_GREATER
                 item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..];
@@ -852,18 +852,21 @@ namespace CodeArts.Db
         {
             var formatSql = Format(sql);
 
+            var sb = new StringBuilder();
+
             var colsMt = PatternColumn.Match(formatSql);
 
-            if (!colsMt.Success)
+            if (!colsMt.Success || colsMt.Groups["distinct"].Success)
             {
-                throw new NotSupportedException();
+                return sb.Append("SELECT COUNT(1) FROM (")
+                    .Append(sql)
+                    .Append(") [xRows]")
+                    .ToString();
             }
 
             var colsGrp = colsMt.Groups["cols"];
 
             var orderByMt = PatternOrderBy.Match(formatSql);
-
-            var sb = new StringBuilder();
 
             sb.Append(formatSql.Substring(0, colsGrp.Index))
                 .Append("COUNT(1)");

@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CodeArts.Db.Dapper
@@ -20,9 +21,9 @@ namespace CodeArts.Db.Dapper
         /// <summary>
         /// inheritdoc
         /// </summary>
-        public DbContext()
+        protected DbContext()
         {
-            connectionConfig = GetDbConfig();
+            connectionConfig = GetDbConfig() ?? throw new NullReferenceException();
         }
 
         /// <summary>
@@ -98,7 +99,7 @@ namespace CodeArts.Db.Dapper
         }
 
         /// <summary>
-        /// 转分页SQL（countSql;listSql）。
+        /// 转分页SQL（listSql;countSql;）。
         /// </summary>
         /// <param name="sql">语句。</param>
         /// <param name="pageIndex">页面索引。</param>
@@ -106,9 +107,34 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         protected virtual string ToPagedSql(SQL sql, int pageIndex, int pageSize)
         {
-            var value = sql.ToCountSQL() + sql.ToSQL(pageIndex, pageSize);
+            string mainSql = sql.ToSQL(pageIndex, pageSize).ToString(Settings);
 
-            return value.ToString(Settings);
+            if (Settings.Engine == DatabaseEngine.MySQL)
+            {
+                int i = 6;/* 跳过 SELECT 的计算 */
+
+                for (int length = mainSql.Length; i < length; i++)
+                {
+                    char c = mainSql[i];
+
+                    if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'))
+                    {
+                        break;
+                    }
+                }
+
+                var sb = new StringBuilder(6);
+
+                return sb.Append(mainSql.Substring(0, i))
+                     .Append(' ')
+                     .Append("SQL_CALC_FOUND_ROWS")
+                     .Append(mainSql.Substring(i))
+                     .Append(';')
+                     .Append("SELECT FOUND_ROWS()")
+                     .ToString();
+            }
+
+            return string.Concat(mainSql, ";", sql.ToCountSQL().ToString(Settings));
         }
 
         /// <summary>
@@ -136,9 +162,9 @@ namespace CodeArts.Db.Dapper
             {
                 using (var reader = connection.QueryMultiple(sqlStr, param, commandTimeout: commandTimeout))
                 {
-                    int count = reader.ReadFirst<int>();
-
                     var results = reader.Read<T>();
+
+                    int count = reader.ReadFirst<int>();
 
                     return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
                 }
