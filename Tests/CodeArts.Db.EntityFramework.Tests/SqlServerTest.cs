@@ -160,13 +160,6 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void AvgTest()
-        {
-            var user = new UserRepository(context);
-            var has = user.Where(x => x.Id < 100).Average(x => x.Id);
-        }
-
-        [TestMethod]
         public void LikeTest()
         {
             var y = 100;
@@ -290,13 +283,6 @@ namespace UnitTest
                 .Distinct()
                 .OrderByDescending(x => x.Bcid);
             var list = result.ToList();
-        }
-
-        [TestMethod]
-        public void MaxWithTest()
-        {
-            var user = new UserRepository(context);
-            var result = user.Max(x => x.Id);
         }
 
         [TestMethod]
