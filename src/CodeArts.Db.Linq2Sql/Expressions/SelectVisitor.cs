@@ -2,11 +2,8 @@
 using CodeArts.Runtime;
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if NET40
 using System.Collections.ObjectModel;
-#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -867,7 +864,7 @@ namespace CodeArts.Db.Expressions
                     return Join(unary.Operand, isJoin);
                 case LambdaExpression lambda when lambda.Parameters.Count == 1 || lambda.Parameters.Count == 2:
 #if NETSTANDARD2_1_OR_GREATER
-                        var parameter = lambda.Parameters[^1];
+                    var parameter = lambda.Parameters[^1];
 #else
                     var parameter = lambda.Parameters[lambda.Parameters.Count - 1];
 #endif
@@ -1116,34 +1113,23 @@ namespace CodeArts.Db.Expressions
         }
 
         /// <inheritdoc />
-#if NET40
         protected override ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings)
-#else
-        protected override IReadOnlyCollection<MemberBinding> FilterMemberBindings(IReadOnlyCollection<MemberBinding> bindings)
-#endif
         {
             var vbindings = base.FilterMemberBindings(bindings);
 
             if (useCast)
             {
                 return vbindings
-                .Where(x => memberFilters.Contains(x.Member.Name.ToLower()))
-                .ToList()
-#if NET40
-                .AsReadOnly()
-#endif
-                ;
+                        .Where(x => memberFilters.Contains(x.Member.Name.ToLower()))
+                        .ToList()
+                        .AsReadOnly();
             }
 
             return vbindings;
         }
 
         /// <inheritdoc />
-#if NET40
-        protected override IDictionary<string, string> FilterMembers(IDictionary<string, string> members)
-#else
         protected override IReadOnlyDictionary<string, string> FilterMembers(IReadOnlyDictionary<string, string> members)
-#endif
         {
             if (useCast)
             {
@@ -1157,7 +1143,11 @@ namespace CodeArts.Db.Expressions
                     }
                 }
 
+#if NET40
+                return base.FilterMembers(dic.ToReadOnlyDictionary());
+#else
                 return base.FilterMembers(dic);
+#endif
             }
 
             return base.FilterMembers(members);
@@ -1559,7 +1549,7 @@ namespace CodeArts.Db.Expressions
                 throw new DException("未指定查询字段!");
             }
         }
-        
+
         /// <summary>
         /// .Any();
         /// .All();
@@ -1607,7 +1597,7 @@ namespace CodeArts.Db.Expressions
 
             WriteTableName(tableInfo, prefix);
         }
-        
+
         /// <summary>
         /// 不是 .Count()、.Any()、.All() 的情况。
         /// </summary>

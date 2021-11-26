@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
-#if NET40
-using System.Collections.ObjectModel;
-#else
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-#endif
 using System.Linq;
 using System.Reflection;
 
@@ -24,11 +19,6 @@ namespace CodeArts.Runtime
         private MethodItem(MethodInfo info) : base(info)
         {
         }
-
-        /// <summary>
-        /// 放回值类型。
-        /// </summary>
-        public override Type MemberType => Member.ReturnType;
 
         /// <summary>
         /// 静态方法。
@@ -52,13 +42,12 @@ namespace CodeArts.Runtime
 
         private static readonly object Lock_ParameterObj = new object();
 
-#if NET40
 
-        private ReadOnlyCollection<ParameterItem> parameterStores;
+        private IReadOnlyList<ParameterItem> parameterStores;
         /// <summary>
         /// 参数信息。
         /// </summary>
-        public ReadOnlyCollection<ParameterItem> ParameterStores
+        public IReadOnlyList<ParameterItem> ParameterStores
         {
             get
             {
@@ -68,41 +57,21 @@ namespace CodeArts.Runtime
                     {
                         if (parameterStores is null)
                         {
+#if NET40
                             parameterStores = Member.GetParameters()
                                 .Select(info => ParameterItem.Get(info))
-                                .ToList()
-                                .AsReadOnly();
-                        }
-                    }
-                }
-                return parameterStores;
-            }
-        }
+                                .ToReadOnlyList();
 #else
-        private IReadOnlyCollection<ParameterItem> parameterStores;
-        /// <summary>
-        /// 参数信息。
-        /// </summary>
-        public IReadOnlyCollection<ParameterItem> ParameterStores
-        {
-            get
-            {
-                if (parameterStores is null)
-                {
-                    lock (Lock_ParameterObj)
-                    {
-                        if (parameterStores is null)
-                        {
                             parameterStores = Member.GetParameters()
                                 .Select(info => ParameterItem.Get(info))
                                 .ToList();
+#endif
                         }
                     }
                 }
                 return parameterStores;
             }
         }
-#endif
 
 
         /// <summary>

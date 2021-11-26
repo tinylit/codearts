@@ -20,11 +20,6 @@ namespace CodeArts.Runtime
         }
 
         /// <summary>
-        /// 字段类型。
-        /// </summary>
-        public override Type MemberType => Member.FieldType;
-
-        /// <summary>
         /// 静态字段。
         /// </summary>
         public override bool IsStatic => Member.IsStatic;

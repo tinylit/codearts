@@ -61,39 +61,25 @@ namespace CodeArts.Db
             return Add(sql.ToString());
         }
 
-#if NET40
-        private ReadOnlyCollection<TableToken> tables;
-        private ReadOnlyCollection<string> parameters;
-
-        /// <summary>
-        /// 操作的表。
-        /// </summary>
-        public ReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
-        /// <summary>
-        /// 参数。
-        /// </summary>
-        public ReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
-#else
-        private IReadOnlyCollection<TableToken> tables;
-        private IReadOnlyCollection<string> parameters;
+        private IReadOnlyList<TableToken> tables;
+        private IReadOnlyList<string> parameters;
 
         /// <summary>
         /// 操作的表。
         /// </summary>
 #if NETSTANDARD2_1_OR_GREATER
-        public IReadOnlyCollection<TableToken> Tables => tables ??= adpter.AnalyzeTables(sql);
+        public IReadOnlyList<TableToken> Tables => tables ??= adpter.AnalyzeTables(sql);
 #else
-        public IReadOnlyCollection<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
+        public IReadOnlyList<TableToken> Tables => tables ?? (tables = adpter.AnalyzeTables(sql));
 #endif
 
         /// <summary>
         /// 参数。
         /// </summary>
 #if NETSTANDARD2_1_OR_GREATER
-        public IReadOnlyCollection<string> Parameters => parameters ??= adpter.AnalyzeParameters(sql);
+        public IReadOnlyList<string> Parameters => parameters ??= adpter.AnalyzeParameters(sql);
 #else
-        public IReadOnlyCollection<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
-#endif
+        public IReadOnlyList<string> Parameters => parameters ?? (parameters = adpter.AnalyzeParameters(sql));
 #endif
 
         /// <summary>

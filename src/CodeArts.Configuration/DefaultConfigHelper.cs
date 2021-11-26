@@ -159,6 +159,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Reflection;
 using System.Web.Configuration;
 
 namespace CodeArts.Config
@@ -205,7 +206,7 @@ namespace CodeArts.Config
         {
             Configs = new Dictionary<string, string>();
 
-            ConnectionStrings = new Dictionary<string, ConnectionStringSettings>();
+            ConnectionStrings = new Dictionary<string, ConnectionStringSettings>(StringComparer.OrdinalIgnoreCase);
 
             switch (environment)
             {
@@ -254,7 +255,7 @@ namespace CodeArts.Config
             {
                 if (Configs.TryGetValue(key, out string value))
                 {
-                    return Mapper.Cast(value, defaultValue);
+                    return (T)ChangeType(value, typeof(T), defaultValue);
                 }
 
                 return defaultValue;
@@ -282,13 +283,13 @@ namespace CodeArts.Config
                     }
 
                     if (string.Equals(keys[2], "connectionString", StringComparison.OrdinalIgnoreCase))
-                        return Mapper.Cast(value.ConnectionString, defaultValue);
+                        return (T)ChangeType(value.ConnectionString, typeof(T), defaultValue);
 
                     if (string.Equals(keys[2], "name", StringComparison.OrdinalIgnoreCase))
-                        return Mapper.Cast(value.Name, defaultValue);
+                        return (T)ChangeType(value.Name, typeof(T), defaultValue);
 
                     if (string.Equals(keys[2], "providerName", StringComparison.OrdinalIgnoreCase))
-                        return Mapper.Cast(value.ProviderName, defaultValue);
+                        return (T)ChangeType(value.ProviderName, typeof(T), defaultValue);
                 }
 
                 return defaultValue;
@@ -303,7 +304,7 @@ namespace CodeArts.Config
 
                 if (keys.Length == 2 && Configs.TryGetValue(keys[1], out string value))
                 {
-                    return Mapper.Cast(value, defaultValue);
+                    return (T)ChangeType(value, typeof(T), defaultValue);
                 }
 
                 return defaultValue;
@@ -330,6 +331,7 @@ namespace CodeArts.Config
                 while (keys.Length > index)
                 {
                     bool flag = false;
+
                     foreach (ConfigurationSectionGroup sectionGroupItem in sectionGroup.SectionGroups)
                     {
                         if (string.Equals(sectionGroupItem.SectionGroupName, keys[index], StringComparison.OrdinalIgnoreCase))
@@ -337,6 +339,7 @@ namespace CodeArts.Config
                             index += 1;
                             flag = true;
                             sectionGroup = sectionGroupItem;
+
                             break;
                         }
                     }
@@ -369,7 +372,6 @@ namespace CodeArts.Config
                         }
                     }
                 }
-
             }
             catch { }
 
@@ -407,6 +409,122 @@ namespace CodeArts.Config
             };
 
             _watcher.Changed += Watcher_Changed;
+        }
+
+        private static object ChangeType(string source, Type conversionType, object defaultValue)
+        {
+            if (source is null)
+                return defaultValue;
+
+            if (typeof(string) == conversionType)
+                return source;
+
+            if (conversionType.IsValueType)
+            {
+                if (conversionType.IsNullable())
+                {
+                    conversionType = Nullable.GetUnderlyingType(conversionType);
+                }
+
+                try
+                {
+                    return System.Convert.ChangeType(source, conversionType);
+                }
+                catch { }
+
+                if (conversionType.IsEnum)
+                {
+#if NET40_OR_GREATER
+                    try
+                    {
+                        return Enum.Parse(conversionType, source, true);
+                    }
+                    catch
+                    {
+                        return defaultValue;
+                    }
+#else
+                    if (Enum.TryParse(conversionType, value, true, out object result))
+                    {
+                        return result;
+                    }
+
+                    return defaultValue;
+#endif
+                }
+
+                if (conversionType == typeof(bool))
+                {
+                    if (bool.TryParse(source, out bool result))
+                    {
+                        return result;
+                    }
+                }
+
+                if (conversionType == typeof(int) ||
+                    conversionType == typeof(bool) ||
+                    conversionType == typeof(byte))
+                {
+                    if (int.TryParse(source, out int result))
+                    {
+                        if (conversionType == typeof(bool))
+                            return result > 0;
+
+                        return System.Convert.ChangeType(result, conversionType);
+                    }
+
+                    return defaultValue;
+                }
+
+                if (conversionType == typeof(uint))
+                {
+                    if (uint.TryParse(source, out uint result))
+                    {
+                        return result;
+                    }
+                }
+                else if (conversionType == typeof(long))
+                {
+                    if (long.TryParse(source, out long result))
+                    {
+                        return result;
+                    }
+                }
+                else if (conversionType == typeof(ulong))
+                {
+                    if (ulong.TryParse(source, out ulong result))
+                    {
+                        return result;
+                    }
+                }
+                else if (conversionType == typeof(Guid))
+                {
+                    if (Guid.TryParse(source, out Guid guid))
+                    {
+                        return guid;
+                    }
+                }
+                else if (conversionType == typeof(DateTime))
+                {
+                    if (DateTime.TryParse(source, out DateTime date))
+                    {
+                        return date;
+                    }
+                }
+                else if (conversionType == typeof(DateTimeOffset))
+                {
+                    if (DateTimeOffset.TryParse(source, out DateTimeOffset timeOffset))
+                    {
+                        return timeOffset;
+                    }
+                }
+            }
+            else if (conversionType == typeof(string))
+            {
+                return source.ToString();
+            }
+
+            return defaultValue;
         }
     }
 }

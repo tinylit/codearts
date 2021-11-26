@@ -18,40 +18,40 @@ namespace CodeArts.Runtime
         /// <param name="info">参数。</param>
         private ParameterItem(ParameterInfo info) : base(info)
         {
-            Info = info;
+            Member = info;
         }
 
         /// <summary>
         /// 参数名称。
         /// </summary>
-        public override string Name => Info.Name;
+        public override string Name => Member.Name;
 
         /// <summary>
         /// 参数信息。
         /// </summary>
-        public ParameterInfo Info { get; }
+        public ParameterInfo Member { get; }
 
         /// <summary>
         /// 可选参数。
         /// </summary>
-        public bool IsOptional => Info.IsOptional;
+        public bool IsOptional => Member.IsOptional;
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// 是否有默认值。
         /// </summary>
-        public bool HasDefaultValue => Info.HasDefaultValue;
+        public bool HasDefaultValue => Member.HasDefaultValue;
 #endif
 
         /// <summary>
         /// 默认值。
         /// </summary>
-        public object DefaultValue => Info.DefaultValue;
+        public object DefaultValue => Member.DefaultValue;
 
         /// <summary>
         /// 参数类型。
         /// </summary>
-        public Type ParameterType => Info.ParameterType;
+        public Type ParameterType => Member.ParameterType;
 
         /// <summary>
         /// 获取仓储项目。

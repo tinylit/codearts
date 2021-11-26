@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 #if NET40
-using System.Collections.ObjectModel;
+using System.Linq;
 #endif
 using System.Data;
 using System.Diagnostics;
@@ -59,12 +59,12 @@ namespace CodeArts.Db
         /// <summary>
         /// 空集合。
         /// </summary>
-        public static readonly ReadOnlyCollection<TableToken> None = new ReadOnlyCollection<TableToken>(new List<TableToken>());
+        public static readonly IReadOnlyList<TableToken> None = Enumerable.Empty<TableToken>().ToReadOnlyList();
 #else
         /// <summary>
         /// 空集合。
         /// </summary>
-        public static readonly IReadOnlyCollection<TableToken> None = new List<TableToken>();
+        public static readonly IReadOnlyList<TableToken> None = new List<TableToken>(0);
 #endif
     }
 }

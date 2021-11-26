@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
-#if NET40
-using System.Collections.ObjectModel;
-#else
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-#endif
 using System.Linq;
 using System.Reflection;
 
@@ -24,11 +19,6 @@ namespace CodeArts.Runtime
         private ConstructorItem(ConstructorInfo info) : base(info)
         {
         }
-
-        /// <summary>
-        /// 获取声明该成员的类。
-        /// </summary>
-        public override Type MemberType => Member.DeclaringType;
 
         /// <summary>
         /// 静态构造函数。
@@ -53,57 +43,34 @@ namespace CodeArts.Runtime
 
         private static readonly object Lock_ParameterObj = new object();
 
+        private IReadOnlyList<ParameterItem> parameterStores;
+        /// <summary>
+        /// 参数信息。
+        /// </summary>
+        public IReadOnlyList<ParameterItem> ParameterStores
+        {
+            get
+            {
+                if (parameterStores is null)
+                {
+                    lock (Lock_ParameterObj)
+                    {
+                        if (parameterStores is null)
+                        {
+                            parameterStores = Member.GetParameters()
+                                .Select(info => ParameterItem.Get(info))
 #if NET40
-
-        private ReadOnlyCollection<ParameterItem> parameterStores;
-        /// <summary>
-        /// 参数信息。
-        /// </summary>
-        public ReadOnlyCollection<ParameterItem> ParameterStores
-        {
-            get
-            {
-                if (parameterStores is null)
-                {
-                    lock (Lock_ParameterObj)
-                    {
-                        if (parameterStores is null)
-                        {
-                            parameterStores = Member.GetParameters()
-                                .Select(info => ParameterItem.Get(info))
-                                .ToList()
-                                .AsReadOnly();
-                        }
-                    }
-                }
-                return parameterStores;
-            }
-        }
+                                .ToReadOnlyList();
 #else
-        private IReadOnlyCollection<ParameterItem> parameterStores;
-        /// <summary>
-        /// 参数信息。
-        /// </summary>
-        public IReadOnlyCollection<ParameterItem> ParameterStores
-        {
-            get
-            {
-                if (parameterStores is null)
-                {
-                    lock (Lock_ParameterObj)
-                    {
-                        if (parameterStores is null)
-                        {
-                            parameterStores = Member.GetParameters()
-                                .Select(info => ParameterItem.Get(info))
                                 .ToList();
+#endif
                         }
                     }
                 }
                 return parameterStores;
             }
         }
-#endif
+
         /// <summary>
         /// 获取仓储项目。
         /// </summary>

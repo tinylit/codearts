@@ -70,7 +70,7 @@ namespace System.Linq
                         list.Add(Bind(x.Member, Property(parameterExp, propItem.Member)));
                     });
 
-                var memberInit = MemberInit(New(typeItem.Type), list);
+                var memberInit = MemberInit(New(typeItem.MemberType), list);
 
                 var lambdaEx = Lambda(memberInit, parameterExp);
 

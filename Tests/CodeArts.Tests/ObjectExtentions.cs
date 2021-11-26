@@ -1,8 +1,7 @@
-﻿using CodeArts.Casting;
-using CodeArts.Casting.Implements;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CodeArts.Tests
 {
@@ -312,27 +311,27 @@ namespace CodeArts.Tests
         {
             for (int i = 0; i < 1000; i++)
             {
-                var guid = Mapper.Cast<Guid?>("0bbd0503-4879-42de-8cf0-666537b642e2");
+                var guid = Mapper.Map<Guid?>("0bbd0503-4879-42de-8cf0-666537b642e2");
 
                 var list = new List<string> { "11111", "2111", "3111" };
 
-                var stack = Mapper.Cast<Stack<string>>(list);
+                var stack = Mapper.Map<Stack<string>>(list);
 
-                var listInt = Mapper.Cast<List<int>>(list);
+                var listInt = Mapper.Map<List<int>>(list);
 
-                var quene = Mapper.Cast<Queue<int>>(list);
+                var quene = Mapper.Map<Queue<int>>(list);
 
-                var queneGuid = Mapper.Cast<Queue<Guid>>(list);
+                var listStr = Mapper.Map<IEnumerable<string>>(list);
             }
         }
 
         [TestMethod]
         public void CopyTo()
         {
-            var copyTo = new CopyToExpression();
+            var mapper = new Casting.CastingMapper();
 
             //? 为类型“CopyTest”指定代理。
-            copyTo.Use((profile, type) =>
+            mapper.Use((profile, type) =>
             {
                 if (type == typeof(CopyToTest))
                 {
@@ -347,10 +346,9 @@ namespace CodeArts.Tests
                         };
                     };
                 }
-                return profile.Create<CopyTest>(type);
-            });
 
-            RuntimeServPools.TryAddSingleton<ICopyToExpression>(() => copyTo);
+                return profile.CreateMap<CopyTest>(type);
+            });
 
             var value = new CopyToTest
             {
@@ -372,8 +370,8 @@ namespace CodeArts.Tests
 
                 value.Name = "test1";
 
-                var copy2 = Mapper.Copy<CopyTest>(value);
-                var copy3 = Mapper.Copy<CopyTest>(value2);
+                var copy2 = mapper.Copy<CopyTest>(value);
+                var copy3 = mapper.Copy<CopyTest>(value2);
 
                 value.Name = "test5";
             }
@@ -383,11 +381,10 @@ namespace CodeArts.Tests
         [TestMethod]
         public void MapTo()
         {
-            //RuntimeServicePools.TryAdd<IProfileConfiguration, ProfileConfiguration>();
-            var mapTo = RuntimeServPools.Singleton<IMapToExpression, MapToExpression>();
+            var mapper = new Casting.CastingMapper();
 
             //? 为类型“CopyTest”指定代理。
-            mapTo.Run<CopyToTest, MapToTest>(source =>
+            mapper.Run<CopyToTest, MapToTest>(source =>
             {
                 return new MapToTest
                 {
@@ -396,8 +393,6 @@ namespace CodeArts.Tests
                     Date = source.Date
                 };
             });
-
-            RuntimeServPools.TryAddSingleton(() => mapTo);
 
             var t1 = new T1
             {
@@ -411,15 +406,15 @@ namespace CodeArts.Tests
                 ["roleenum"] = 32
             };
 
-            var user = Mapper.Map<User>(dic);
+            var user = mapper.Map<User>(dic);
 
             var user2 = new User2 { Role = 32 };
 
-            var user3 = Mapper.Map<User>(user2);
+            var user3 = mapper.Map<User>(user2);
 
-            var user4 = Mapper.Map<User2>(user3);
+            var user4 = mapper.Map<User2>(user3);
 
-            var t2 = Mapper.Map<T2>(t1);
+            var t2 = mapper.Map<T2>(t1);
 
             var value = new CopyToTest
             {
@@ -431,19 +426,19 @@ namespace CodeArts.Tests
             for (int i = 0; i < 100000; i++)
             {
                 //mapTo.MapTo<CopyTest>(value);
-                var map1 = Mapper.Map<CopyTest>(value);
+                var map1 = mapper.Map<CopyTest>(value);
 
                 value.Name = "test1";
 
-                var map2 = Mapper.Map<MapToTest>(value);
+                var map2 = mapper.Map<MapToTest>(value);
 
-                var map3 = Mapper.Map<IEnumerable<KeyValuePair<string, object>>>(value);
+                var map3 = mapper.Map<IEnumerable<KeyValuePair<string, object>>>(value);
 
-                var map4 = Mapper.Map<ICollection<KeyValuePair<string, object>>>(value);
+                var map4 = mapper.Map<ICollection<KeyValuePair<string, object>>>(value);
 
-                var map5 = Mapper.Map<IDictionary<string, object>>(value);
+                var map5 = mapper.Map<IDictionary<string, object>>(value);
 
-                var map6 = Mapper.Map<Dictionary<string, object>>(value);
+                var map6 = mapper.Map<Dictionary<string, object>>(value);
 
                 value.Name = "test5";
             }
@@ -503,10 +498,10 @@ namespace CodeArts.Tests
         [TestMethod]
         public void MapDisposeTest()
         {
-            var mapTo = RuntimeServPools.Singleton<IMapToExpression, MapToExpression>();
+            var mapper = new Casting.CastingMapper();
 
             //? 为类型“CopyTest”指定代理。
-            mapTo.Run<CopyToTest, MapToTest>(source =>
+            mapper.Run<CopyToTest, MapToTest>(source =>
             {
                 return new MapToTest
                 {
@@ -515,8 +510,6 @@ namespace CodeArts.Tests
                     Date = source.Date
                 };
             });
-
-            RuntimeServPools.TryAddSingleton(() => mapTo);
 
             var t1 = new T1
             {
@@ -531,18 +524,18 @@ namespace CodeArts.Tests
                 Date = DateTime.Now
             };
 
-            var t2 = Mapper.Map<T2>(t1);
+            var t2 = mapper.Map<T2>(t1);
 
-            using (var map = new MapToExpression())
+            using (var map = new Casting.CastingMapper())
             {
                 var t3 = map.Map<T2>(t1);
 
                 var map1 = map.Map<MapToTest>(value);
 
-                var map2 = Mapper.Map<MapToTest>(value);
+                var map2 = mapper.Map<MapToTest>(value);
             }
 
-            var map3 = Mapper.Map<MapToTest>(value);
+            var map3 = mapper.Map<MapToTest>(value);
         }
 
         [TestMethod]
@@ -589,7 +582,7 @@ namespace CodeArts.Tests
                 ["Icon"] = string.Empty
             };
 
-            var commodity = Mapper.Map(dic, testValue.GetType());
+            var dic2 = Mapper.Map<Dictionary<string, object>>(testValue);
         }
 
         public interface IEmptyA<T>
@@ -628,6 +621,18 @@ namespace CodeArts.Tests
 
             var ng = Emptyable.Empty<IEmptyA<int>>();
             var ng2 = Emptyable.Empty<EmptyA<string>>();
+        }
+
+        [TestMethod]
+        public void IsPrimitiveTest()
+        {
+            foreach (var item in typeof(int).Module.GetTypes())
+            {
+                if (item.IsPrimitive)
+                {
+                    Debug.WriteLine(item);
+                }
+            }
         }
     }
 }

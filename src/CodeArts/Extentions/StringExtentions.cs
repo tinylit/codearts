@@ -226,7 +226,6 @@ public static class StringExtentions
             var propertyStores = typeStore.PropertyStores.Where(x => x.IsPublic && x.CanRead && !x.IsStatic).ToList();
 
             var enumerCaseConvert = propertyStores
-                .Where(x => x.CanRead)
                 .Select(info =>
                 {
                     Type memberType = info.MemberType;
@@ -272,7 +271,6 @@ public static class StringExtentions
             IgnoreCaseConvert = lamdaIgnoreCaseConvert.Compile();
 
             var enumerCasePropertyValueGetter = propertyStores
-                .Where(x => x.CanRead)
                 .Select(info =>
                 {
                     Type memberType = info.MemberType;

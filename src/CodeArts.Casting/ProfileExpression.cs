@@ -1,31 +1,48 @@
-﻿using CodeArts.Casting.Routers;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using static System.Linq.Expressions.Expression;
 
 namespace CodeArts.Casting
 {
+    internal static class MapExtensions
+    {
+        public const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        public const BindingFlags StaticFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+        public static readonly MethodInfo Clone;
+        public static readonly MethodInfo MapGeneric;
+        public static readonly MethodInfo CreateMapGeneric;
+
+        static MapExtensions()
+        {
+
+            Clone = typeof(ICloneable).GetMethod(nameof(ICloneable.Clone));
+
+            MapGeneric = typeof(IMapConfiguration).GetMethods()
+                            .First(x => x.Name == nameof(IMapConfiguration.Map) && x.IsGenericMethod);
+
+            CreateMapGeneric = typeof(IProfile).GetMethod(nameof(IProfile.CreateMap));
+        }
+    }
+
     /// <summary>
     /// 配置。
     /// </summary>
-    public abstract class ProfileExpression<T> : IProfileExpression, IProfile, IDisposable where T : ProfileExpression<T>
+    public abstract class ProfileExpression<T, TProfile> : IProfileExpression, IProfile, IDisposable where T : ProfileExpression<T, TProfile>, TProfile where TProfile : IProfile
     {
         private static readonly ConcurrentDictionary<Type, Func<IProfile, Type, Func<object, object>>> LamdaCache = new ConcurrentDictionary<Type, Func<IProfile, Type, Func<object, object>>>();
-        private static object[] ToObjectArray(object value)
-        {
-            return new object[] { value };
-        }
 
-        private static MethodInfo GetMethodInfo(Func<object, object[]> func)
-        {
-            return func.Method;
-        }
+        private readonly ConcurrentDictionary<Type, IInvoker> Invokers = new ConcurrentDictionary<Type, IInvoker>();
+        private readonly ConcurrentDictionary<Type, List<IRouter>> Routers = new ConcurrentDictionary<Type, List<IRouter>>();
+
+        private static object[] ToObjectArray(object value) => new object[] { value };
+        private static MethodInfo GetMethodInfo(Func<object, object[]> func) => func.Method;
 
         /// <summary>
         /// 线程安全。
@@ -33,628 +50,109 @@ namespace CodeArts.Casting
         private readonly AsyncLocal<bool> SyncRoot = new AsyncLocal<bool>();
 
         /// <summary>
-        /// 创建工厂。
+        /// 映射表达式(全局注册)。
         /// </summary>
-        /// <typeparam name="TResult">返回数据类型。</typeparam>
-        /// <returns></returns>
-        public Func<object, TResult> Create<TResult>(Type sourceType) => Nested<TResult>.Create(this, sourceType ?? throw new ArgumentNullException(nameof(sourceType)));
+        protected IReadOnlyList<IMapExpression> Maps { get; }
 
         /// <summary>
-        /// 构建器。
+        /// 构造函数。
         /// </summary>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected Func<object, object> Create(Type sourceType, Type conversionType)
+        /// <param name="maps">映射表达式。</param>
+        /// <exception cref="ArgumentNullException"><paramref name="maps"/> is null.</exception>
+        protected ProfileExpression(IEnumerable<IMapExpression> maps)
         {
+            if (maps is null)
+            {
+                throw new ArgumentNullException(nameof(maps));
+            }
+#if NET40
+            Maps = (new List<IMapExpression>(maps))
+                .ToReadOnlyList();
+#else
+            Maps = new List<IMapExpression>(maps);
+#endif
+        }
+
+        /// <summary>
+        /// 映射。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="source">源数据。</param>
+        /// <param name="def">默认值。</param>
+        /// <returns><paramref name="source"/> is null, 返回 <paramref name="def"/>。</returns>
+        public TResult Map<TResult>(object source, TResult def = default)
+        {
+            if (source is null)
+            {
+                return def;
+            }
+
+            var invoke = Nested<TResult>.Create((T)this, source.GetType());
+
+            return invoke.Invoke(source);
+        }
+
+        /// <summary>
+        /// 映射。
+        /// </summary>
+        /// <param name="source">源数据。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns><paramref name="source"/> is null，返回 <paramref name="conversionType"/> 类型的默认值。</returns>
+        public object Map(object source, Type conversionType)
+        {
+            if (source is null)
+            {
+                if (conversionType.IsValueType)
+                {
+                    return Activator.CreateInstance(conversionType);
+                }
+
+                return null;
+            }
+
+            if (conversionType == typeof(object))
+            {
+                return source;
+            }
+
             if (conversionType.IsNullable())
             {
                 conversionType = Nullable.GetUnderlyingType(conversionType);
             }
 
-            var factory = LamdaCache.GetOrAdd(conversionType, _ =>
-            {
-                var profileType = typeof(IProfile);
-
-                var delegateType = typeof(Delegate);
-
-                var toObjectArrMethod = GetMethodInfo(ToObjectArray);
-
-                var invokeMethod = delegateType.GetMethod("DynamicInvoke");
-
-                var createMethod = profileType.GetMethod("Create", new Type[] { typeof(Type) });
-
-                var paramterExp = Parameter(profileType, "profile");
-
-                var paramterSourceExp = Parameter(typeof(object), "source");
-
-                var paramterTypeExp = Parameter(typeof(Type), "sourceType");
-
-                var genericMethod = createMethod.MakeGenericMethod(conversionType);
-
-                var methodCallExp = Call(paramterExp, genericMethod, paramterTypeExp);
-
-                var convertExp = Convert(methodCallExp, delegateType);
-
-                var invokeVar = Variable(delegateType, "lambda");
-
-                var bodyExp = Lambda(Call(invokeVar, invokeMethod, Call(toObjectArrMethod, paramterSourceExp)), paramterSourceExp);
-
-                var lambda = Lambda<Func<IProfile, Type, Func<object, object>>>(Block(new[] { invokeVar }, Assign(invokeVar, methodCallExp), bodyExp), paramterExp, paramterTypeExp);
-
-                return lambda.Compile();
-            });
-
-            return factory.Invoke(this, sourceType);
+            return LamdaCache.GetOrAdd(conversionType, Create).Invoke(this, source.GetType());
         }
 
-        /// <summary>
-        /// 创建表达式。
-        /// </summary>
-        /// <typeparam name="TResult">返回数据类型。</typeparam>
-        /// <param name="sourceType">源类型。
-        /// 1、目标类型是值类型。
-        /// 2、目标类型和源类型相同，或目标类型是源类型的父类。
-        /// 3、源类型是值类型。
-        /// </param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> CreateExpression<TResult>(Type sourceType)
+        Func<object, TResult> IProfile.CreateMap<TResult>(Type sourceType) => Nested<TResult>.Create((T)this, sourceType);
+
+        private static readonly Type IProfileType = typeof(IProfile);
+        private static readonly Type DelegateType = typeof(Delegate);
+        private static readonly MethodInfo DynamicInvokeMethod = DelegateType.GetMethod("DynamicInvoke");
+        private static readonly MethodInfo ToObjectArrayMethod = GetMethodInfo(ToObjectArray);
+        private static readonly MethodInfo CreateMethod = IProfileType.GetMethod(nameof(IProfile.CreateMap), new Type[] { typeof(Type) });
+
+        private static Func<IProfile, Type, Func<object, object>> Create(Type conversionType)
         {
-            Type conversionType = typeof(TResult);
+            var paramterExp = Parameter(IProfileType, "profile");
 
-            if (conversionType.IsNullable())
-                return ToNullable<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
+            var paramterSourceExp = Parameter(typeof(object), "source");
 
-            if (conversionType == sourceType || conversionType.IsAssignableFrom(sourceType))
-                return ByLike<TResult>(sourceType, conversionType);
+            var paramterTypeExp = Parameter(typeof(Type), "sourceType");
 
-            if (sourceType.IsValueType)
-                return ByValueType<TResult>(sourceType, conversionType);
+            var genericMethod = CreateMethod.MakeGenericMethod(conversionType);
 
-            if (conversionType.IsValueType)
-                return ToValueType<TResult>(sourceType, conversionType);
+            var methodCallExp = Call(paramterExp, genericMethod, paramterTypeExp);
 
-            if (sourceType == typeof(string))
-                return ByString<TResult>(sourceType, conversionType);
+            var convertExp = Convert(methodCallExp, DelegateType);
 
-            if (conversionType == typeof(string))
-                return ToString<TResult>(sourceType, conversionType);
+            var invokeVar = Variable(DelegateType, "lambda");
 
-            if (typeof(IEnumerable).IsAssignableFrom(sourceType))
-                return sourceType.IsInterface
-                    ? ByIEnumarableLike<TResult>(sourceType, conversionType)
-                    : ByEnumarableLike<TResult>(sourceType, conversionType);
+            var bodyExp = Lambda(Call(invokeVar, DynamicInvokeMethod, Call(ToObjectArrayMethod, paramterSourceExp)), paramterSourceExp);
 
-            return ByObject<TResult>(sourceType, conversionType);
+            var lambda = Lambda<Func<IProfile, Type, Func<object, object>>>(Block(new[] { invokeVar }, Assign(invokeVar, convertExp), bodyExp), paramterExp, paramterTypeExp);
+
+            return lambda.Compile();
         }
-
-        /// <summary>
-        /// 解决 String 到 任意类型 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByString<TResult>(Type sourceType, Type conversionType)
-        {
-            if (conversionType == typeof(string))
-            {
-                return source => (TResult)source;
-            }
-
-            if (conversionType == typeof(Version) || conversionType == typeof(StringBuilder) || conversionType == typeof(UppercaseString))
-            {
-                return source => (TResult)Activator.CreateInstance(conversionType, source);
-            }
-
-            throw new InvalidCastException();
-        }
-
-        /// <summary>
-        /// 解决 任意类型 到 String 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ToString<TResult>(Type sourceType, Type conversionType)
-        {
-            var toString = sourceType.GetMethod("ToString", Type.EmptyTypes);
-
-            if (toString.DeclaringType == typeof(object))
-            {
-                throw new InvalidCastException();
-            }
-
-            var parameterExp = Parameter(sourceType, "source");
-
-            var bodyExp = Call(parameterExp, toString);
-
-            var lamdaExp = Lambda<Func<object, TResult>>(bodyExp, parameterExp);
-
-            return lamdaExp.Compile();
-        }
-
-        /// <summary>
-        /// 解决 相似的对象（同类型，或目标类型为源数据类型的接口或基类）。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByLike<TResult>(Type sourceType, Type conversionType) => source => (TResult)source;
-
-        /// <summary>
-        /// 解决 任意类型 到 可空类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ToNullable<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 任意类型 到 值类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ToValueType<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 值类型 到 任意类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByValueType<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
-
-        #region 可迭代类型
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T&gt; 到 目标类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLike<TResult>(Type sourceType, Type conversionType)
-        {
-            if (conversionType.IsGenericType)
-            {
-                if (conversionType.IsInterface)
-                {
-                    var typeDefinition = conversionType.GetGenericTypeDefinition();
-
-#if NET40
-                    if (typeDefinition == typeof(IDictionary<,>))
-#else
-                    if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
-#endif
-                        return ByIEnumarableLikeToIDictionaryLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
-#if NET40
-                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-#else
-                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-#endif
-                        return ByIEnumarableLikeToICollectionLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
-
-                    if (typeDefinition == typeof(IEnumerable<>))
-                        return ByIEnumarableLikeToIEnumarableLike<TResult>(sourceType, conversionType, conversionType.GetGenericArguments().First());
-                }
-
-                if (conversionType.IsClass && conversionType.IsAbstract)
-                    return ByIEnumarableLikeToAbstract<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
-
-                if (conversionType.IsClass)
-                {
-                    var types = conversionType.GetInterfaces();
-
-                    foreach (var type in types.Where(x => x.IsGenericType))
-                    {
-                        var typeDefinition = type.GetGenericTypeDefinition();
-
-                        if (typeDefinition == typeof(IDictionary<,>))
-                            return ByIEnumarableLikeToDictionaryLike<TResult>(sourceType, conversionType, type.GetGenericArguments());
-
-                        if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-                            return ByIEnumarableLikeToCollectionLike<TResult>(sourceType, conversionType, type.GetGenericArguments().First());
-                    }
-                }
-
-                return ByIEnumarableLikeToUnknownInterface<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
-            }
-
-            if (conversionType.IsInterface || conversionType.IsAbstract)
-            {
-                return ByIEnumarableLikeToAbstract<TResult>(sourceType, conversionType);
-            }
-
-            return ByIEnumarableLikeToCommon<TResult>(sourceType, conversionType);
-        }
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T&gt; 到 目标类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByEnumarableLike<TResult>(Type sourceType, Type conversionType) => ByIEnumarableLike<TResult>(sourceType, conversionType);
-
-        #region IEnumarable to Interface
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 ICollection&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标数据类型。</param>
-        /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToCollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 ICollection&lt;T2&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T2】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 IEnumarable&lt;T2&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T2】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T1&gt; 到类似 ICollection&lt;T2&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T2】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 IEnumarable&lt;T&gt; 到 未知泛型接口的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments)
-        {
-            if (conversionType.IsInterface || conversionType.IsAbstract)
-            {
-                return ByIEnumarableLikeToAbstract<TResult>(sourceType, conversionType);
-            }
-
-            return ByIEnumarableLikeToCommon<TResult>(sourceType, conversionType);
-        }
-
-        #endregion
-
-        /// <summary>
-        /// 解决 IEnumarable&lt;T&gt; 到 泛型约束抽象类的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToAbstract<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 IEnumarable&lt;T&gt; 到 抽象类的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToAbstract<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
-
-        #endregion
-
-        /// <summary>
-        /// 解决 类 到 目标类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObject<TResult>(Type sourceType, Type conversionType)
-        {
-            if (conversionType.IsGenericType)
-            {
-                if (conversionType.IsInterface)
-                {
-                    var typeDefinition = conversionType.GetGenericTypeDefinition();
-
-                    var typeArguments = conversionType.GetGenericArguments();
-
-#if NET40
-                    if (typeDefinition == typeof(IDictionary<,>))
-#else
-                    if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
-#endif
-                        return ByObjectToIDictionaryLike<TResult>(sourceType, conversionType, typeArguments);
-
-#if NET40
-                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-#else
-                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-#endif
-                    {
-                        var typeArgument = typeArguments.First();
-
-                        if (typeArgument.IsKeyValuePair())
-                            return ByObjectToICollectionKeyValuePair<TResult>(sourceType, conversionType, typeArgument, typeArgument.GetGenericArguments());
-
-                        return ByObjectToICollectionLike<TResult>(sourceType, conversionType, typeArgument);
-                    }
-
-                    if (typeDefinition == typeof(IEnumerable<>))
-                    {
-                        var typeArgument = typeArguments.First();
-
-                        if (typeArgument.IsKeyValuePair())
-                            return ByObjectToIEnumarableKeyValuePair<TResult>(sourceType, conversionType, typeArgument, typeArgument.GetGenericArguments());
-
-                        return ByObjectToIEnumarableLike<TResult>(sourceType, conversionType, typeArgument);
-                    }
-
-                    return ByObjectToUnknownInterface<TResult>(sourceType, conversionType, typeArguments);
-                }
-
-                if (conversionType.IsClass && conversionType.IsAbstract)
-                {
-                    return ByObjectToAbstract<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
-                }
-
-                var types = conversionType.GetInterfaces();
-
-                foreach (var item in types.Where(x => x.IsGenericType))
-                {
-                    var typeArguments = item.GetGenericArguments();
-
-                    var typeDefinition = item.GetGenericTypeDefinition();
-
-#if NET40
-                    if (typeDefinition == typeof(IDictionary<,>))
-#else
-                    if (typeDefinition == typeof(IDictionary<,>) || typeDefinition == typeof(IReadOnlyDictionary<,>))
-#endif
-                        return ByObjectToDictionaryLike<TResult>(sourceType, conversionType, typeArguments);
-
-                    var typeArgument = item.GetGenericArguments()[0];
-
-#if NET40
-                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>))
-#else
-                    if (typeDefinition == typeof(ICollection<>) || typeDefinition == typeof(IList<>) || typeDefinition == typeof(IReadOnlyCollection<>) || typeDefinition == typeof(IReadOnlyList<>))
-#endif
-                    {
-                        if (typeArgument.IsKeyValuePair())
-                            return ByObjectToCollectionKeyValuePairLike<TResult>(sourceType, conversionType, typeArgument, typeArgument.GetGenericArguments());
-
-                        return ByObjectToCollectionLike<TResult>(sourceType, conversionType, typeArgument);
-                    }
-
-                    if (typeDefinition == typeof(IEnumerable<>))
-                    {
-                        if (typeArgument.IsKeyValuePair())
-                            return ByObjectToEnumerableKeyValuePairLike<TResult>(sourceType, conversionType, typeArgument, typeArgument.GetGenericArguments());
-
-                        return ByObjectToEnumerableLike<TResult>(sourceType, conversionType, typeArgument);
-                    }
-                }
-
-                return ByObjectToCommon<TResult>(sourceType, conversionType, conversionType.GetGenericArguments());
-            }
-
-            if (conversionType.IsAbstract)
-            {
-                return ByObjectToAbstract<TResult>(sourceType, conversionType);
-            }
-
-            return ByObjectToCommon<TResult>(sourceType, conversionType);
-        }
-
-        #region Object To Interface
-        /// <summary>
-        /// 解决 对象 到 类似 ICollection&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToICollectionKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类 到类似 ICollection&lt;T&gt; 类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToICollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到 类似 IEnumarable&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToIEnumarableKeyValuePair<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类 到类似 IEnumarable&lt;T&gt; 类型的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToIEnumarableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类 到 未知泛型接口的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToUnknownInterface<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-        #endregion
-
-        /// <summary>
-        /// 解决 对象 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到类似 IDictionary&lt;TKey,TValue&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToIDictionaryLike<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到 泛型抽象类的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToAbstract<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到 抽象类的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToAbstract<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到类似 ICollection&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCollectionKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到类似 ICollection&lt;T&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCollectionLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到类似 IEnumerable&lt;KeyValuePair&lt;TKey,TValue&gt;&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【KeyValuePair&lt;TKey,TValue&gt;】约束。</param>
-        /// <param name="typeArguments">泛型【TKey,TValue】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToEnumerableKeyValuePairLike<TResult>(Type sourceType, Type conversionType, Type typeArgument, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到类似 IEnumerable&lt;T&gt; 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArgument">泛型【T】约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToEnumerableLike<TResult>(Type sourceType, Type conversionType, Type typeArgument) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到 泛型对象的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <param name="typeArguments">泛型约束。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType, Type[] typeArguments) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 对象 到 任意对象 的操作。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByObjectToCommon<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
-
-        /// <summary>
-        /// 解决 类似 IEnumarable&lt;T&gt; 到 类 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="sourceType">源类型。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        protected virtual Func<object, TResult> ByIEnumarableLikeToCommon<TResult>(Type sourceType, Type conversionType) => throw new InvalidCastException();
 
         /// <summary>
         /// 添加指定目标类型工厂(同种目标类型第一次配置生效)。
@@ -662,37 +160,22 @@ namespace CodeArts.Casting
         /// <typeparam name="TResult">目标类型。</typeparam>
         /// <param name="invoke">将任意类型转为目标类型的工厂。</param>
         /// <returns>返回真代表注册成功，返回假代表注册失败（目标类型已被指定其他调用器）。</returns>
-        public bool Use<TResult>(Func<T, Type, Func<object, TResult>> invoke) => Invokers.TryAdd(typeof(TResult), new Invoker<TResult>(invoke));
+        public bool Use<TResult>(Func<TProfile, Type, Func<object, TResult>> invoke) => Invokers.TryAdd(typeof(TResult), new Invoker<TResult>(invoke));
 
         /// <summary>
         /// 映射 解决特定类型 【TSource】 到特定 【TResult】 的操作。
         /// </summary>
         /// <typeparam name="TSource">源类型。</typeparam>
         /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="resovle">将对象转为目标类型的方案。</param>
-        public void Absolute<TSource, TResult>(Func<TSource, TResult> resovle)
+        /// <param name="project">将对象转为目标类型的方案。</param>
+        public void Absolute<TSource, TResult>(Func<TSource, TResult> project)
         {
-            if (resovle is null)
+            if (project is null)
             {
-                throw new ArgumentNullException(nameof(resovle));
+                throw new ArgumentNullException(nameof(project));
             }
 
-            Map(type => type == typeof(TSource), source => resovle.Invoke((TSource)source));
-        }
-
-        /// <summary>
-        /// 映射 解决与指定谓词所定义的条件相匹配的类型 到特定类型 【TResult】 的转换。
-        /// </summary>
-        /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="router">映射路由。</param>
-        public void Map<TResult>(MapRouter<TResult> router)
-        {
-            if (router is null)
-            {
-                throw new ArgumentNullException(nameof(router));
-            }
-
-            Routers.Add(router);
+            Map(type => type == typeof(TSource), source => project.Invoke((TSource)source));
         }
 
         /// <summary>
@@ -700,23 +183,52 @@ namespace CodeArts.Casting
         /// </summary>
         /// <typeparam name="TResult">目标类型。</typeparam>
         /// <param name="canResolve">判断源类型是否支持转到目标类型。</param>
-        /// <param name="resolve">将对象转为目标类型的方案。</param>
-        public void Map<TResult>(Predicate<Type> canResolve, Func<object, TResult> resolve) => Map(new MapRouter<TResult>(canResolve, resolve));
+        /// <param name="project">将对象转为目标类型的方案。</param>
+        public void Map<TResult>(Predicate<Type> canResolve, Func<object, TResult> project) => Routers.GetOrAdd(typeof(TResult), _ => new List<IRouter>()).Add(new MapRouter<TResult>(canResolve, project));
 
         /// <summary>
         /// 运行 解决类似 【TSource】（相同或其子类）的类型 到特定 【TResult】 类型的转换。
         /// </summary>
         /// <typeparam name="TSource">源类型。</typeparam>
         /// <typeparam name="TResult">目标类型。</typeparam>
-        /// <param name="resovle">将源数据转为目标数据的方案。</param>
-        public void Run<TSource, TResult>(Func<TSource, TResult> resovle)
+        /// <param name="project">将源数据转为目标数据的方案。</param>
+        public void Run<TSource, TResult>(Func<TSource, TResult> project)
         {
-            if (resovle is null)
+            if (project is null)
             {
-                throw new ArgumentNullException(nameof(resovle));
+                throw new ArgumentNullException(nameof(project));
             }
 
-            Map(sourceType => sourceType == typeof(TSource) || typeof(TSource).IsAssignableFrom(sourceType), source => resovle.Invoke((TSource)source));
+            Map(sourceType => sourceType == typeof(TSource) || typeof(TSource).IsAssignableFrom(sourceType), source => project.Invoke((TSource)source));
+        }
+
+        /// <summary>
+        /// 创建。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="sourceType">源类型。</param>
+        /// <param name="conversionType">目标类型。</param>
+        /// <returns></returns>
+        protected virtual Func<object, TResult> Create<TResult>(Type sourceType, Type conversionType)
+        {
+            foreach (SimpleExpression item in Maps.OfType<SimpleExpression>())
+            {
+                if (item.IsMatch(sourceType, conversionType))
+                {
+                    return item.ToSolve<TResult>(sourceType, conversionType);
+                }
+            }
+
+            foreach (var profile in Maps
+                .Where(x => x.IsMatch(sourceType, conversionType))
+                .OfType<IProfile>())
+            {
+                var createMap = MapExtensions.CreateMapGeneric.MakeGenericMethod(conversionType);
+
+                return (Func<object, TResult>)createMap.Invoke(profile, new object[1] { sourceType });
+            }
+
+            throw new InvalidCastException();
         }
 
         private bool disposedValue = false; // 要检测冗余调用
@@ -750,35 +262,72 @@ namespace CodeArts.Casting
             Dispose(true);
         }
 
-        private class Invoker<TResult> : IInvoker
+        private interface IInvoker
         {
-            public Invoker(Func<T, Type, Func<object, TResult>> invoke) => Invoke = invoke ?? throw new ArgumentNullException(nameof(invoke));
-            public Func<T, Type, Func<object, TResult>> Invoke { get; }
         }
 
-        private readonly List<IRouter> Routers = new List<IRouter>();
-        private readonly ConcurrentDictionary<Type, IInvoker> Invokers = new ConcurrentDictionary<Type, IInvoker>();
+        private class Invoker<TResult> : IInvoker
+        {
+            private readonly Func<TProfile, Type, Func<object, TResult>> invoke;
+
+            public Invoker(Func<TProfile, Type, Func<object, TResult>> invoke) => this.invoke = invoke ?? throw new ArgumentNullException(nameof(invoke));
+
+            public Func<object, TResult> ToSolve(TProfile prefile, Type sourceType) => invoke.Invoke(prefile, sourceType);
+        }
+
+        private interface IRouter
+        {
+            Predicate<Type> CanResolve { get; }
+        }
+
+        private class MapRouter<TResult> : IRouter
+        {
+            /// <summary>
+            /// 构造器。
+            /// </summary>
+            /// <param name="canResolve">是否能解决指定源类型。</param>
+            /// <param name="project">解决。</param>
+            public MapRouter(Predicate<Type> canResolve, Func<object, TResult> project)
+            {
+                CanResolve = canResolve ?? throw new ArgumentNullException(nameof(canResolve));
+                Project = project ?? throw new ArgumentNullException(nameof(project));
+            }
+
+            /// <summary>
+            /// 是否能解决指定源类型。
+            /// </summary>
+            public Predicate<Type> CanResolve { get; }
+
+            /// <summary>
+            /// 解决。
+            /// </summary>
+            public Func<object, TResult> Project { get; }
+        }
 
         private static class Nested<TResult>
         {
+            private static readonly Type runtimeType;
+
             private static readonly Type conversionType;
 
-            private static readonly ConcurrentDictionary<Type, Func<object, TResult>> ProfileTypeCache = new ConcurrentDictionary<Type, Func<object, TResult>>();
+            private static readonly ConcurrentDictionary<Type, Func<T, Type, Func<object, TResult>>> NullableCache = new ConcurrentDictionary<Type, Func<T, Type, Func<object, TResult>>>();
 
-            private static Func<object, TResult> CreateByExtra(ProfileExpression<T> profile, Type sourceType, Type conversionType)
+            private static readonly ConcurrentDictionary<Type, Func<object, TResult>> CommonCache = new ConcurrentDictionary<Type, Func<object, TResult>>();
+
+            private static Func<object, TResult> CreateByExtra(T profile, Type sourceType)
             {
-                if (profile.SyncRoot.Value)
-                {
-                    goto label_core;
-                }
-
                 if (profile.Invokers.TryGetValue(conversionType, out IInvoker invoker) && (invoker is Invoker<TResult> invoke))
                 {
+                    if (profile.SyncRoot.Value)
+                    {
+                        goto label_core;
+                    }
+
                     profile.SyncRoot.Value = true;
 
                     try
                     {
-                        return invoke.Invoke.Invoke((T)profile, sourceType);
+                        return invoke.ToSolve((TProfile)profile, sourceType);
                     }
                     finally
                     {
@@ -786,36 +335,104 @@ namespace CodeArts.Casting
                     }
                 }
 
-                label_core:
+label_core:
                 {
-                    if (profile.Routers.Count > 0)
+                    if (profile.Routers.TryGetValue(conversionType, out var routers))
                     {
-                        foreach (IDispatcher<TResult> router in profile.Routers.Where(x => x.ConversionType == conversionType))
+                        foreach (MapRouter<TResult> router in routers)
                         {
                             if (router.CanResolve(sourceType))
                             {
-                                return router.Resolve;
+                                return router.Project;
                             }
                         }
                     }
 
-                    return ProfileTypeCache.GetOrAdd(sourceType, _ => profile.CreateExpression<TResult>(sourceType));
+                    return CommonCache.GetOrAdd(sourceType, type => CreateEx(profile, type, runtimeType));
                 }
             }
 
-            public static Func<object, TResult> Create(ProfileExpression<T> profile, Type sourceType)
+            public static Func<object, TResult> Create(T profile, Type sourceType)
             {
                 var standardType = sourceType.IsNullable() ? Nullable.GetUnderlyingType(sourceType) : sourceType;
 
                 if (profile.Routers.Count > 0 || profile.Invokers.Count > 0)
                 {
-                    return CreateByExtra(profile, standardType, conversionType);
+                    return CreateByExtra(profile, standardType);
                 }
 
-                return ProfileTypeCache.GetOrAdd(standardType, _ => profile.CreateExpression<TResult>(standardType));
+                return CommonCache.GetOrAdd(sourceType, type => CreateEx(profile, type, runtimeType));
             }
 
-            static Nested() => conversionType = typeof(TResult);
+            private static Func<object, TResult> CreateEx(T profile, Type sourceType, Type runtimeType)
+            {
+                if (runtimeType.IsInterface)
+                {
+                    throw new InvalidCastException($"无法推测有效的接口({runtimeType})实现!");
+                }
+
+                if (runtimeType.IsAbstract)
+                {
+                    throw new InvalidCastException($"不支持使用抽象类型({runtimeType})转换!");
+                }
+
+                if (runtimeType.IsNullable())
+                {
+                    return NullableCache.GetOrAdd(Nullable.GetUnderlyingType(runtimeType), CreateUnderlyingType).Invoke(profile, sourceType);
+                }
+
+                return profile.Create<TResult>(sourceType, runtimeType);
+            }
+
+            private static Func<T, Type, Func<object, TResult>> CreateUnderlyingType(Type underlyingType)
+            {
+                var profileExp = Parameter(typeof(T));
+                var sourceTypeExp = Parameter(typeof(Type));
+
+                var sourceExp = Parameter(typeof(object));
+
+                var bodyExp = Call(typeof(Nested<>).MakeGenericType(typeof(T), typeof(TProfile), underlyingType)
+                        .GetMethod(nameof(Create), MapExtensions.StaticFlags), new Expression[] { profileExp, sourceTypeExp });
+
+                var valueExp = Lambda(Convert(Call(bodyExp, DynamicInvokeMethod, Call(ToObjectArrayMethod, sourceExp)), typeof(TResult)), new ParameterExpression[] { sourceExp });
+
+                var lambdaExp = Lambda<Func<T, Type, Func<object, TResult>>>(valueExp, new ParameterExpression[] { profileExp, sourceTypeExp });
+
+                return lambdaExp.Compile();
+            }
+
+            static Nested()
+            {
+                conversionType = runtimeType = typeof(TResult);
+
+                if (conversionType.IsInterface)
+                {
+                    if (conversionType.IsGenericType)
+                    {
+                        var typeDefinition = conversionType.GetGenericTypeDefinition();
+
+                        if (typeDefinition == typeof(IList<>)
+                            || typeDefinition == typeof(IReadOnlyList<>)
+                            || typeDefinition == typeof(ICollection<>)
+                            || typeDefinition == typeof(IReadOnlyCollection<>)
+                            || typeDefinition == typeof(IEnumerable<>))
+                        {
+                            runtimeType = typeof(List<>).MakeGenericType(conversionType.GetGenericArguments());
+                        }
+                        else if (typeDefinition == typeof(IDictionary<,>)
+                            || typeDefinition == typeof(IReadOnlyDictionary<,>))
+                        {
+                            runtimeType = typeof(Dictionary<,>).MakeGenericType(conversionType.GetGenericArguments());
+                        }
+                    }
+                    else if (conversionType == typeof(IEnumerable)
+                        || conversionType == typeof(ICollection)
+                        || conversionType == typeof(IList))
+                    {
+                        runtimeType = typeof(List<object>);
+                    }
+                }
+            }
         }
     }
 }

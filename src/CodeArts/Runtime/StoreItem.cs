@@ -22,6 +22,11 @@ namespace CodeArts.Runtime
         string Naming { get; }
 
         /// <summary>
+        /// 成员类型（或方法返回值类型）。
+        /// </summary>
+        Type MemberType { get; }
+
+        /// <summary>
         /// 属性。
         /// </summary>
         IEnumerable<Attribute> Attributes { get; }
@@ -91,11 +96,6 @@ namespace CodeArts.Runtime
         bool CanWrite { get; }
 
         /// <summary>
-        /// 成员类型（或方法返回值类型）。
-        /// </summary>
-        Type MemberType { get; }
-
-        /// <summary>
         /// 是否定义了指定特性。
         /// </summary>
         /// <param name="attributeType">特性。</param>
@@ -134,7 +134,7 @@ namespace CodeArts.Runtime
     public abstract class StoreItem : IStoreItem
     {
         private readonly Type declaringType;
-        private readonly Func<Attribute[]> invokeAttr;
+        private readonly Func<Attribute[]> invokeAttrs;
 
         /// <summary>
         /// 构造函数。
@@ -147,11 +147,13 @@ namespace CodeArts.Runtime
                 throw new ArgumentNullException(nameof(info));
             }
 
+            MemberType = info;
+
             NamingAttribute = (NamingAttribute)Attribute.GetCustomAttribute(info, typeof(NamingAttribute));
 
             CustomAttributes = info.GetCustomAttributesData();
 
-            invokeAttr = () => Attribute.GetCustomAttributes(info);
+            invokeAttrs = () => Attribute.GetCustomAttributes(info);
         }
 
         /// <summary>
@@ -165,11 +167,13 @@ namespace CodeArts.Runtime
                 throw new ArgumentNullException(nameof(info));
             }
 
+            MemberType = info.ParameterType;
+
             NamingAttribute = (NamingAttribute)Attribute.GetCustomAttribute(info, typeof(NamingAttribute));
 
             CustomAttributes = info.GetCustomAttributesData();
 
-            invokeAttr = () => Attribute.GetCustomAttributes(info);
+            invokeAttrs = () => Attribute.GetCustomAttributes(info);
         }
 
         /// <summary>
@@ -183,6 +187,44 @@ namespace CodeArts.Runtime
                 throw new ArgumentNullException(nameof(info));
             }
 
+            switch (info.MemberType)
+            {
+                case MemberTypes.Constructor:
+                    MemberType = info.DeclaringType;
+                    break;
+                case MemberTypes.Event:
+                    MemberType = ((EventInfo)info).EventHandlerType;
+                    break;
+                case MemberTypes.Field:
+                    MemberType = ((FieldInfo)info).FieldType;
+                    break;
+                case MemberTypes.Method:
+                    MemberType = ((MethodInfo)info).ReturnType;
+                    break;
+                case MemberTypes.Property:
+                    MemberType = ((PropertyInfo)info).PropertyType;
+                    break;
+                case MemberTypes.TypeInfo:
+                case MemberTypes.NestedType:
+#if NET40
+                    MemberType = (Type)info;
+#else
+                    if (info is TypeInfo typeInfo)
+                    {
+                        MemberType = typeInfo.AsType();
+                    }
+                    else
+                    {
+                        MemberType = (Type)info;
+                    }
+#endif
+                    break;
+                case MemberTypes.Custom:
+                case MemberTypes.All:
+                default:
+                    break;
+            }
+
             declaringType = info.DeclaringType;
 
             CustomAttributes = info.GetCustomAttributesData();
@@ -193,7 +235,7 @@ namespace CodeArts.Runtime
             NamingAttribute = info.GetCustomAttribute<NamingAttribute>();
 #endif
 
-            invokeAttr = () => Attribute.GetCustomAttributes(info);
+            invokeAttrs = () => Attribute.GetCustomAttributes(info);
         }
 
         private IEnumerable<Attribute> attributes;
@@ -202,9 +244,9 @@ namespace CodeArts.Runtime
         /// </summary>
 
 #if NETSTANDARD2_1_OR_GREATER
-        public IEnumerable<Attribute> Attributes => attributes ??= invokeAttr.Invoke();
+        public IEnumerable<Attribute> Attributes => attributes ??= invokeAttrs.Invoke();
 #else
-        public IEnumerable<Attribute> Attributes => attributes ?? (attributes = invokeAttr.Invoke());
+        public IEnumerable<Attribute> Attributes => attributes ?? (attributes = invokeAttrs.Invoke());
 #endif
 
         /// <summary>
@@ -260,11 +302,40 @@ namespace CodeArts.Runtime
         }
 
         /// <summary>
+        /// 成员类型。
+        /// </summary>
+        public virtual Type MemberType { get; }
+
+        /// <summary>
         /// 获取自定义类型属性标记。
         /// </summary>
         /// <param name="attributeType">属性类型。</param>
         /// <returns></returns>
-        public Attribute GetCustomAttribute(Type attributeType) => Attributes.FirstOrDefault(x => x.GetType() == attributeType) ?? Attributes.FirstOrDefault(x => x.GetType().IsSubclassOf(attributeType));
+        public Attribute GetCustomAttribute(Type attributeType)
+        {
+            bool flag = false;
+
+            Attribute attribute = null;
+
+            foreach (var attr in Attributes)
+            {
+                var type = attr.GetType();
+
+                if (type == attributeType || type.IsSubclassOf(attributeType))
+                {
+                    if (flag)
+                    {
+                        throw new AmbiguousMatchException();
+                    }
+
+                    flag = true;
+
+                    attribute = attr;
+                }
+            }
+
+            return attribute;
+        }
 
         /// <summary>
         /// 获取自定义类型属性标记。
@@ -330,11 +401,6 @@ namespace CodeArts.Runtime
         /// 公共成员。
         /// </summary>
         public abstract bool IsPublic { get; }
-
-        /// <summary>
-        /// 成员类型。
-        /// </summary>
-        public abstract Type MemberType { get; }
 
         /// <summary>
         /// 是否可读。

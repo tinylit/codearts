@@ -3,9 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if NET40
 using System.Collections.ObjectModel;
-#endif
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -493,12 +491,7 @@ namespace CodeArts.Db.Expressions
         /// </summary>
         /// <param name="bindings">成员集合。</param>
         /// <returns></returns>
-#if NET40
         protected virtual ReadOnlyCollection<MemberBinding> FilterMemberBindings(ReadOnlyCollection<MemberBinding> bindings) => hasVisitor ? visitor.FilterMemberBindings(bindings) : bindings;
-#else
-
-        protected virtual IReadOnlyCollection<MemberBinding> FilterMemberBindings(IReadOnlyCollection<MemberBinding> bindings) => hasVisitor ? visitor.FilterMemberBindings(bindings) : bindings;
-#endif
 
         /// <summary>
         /// 变量成员。
@@ -651,22 +644,14 @@ namespace CodeArts.Db.Expressions
         /// </summary>
         /// <param name="members">成员。</param>
         /// <returns></returns>
-#if NET40
-        protected virtual IDictionary<string, string> FilterMembers(IDictionary<string, string> members) => hasVisitor ? visitor.FilterMembers(members) : members;
-#else
         protected virtual IReadOnlyDictionary<string, string> FilterMembers(IReadOnlyDictionary<string, string> members) => hasVisitor ? visitor.FilterMembers(members) : members;
-#endif
 
         /// <summary>
         /// 过滤成员。
         /// </summary>
         /// <param name="members">成员集合。</param>
         /// <returns></returns>
-#if NET40
         protected virtual ReadOnlyCollection<MemberInfo> FilterMembers(ReadOnlyCollection<MemberInfo> members) => hasVisitor ? visitor.FilterMembers(members) : members;
-#else
-        protected virtual IReadOnlyCollection<MemberInfo> FilterMembers(IReadOnlyCollection<MemberInfo> members) => hasVisitor ? visitor.FilterMembers(members) : members;
-#endif
 
         /// <summary>
         /// 写入成员。

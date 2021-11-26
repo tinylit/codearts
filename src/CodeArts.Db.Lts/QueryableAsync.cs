@@ -1,4 +1,5 @@
-﻿#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+﻿
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;

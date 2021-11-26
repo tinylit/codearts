@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using ustring = CodeArts.UppercaseString;
 
 namespace CodeArts
 {
@@ -7,7 +8,7 @@ namespace CodeArts
     /// 大写字符串。
     /// </summary>
     [DebuggerDisplay("{value}")]
-    public struct UppercaseString : IEquatable<UppercaseString>, IEquatable<string>
+    public struct UppercaseString : IEquatable<UppercaseString>, IEquatable<string>, IComparable<UppercaseString>
     {
         private readonly string value;
 
@@ -37,10 +38,12 @@ namespace CodeArts
             {
                 return Equals(value);
             }
+
             if (obj is string text)
             {
                 return Equals(text);
             }
+
             return false;
         }
 
@@ -85,6 +88,14 @@ namespace CodeArts
         /// </summary>
         /// <param name="value">值。</param>
         public static implicit operator UppercaseString(string value) => new UppercaseString(value);
+
+        /// <summary>
+        /// 比较。
+        /// </summary>
+        /// <param name="other">其他。</param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public int CompareTo(UppercaseString other) => string.Compare(value, other.value);
 
         /// <summary>
         /// 提供隐式转换。

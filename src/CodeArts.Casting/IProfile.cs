@@ -11,8 +11,8 @@ namespace CodeArts.Casting
         /// 创建工厂。
         /// </summary>
         /// <param name="sourceType">源数据类型。</param>
-        /// <typeparam name="T">目标数据类型。</typeparam>
+        /// <typeparam name="TResult">目标数据类型。</typeparam>
         /// <returns></returns>
-        Func<object, T> Create<T>(Type sourceType);
+        Func<object, TResult> CreateMap<TResult>(Type sourceType);
     }
 }

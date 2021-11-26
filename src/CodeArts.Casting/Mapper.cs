@@ -1,93 +1,99 @@
-﻿using CodeArts.Casting;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
-namespace CodeArts
+namespace CodeArts.Casting
 {
     /// <summary>
-    /// 映射。
+    /// 配置。
     /// </summary>
-    public static class Mapper
+    public abstract class Mapper<TMapper> : ProfileExpression<TMapper, IProfileMap>, IProfileMap, IMapConfiguration, IProfileExpression, IProfile, IDisposable where TMapper : Mapper<TMapper>
     {
-        private static readonly IMapper mapper;
+        /// <summary>
+        /// 匹配模式。
+        /// </summary>
+        public PatternKind Kind { get; } = PatternKind.Property;
 
         /// <summary>
-        /// inheritdoc
+        /// 深度映射。
         /// </summary>
-        static Mapper() => mapper = RuntimeServPools.Singleton<IMapper, CastingMapper>();
+        public bool? IsDepthMapping { get; } = true;
 
         /// <summary>
-        /// 对象转换。
+        /// 允许空目标值。
         /// </summary>
-        /// <param name="obj">数据源。</param>
-        /// <param name="def">默认值。</param>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <returns></returns>
-        public static T Cast<T>(object obj, T def = default) => mapper.Cast(obj, def);
+        public bool? AllowNullDestinationValues { get; } = true;
 
         /// <summary>
-        /// 转换（异常上抛）。
+        /// 允许空值传播映射。
         /// </summary>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <param name="source">数据源。</param>
-        /// <returns></returns>
-        public static T ThrowsCast<T>(object source) => mapper.ThrowsCast<T>(source);
+        public bool? AllowNullMapping { get; } = false;
 
-        /// <summary> 
-        /// 对象转换。
+        /// <summary>
+        /// 构造函数。
         /// </summary>
-        /// <param name="obj">数据源。</param>
+        /// <param name="maps">映射表达式。</param>
+        protected Mapper(IEnumerable<IMapExpression> maps) : base(maps)
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="profile">配置。</param>
+        /// <param name="maps">映射表达式。</param>
+        protected Mapper(IProfileConfiguration profile, IEnumerable<IMapExpression> maps) : base(maps)
+        {
+            if (profile is null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
+            Kind = profile.Kind;
+            IsDepthMapping = profile.IsDepthMapping ?? true;
+            AllowNullMapping = profile.AllowNullMapping ?? false;
+        }
+
+        /// <summary>
+        /// 创建表达式。
+        /// </summary>
+        /// <typeparam name="TResult">目标类型。</typeparam>
+        /// <param name="sourceType">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        public static object Cast(object obj, Type conversionType) => mapper.Cast(obj, conversionType);
+        protected override Func<object, TResult> Create<TResult>(Type sourceType, Type conversionType)
+        {
+            foreach (MapExpression item in Maps.OfType<MapExpression>())
+            {
+                if (item.IsMatch(sourceType, conversionType))
+                {
+                    return item.ToSolve<TResult>(sourceType, conversionType, this);
+                }
+            }
 
-        /// <summary>
-        /// 转换（异常上抛）。
-        /// </summary>
-        /// <param name="source">源数据。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        public static object ThrowsCast(object source, Type conversionType) => mapper.ThrowsCast(source, conversionType);
+            return base.Create<TResult>(sourceType, conversionType);
+        }
 
-        /// <summary>
-        /// 对象克隆。
-        /// </summary>
-        /// <param name="obj">数据源。</param>
-        /// <param name="def">默认值。</param>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <returns></returns>
-        public static T Copy<T>(T obj, T def = default) => mapper.Copy(obj, def);
+        Expression IMapConfiguration.Map(Expression sourceExpression, Type conversionType, Expression def)
+        {
+            if (sourceExpression is null)
+            {
+                throw new ArgumentNullException(nameof(sourceExpression));
+            }
 
-        /// <summary>
-        /// 对象映射。
-        /// </summary>
-        /// <param name="obj">数据源。</param>
-        /// <param name="def">默认值。</param>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <returns></returns>
-        public static T Map<T>(object obj, T def = default) => mapper.Map(obj, def);
+            if (def is null)
+            {
+                def = Expression.Default(conversionType);
+            }
+            else if (!conversionType.IsAssignableFrom(def.Type))
+            {
+                throw new InvalidCastException($"不能将类型({def.Type})赋值到({conversionType})!");
+            }
 
-        /// <summary>
-        /// 拷贝（异常上抛）。
-        /// </summary>
-        /// <typeparam name="T">目标类型。</typeparam>
-        /// <param name="source">数据源。</param>
-        /// <returns></returns>
-        public static T ThrowsMap<T>(object source) => mapper.ThrowsMap<T>(source);
+            var mapFn = MapExtensions.MapGeneric.MakeGenericMethod(conversionType);
 
-        /// <summary> 
-        /// 对象映射。
-        /// </summary>
-        /// <param name="obj">数据源。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        public static object Map(object obj, Type conversionType) => mapper.Map(obj, conversionType);
-
-        /// <summary>
-        /// 拷贝（异常上抛）。
-        /// </summary>
-        /// <param name="source">数据源。</param>
-        /// <param name="conversionType">目标类型。</param>
-        /// <returns></returns>
-        public static object ThrowsMap(object source, Type conversionType) => mapper.ThrowsMap(source, conversionType);
+            return Expression.Call(Expression.Constant(this), mapFn, new Expression[2] { Expression.Convert(sourceExpression, typeof(object)), def });
+        }
     }
 }

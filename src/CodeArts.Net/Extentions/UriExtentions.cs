@@ -3,6 +3,7 @@ using CodeArts.Net;
 using CodeArts.Runtime;
 using CodeArts.Serialize.Json;
 using CodeArts.Serialize.Xml;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -376,8 +377,6 @@ namespace System
             {
             }
 
-            public IFinallyRequestableAsync Finally(Action log) => new FinallyRequestable(this, file, log);
-
             public IThenRequestableAsync TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
 
             public IThenConditionRequestableAsync ThenAsync(Func<IRequestableBase, WebException, Task> thenAsycn) => new ThenRequestableAsync(this, this, requestable, thenAsync);
@@ -510,8 +509,10 @@ namespace System
 
                             await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                         }
-
-                        throw e;
+                        else
+                        {
+                            throw e;
+                        }
                     }
                 }
             }
@@ -628,8 +629,6 @@ namespace System
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
-
 
             public override string RequestImplement(string method, int timeout = 5000)
             {
@@ -641,7 +640,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -657,7 +656,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -671,7 +670,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -726,8 +725,6 @@ namespace System
 
             IResultStringCatchRequestableAsync ICatchRequestableAsync.WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            IFinallyRequestableAsync ICatchRequestableAsync.Finally(Action log) => new FinallyRequestable(this, file, log);
-
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -738,7 +735,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -754,7 +751,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -768,7 +765,7 @@ namespace System
                 {
                     log.Invoke(e);
 
-                    throw;
+                    throw e;
                 }
             }
 
@@ -818,189 +815,6 @@ namespace System
 
                     log = null;
 
-                    file = null;
-                    requestable = null;
-                }
-
-                base.Dispose(disposing);
-            }
-        }
-
-#if NET40
-        private class FinallyRequestable : CastRequestable, IFinallyRequestable, IFinallyStringRequestable
-#else
-        private class FinallyRequestable : CastRequestable, IFinallyRequestableAsync, IFinallyRequestable, IFinallyStringRequestableAsync, IFinallyStringRequestable
-#endif
-        {
-            private Action log;
-            private Requestable<string> requestable;
-            private IDisposableFileRequestable file;
-
-            public FinallyRequestable(Requestable<string> requestable, IDisposableFileRequestable file, Action log)
-            {
-                this.requestable = requestable;
-                this.file = file;
-                this.log = log ?? throw new ArgumentNullException(nameof(log));
-            }
-
-            public override string RequestImplement(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return requestable.RequestImplement(method, timeout);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-
-            public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
-
-            public byte[] UploadFile(string method, string fileName, int timeout = 5000)
-            {
-                try
-                {
-                    return file.UploadFile(method, fileName, timeout);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-
-            public void DownloadFile(string fileName, int timeout = 5000)
-            {
-                try
-                {
-                    file.DownloadFile(fileName, timeout);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-
-            byte[] IFileRequestable.UploadFile(string fileName, int timeout)
-            {
-                try
-                {
-                    return UploadFile(fileName, timeout);
-                }
-                finally
-                {
-                    Dispose();
-                }
-            }
-
-            byte[] IFileRequestable.UploadFile(string method, string fileName, int timeout)
-            {
-                try
-                {
-                    return UploadFile(method, fileName, timeout);
-                }
-                finally
-                {
-                    Dispose();
-                }
-            }
-
-            void IFileRequestable.DownloadFile(string fileName, int timeout)
-            {
-                try
-                {
-                    DownloadFile(fileName, timeout);
-                }
-                finally
-                {
-                    Dispose();
-                }
-            }
-
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-
-            public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-
-            public async Task<byte[]> UploadFileAsync(string fileName, int timeout = 5000) => await UploadFileAsync(null, fileName, timeout).ConfigureAwait(false);
-
-            public async Task<byte[]> UploadFileAsync(string method, string fileName, int timeout = 5000)
-            {
-                try
-                {
-                    return await file.UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-
-            public async Task DownloadFileAsync(string fileName, int timeout = 5000)
-            {
-                try
-                {
-                    await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-
-            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string fileName, int timeout)
-            {
-                try
-                {
-                    return await UploadFileAsync(fileName, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    Dispose();
-                }
-            }
-
-            async Task<byte[]> IFileRequestableAsync.UploadFileAsync(string method, string fileName, int timeout)
-            {
-                try
-                {
-                    return await UploadFileAsync(method, fileName, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    Dispose();
-                }
-            }
-
-            async Task IFileRequestableAsync.DownloadFileAsync(string fileName, int timeout)
-            {
-                try
-                {
-                    await DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    Dispose();
-                }
-            }
-#endif
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    requestable?.Dispose();
-                    file?.Dispose();
-                    log = null;
                     file = null;
                     requestable = null;
                 }
@@ -1038,8 +852,6 @@ namespace System
             public IIFThenRequestable(Requestable requestable, Predicate<WebException> predicate) : this(requestable, requestable, predicate)
             {
             }
-
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
 
             public IThenRequestable Or(Predicate<WebException> predicate)
             {
@@ -1115,7 +927,7 @@ namespace System
                             continue;
                         }
 
-                        throw;
+                        throw e;
                     }
 
                 } while (true);
@@ -1145,7 +957,7 @@ namespace System
                             continue;
                         }
 
-                        throw;
+                        throw e;
                     }
 
                 } while (true);
@@ -1172,7 +984,7 @@ namespace System
                             continue;
                         }
 
-                        throw;
+                        throw e;
                     }
 
                 } while (true);
@@ -1216,7 +1028,6 @@ namespace System
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
-
             IThenRequestableAsync IThenRequestableAsync.Or(Predicate<WebException> predicate)
             {
                 if (predicate is null)
@@ -1244,8 +1055,6 @@ namespace System
             ICatchRequestableAsync ICatchRequestableAsync.WebCatch(Action<WebException> log) => new CatchRequestable(this, file, log);
 
             IResultStringCatchRequestableAsync ICatchRequestableAsync.WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
-
-            IFinallyRequestableAsync ICatchRequestableAsync.Finally(Action log) => new FinallyRequestable(this, file, log);
 
             IRetryIntervalThenRequestableAsync IRetryThenRequestableAsync.RetryInterval(int millisecondsTimeout)
             {
@@ -1293,7 +1102,7 @@ namespace System
                             continue;
                         }
 
-                        throw;
+                        throw e;
                     }
 
                 } while (true);
@@ -1328,7 +1137,7 @@ namespace System
                             continue;
                         }
 
-                        throw;
+                        throw e;
                     }
 
                 } while (true);
@@ -1363,7 +1172,7 @@ namespace System
                             continue;
                         }
 
-                        throw;
+                        throw e;
                     }
 
                 } while (true);
@@ -1449,8 +1258,6 @@ namespace System
 
             }
 
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, file, log);
-
             public IThenRequestable TryIf(Predicate<WebException> match) => new IIFThenRequestable(this, this, match);
 
             public IThenConditionRequestable Then(Action<IRequestableBase, WebException> then) => new ThenRequestable(this, this, requestable, then);
@@ -1535,8 +1342,10 @@ namespace System
 
                             file.DownloadFile(fileName, timeout);
                         }
-
-                        throw e;
+                        else
+                        {
+                            throw e;
+                        }
                     }
                 }
             }
@@ -1634,8 +1443,6 @@ namespace System
 
             IResultStringCatchRequestableAsync ICatchRequestableAsync.WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
 
-            IFinallyRequestableAsync ICatchRequestableAsync.Finally(Action log) => new FinallyRequestable(this, file, log);
-
             IThenAndConditionRequestableAsync IThenAndConditionRequestableAsync.And(Predicate<WebException> predicate)
             {
                 if (predicate is null)
@@ -1728,8 +1535,10 @@ namespace System
 
                             await file.DownloadFileAsync(fileName, timeout).ConfigureAwait(false);
                         }
-
-                        throw e;
+                        else
+                        {
+                            throw e;
+                        }
                     }
                 }
             }
@@ -1804,8 +1613,6 @@ namespace System
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
             }
 
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override T RequestImplement(string method, int timeout = 5000)
             {
                 try
@@ -1819,7 +1626,6 @@ namespace System
             }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -1891,8 +1697,6 @@ namespace System
                 return this;
             }
 
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override T RequestImplement(string method, int timeout = 5000)
             {
                 string value = requestable.RequestImplement(method, timeout);
@@ -1907,7 +1711,7 @@ namespace System
 
                     if (returnValue is null)
                     {
-                        throw;
+                        throw e;
                     }
 
                     return returnValue.Invoke(value, e);
@@ -1950,11 +1754,7 @@ namespace System
                 return this;
             }
 
-            IFinallyRequestableAsync<T> IJsonCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
-
             IResultCatchRequestableAsync<T> IJsonResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
-
-            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
 
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -1970,7 +1770,7 @@ namespace System
 
                     if (returnValue is null)
                     {
-                        throw;
+                        throw e;
                     }
 
                     return returnValue.Invoke(value, e);
@@ -2011,8 +1811,6 @@ namespace System
 
             public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override T RequestImplement(string method, int timeout = 5000)
             {
                 string value = requestable.RequestImplement(method, timeout);
@@ -2043,8 +1841,6 @@ namespace System
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IResultCatchRequestableAsync<T> IJsonResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
-
-            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
 
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -2110,8 +1906,6 @@ namespace System
 
             public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override T RequestImplement(string method, int timeout = 5000)
             {
                 string value = requestable.RequestImplement(method, timeout);
@@ -2126,7 +1920,7 @@ namespace System
 
                     if (returnValue is null)
                     {
-                        throw;
+                        throw e;
                     }
 
                     return returnValue.Invoke(value, e);
@@ -2151,11 +1945,7 @@ namespace System
                 return this;
             }
 
-            IFinallyRequestableAsync<T> IXmlCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
-
             IResultCatchRequestableAsync<T> IXmlResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
-
-            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
 
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -2171,7 +1961,7 @@ namespace System
 
                     if (returnValue is null)
                     {
-                        throw;
+                        throw e;
                     }
 
                     return returnValue.Invoke(value, e);
@@ -2210,8 +2000,6 @@ namespace System
 
             public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override T RequestImplement(string method, int timeout = 5000)
             {
                 string value = requestable.RequestImplement(method, timeout);
@@ -2229,8 +2017,6 @@ namespace System
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
             IResultCatchRequestableAsync<T> IXmlResultCatchRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
-
-            IFinallyRequestableAsync<T> IResultCatchRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
 
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
@@ -2254,110 +2040,6 @@ namespace System
                     requestable?.Dispose();
                     requestable = null;
                     returnValue = null;
-                }
-
-                base.Dispose(disposing);
-            }
-        }
-#if NET40
-        private class Finallyequestable<T> : RequestableExtend<T>, IFinallyRequestable<T>
-#else
-        private class Finallyequestable<T> : RequestableExtend<T>, IFinallyRequestableAsync<T>, IFinallyRequestable<T>
-#endif
-        {
-            private Requestable<T> requestable;
-            private Action log;
-
-            public Finallyequestable(Requestable<T> requestable, Action log)
-            {
-                this.requestable = requestable;
-                this.log = log ?? throw new ArgumentNullException(nameof(log));
-            }
-
-            public override T RequestImplement(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return requestable.RequestImplement(method, timeout);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-#endif
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    requestable?.Dispose();
-                    requestable = null;
-                    log = null;
-                }
-
-                base.Dispose(disposing);
-            }
-        }
-#if NET40
-        private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestable
-#else
-        private class FinallyStringRequestable : RequestableExtend<string>, IFinallyStringRequestableAsync, IFinallyStringRequestable
-#endif
-        {
-            private Action log;
-            private Requestable<string> requestable;
-
-            public FinallyStringRequestable(Requestable<string> requestable, Action log)
-            {
-                this.requestable = requestable;
-                this.log = log ?? throw new ArgumentNullException(nameof(log));
-            }
-
-            public override string RequestImplement(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return requestable.RequestImplement(method, timeout);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
-            {
-                try
-                {
-                    return await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false);
-                }
-                finally
-                {
-                    log.Invoke();
-                }
-            }
-#endif
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    requestable?.Dispose();
-                    requestable = null;
-                    log = null;
                 }
 
                 base.Dispose(disposing);
@@ -2443,9 +2125,11 @@ namespace System
 
         private class Requestable : CastRequestable, IRequestable, IDisposableFileRequestable
         {
+            private bool isFormSubmit = false;
+
             private Uri __uri;
             private string __data;
-            private bool isFormSubmit = false;
+            private byte[] __buffer;
             private NameValueCollection __form;
             private Encoding __encoding;
             private Dictionary<string, string> __headers;
@@ -2455,6 +2139,7 @@ namespace System
                 __uri = requestable.__uri;
                 __data = requestable.__data;
                 __form = requestable.__form;
+                __buffer = requestable.__buffer;
                 __headers = requestable.__headers;
                 __encoding = requestable.__encoding;
                 isFormSubmit = requestable.isFormSubmit;
@@ -2503,11 +2188,34 @@ namespace System
             }
             public IRequestable Xml(string param) => Body(param, "application/xml");
             public IRequestable Xml<T>(T param) where T : class => Xml(XmlHelper.XmlSerialize(param));
-            public IRequestable Form(string param, NamingType namingType = NamingType.Normal)
-                => Form(JsonHelper.Json<Dictionary<string, string>>(param, namingType));
-            public IRequestable Form(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal)
+
+            public IRequestable Form(byte[] data)
             {
                 isFormSubmit = true;
+
+                __buffer = data ?? throw new ArgumentNullException(nameof(data));
+
+                return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
+            }
+
+            public IRequestable Form(string formData)
+            {
+                if (string.IsNullOrEmpty(formData))
+                {
+                    throw new ArgumentException($"“{nameof(formData)}”不能为 null 或空。", nameof(formData));
+                }
+
+                isFormSubmit = true;
+
+                __buffer = Encoding.ASCII.GetBytes(formData);
+
+                return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
+            }
+            public IRequestable Form(IEnumerable<KeyValuePair<string, string>> param)
+            {
+                isFormSubmit = true;
+
+                __buffer = new byte[0];
 
 #if NETSTANDARD2_1_OR_GREATER
                 __form ??= new NameValueCollection();
@@ -2515,104 +2223,40 @@ namespace System
                 __form = __form ?? new NameValueCollection();
 #endif
 
-                if (namingType == NamingType.Normal)
+                foreach (var kv in param)
                 {
-                    foreach (var kv in param)
-                    {
-                        __form.Add(kv.Key, kv.Value);
-                    }
+                    __form.Add(kv.Key, kv.Value);
+                }
+
+                return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
+            }
+            public IRequestable Form(IEnumerable<KeyValuePair<string, DateTime>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+                => Form(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString(dateFormatString))));
+            public IRequestable Form(IEnumerable<KeyValuePair<string, object>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+                => Form(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value is DateTime date ? date.ToString(dateFormatString) : x.Value?.ToString())));
+            public IRequestable Form(NameValueCollection valueCollection)
+            {
+                if (valueCollection is null)
+                {
+                    throw new ArgumentNullException(nameof(valueCollection));
+                }
+
+                isFormSubmit = true;
+
+                __buffer = new byte[0];
+
+                if (__form is null)
+                {
+                    __form = valueCollection;
                 }
                 else
                 {
-                    foreach (var kv in param)
-                    {
-                        __form.Add(kv.Key.ToNamingCase(namingType), kv.Value);
-                    }
+                    __form.Add(valueCollection);
                 }
 
                 return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
             }
-            public IRequestable Form(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal)
-                => Form(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"))), namingType);
-            public IRequestable Form<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal)
-                => Form(param.Select(x => new KeyValuePair<string, string>(x.Key, x.Value?.ToString())), namingType);
-            public IRequestable Form(object param)
-            {
-                isFormSubmit = true;
 
-                if (param is null)
-                {
-                    return this;
-                }
-
-
-#if NETSTANDARD2_1_OR_GREATER
-                __form ??= new NameValueCollection();
-#else
-                __form = __form ?? new NameValueCollection();
-#endif
-
-                var typeStore = TypeItem.Get(param.GetType());
-
-                foreach (var storeItem in typeStore.PropertyStores)
-                {
-                    var value = storeItem.Member.GetValue(param, null);
-
-                    if (value is null)
-                    {
-                        continue;
-                    }
-
-                    if (value is DateTime date)
-                    {
-                        __form.Add(storeItem.Naming, date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"));
-                    }
-                    else
-                    {
-                        __form.Add(storeItem.Naming, value.ToString());
-                    }
-                }
-
-                return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
-            }
-            public IRequestable Form(object param, NamingType namingType = NamingType.Normal)
-            {
-                isFormSubmit = true;
-
-                if (param is null)
-                {
-                    return this;
-                }
-
-#if NETSTANDARD2_1_OR_GREATER
-                __form ??= new NameValueCollection();
-#else
-                __form = __form ?? new NameValueCollection();
-#endif
-
-                var typeStore = TypeItem.Get(param.GetType());
-
-                foreach (var storeItem in typeStore.PropertyStores)
-                {
-                    var value = storeItem.Member.GetValue(param, null);
-
-                    if (value is null)
-                    {
-                        continue;
-                    }
-
-                    if (value is DateTime date)
-                    {
-                        __form.Add(storeItem.Name.ToNamingCase(namingType), date.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFK"));
-                    }
-                    else
-                    {
-                        __form.Add(storeItem.Name.ToNamingCase(namingType), value.ToString());
-                    }
-                }
-
-                return AssignHeader("Content-Type", "application/x-www-form-urlencoded");
-            }
             public IRequestable Json(string param) => Body(param, "application/json");
             public IRequestable Json<T>(T param, NamingType namingType = NamingType.Normal) where T : class
                 => Json(JsonHelper.ToJson(param, namingType));
@@ -2622,6 +2266,7 @@ namespace System
                 __uri = requestable.__uri;
                 __data = requestable.__data;
                 __form = requestable.__form;
+                __buffer = requestable.__buffer;
                 __headers = requestable.__headers;
                 __encoding = requestable.__encoding;
                 isFormSubmit = requestable.isFormSubmit;
@@ -2678,61 +2323,247 @@ namespace System
                     return this;
                 }
 
-                return AppendQueryString(string.Concat(name, "=", value));
+                return AppendQueryString(string.Concat(name, "=", value ?? string.Empty));
             }
-            public IRequestable AppendQueryString(string name, DateTime value, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK") => AppendQueryString(string.Concat(name, "=", HttpUtility.UrlEncode(value.ToString(dateFormatString), Encoding.UTF8)));
-            public IRequestable AppendQueryString<T>(string name, T value) => AppendQueryString(name, value?.ToString());
+            public IRequestable AppendQueryString(string name, DateTime value, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+                => AppendQueryString(string.Concat(name, "=", HttpUtility.UrlEncode(value.ToString(dateFormatString), Encoding.UTF8)));
+
+            private static void Add(StringBuilder sb, string key, string value)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append("&");
+                }
+
+                sb.Append(key)
+                    .Append("=")
+                    .Append(HttpUtility.UrlEncode(value, Encoding.UTF8));
+            }
+
+            private static void Add(StringBuilder sb, string prefix, string key, string value)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append("&");
+                }
+
+                sb.Append(prefix)
+                    .Append('[')
+                    .Append(key)
+                    .Append(']')
+                    .Append("=")
+                    .Append(HttpUtility.UrlEncode(value, Encoding.UTF8));
+            }
+
+            private static void BuildParams(StringBuilder sb, string prefix, object obj, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+            {
+                if (obj is null)
+                {
+                    Add(sb, prefix, string.Empty);
+                }
+                else
+                {
+                    switch (obj)
+                    {
+                        case string text:
+                            Add(sb, prefix, text);
+                            break;
+                        case Version version:
+                            Add(sb, prefix, version.ToString());
+                            break;
+                        case KeyValuePair<string, string> kv:
+                            Add(sb, prefix, kv.Key, kv.Value);
+                            break;
+                        case KeyValuePair<string, DateTime> kv:
+                            Add(sb, prefix, kv.Key, kv.Value.ToString(dateFormatString));
+                            break;
+                        case KeyValuePair<string, object> kv:
+                            BuildParams(sb, string.Concat(prefix, "[", kv.Key, "]"), kv.Value, dateFormatString);
+                            break;
+                        case IEnumerable<string> arrays:
+                            int i = -1;
+
+                            foreach (var item in arrays)
+                            {
+                                if (item is null)
+                                {
+                                    continue;
+                                }
+
+                                BuildParams(sb, string.Concat(prefix, "[", (++i).ToString(), "]"), item);
+                            }
+                            break;
+                        case IEnumerable<KeyValuePair<string, string>> arrays:
+                            foreach (var kv in arrays)
+                            {
+                                Add(sb, prefix, kv.Key, kv.Value);
+                            }
+                            break;
+                        case IEnumerable<KeyValuePair<string, DateTime>> arrays:
+                            foreach (var kv in arrays)
+                            {
+                                Add(sb, prefix, kv.Key, kv.Value.ToString(dateFormatString));
+                            }
+                            break;
+                        case IEnumerable<KeyValuePair<string, object>> arrays:
+                            foreach (var kv in arrays)
+                            {
+                                BuildParams(sb, string.Concat(prefix, "[", kv.Key, "]"), kv.Value, dateFormatString);
+                            }
+                            break;
+                        default:
+                            var type = obj.GetType();
+
+                            if (type.IsValueType)
+                            {
+                                Add(sb, prefix, obj.ToString());
+
+                                break;
+                            }
+
+                            var typeStore = TypeItem.Get(type);
+
+                            foreach (var storeItem in typeStore.PropertyStores.Where(x => x.CanRead))
+                            {
+                                var value = storeItem.Member.GetValue(obj, null);
+
+                                if (value is null)
+                                {
+                                    continue;
+                                }
+
+                                BuildParams(sb, string.Concat(prefix, "[", storeItem.Naming, "]"), value, dateFormatString);
+                            }
+
+                            break;
+                    }
+                }
+            }
+            public IRequestable AppendQueryString(string name, object value, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+            {
+                var sb = new StringBuilder();
+
+                BuildParams(sb, name, value, dateFormatString);
+
+                return AppendQueryString(sb.ToString());
+            }
             public IRequestable AppendQueryString(IEnumerable<string> param)
-              => AppendQueryString(string.Join("&", param));
-            public IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, string>> param)
-                 => AppendQueryString(string.Join("&", param.Select(kv => string.Concat(kv.Key, "=", kv.Value))));
-            public IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, DateTime>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
-                  => AppendQueryString(string.Join("&", param.Select(x => string.Concat(x.Key, "=", HttpUtility.UrlEncode(x.Value.ToString(dateFormatString), Encoding.UTF8)))));
-            public IRequestable AppendQueryString<T>(IEnumerable<KeyValuePair<string, T>> param)
-                  => AppendQueryString(string.Join("&", param.Select(x => string.Concat(x.Key, "=", x.Value?.ToString() ?? string.Empty))));
-            public IRequestable AppendQueryString(object param, NamingType namingType = NamingType.UrlCase, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
             {
                 if (param is null)
                 {
                     return this;
                 }
 
-                var typeStore = TypeItem.Get(param.GetType());
+                return AppendQueryString(string.Join("&", param));
+            }
+
+            public IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, string>> param)
+            {
+                if (param is null)
+                {
+                    return this;
+                }
 
                 var sb = new StringBuilder();
 
-                foreach (var storeItem in typeStore.PropertyStores.Where(x => x.CanRead))
+                foreach (var kv in param)
                 {
-                    var value = storeItem.Member.GetValue(param, null);
-
-                    if (value is null)
-                    {
-                        continue;
-                    }
-
-                    sb.Append("&")
-                        .Append(storeItem.Name.ToNamingCase(namingType))
-                        .Append("=");
-
-                    if (value is DateTime date)
-                    {
-                        sb.Append(HttpUtility.UrlEncode(date.ToString(dateFormatString), Encoding.UTF8));
-                    }
-                    else
-                    {
-                        sb.Append(value.ToString());
-                    }
+                    Add(sb, kv.Key, kv.Value);
                 }
 
                 return AppendQueryString(sb.ToString());
             }
 
+            public IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, DateTime>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+            {
+                if (param is null)
+                {
+                    return this;
+                }
+
+                var sb = new StringBuilder();
+
+                foreach (var kv in param)
+                {
+                    Add(sb, kv.Key, kv.Value.ToString(dateFormatString));
+                }
+
+                return AppendQueryString(sb.ToString());
+            }
+
+            public IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, object>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+            {
+                if (param is null)
+                {
+                    return this;
+                }
+
+                var sb = new StringBuilder();
+
+                foreach (var kv in param)
+                {
+                    BuildParams(sb, kv.Key, kv.Value, dateFormatString);
+                }
+
+                return AppendQueryString(sb.ToString());
+            }
+            public IRequestable AppendQueryString(object param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK")
+            {
+                if (param is null)
+                {
+                    return this;
+                }
+
+                switch (param)
+                {
+                    case string text:
+                        return AppendQueryString(text);
+                    case KeyValuePair<string, string> kv:
+                        return AppendQueryString(kv.Key, kv.Value);
+                    case KeyValuePair<string, DateTime> kv:
+                        return AppendQueryString(kv.Key, kv.Value, dateFormatString);
+                    case KeyValuePair<string, object> kv:
+                        return AppendQueryString(kv.Key, kv.Value, dateFormatString);
+                    case IEnumerable<string> arrays:
+                        return AppendQueryString(arrays);
+                    case IEnumerable<KeyValuePair<string, string>> arrays:
+                        return AppendQueryString(arrays);
+                    case IEnumerable<KeyValuePair<string, DateTime>> arrays:
+                        return AppendQueryString(arrays, dateFormatString);
+                    case IEnumerable<KeyValuePair<string, object>> arrays:
+                        return AppendQueryString(arrays, dateFormatString);
+                    default:
+                        var sb = new StringBuilder();
+
+                        var typeStore = TypeItem.Get(param.GetType());
+
+                        foreach (var storeItem in typeStore.PropertyStores.Where(x => x.CanRead))
+                        {
+                            var value = storeItem.Member.GetValue(param, null);
+
+                            if (value is null)
+                            {
+                                continue;
+                            }
+
+                            BuildParams(sb, storeItem.Naming, value, dateFormatString);
+                        }
+
+                        return AppendQueryString(sb.ToString());
+                }
+            }
+
             public override string RequestImplement(string method, int timeout = 5000)
             {
+                if (__encoding is null)
+                {
+                    __encoding = Encoding.UTF8;
+                }
+
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = __encoding ?? Encoding.UTF8
+                    Encoding = __encoding
                 })
                 {
                     foreach (var kv in __headers)
@@ -2747,12 +2578,12 @@ namespace System
 
                     if (isFormSubmit)
                     {
-                        if (__form is null)
+                        if (__buffer?.Length > 0)
                         {
-                            throw new NotSupportedException("使用表单提交，但未指定表单数据!");
+                            return __encoding.GetString(client.UploadData(__uri, method.ToUpper(), __buffer));
                         }
 
-                        return (__encoding ?? Encoding.UTF8).GetString(client.UploadValues(__uri, method.ToUpper(), __form));
+                        return __encoding.GetString(client.UploadValues(__uri, method.ToUpper(), __form ?? new NameValueCollection()));
                     }
 
                     return client.UploadString(__uri, method.ToUpper(), __data ?? string.Empty);
@@ -2766,8 +2597,6 @@ namespace System
             public ICatchRequestable WebCatch(Action<WebException> log) => new CatchRequestable(this, this, log);
 
             public IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue) => new ResultStringCatchRequestable(this, returnValue);
-
-            public IFinallyRequestable Finally(Action log) => new FinallyRequestable(this, this, log);
 
             public byte[] UploadFile(string fileName, int timeout = 5000) => UploadFile(null, fileName, timeout);
 
@@ -2844,10 +2673,15 @@ namespace System
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
+                if (__encoding is null)
+                {
+                    __encoding = Encoding.UTF8;
+                }
+
                 using (var client = new WebCoreClient
                 {
                     Timeout = timeout,
-                    Encoding = __encoding ?? Encoding.UTF8
+                    Encoding = __encoding
                 })
                 {
                     foreach (var kv in __headers)
@@ -2862,12 +2696,12 @@ namespace System
 
                     if (isFormSubmit)
                     {
-                        if (__form is null)
+                        if (__buffer?.Length > 0)
                         {
-                            throw new NotSupportedException("使用表单提交，但未指定表单数据!");
+                            return __encoding.GetString(await client.UploadDataTaskAsync(__uri, method.ToUpper(), __buffer).ConfigureAwait(false));
                         }
 
-                        return (__encoding ?? Encoding.UTF8).GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form).ConfigureAwait(false));
+                        return __encoding.GetString(await client.UploadValuesTaskAsync(__uri, method.ToUpper(), __form ?? new NameValueCollection()).ConfigureAwait(false));
                     }
 
                     return await client.UploadStringTaskAsync(__uri, method.ToUpper(), __data ?? string.Empty).ConfigureAwait(false);
@@ -2979,8 +2813,6 @@ namespace System
                 this.returnValue = returnValue ?? throw new ArgumentNullException(nameof(returnValue));
             }
 
-            public IFinallyStringRequestable Finally(Action log) => new FinallyStringRequestable(this, log);
-
             public override string RequestImplement(string method, int timeout = 5000)
             {
                 try
@@ -2994,7 +2826,6 @@ namespace System
             }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
-            IFinallyStringRequestableAsync IResultStringCatchRequestableAsync.Finally(Action log) => new FinallyStringRequestable(this, log);
             public override async Task<string> RequestImplementAsync(string method, int timeout = 5000)
             {
                 try
@@ -3050,8 +2881,6 @@ namespace System
 
             IResultCatchRequestableAsync<T> IJsonRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
-            IFinallyRequestableAsync<T> IJsonRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 return JsonHelper.Json<T>(await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false), NamingType);
@@ -3062,8 +2891,6 @@ namespace System
             public IJsonResultCatchRequestable<T> JsonCatch(Func<string, Exception, T> returnValue) => new JsonResultCatchRequestable<T>(requestable, returnValue, NamingType);
 
             public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
-
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
             protected override void Dispose(bool disposing)
             {
@@ -3104,8 +2931,6 @@ namespace System
 
             IResultCatchRequestableAsync<T> IXmlRequestableAsync<T>.WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
 
-            IFinallyRequestableAsync<T> IXmlRequestableAsync<T>.Finally(Action log) => new Finallyequestable<T>(this, log);
-
             public override async Task<T> RequestImplementAsync(string method, int timeout = 5000)
             {
                 return XmlHelper.XmlDeserialize<T>(await requestable.RequestImplementAsync(method, timeout).ConfigureAwait(false));
@@ -3117,8 +2942,6 @@ namespace System
             public IXmlResultCatchRequestable<T> XmlCatch(Func<string, XmlException, T> returnValue) => new XmlResultCatchRequestable<T>(requestable, returnValue);
 
             public IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue) => new ResultCatchRequestable<T>(this, returnValue);
-
-            public IFinallyRequestable<T> Finally(Action log) => new Finallyequestable<T>(this, log);
 
             protected override void Dispose(bool disposing)
             {

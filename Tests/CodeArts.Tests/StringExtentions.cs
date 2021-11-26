@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodeArts.Tests
 {
+
     [TestClass]
     public class StringExtentions
     {

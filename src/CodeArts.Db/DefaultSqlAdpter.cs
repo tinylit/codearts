@@ -2,9 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if NET40
-using System.Collections.ObjectModel;
-#endif
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -159,12 +156,8 @@ namespace CodeArts.Db
 
         private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, List<string>> CharacterCache = new ConcurrentDictionary<string, List<string>>();
+        private static readonly ConcurrentDictionary<string, IReadOnlyList<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyList<TableToken>>();
 
-#if NET40
-        private static readonly ConcurrentDictionary<string, ReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, ReadOnlyCollection<TableToken>>();
-#else
-        private static readonly ConcurrentDictionary<string, IReadOnlyCollection<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyCollection<TableToken>>();
-#endif
 
         /// <summary>
         /// 静态构造函数。
@@ -782,7 +775,7 @@ namespace CodeArts.Db
             if (tables.Count > 0)
             {
 #if NET40
-                TableCache.TryAdd(sql, tables.AsReadOnly());
+                TableCache.TryAdd(sql, tables.ToReadOnlyList());
 #else
                 TableCache.TryAdd(sql, tables);
 #endif
@@ -801,23 +794,15 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
         /// <returns></returns>
-#if NET40
-        public ReadOnlyCollection<TableToken> AnalyzeTables(string sql)
-#else
-        public IReadOnlyCollection<TableToken> AnalyzeTables(string sql)
-#endif
-        => TableCache.GetOrAdd(sql, TableToken.None);
+        public IReadOnlyList<TableToken> AnalyzeTables(string sql)
+            => TableCache.GetOrAdd(sql, TableToken.None);
 
         /// <summary>
         /// SQL 分析（参数）。
         /// </summary>
         /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
         /// <returns></returns>
-#if NET40
-        public ReadOnlyCollection<string> AnalyzeParameters(string sql)
-#else
-        public IReadOnlyCollection<string> AnalyzeParameters(string sql)
-#endif
+        public IReadOnlyList<string> AnalyzeParameters(string sql)
         {
             Match match = PatternParameterToken.Match(sql);
 
@@ -835,7 +820,7 @@ namespace CodeArts.Db
                 match = match.NextMatch();
             }
 #if NET40
-            return parameters.AsReadOnly();
+            return parameters.ToReadOnlyList();
 #else
             return parameters;
 #endif
@@ -860,7 +845,7 @@ namespace CodeArts.Db
             {
                 return sb.Append("SELECT COUNT(1) FROM (")
                     .Append(sql)
-                    .Append(") [xRows]")
+                    .Append(") AS xRows")
                     .ToString();
             }
 

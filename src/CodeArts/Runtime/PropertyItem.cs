@@ -19,11 +19,6 @@ namespace CodeArts.Runtime
         {
         }
 
-        /// <summary>
-        /// 属性类型。
-        /// </summary>
-        public override Type MemberType => Member.PropertyType;
-
 #if NET40
 
         /// <summary>

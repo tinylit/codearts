@@ -103,16 +103,8 @@ namespace CodeArts.Tests
                 .RetryInterval(500)//重试间隔时长。
                 .WebCatch(e => { })
                 .WebCatch(e => { })
-                .Finally(() =>
-                {
-
-                })
                 .JsonCast(entry, NamingType.CamelCase)
                 .WebCatch(e => entry)
-                .Finally(() =>
-                {
-
-                })
                 .GetAsync();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()
@@ -124,6 +116,8 @@ namespace CodeArts.Tests
         [TestMethod]
         public async Task GetJsonThenAsync()
         {
+            var type = typeof(int[][]).GetElementType();
+
             RuntimeServPools.TryAddSingleton<IJsonHelper, DefaultJsonHelper>();
 
             var entry = new
@@ -154,16 +148,8 @@ namespace CodeArts.Tests
                 .RetryInterval(500)//重试间隔时长。
                 .WebCatch(e => { })
                 .WebCatch(e => { })
-                .Finally(() =>
-                {
-
-                })
                 .JsonCast(entry, NamingType.CamelCase)
                 .WebCatch(e => entry)
-                .Finally(() =>
-                {
-
-                })
                 .GetAsync();
 
             //var values = "http://localhost:56324/api/values".AsRequestable()
@@ -192,14 +178,12 @@ namespace CodeArts.Tests
                     .If(e => true)
                     .TryIf(e => true)
                     .WebCatch(e => { })
-                    .Finally(() =>
-                    {
-                        if (File.Exists(fileName))
-                        {
-                            File.Delete(fileName);
-                        }
-                    })
                     .DownloadFileAsync(fileName);
+
+                if (File.Exists(fileName))
+                {
+                    File.Delete(fileName);
+                }
             }
             catch (WebException) { }
         }

@@ -539,7 +539,7 @@ namespace CodeArts.Mvc.Converters
         /// <param name="source">源类型。</param>
         /// <param name="conversionType">目标类型。</param>
         /// <returns></returns>
-        private object ChangeType(object source, Type conversionType)
+        private static object ChangeType(object source, Type conversionType)
         {
             if (source is null)
                 return source;

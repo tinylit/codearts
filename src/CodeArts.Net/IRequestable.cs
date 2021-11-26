@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,8 +57,9 @@ namespace CodeArts.Net
         /// </summary>
         /// <param name="name">参数名称。</param>
         /// <param name="value">参数值。</param>
+        /// <param name="dateFormatString">如果值是日期时，格式化风格。</param>
         /// <returns></returns>
-        IRequestable AppendQueryString<T>(string name, T value);
+        IRequestable AppendQueryString(string name, object value, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"。
@@ -84,19 +86,18 @@ namespace CodeArts.Net
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"。
         /// </summary>
-        /// <typeparam name="T">值类型。</typeparam>
         /// <param name="param">参数。</param>
+        /// <param name="dateFormatString">如果值是日期时，格式化风格。</param>
         /// <returns></returns>
-        IRequestable AppendQueryString<T>(IEnumerable<KeyValuePair<string, T>> param);
+        IRequestable AppendQueryString(IEnumerable<KeyValuePair<string, object>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
 
         /// <summary>
         /// 请求参数。?id=1&amp;name="yep"。
         /// </summary>
         /// <param name="param">参数。</param>
-        /// <param name="namingType">命名规则。</param>
         /// <param name="dateFormatString">日期格式化。</param>
         /// <returns></returns>
-        IRequestable AppendQueryString(object param, NamingType namingType = NamingType.UrlCase, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
+        IRequestable AppendQueryString(object param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
     }
 
     /// <summary>
@@ -148,46 +149,43 @@ namespace CodeArts.Net
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";。
         /// </summary>
-        /// <param name="json">JSON格式的参数。</param>
-        /// <param name="namingType">命名规则。</param>
+        /// <param name="data">上传数据。</param>
         /// <returns></returns>
-        IRequestable Form(string json, NamingType namingType = NamingType.Normal);
+        IRequestable Form(byte[] data);
+        /// <summary>
+        /// content-type = "application/x-www-form-urlencoded";。
+        /// </summary>
+        /// <param name="formData">表单数据。</param>
+        /// <returns></returns>
+        IRequestable Form(string formData);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";。
         /// </summary>
         /// <param name="param">参数。</param>
-        /// <param name="namingType">命名规则。</param>
         /// <returns></returns>
-        IRequestable Form(IEnumerable<KeyValuePair<string, string>> param, NamingType namingType = NamingType.Normal);
+        IRequestable Form(IEnumerable<KeyValuePair<string, string>> param);
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";。
         /// </summary>
         /// <param name="param">参数。</param>
-        /// <param name="namingType">命名规则。</param>
+        /// <param name="dateFormatString">日期格式化。</param>
         /// <returns></returns>
-        IRequestable Form(IEnumerable<KeyValuePair<string, DateTime>> param, NamingType namingType = NamingType.Normal);
+        IRequestable Form(IEnumerable<KeyValuePair<string, DateTime>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
         /// <summary>
         /// content-type = "application/x-www-form-urlencoded";。
         /// </summary>
-        /// <typeparam name="T">值类型。</typeparam>
         /// <param name="param">参数。</param>
-        /// <param name="namingType">命名规则。</param>
+        /// <param name="dateFormatString">如果值是日期时，格式化风格。</param>
         /// <returns></returns>
-        IRequestable Form<T>(IEnumerable<KeyValuePair<string, T>> param, NamingType namingType = NamingType.Normal);
+        IRequestable Form(IEnumerable<KeyValuePair<string, object>> param, string dateFormatString = "yyyy-MM-dd HH:mm:ss.FFFFFFFK");
         /// <summary>
         /// 属性名称按照<see cref="NamingAttribute"/>标记分析。
         /// content-type = "application/x-www-form-urlencoded";。
         /// </summary>
-        /// <param name="param">参数。</param>
+        /// <param name="valueCollection">参数。</param>
         /// <returns></returns>
-        IRequestable Form(object param);
-        /// <summary>
-        /// content-type = "application/x-www-form-urlencoded";。
-        /// </summary>
-        /// <param name="param">参数。</param>
-        /// <param name="namingType">命名规则。</param>
-        /// <returns></returns>
-        IRequestable Form(object param, NamingType namingType);
+        IRequestable Form(NameValueCollection valueCollection);
+
         /// <summary>
         /// 如果请求异常，会调用【<paramref name="match"/>】，判断是否重试请求。
         /// 多个条件是或的关系。
@@ -224,13 +222,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable Finally(Action log);
     }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
@@ -385,12 +376,6 @@ namespace CodeArts.Net
     /// </summary>
     public interface IResultCatchRequestableAsync<T> : IRequestableExtendAsync<T>
     {
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestableAsync<T> Finally(Action log);
     }
 
     /// <summary>
@@ -420,13 +405,6 @@ namespace CodeArts.Net
     }
 
     /// <summary>
-    /// 异步结束。
-    /// </summary>
-    public interface IFinallyRequestableAsync<T> : IRequestableExtendAsync<T>
-    {
-    }
-
-    /// <summary>
     /// 异步异常处理能力。
     /// </summary>
     public interface IXmlCatchRequestableAsync<T> : IRequestableExtendAsync<T>
@@ -451,13 +429,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IXmlResultCatchRequestableAsync<T> XmlCatch(Func<string, XmlException, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestableAsync<T> Finally(Action log);
     }
 
     /// <summary>
@@ -485,13 +456,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IJsonResultCatchRequestableAsync<T> JsonCatch(Func<string, Exception, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestableAsync<T> Finally(Action log);
     }
 
     /// <summary>
@@ -520,13 +484,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultCatchRequestableAsync<T> WebCatch(Func<WebException, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestableAsync<T> Finally(Action log);
     }
 
     /// <summary>
@@ -555,13 +512,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultCatchRequestableAsync<T> WebCatch(Func<WebException, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestableAsync<T> Finally(Action log);
     }
 
     /// <summary>
@@ -601,29 +551,9 @@ namespace CodeArts.Net
     }
 
     /// <summary>
-    /// 异步字符串结束。
-    /// </summary>
-    public interface IFinallyStringRequestableAsync : IRequestableExtendAsync<string>
-    {
-    }
-
-    /// <summary>
     /// 异步字符串结果。
     /// </summary>
     public interface IResultStringCatchRequestableAsync : IRequestableExtendAsync<string>
-    {
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyStringRequestableAsync Finally(Action log);
-    }
-
-    /// <summary>
-    /// 异步结束。
-    /// </summary>
-    public interface IFinallyRequestableAsync : IRequestableExtendAsync<string>, ICastRequestableAsync, IFileRequestableAsync
     {
     }
 
@@ -645,13 +575,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultStringCatchRequestableAsync WebCatch(Func<WebException, string> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestableAsync Finally(Action log);
     }
 
     /// <summary>
@@ -921,12 +844,6 @@ namespace CodeArts.Net
     /// </summary>
     public interface IResultCatchRequestable<T> : IRequestableExtend<T>
     {
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action log);
     }
 
     /// <summary>
@@ -980,13 +897,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IJsonResultCatchRequestable<T> JsonCatch(Func<string, Exception, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action log);
     }
 
     /// <summary>
@@ -1014,13 +924,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IXmlResultCatchRequestable<T> XmlCatch(Func<string, XmlException, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action log);
     }
 
     /// <summary>
@@ -1049,13 +952,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action log);
     }
 
     /// <summary>
@@ -1084,13 +980,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultCatchRequestable<T> WebCatch(Func<WebException, T> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable<T> Finally(Action log);
     }
 
     /// <summary>
@@ -1130,39 +1019,10 @@ namespace CodeArts.Net
     }
 
     /// <summary>
-    /// 结束。
-    /// </summary>
-    public interface IFinallyStringRequestable : IRequestableExtend<string>
-    {
-    }
-
-    /// <summary>
     /// 字符串结果。
     /// </summary>
     public interface IResultStringCatchRequestable : IRequestableExtend<string>
     {
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyStringRequestable Finally(Action log);
-    }
-
-    /// <summary>
-    /// 结束。
-    /// </summary>
-    public interface IFinallyRequestable : IRequestableExtend<string>, ICastRequestable, IFileRequestable
-    {
-
-    }
-
-    /// <summary>
-    /// 结束。
-    /// </summary>
-    public interface IFinallyRequestable<T> : IRequestableExtend<T>
-    {
-
     }
 
     /// <summary>
@@ -1183,13 +1043,6 @@ namespace CodeArts.Net
         /// <param name="returnValue">异常捕获,并返回异常情况下的结果。</param>
         /// <returns></returns>
         IResultStringCatchRequestable WebCatch(Func<WebException, string> returnValue);
-
-        /// <summary>
-        /// 始终执行的动作。
-        /// </summary>
-        /// <param name="log">请求始终会执行的方法。</param>
-        /// <returns></returns>
-        IFinallyRequestable Finally(Action log);
     }
 
     /// <summary>

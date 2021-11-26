@@ -2,8 +2,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if NET40
-using System.Collections.ObjectModel;
+#if !NET40
+using System.ComponentModel.DataAnnotations.Schema;
 #endif
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -15,8 +15,7 @@ namespace CodeArts.Db
     /// </summary>
     public static class TableRegions
     {
-        private static readonly ConcurrentDictionary<Type, TableInfo> TableCache =
-            new ConcurrentDictionary<Type, TableInfo>();
+        private static readonly ConcurrentDictionary<Type, TableInfo> TableCache = new ConcurrentDictionary<Type, TableInfo>();
 
         /// <summary>
         /// 表。
@@ -25,40 +24,29 @@ namespace CodeArts.Db
         {
             public TableInfo(Type tableType, string tableName, List<string> keys, List<string> readOnlys, Dictionary<string, TokenAttribute> tokens, Dictionary<string, string> readWrites, Dictionary<string, string> readOrWrites)
             {
-                TableType = tableType ?? throw new ArgumentNullException(nameof(tableType));
+                TableType = tableType;
                 TableName = tableName;
 #if NET40
-                Keys = keys.AsReadOnly();
-                ReadOnlys = readOnlys.AsReadOnly();
+                Keys = keys.ToReadOnlyList();
+                ReadOnlys = readOnlys.ToReadOnlyList();
+                Tokens = tokens.ToReadOnlyDictionary();
+                ReadWrites = readWrites.ToReadOnlyDictionary();
+                ReadOrWrites = readOrWrites.ToReadOnlyDictionary();
 #else
                 Keys = keys;
                 ReadOnlys = readOnlys;
-#endif
                 Tokens = tokens;
                 ReadWrites = readWrites;
                 ReadOrWrites = readOrWrites;
+#endif
             }
             public Type TableType { get; }
             public string TableName { get; }
-#if NET40
-            public ReadOnlyCollection<string> Keys { get; }
-            public ReadOnlyCollection<string> ReadOnlys { get; }
-            public IDictionary<string, TokenAttribute> Tokens { get; }
-
-            public IDictionary<string, string> ReadWrites { get; }
-
-            public IDictionary<string, string> ReadOrWrites { get; }
-#else
             public IReadOnlyCollection<string> Keys { get; }
-
             public IReadOnlyCollection<string> ReadOnlys { get; }
-
             public IReadOnlyDictionary<string, TokenAttribute> Tokens { get; }
-
             public IReadOnlyDictionary<string, string> ReadWrites { get; }
-
             public IReadOnlyDictionary<string, string> ReadOrWrites { get; }
-#endif
         }
 
         private static TableInfo Aw_Resolve(Type type) => TableCache.GetOrAdd(type ?? throw new ArgumentNullException(nameof(type)), tableType =>
@@ -91,6 +79,13 @@ namespace CodeArts.Db
                  }
 
                  var readOnly = item.GetCustomAttribute<ReadOnlyAttribute>();
+#if NET40
+                 string colName = item.Naming;
+#else
+                 var colAttr = item.GetCustomAttribute<ColumnAttribute>();
+
+                 string colName = colAttr is null ? item.Naming : colAttr.Name;
+#endif
 
                  if (readOnly?.IsReadOnly ?? false)
                  {
@@ -98,13 +93,33 @@ namespace CodeArts.Db
                  }
                  else
                  {
-                     readWrites.Add(item.Name, item.Naming);
+                     readWrites.Add(item.Name, colName);
                  }
 
-                 readOrWrites.Add(item.Name, item.Naming);
+                 readOrWrites.Add(item.Name, colName);
              }
 
-             return new TableInfo(tableType, typeStore.Naming, keys, readOnlys, tokens, readWrites, readOrWrites);
+#if NET40
+             var tableName = typeStore.Naming;
+#else
+             string tableName;
+             var tableAttr = typeStore.GetCustomAttribute<TableAttribute>();
+
+             if (tableAttr is null)
+             {
+                 tableName = typeStore.Naming;
+             }
+             else if (string.IsNullOrEmpty(tableAttr.Schema))
+             {
+                 tableName = tableAttr.Name;
+             }
+             else
+             {
+                 tableName = string.Concat(tableAttr.Schema, ".", tableAttr.Name);
+             }
+#endif
+
+             return new TableInfo(tableType, tableName, keys, readOnlys, tokens, readWrites, readOrWrites);
          });
 
         /// <summary>

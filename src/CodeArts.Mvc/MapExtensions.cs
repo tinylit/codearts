@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using System.Collections.Specialized;
 #if NETCOREAPP2_0_OR_GREATER
 using System.Text;
 using Microsoft.AspNetCore.Builder;
@@ -85,7 +86,18 @@ namespace CodeArts.Mvc
 
             if (contentType.Contains("application/x-www-form-urlencoded"))
             {
+#if NETCOREAPP2_1_OR_GREATER
+                var nameValueCollection = new NameValueCollection();
+
+                foreach (var item in context.Request.Form)
+                {
+                    nameValueCollection.Add(item.Key, item.Value);
+                }
+
+                request.Form(nameValueCollection);
+#else
                 request.Form(context.Request.Form);
+#endif
             }
             else if (contentType.IsNotEmpty())
             {

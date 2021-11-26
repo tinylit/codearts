@@ -1,4 +1,5 @@
 ﻿#if NET40
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 #else
 using System.Collections.Generic;
@@ -23,22 +24,14 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
         /// <returns></returns>
-#if NET40
-        ReadOnlyCollection<TableToken> AnalyzeTables(string sql);
-#else
-        IReadOnlyCollection<TableToken> AnalyzeTables(string sql);
-#endif
+        IReadOnlyList<TableToken> AnalyzeTables(string sql);
 
         /// <summary>
         /// SQL 分析（参数）。
         /// </summary>
         /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
         /// <returns></returns>
-#if NET40
-        ReadOnlyCollection<string> AnalyzeParameters(string sql);
-#else
-        IReadOnlyCollection<string> AnalyzeParameters(string sql);
-#endif
+        IReadOnlyList<string> AnalyzeParameters(string sql);
 
         /// <summary>
         /// 获取符合条件的条数。

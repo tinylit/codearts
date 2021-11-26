@@ -107,7 +107,8 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         protected virtual string ToPagedSql(SQL sql, int pageIndex, int pageSize)
         {
-            string mainSql = sql.ToSQL(pageIndex, pageSize).ToString(Settings);
+            string mainSql = sql.ToSQL(pageIndex, pageSize)
+                                .ToString(Settings);
 
             if (Settings.Engine == DatabaseEngine.MySQL)
             {
@@ -123,7 +124,7 @@ namespace CodeArts.Db.Dapper
                     }
                 }
 
-                var sb = new StringBuilder(6);
+                var sb = new StringBuilder();
 
                 return sb.Append(mainSql.Substring(0, i))
                      .Append(' ')
@@ -134,7 +135,10 @@ namespace CodeArts.Db.Dapper
                      .ToString();
             }
 
-            return string.Concat(mainSql, ";", sql.ToCountSQL().ToString(Settings));
+            string countSql = sql.ToCountSQL()
+                                .ToString(Settings);
+
+            return string.Concat(mainSql, ";", countSql);
         }
 
         /// <summary>
@@ -164,7 +168,7 @@ namespace CodeArts.Db.Dapper
                 {
                     var results = reader.Read<T>();
 
-                    int count = reader.ReadFirst<int>();
+                    int count = reader.ReadSingle<int>();
 
                     return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
                 }
@@ -191,9 +195,9 @@ namespace CodeArts.Db.Dapper
             {
                 using (var reader = await connection.QueryMultipleAsync(sqlStr, param, commandTimeout: commandTimeout).ConfigureAwait(false))
                 {
-                    int count = await reader.ReadFirstAsync<int>().ConfigureAwait(false);
-
                     var results = await reader.ReadAsync<T>().ConfigureAwait(false);
+
+                    int count = await reader.ReadSingleAsync<int>().ConfigureAwait(false);
 
                     return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
                 }

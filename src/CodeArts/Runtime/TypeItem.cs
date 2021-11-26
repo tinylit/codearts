@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-#if NET40
-using System.Collections.ObjectModel;
-#else
 using System.Collections.Generic;
-#endif
 using System.Linq;
 
 namespace CodeArts.Runtime
@@ -22,163 +18,56 @@ namespace CodeArts.Runtime
         /// <param name="type">类型。</param>
         private TypeItem(Type type) : base(type)
         {
-            Type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
         /// <summary>
         /// 类型名称。
         /// </summary>
-        public override string Name => Type.Name;
+        public override string Name => MemberType.Name;
 
         /// <summary>
         /// 类型全名。
         /// </summary>
-        public string FullName => Type.FullName;
+        public string FullName => MemberType.FullName;
 
         /// <summary>
         /// 静态类。
         /// </summary>
-        public bool IsStatic => Type.IsAbstract && Type.IsSealed;
+        public bool IsStatic => MemberType.IsAbstract && MemberType.IsSealed;
 
         /// <summary>
         /// 公共类。
         /// </summary>
-        public bool IsPublic => Type.IsPublic;
-
-        /// <summary>
-        /// 类型。
-        /// </summary>
-        public Type Type { get; }
+        public bool IsPublic => MemberType.IsPublic;
 
         private static readonly object Lock_FieldObj = new object();
         private static readonly object Lock_PropertyObj = new object();
         private static readonly object Lock_MethodObj = new object();
         private static readonly object Lock_ConstructorObj = new object();
 
+
+        private IReadOnlyList<PropertyItem> propertyStores;
+
+        /// <summary>
+        /// 属性。
+        /// </summary>
+        public IReadOnlyList<PropertyItem> PropertyStores
+        {
+            get
+            {
+                if (propertyStores is null)
+                {
+                    lock (Lock_PropertyObj)
+                    {
+                        if (propertyStores is null)
+                        {
+                            propertyStores = MemberType.GetProperties()
+                                .Select(info => PropertyItem.Get(info))
 #if NET40
-
-
-        private ReadOnlyCollection<PropertyItem> propertyStores;
-
-        /// <summary>
-        /// 属性。
-        /// </summary>
-        public ReadOnlyCollection<PropertyItem> PropertyStores
-        {
-            get
-            {
-                if (propertyStores is null)
-                {
-                    lock (Lock_PropertyObj)
-                    {
-                        if (propertyStores is null)
-                        {
-                            propertyStores = Type.GetProperties()
-                                .Select(info => PropertyItem.Get(info))
-                                .ToList()
-                                .AsReadOnly();
-                        }
-                    }
-                }
-
-                return propertyStores;
-            }
-        }
-
-        private ReadOnlyCollection<FieldItem> fieldStores;
-        /// <summary>
-        /// 字段。
-        /// </summary>
-        public ReadOnlyCollection<FieldItem> FieldStores
-        {
-            get
-            {
-                if (fieldStores is null)
-                {
-                    lock (Lock_FieldObj)
-                    {
-                        if (fieldStores is null)
-                        {
-                            fieldStores = Type.GetFields()
-                                .Select(info => FieldItem.Get(info))
-                                .ToList()
-                                .AsReadOnly();
-                        }
-                    }
-                }
-                return fieldStores;
-            }
-        }
-
-        private ReadOnlyCollection<MethodItem> methodStores;
-        /// <summary>
-        /// 方法。
-        /// </summary>
-        public ReadOnlyCollection<MethodItem> MethodStores
-        {
-            get
-            {
-                if (methodStores is null)
-                {
-                    lock (Lock_MethodObj)
-                    {
-                        if (methodStores is null)
-                        {
-                            methodStores = Type.GetMethods()
-                                .Select(info => MethodItem.Get(info))
-                                .ToList()
-                                .AsReadOnly();
-                        }
-                    }
-                }
-                return methodStores;
-            }
-        }
-
-        private ReadOnlyCollection<ConstructorItem> constructorStores;
-        /// <summary>
-        /// 构造函数。
-        /// </summary>
-        public ReadOnlyCollection<ConstructorItem> ConstructorStores
-        {
-            get
-            {
-                if (constructorStores is null)
-                {
-                    lock (Lock_ConstructorObj)
-                    {
-                        if (constructorStores is null)
-                        {
-                            constructorStores = Type.GetConstructors()
-                                .Select(info => ConstructorItem.Get(info))
-                                .ToList()
-                                .AsReadOnly();
-                        }
-                    }
-                }
-                return constructorStores;
-            }
-        }
+                                .ToReadOnlyList();
 #else
-
-        private IReadOnlyCollection<PropertyItem> propertyStores;
-
-        /// <summary>
-        /// 属性。
-        /// </summary>
-        public IReadOnlyCollection<PropertyItem> PropertyStores
-        {
-            get
-            {
-                if (propertyStores is null)
-                {
-                    lock (Lock_PropertyObj)
-                    {
-                        if (propertyStores is null)
-                        {
-                            propertyStores = Type.GetProperties()
-                                .Select(info => PropertyItem.Get(info))
                                 .ToList();
+#endif
                         }
                     }
                 }
@@ -187,11 +76,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private IReadOnlyCollection<FieldItem> fieldStores;
+        private IReadOnlyList<FieldItem> fieldStores;
         /// <summary>
         /// 字段。
         /// </summary>
-        public IReadOnlyCollection<FieldItem> FieldStores
+        public IReadOnlyList<FieldItem> FieldStores
         {
             get
             {
@@ -201,9 +90,13 @@ namespace CodeArts.Runtime
                     {
                         if (fieldStores is null)
                         {
-                            fieldStores = Type.GetFields()
+                            fieldStores = MemberType.GetFields()
                                 .Select(info => FieldItem.Get(info))
+#if NET40
+                                .ToReadOnlyList();
+#else
                                 .ToList();
+#endif
                         }
                     }
                 }
@@ -211,11 +104,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private IReadOnlyCollection<MethodItem> methodStores;
+        private IReadOnlyList<MethodItem> methodStores;
         /// <summary>
         /// 方法。
         /// </summary>
-        public IReadOnlyCollection<MethodItem> MethodStores
+        public IReadOnlyList<MethodItem> MethodStores
         {
             get
             {
@@ -225,9 +118,13 @@ namespace CodeArts.Runtime
                     {
                         if (methodStores is null)
                         {
-                            methodStores = Type.GetMethods()
+                            methodStores = MemberType.GetMethods()
                                 .Select(info => MethodItem.Get(info))
+#if NET40
+                                .ToReadOnlyList();
+#else
                                 .ToList();
+#endif
                         }
                     }
                 }
@@ -235,11 +132,11 @@ namespace CodeArts.Runtime
             }
         }
 
-        private IReadOnlyCollection<ConstructorItem> constructorStores;
+        private IReadOnlyList<ConstructorItem> constructorStores;
         /// <summary>
         /// 构造函数。
         /// </summary>
-        public IReadOnlyCollection<ConstructorItem> ConstructorStores
+        public IReadOnlyList<ConstructorItem> ConstructorStores
         {
             get
             {
@@ -249,16 +146,19 @@ namespace CodeArts.Runtime
                     {
                         if (constructorStores is null)
                         {
-                            constructorStores = Type.GetConstructors()
+                            constructorStores = MemberType.GetConstructors()
                                 .Select(info => ConstructorItem.Get(info))
+#if NET40
+                                .ToReadOnlyList();
+#else
                                 .ToList();
+#endif
                         }
                     }
                 }
                 return constructorStores;
             }
         }
-#endif
 
         /// <summary>
         /// 获取仓储项目。
