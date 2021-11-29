@@ -64,39 +64,9 @@ namespace CodeArts.Proxies
 
             constructorEmitter.Append(Assign(instanceAst, parameterEmitter));
 
-            var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
-
-            foreach (var type in interfaces)
-            {
-                bool flag = type.IsDefined(InterceptAttributeType, false);
-
-                var attributes = flag
-                    ? type.GetCustomAttributesData()
-                    : new CustomAttributeData[0];
-
-                foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                {
-                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
-                        ? Merge(attributes, methodInfo.GetCustomAttributesData())
-                        : attributes;
-
-                    if (interceptAttributes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    if (interceptMethods.TryGetValue(methodInfo, out var intercepts))
-                    {
-                        interceptMethods[methodInfo] = Merge(intercepts, interceptAttributes);
-                    }
-                    else
-                    {
-                        interceptMethods.Add(methodInfo, interceptAttributes);
-                    }
-                }
-            }
-
             var propertyMethods = new HashSet<MethodInfo>();
+
+            var interceptMethods = InterceptCore.GetCustomAttributes(serviceType);
 
             foreach (var propertyInfo in serviceType.GetProperties())
             {
@@ -145,28 +115,6 @@ namespace CodeArts.Proxies
             return Resolve(serviceType, classEmitter.CreateType(), lifetime);
         }
 
-        private static IList<CustomAttributeData> Merge(IList<CustomAttributeData> arrays, IList<CustomAttributeData> arrays2)
-        {
-            if (arrays.Count == 0)
-            {
-                return arrays2;
-            }
-
-            if (arrays2.Count == 0)
-            {
-                return arrays;
-            }
-
-            return arrays
-                .Union(arrays2)
-#if NET40
-                .Where(x => InterceptAttributeType.IsAssignableFrom(x.Constructor.DeclaringType))
-#else
-                .Where(x => InterceptAttributeType.IsAssignableFrom(x.AttributeType))
-#endif
-                .ToList();
-        }
-
         private ServiceDescriptor ResolveIsClass()
         {
             string name = string.Concat(serviceType.Name, "Proxy");
@@ -206,56 +154,34 @@ namespace CodeArts.Proxies
                 throw new AstException($"“{serviceType.FullName}”不存在无参构造函数!");
             }
 
-            var types = new Type[interfaces.Length + 1];
-
-            types[0] = serviceType;
-
-            System.Array.Copy(interfaces, 0, types, 1, interfaces.Length);
-
-            var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
-
-            foreach (var type in types)
-            {
-                bool flag = type.IsDefined(InterceptAttributeType, false);
-
-                var attributes = flag
-                    ? type.GetCustomAttributesData()
-                    : new CustomAttributeData[0];
-
-                foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                {
-                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
-                        ? Merge(attributes, methodInfo.GetCustomAttributesData())
-                        : attributes;
-
-                    if (interceptAttributes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    if (interceptMethods.TryGetValue(methodInfo, out var intercepts))
-                    {
-                        interceptMethods[methodInfo] = Merge(intercepts, interceptAttributes);
-                    }
-                    else
-                    {
-                        interceptMethods.Add(methodInfo, interceptAttributes);
-                    }
-                }
-            }
-
             var propertyMethods = new HashSet<MethodInfo>();
+
+            var interceptMethods = InterceptCore.GetCustomAttributes(serviceType);
 
             foreach (var propertyInfo in serviceType.GetProperties())
             {
+                MethodInfo getter = null, setter = null;
+
+                if (propertyInfo.CanRead)
+                {
+                    propertyMethods.Add(getter = propertyInfo.GetGetMethod(true));
+                }
+
+                if (propertyInfo.CanRead)
+                {
+                    propertyMethods.Add(setter = propertyInfo.GetSetMethod(true));
+                }
+
+                if ((getter is null || !interceptMethods.ContainsKey(getter))
+                    && (setter is null || !interceptMethods.ContainsKey(setter)))
+                {
+                    continue;
+                }
+
                 var propertyEmitter = classEmitter.DefineProperty(propertyInfo.Name, propertyInfo.Attributes, propertyInfo.PropertyType);
 
                 if (propertyInfo.CanRead)
                 {
-                    var getter = propertyInfo.GetGetMethod(true);
-
-                    propertyMethods.Add(getter);
-
                     if (!interceptMethods.TryGetValue(getter, out var attributeDatas))
                     {
                         attributeDatas = new CustomAttributeData[0];
@@ -266,9 +192,6 @@ namespace CodeArts.Proxies
 
                 if (propertyInfo.CanWrite)
                 {
-                    var setter = propertyInfo.GetSetMethod(true);
-
-                    propertyMethods.Add(setter);
 
                     if (!interceptMethods.TryGetValue(setter, out var attributeDatas))
                     {
@@ -291,6 +214,8 @@ namespace CodeArts.Proxies
                     InterceptCore.DefineMethodOverride(instanceAst, classEmitter, methodInfo, interceptAttributes);
                 }
             }
+
+            propertyMethods.Clear();
 
             interceptMethods.Clear();
 

@@ -382,7 +382,7 @@ namespace CodeArts.Emit.Tests
         {
             public Task<bool> Handle(CreateContactsCommand request, CancellationToken cancellationToken)
             {
-                throw new NotImplementedException();
+                return Task.FromResult(true);
             }
         }
 #if NETSTANDARD2_1

@@ -17,6 +17,7 @@ namespace CodeArts
     public static class InterceptCore
     {
         private static readonly Type InterceptAttributeType = typeof(InterceptAttribute);
+        private static readonly Type NoninterceptAttributeType = typeof(NoninterceptAttribute);
 
         private static readonly Type[] ContextTypes = new Type[] { typeof(MethodInfo), typeof(object), typeof(MethodInfo), typeof(object[]) };
 
@@ -60,6 +61,109 @@ namespace CodeArts
             InterceptAsyncMethodCall = methodInfos.Single(x => x.Name == nameof(InterceptAsync) && !x.IsGenericMethod);
 
             InterceptAsyncGenericMethodCall = methodInfos.Single(x => x.Name == nameof(InterceptAsync) && x.IsGenericMethod);
+        }
+
+        private static IList<CustomAttributeData> Merge(IList<CustomAttributeData> arrays, IList<CustomAttributeData> arrays2)
+        {
+            if (arrays.Count == 0)
+            {
+                return arrays2;
+            }
+
+            if (arrays2.Count == 0)
+            {
+                return arrays;
+            }
+
+            return arrays
+                .Union(arrays2)
+#if NET40
+                .Where(x => InterceptAttributeType.IsAssignableFrom(x.Constructor.DeclaringType))
+#else
+                .Where(x => InterceptAttributeType.IsAssignableFrom(x.AttributeType))
+#endif
+                .ToList();
+        }
+
+        /// <summary>
+        /// 获取拦截方法和拦截器信息。
+        /// </summary>
+        /// <param name="implementationType"></param>
+        /// <returns></returns>
+        public static Dictionary<MethodInfo, IList<CustomAttributeData>> GetCustomAttributes(Type implementationType)
+        {
+            Type[] implementationTypes;
+
+            if (implementationType.IsInterface)
+            {
+                implementationTypes = implementationType.GetAllInterfaces();
+            }
+            else
+            {
+                Type type = implementationType;
+
+                List<Type> types = new List<Type>();
+
+                do
+                {
+                    types.Add(type);
+
+                } while ((type = type.BaseType) != null);
+
+                types.AddRange(implementationType.GetInterfaces());
+
+                implementationTypes = types.ToArray();
+            }
+
+            var noninterceptMethods = new HashSet<MethodInfo>(MethodInfoEqualityComparer.Instance);
+
+            var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
+
+            foreach (var type in implementationTypes)
+            {
+                bool flag = type.IsDefined(InterceptAttributeType, false);
+
+                var attributes = flag
+                    ? type.GetCustomAttributesData()
+                    : new CustomAttributeData[0];
+
+                foreach (var methodInfo in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                {
+                    if (noninterceptMethods.Contains(methodInfo))
+                    {
+                        continue;
+                    }
+
+                    if (methodInfo.IsDefined(NoninterceptAttributeType, false))
+                    {
+                        noninterceptMethods.Add(methodInfo);
+
+                        continue;
+                    }
+
+                    var interceptAttributes = methodInfo.IsDefined(InterceptAttributeType, false)
+                        ? Merge(attributes, methodInfo.GetCustomAttributesData())
+                        : attributes;
+
+                    if (interceptAttributes.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    if (interceptMethods.TryGetValue(methodInfo, out var intercepts))
+                    {
+                        interceptMethods[methodInfo] = Merge(intercepts, interceptAttributes);
+                    }
+                    else
+                    {
+                        interceptMethods.Add(methodInfo, interceptAttributes);
+                    }
+                }
+            }
+
+            noninterceptMethods.Clear();
+
+            return interceptMethods;
         }
 
         private static InterceptAttribute[] GetInterceptAttributes(MethodInfo methodInfo)
