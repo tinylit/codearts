@@ -1,10 +1,12 @@
 using CodeArts.Middleware;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using static CodeArts.Emit.AstExpression;
 
@@ -365,5 +367,41 @@ namespace CodeArts.Emit.Tests
 
             dependencyA.AopTestByRef(i, ref j);
         }
+
+        public class CreateContactsCommand : IRequest<bool>
+        {
+            /// <summary>
+            /// ÐÕÃû
+            /// </summary>
+            public string ContactsName { get; set; } = string.Empty;
+
+        }
+
+        [DependencyIntercept]
+        public class DependencyA1 : IRequestHandler<CreateContactsCommand, bool>
+        {
+            public Task<bool> Handle(CreateContactsCommand request, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+        }
+#if NETSTANDARD2_1
+        [TestMethod]
+        public void MediatRTest()
+        {
+            var services = new ServiceCollection();
+
+            services.AddMediatR(System.Reflection.Assembly.GetCallingAssembly());
+
+            var serviceProvider = services
+                 .AddScoped<IRequestHandler<CreateContactsCommand, bool>, DependencyA1>()
+                 .UseMiddleware()
+                 .BuildServiceProvider();
+
+            var requestHandler = serviceProvider.GetService<IRequestHandler<CreateContactsCommand, bool>>();
+
+            requestHandler.Handle(new CreateContactsCommand { }, default);
+        }
+#endif
     }
 }

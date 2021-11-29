@@ -85,7 +85,13 @@ namespace CodeArts.Proxies
 
             var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
 
-            foreach (var type in interfaces)
+            var types = new Type[interfaces.Length + 1];
+
+            types[0] = implementationType;
+
+            System.Array.Copy(interfaces, 0, types, 1, interfaces.Length);
+
+            foreach (var type in types)
             {
                 bool flag = type.IsDefined(InterceptAttributeType, false);
 
