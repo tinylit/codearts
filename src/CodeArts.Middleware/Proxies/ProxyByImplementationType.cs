@@ -173,28 +173,14 @@ namespace CodeArts.Proxies
 
             foreach (var propertyInfo in serviceType.GetProperties())
             {
-                MethodInfo getter = null, setter = null;
-
-                if (propertyInfo.CanRead)
-                {
-                    propertyMethods.Add(getter = propertyInfo.GetGetMethod(true));
-                }
-
-                if (propertyInfo.CanRead)
-                {
-                    propertyMethods.Add(setter = propertyInfo.GetSetMethod(true));
-                }
-
-                if ((getter is null || !interceptMethods.ContainsKey(getter)) 
-                    && (setter is null || !interceptMethods.ContainsKey(setter)))
-                {
-                    continue;
-                }
-
                 var propertyEmitter = classEmitter.DefineProperty(propertyInfo.Name, propertyInfo.Attributes, propertyInfo.PropertyType);
 
                 if (propertyInfo.CanRead)
                 {
+                    var getter = propertyInfo.GetGetMethod(true);
+
+                    propertyMethods.Add(getter);
+
                     if (!interceptMethods.TryGetValue(getter, out var attributeDatas))
                     {
                         attributeDatas = new CustomAttributeData[0];
@@ -205,6 +191,9 @@ namespace CodeArts.Proxies
 
                 if (propertyInfo.CanWrite)
                 {
+                    var setter = propertyInfo.GetSetMethod(true);
+
+                    propertyMethods.Add(setter);
 
                     if (!interceptMethods.TryGetValue(setter, out var attributeDatas))
                     {
