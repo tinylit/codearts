@@ -650,7 +650,6 @@ namespace CodeArts.Emit
         /// 定义重写方法。
         /// </summary>
         /// <param name="methodInfoDeclaration">被重写的方法。</param>
-        /// <param name="attrs">重写方法的方法属性。</param>
         /// <returns></returns>
         public MethodEmitter DefineMethodOverride(ref MethodInfo methodInfoDeclaration)
         {
