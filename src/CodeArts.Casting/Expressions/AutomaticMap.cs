@@ -41,9 +41,19 @@ namespace CodeArts.Casting.Expressions
         /// <returns></returns>
         protected override Expression ToSolve(Type sourceType, Type conversionType, IMapConfiguration configuration, Expression sourceExpression)
         {
-            if (sourceType.IsValueType && sourceType == conversionType)
+            if (sourceType.IsValueType && sourceType == conversionType) //? 值类型，并且目标类型和源类型一样。
             {
                 return sourceExpression;
+            }
+
+            if (conversionType == typeof(object)) //? 目标为对象。
+            {
+                if (sourceType.IsValueType)
+                {
+                    return Convert(sourceExpression, conversionType);
+                }
+
+                conversionType = sourceType;
             }
 
             if (conversionType.IsAssignableFrom(sourceType) && typeof(ICloneable).IsAssignableFrom(sourceType))

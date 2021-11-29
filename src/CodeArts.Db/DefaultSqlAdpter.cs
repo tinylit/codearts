@@ -826,6 +826,48 @@ namespace CodeArts.Db
 #endif
         }
 
+        private static bool TryDistinctField(string cols, out string col)
+        {
+            if (cols.Length == 0 || cols.IndexOf(',') > -1 || cols.IndexOf('(') > -1)
+            {
+                goto label_false;
+            }
+
+            int startIndex = -1;
+            int i = 0, length = cols.Length;
+
+            for (; i < length; i++)
+            {
+                char c = cols[i];
+
+                if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+                {
+                    if (startIndex > -1)
+                    {
+                        break;
+                    }
+                }
+
+                if (startIndex == -1)
+                {
+                    startIndex = i;
+                }
+            }
+
+            if (startIndex > -1)
+            {
+                col = cols.Substring(startIndex, i - startIndex);
+
+                return true;
+            }
+
+label_false:
+
+            col = null;
+
+            return false;
+        }
+
         /// <summary>
         /// 获取符合条件的条数。
         /// </summary>
@@ -841,7 +883,7 @@ namespace CodeArts.Db
 
             var colsMt = PatternColumn.Match(formatSql);
 
-            if (!colsMt.Success || colsMt.Groups["distinct"].Success)
+            if (!colsMt.Success)
             {
                 return sb.Append("SELECT COUNT(1) FROM (")
                     .Append(sql)
@@ -850,11 +892,30 @@ namespace CodeArts.Db
             }
 
             var colsGrp = colsMt.Groups["cols"];
+            var distinctGrp = colsMt.Groups["distinct"];
+
+            if (distinctGrp.Success)
+            {
+                if (!TryDistinctField(colsGrp.Value, out string col))
+                {
+                    return sb.Append("SELECT COUNT(1) FROM (")
+                       .Append(sql)
+                       .Append(") AS xRows")
+                       .ToString();
+                }
+
+                sb.Append(formatSql.Substring(0, distinctGrp.Index))
+                    .Append("COUNT(DISTINCT ")
+                    .Append(col)
+                    .Append(')');
+            }
+            else
+            {
+                sb.Append(formatSql.Substring(0, colsGrp.Index))
+                    .Append("COUNT(1)");
+            }
 
             var orderByMt = PatternOrderBy.Match(formatSql);
-
-            sb.Append(formatSql.Substring(0, colsGrp.Index))
-                .Append("COUNT(1)");
 
             int subIndex = colsGrp.Index + colsGrp.Length;
 

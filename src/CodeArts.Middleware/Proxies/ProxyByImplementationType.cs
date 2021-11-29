@@ -123,20 +123,30 @@ namespace CodeArts.Proxies
 
                 if (propertyInfo.CanRead)
                 {
-                    var readMethod = propertyInfo.GetGetMethod(true);
+                    var getter = propertyInfo.GetGetMethod(true);
 
-                    propertyMethods.Add(readMethod);
+                    propertyMethods.Add(getter);
 
-                    propertyEmitter.SetGetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, readMethod, new CustomAttributeData[0]));
+                    if (!interceptMethods.TryGetValue(getter, out var attributeDatas))
+                    {
+                        attributeDatas = new CustomAttributeData[0];
+                    }
+
+                    propertyEmitter.SetGetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, getter, attributeDatas));
                 }
 
                 if (propertyInfo.CanWrite)
                 {
-                    var writeMethod = propertyInfo.GetSetMethod(true);
+                    var setter = propertyInfo.GetSetMethod(true);
 
-                    propertyMethods.Add(writeMethod);
+                    propertyMethods.Add(setter);
 
-                    propertyEmitter.SetSetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, writeMethod, new CustomAttributeData[0]));
+                    if (!interceptMethods.TryGetValue(setter, out var attributeDatas))
+                    {
+                        attributeDatas = new CustomAttributeData[0];
+                    }
+
+                    propertyEmitter.SetSetMethod(InterceptCore.DefineMethodOverride(instanceAst, classEmitter, setter, attributeDatas));
                 }
             }
 
@@ -211,7 +221,13 @@ namespace CodeArts.Proxies
 
             var interceptMethods = new Dictionary<MethodInfo, IList<CustomAttributeData>>(MethodInfoEqualityComparer.Instance);
 
-            foreach (var type in interfaces)
+            var types = new Type[interfaces.Length + 1];
+
+            types[0] = implementationType;
+
+            System.Array.Copy(interfaces, 0, types, 1, interfaces.Length);
+
+            foreach (var type in types)
             {
                 bool flag = type.IsDefined(InterceptAttributeType, false);
 
@@ -241,38 +257,55 @@ namespace CodeArts.Proxies
                 }
             }
 
-            var iterationType = serviceType;
+            var propertyMethods = new HashSet<MethodInfo>();
 
-            do
+            foreach (var propertyInfo in serviceType.GetProperties())
             {
-                if (iterationType.IsDefined(InterceptAttributeType, false))
-                {
-                    var intercepts = iterationType.GetCustomAttributesData();
+                var propertyEmitter = classEmitter.DefineProperty(propertyInfo.Name, propertyInfo.Attributes, propertyInfo.PropertyType);
 
-                    foreach (var methodInfo in iterationType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                if (propertyInfo.CanRead)
+                {
+                    var getter = propertyInfo.GetGetMethod(true);
+
+                    propertyMethods.Add(getter);
+
+                    if (!interceptMethods.TryGetValue(getter, out var attributeDatas))
                     {
-                        if (interceptMethods.TryGetValue(methodInfo, out var attributes))
-                        {
-                            interceptMethods[methodInfo] = Merge(intercepts, attributes);
-                        }
-                        else
-                        {
-                            interceptMethods.Add(methodInfo, intercepts);
-                        }
+                        attributeDatas = new CustomAttributeData[0];
                     }
+
+                    propertyEmitter.SetGetMethod(InterceptCore.DefineMethodOverride(This, classEmitter, getter, attributeDatas));
                 }
 
-                iterationType = iterationType.BaseType;
+                if (propertyInfo.CanWrite)
+                {
+                    var setter = propertyInfo.GetSetMethod(true);
 
-            } while (iterationType != null && iterationType != typeof(object));
+                    propertyMethods.Add(setter);
+
+                    if (!interceptMethods.TryGetValue(setter, out var attributeDatas))
+                    {
+                        attributeDatas = new CustomAttributeData[0];
+                    }
+
+                    propertyEmitter.SetSetMethod(InterceptCore.DefineMethodOverride(This, classEmitter, setter, attributeDatas));
+                }
+            }
 
             foreach (var methodInfo in serviceType.GetMethods())
             {
+                if (propertyMethods.Contains(methodInfo))
+                {
+                    continue;
+                }
+
                 if (interceptMethods.TryGetValue(methodInfo, out var interceptAttributes))
                 {
                     InterceptCore.DefineMethodOverride(This, classEmitter, methodInfo, interceptAttributes);
                 }
             }
+
+            propertyMethods.Clear();
 
             interceptMethods.Clear();
 

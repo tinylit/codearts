@@ -445,6 +445,19 @@ namespace CodeArts.Tests
         }
 
         [TestMethod]
+        public void MapToType()
+        {
+            var value = new CopyToTest
+            {
+                Id = 1000,
+                Name = "test",
+                Date = DateTime.Now
+            };
+
+            var copyTo2 = (CopyTo2Test)Mapper.Map(value, typeof(CopyTo2Test));
+        }
+
+        [TestMethod]
         public void MapToList()
         {
             List<CommodityGroupListDto> pList = new List<CommodityGroupListDto>

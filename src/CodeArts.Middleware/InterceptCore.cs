@@ -151,16 +151,9 @@ namespace CodeArts
         /// <param name="attributeDatas">属性。</param>
         public static MethodEmitter DefineMethodOverride(AstExpression instanceAst, ClassEmitter classEmitter, MethodInfo methodInfo, IList<CustomAttributeData> attributeDatas)
         {
-            var methodAttributes = methodInfo.Attributes;
-
-            if ((methodAttributes & MethodAttributes.Abstract) == MethodAttributes.Abstract)
-            {
-                methodAttributes ^= MethodAttributes.Abstract;
-            }
-
             bool flag = true;
 
-            var overrideEmitter = classEmitter.DefineMethodOverride(ref methodInfo, methodAttributes);
+            var overrideEmitter = classEmitter.DefineMethodOverride(ref methodInfo);
 
             var paramterEmitters = overrideEmitter.GetParameters();
 

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text.RegularExpressions;
@@ -595,13 +596,63 @@ namespace CodeArts.Emit
             return member;
         }
 
+        private static bool IsInternal(MethodBase method)
+        {
+            return method.IsAssembly || (method.IsFamilyAndAssembly && !method.IsFamilyOrAssembly);
+        }
+
+        private static MethodAttributes ObtainAttributes(MethodInfo methodInfo)
+        {
+            var attributes = MethodAttributes.Virtual;
+
+            if (methodInfo.IsFinal || methodInfo.DeclaringType.IsInterface)
+            {
+                attributes |= MethodAttributes.NewSlot;
+            }
+
+            if (methodInfo.IsPublic)
+            {
+                attributes |= MethodAttributes.Public;
+            }
+
+            if (methodInfo.IsHideBySig)
+            {
+                attributes |= MethodAttributes.HideBySig;
+            }
+
+            if (IsInternal(methodInfo))
+            {
+                attributes |= MethodAttributes.Assembly;
+            }
+
+            if (methodInfo.IsFamilyAndAssembly)
+            {
+                attributes |= MethodAttributes.FamANDAssem;
+            }
+            else if (methodInfo.IsFamilyOrAssembly)
+            {
+                attributes |= MethodAttributes.FamORAssem;
+            }
+            else if (methodInfo.IsFamily)
+            {
+                attributes |= MethodAttributes.Family;
+            }
+
+            if (methodInfo.IsSpecialName)
+            {
+                attributes |= MethodAttributes.SpecialName;
+            }
+
+            return attributes;
+        }
+
         /// <summary>
         /// 定义重写方法。
         /// </summary>
         /// <param name="methodInfoDeclaration">被重写的方法。</param>
         /// <param name="attrs">重写方法的方法属性。</param>
         /// <returns></returns>
-        public MethodEmitter DefineMethodOverride(ref MethodInfo methodInfoDeclaration, MethodAttributes attrs)
+        public MethodEmitter DefineMethodOverride(ref MethodInfo methodInfoDeclaration)
         {
             var parameterInfos = methodInfoDeclaration.GetParameters();
 
@@ -612,7 +663,7 @@ namespace CodeArts.Emit
                 parameterTypes[i] = parameterInfos[i].ParameterType;
             }
 
-            var methodBuilder = builder.DefineMethod(methodInfoDeclaration.Name, attrs | MethodAttributes.HideBySig, CallingConventions.Standard);
+            var methodBuilder = builder.DefineMethod(methodInfoDeclaration.Name, ObtainAttributes(methodInfoDeclaration), CallingConventions.Standard);
 
             var genericArguments = Type.EmptyTypes;
             Type returnType = methodInfoDeclaration.ReturnType;

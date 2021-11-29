@@ -302,6 +302,31 @@ namespace CodeArts.Emit.Tests
             }
         }
 
+        public interface IDependencyA
+        {
+            bool AopTestByRef(int i, ref int j);
+        }
+
+        [DependencyIntercept]
+        public class DependencyA : IDependencyA
+        {
+            public bool Flags { get; set; }
+
+            /// <inheritdoc />
+            public virtual bool AopTestByRef(int i, ref int j)
+            {
+                try
+                {
+                    return (i & 1) == 0;
+                }
+                finally
+                {
+                    j = i * 5;
+                }
+
+            }
+        }
+
         [TestMethod]
         public void AopTest()
         {
@@ -310,11 +335,15 @@ namespace CodeArts.Emit.Tests
             var serviceProvider = services.AddTransient<IDependency, Dependency>()
                  .AddSingleton<Dependency>()
                  .AddTransient(typeof(IDependency<>), typeof(Dependency<>))
+                 .AddScoped<DependencyA>()
                  .UseMiddleware()
                  .BuildServiceProvider();
 
             IDependency dependency = serviceProvider.GetService<IDependency>();
             IDependency<IDependency> dependency2 = serviceProvider.GetService<IDependency<IDependency>>();
+
+            var dependencyA = serviceProvider.GetService<DependencyA>();
+
             int i = -10;
 
             int j = +i;
@@ -334,6 +363,7 @@ namespace CodeArts.Emit.Tests
 
             _ = dependency2.New<Dependency>();
 
+            dependencyA.AopTestByRef(i, ref j);
         }
     }
 }

@@ -35,9 +35,17 @@ namespace CodeArts
             {
                 ServiceDescriptor descriptor = services[i];
 
-                if (!Intercept(descriptor))
+                if (!Intercept(descriptor.ServiceType))
                 {
-                    continue;
+                    if (descriptor.ImplementationType is null)
+                    {
+                        continue;
+                    }
+
+                    if (!Intercept(descriptor.ImplementationType))
+                    {
+                        continue;
+                    }
                 }
 
                 IProxyByPattern byPattern;
@@ -69,14 +77,14 @@ namespace CodeArts
             return services;
         }
 
-        private static bool Intercept(ServiceDescriptor descriptor)
+        private static bool Intercept(Type serviceType)
         {
-            if (descriptor.ServiceType.IsDefined(InterceptAttributeType, true))
+            if (serviceType.IsDefined(InterceptAttributeType, true))
             {
                 return true;
             }
 
-            foreach (var methodInfo in descriptor.ServiceType.GetMethods())
+            foreach (var methodInfo in serviceType.GetMethods())
             {
                 if (methodInfo.IsDefined(InterceptAttributeType, true))
                 {

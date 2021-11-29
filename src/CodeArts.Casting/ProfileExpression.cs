@@ -120,15 +120,14 @@ namespace CodeArts.Casting
                 conversionType = Nullable.GetUnderlyingType(conversionType);
             }
 
-            return LamdaCache.GetOrAdd(conversionType, Create).Invoke(this, source.GetType());
+            return LamdaCache.GetOrAdd(conversionType, Create)
+                    .Invoke(this, source.GetType())
+                    .Invoke(source);
         }
 
         Func<object, TResult> IProfile.CreateMap<TResult>(Type sourceType) => Nested<TResult>.Create((T)this, sourceType);
 
         private static readonly Type IProfileType = typeof(IProfile);
-        private static readonly Type DelegateType = typeof(Delegate);
-        private static readonly MethodInfo DynamicInvokeMethod = DelegateType.GetMethod("DynamicInvoke");
-        private static readonly MethodInfo ToObjectArrayMethod = GetMethodInfo(ToObjectArray);
         private static readonly MethodInfo CreateMethod = IProfileType.GetMethod(nameof(IProfile.CreateMap), new Type[] { typeof(Type) });
 
         private static Func<IProfile, Type, Func<object, object>> Create(Type conversionType)
@@ -143,13 +142,13 @@ namespace CodeArts.Casting
 
             var methodCallExp = Call(paramterExp, genericMethod, paramterTypeExp);
 
-            var convertExp = Convert(methodCallExp, DelegateType);
+            var invokeFn = typeof(Func<,>).MakeGenericType(typeof(object), conversionType).GetMethod("Invoke");
 
-            var invokeVar = Variable(DelegateType, "lambda");
+            var bodyExp = conversionType.IsValueType
+                ? Lambda(Convert(Call(methodCallExp, invokeFn, paramterSourceExp), typeof(object)), paramterSourceExp)
+                : Lambda(Call(methodCallExp, invokeFn, paramterSourceExp), paramterSourceExp);
 
-            var bodyExp = Lambda(Call(invokeVar, DynamicInvokeMethod, Call(ToObjectArrayMethod, paramterSourceExp)), paramterSourceExp);
-
-            var lambda = Lambda<Func<IProfile, Type, Func<object, object>>>(Block(new[] { invokeVar }, Assign(invokeVar, convertExp), bodyExp), paramterExp, paramterTypeExp);
+            var lambda = Lambda<Func<IProfile, Type, Func<object, object>>>(bodyExp, new ParameterExpression[] { paramterExp, paramterTypeExp });
 
             return lambda.Compile();
         }
@@ -394,7 +393,9 @@ label_core:
                 var bodyExp = Call(typeof(Nested<>).MakeGenericType(typeof(T), typeof(TProfile), underlyingType)
                         .GetMethod(nameof(Create), MapExtensions.StaticFlags), new Expression[] { profileExp, sourceTypeExp });
 
-                var valueExp = Lambda(Convert(Call(bodyExp, DynamicInvokeMethod, Call(ToObjectArrayMethod, sourceExp)), typeof(TResult)), new ParameterExpression[] { sourceExp });
+                var invokeFn = typeof(Func<,>).MakeGenericType(typeof(object), underlyingType).GetMethod("Invoke");
+
+                var valueExp = Lambda(New(typeof(TResult).GetConstructor(new Type[1] { underlyingType }), Call(bodyExp, invokeFn, sourceExp)), new ParameterExpression[] { sourceExp });
 
                 var lambdaExp = Lambda<Func<T, Type, Func<object, TResult>>>(valueExp, new ParameterExpression[] { profileExp, sourceTypeExp });
 
