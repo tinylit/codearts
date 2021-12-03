@@ -121,6 +121,7 @@ namespace CodeArts.Db
         /// 查询语句所有字段。
         /// </summary>
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<distinct>distinct[\x20\t\r\n\f]+)?(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         /// <summary>
         /// 查询语句排序内容。
         /// </summary>
@@ -152,12 +153,17 @@ namespace CodeArts.Db
         /// </summary>
         private static readonly Regex PatternParameterToken = new Regex(@"\{(?<name>[\p{L}\p{N}@_]+)\}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+        /// <summary>
+        /// 聚合函数。
+        /// </summary>
+        private static readonly Regex PatternAggregationFn = new Regex(@"\b(sum|max|min|avg|count)[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         #endregion
 
         private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> SqlCountCache = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> SqlPagedCache = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, List<string>> CharacterCache = new ConcurrentDictionary<string, List<string>>();
         private static readonly ConcurrentDictionary<string, IReadOnlyList<TableToken>> TableCache = new ConcurrentDictionary<string, IReadOnlyList<TableToken>>();
-
 
         /// <summary>
         /// 静态构造函数。
@@ -828,7 +834,7 @@ namespace CodeArts.Db
 
         private static bool TryDistinctField(string cols, out string col)
         {
-            if (cols.Length == 0 || cols.IndexOf(',') > -1 || cols.IndexOf('(') > -1)
+            if (cols.Length == 0 || PatternAggregationFn.IsMatch(cols))
             {
                 goto label_false;
             }
@@ -836,25 +842,73 @@ namespace CodeArts.Db
             int startIndex = -1;
             int i = 0, length = cols.Length;
 
+label_core:
+
             for (; i < length; i++)
             {
                 char c = cols[i];
 
                 if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
                 {
-                    if (startIndex > -1)
+                    if (startIndex == -1)
                     {
-                        break;
-                    }
-                }
+                        startIndex = i;
 
-                if (startIndex == -1)
+                        continue;
+                    }
+
+                    bool quotesFlag = false;
+
+                    for (int j = i + 1; j < length; j++)
+                    {
+                        c = cols[j];
+
+                        if (c == '\'')
+                        {
+                            if (quotesFlag) //? 右引号。
+                            {
+                                quotesFlag = false;
+
+                                continue;
+                            }
+
+                            quotesFlag = true;
+                        }
+
+                        if (quotesFlag) //? 占位符。
+                        {
+                            continue;
+                        }
+
+                        if (c == ']' || c == '`' || c == '"')//? 字段标识。
+                        {
+                            i = j + 1;
+
+                            continue;
+                        }
+
+                        if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == ',' || c == '(' || c == ')') //? 分隔符。
+                        {
+                            i = j + 1;
+
+                            goto label_core;
+                        }
+
+                        if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+                        {
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+                else if (startIndex == -1)
                 {
                     startIndex = i;
                 }
             }
 
-            if (startIndex > -1)
+            if (startIndex > -1 && LikeAs(cols, i))
             {
                 col = cols.Substring(startIndex, i - startIndex);
 
@@ -868,6 +922,51 @@ label_false:
             return false;
         }
 
+        private static bool LikeAs(string cols, int startIndex)
+        {
+            bool firstAwordsFlag = false;
+            bool nonfirstWordsFlag = true;
+            int i = startIndex, length = cols.Length;
+
+            for (; i < length; i++)
+            {
+                char c = cols[i];
+
+                if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+                {
+                    if (nonfirstWordsFlag) //? 首个字母。
+                    {
+                        continue;
+                    }
+
+                    return false;
+                }
+                else if (nonfirstWordsFlag)
+                {
+                    if (firstAwordsFlag)
+                    {
+                        firstAwordsFlag = false;
+
+                        if (c == 's' || c == 'S')
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (c == 'a' || c == 'A')
+                    {
+                        firstAwordsFlag = true;
+
+                        continue;
+                    }
+
+                    nonfirstWordsFlag = false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// 获取符合条件的条数。
         /// </summary>
@@ -875,7 +974,9 @@ label_false:
         /// <example>SELECT * FROM Users WHERE Id > 100 => SELECT COUNT(1) FROM Users WHERE Id > 100</example>
         /// <example>SELECT * FROM Users WHERE Id > 100 ORDER BY Id DESC => SELECT COUNT(1) FROM Users WHERE Id > 100</example>
         /// <returns></returns>
-        public string ToCountSQL(string sql)
+        public string ToCountSQL(string sql) => SqlCountCache.GetOrAdd(sql, Aw_ToCountSQL);
+
+        private string Aw_ToCountSQL(string sql)
         {
             var formatSql = Format(sql);
 
@@ -886,7 +987,7 @@ label_false:
             if (!colsMt.Success)
             {
                 return sb.Append("SELECT COUNT(1) FROM (")
-                    .Append(sql)
+                    .Append(formatSql)
                     .Append(") AS xRows")
                     .ToString();
             }
@@ -899,7 +1000,7 @@ label_false:
                 if (!TryDistinctField(colsGrp.Value, out string col))
                 {
                     return sb.Append("SELECT COUNT(1) FROM (")
-                       .Append(sql)
+                       .Append(formatSql)
                        .Append(") AS xRows")
                        .ToString();
                 }
@@ -955,6 +1056,11 @@ label_false:
         /// <example>SELECT * FROM Users WHERE Id > 100 ORDER BY Id DESC => PAGING(`SELECT * FROM Users WHERE Id > 100`,<paramref name="pageIndex"/>,<paramref name="pageSize"/>,`ORDER BY Id DESC`)</example>
         /// <returns></returns>
         public string ToSQL(string sql, int pageIndex, int pageSize)
+            => SqlPagedCache.GetOrAdd(sql, Aw_ToSQL)
+                .Replace("{=index}", pageIndex.ToString())
+                .Replace("{=size}", pageSize.ToString());
+
+        private string Aw_ToSQL(string sql)
         {
             var sb = new StringBuilder();
 
@@ -972,9 +1078,9 @@ label_false:
                     .Append(mainSql)
                     .Append('`')
                     .Append(',')
-                    .Append(pageIndex)
+                    .Append("{=index}")
                     .Append(',')
-                    .Append(pageSize);
+                    .Append("{=size}");
 
                 if (orderBySql.Success)
                 {
@@ -1019,9 +1125,9 @@ label_false:
                 sb.Append(formatSql.Substring(0, orderByMt.Index))
                     .Append('`')
                     .Append(',')
-                    .Append(pageIndex)
+                    .Append("{=index}")
                     .Append(',')
-                    .Append(pageSize)
+                    .Append("{=size}")
                     .Append(',')
                     .Append('`')
 #if NETSTANDARD2_1_OR_GREATER
@@ -1036,9 +1142,9 @@ label_false:
                 sb.Append(formatSql)
                     .Append('`')
                     .Append(',')
-                    .Append(pageIndex)
+                    .Append("{=index}")
                     .Append(',')
-                    .Append(pageSize);
+                    .Append("{=size}");
             }
 
             return sb.Append(')')

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Concurrent;
 #if NET40
 using System.Collections.ObjectModel;
 #endif

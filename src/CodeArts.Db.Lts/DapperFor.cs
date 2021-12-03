@@ -269,7 +269,7 @@ namespace CodeArts.Db.Lts
             {
                 if (enumerator is null)
                 {
-                    var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.None, cancellationToken));
+                    var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
 
                     enumerator = results.GetEnumerator();
                 }

@@ -959,7 +959,41 @@ group by  a.str_out_bill_id";
 
             var countSql = sql.ToCountSQL();
 
-            var countSql2 = countSql.ToCountSQL();
+            string sqlstr2 = @"select distinct REPLACE(c.customer_name, 'a', 'A') as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+ str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+where  a.str_out_type_id in('4','B')
+and a.str_out_bill_id = d.str_out_bill_id
+and    djlx_id in ('02','03')
+and  a.str_out_bill_id=@ddbh
+group by  a.str_out_bill_id";
+
+            sql = new SQL(sqlstr2);
+
+            var countSql2 = sql.ToCountSQL();
+
+            string sqlstr3 = @"select distinct c.customer_name + c.tel as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+ str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+where  a.str_out_type_id in('4','B')
+and a.str_out_bill_id = d.str_out_bill_id
+and    djlx_id in ('02','03')
+and  a.str_out_bill_id=@ddbh
+group by  a.str_out_bill_id";
+
+            sql = new SQL(sqlstr3);
+
+            var countSql3 = sql.ToCountSQL();
+
+            string sqlstr4 = @"select distinct REPLACE(c.customer_name + c.tel, 'a', 'A') as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+ str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+where  a.str_out_type_id in('4','B')
+and a.str_out_bill_id = d.str_out_bill_id
+and    djlx_id in ('02','03')
+and  a.str_out_bill_id=@ddbh
+group by  a.str_out_bill_id";
+
+            sql = new SQL(sqlstr4);
+
+            var countSql4 = sql.ToCountSQL();
 
             var pagedSql = sql.ToSQL(0, 10);
 

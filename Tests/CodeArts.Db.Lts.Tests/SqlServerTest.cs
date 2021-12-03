@@ -2340,9 +2340,9 @@ namespace UnitTest
         [TestMethod]
         public void TransactionAsyncTest()
         {
-            var tasks = new Task[10];
+            var tasks = new Task[1];
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 1; i++)
             {
                 tasks[i] = Aw_TransactionAsyncTest();
             }

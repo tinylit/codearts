@@ -65,14 +65,14 @@ namespace CodeArts.Db
             IDbConnection ReuseConnection();
         }
 
-        private class DbConnection : IDispatchConnection
+        private class DispatchConnection : IDispatchConnection
         {
             private readonly IDbConnection connection; //数据库连接
             private readonly double connectionHeartbeat; //心跳
             private readonly bool useCache;
             private ConnectionState connectionState = ConnectionState.Closed;
             private Thread isActiveThread = Thread.CurrentThread;
-            public DbConnection(IDbConnection connection, double connectionHeartbeat, bool useCache)
+            public DispatchConnection(IDbConnection connection, double connectionHeartbeat, bool useCache)
             {
                 this.connection = connection;
                 this.connectionHeartbeat = connectionHeartbeat;
@@ -132,15 +132,25 @@ namespace CodeArts.Db
                     return;
                 }
 
-                if (connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
+                if (useCache && connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
                 {
                     return;
                 }
 
-                connection.Close();
+                if (useCache)
+                {
+                    connection.Close();
+                }
+                else
+                {
+                    if (System.Transactions.Transaction.Current is null)
+                    {
+                        connection.Close();
+                    }
+                }
             }
 
-            public IDbCommand CreateCommand() => connection.CreateCommand();
+            public IDbCommand CreateCommand() => new DbCommand(connection.CreateCommand(), useCache);
 
             public bool IsThreadActive => isActiveThread.IsAlive;
 
@@ -162,7 +172,10 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    Destroy();
+                    if (System.Transactions.Transaction.Current is null)
+                    {
+                        Dispose(true);
+                    }
                 }
             }
 
@@ -198,9 +211,60 @@ namespace CodeArts.Db
                     GC.SuppressFinalize(this);
                 }
             }
+
+            private class DbCommand : IDbCommand
+            {
+                private readonly IDbCommand command;
+                private readonly bool useCache;
+
+                public DbCommand(IDbCommand command, bool useCache)
+                {
+                    this.command = command;
+                    this.useCache = useCache;
+                }
+
+                public string CommandText { get => command.CommandText; set => command.CommandText = value; }
+                public int CommandTimeout { get => command.CommandTimeout; set => command.CommandTimeout = value; }
+                public CommandType CommandType { get => command.CommandType; set => command.CommandType = value; }
+                public IDbConnection Connection { get => command.Connection; set => command.Connection = value; }
+
+                public IDataParameterCollection Parameters => command.Parameters;
+
+                public IDbTransaction Transaction { get => command.Transaction; set => command.Transaction = value; }
+                public UpdateRowSource UpdatedRowSource { get => command.UpdatedRowSource; set => command.UpdatedRowSource = value; }
+
+                public void Cancel() => command.Cancel();
+
+                public IDbDataParameter CreateParameter() => command.CreateParameter();
+
+                public void Dispose() => command.Dispose();
+
+                public int ExecuteNonQuery() => command.ExecuteNonQuery();
+
+                public IDataReader ExecuteReader() => command.ExecuteReader();
+
+                public IDataReader ExecuteReader(CommandBehavior behavior)
+                {
+                    if (useCache)
+                    {
+                        return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
+                    }
+
+                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default || System.Transactions.Transaction.Current is null)
+                    {
+                        return command.ExecuteReader(behavior);
+                    }
+
+                    return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
+                }
+
+                public object ExecuteScalar() => command.ExecuteScalar();
+
+                public void Prepare() => command.Prepare();
+            }
         }
 
-        private class DispatchConnection : System.Data.Common.DbConnection, IDispatchConnection
+        private class DispatchDbConnection : System.Data.Common.DbConnection, IDispatchConnection
         {
             private readonly System.Data.Common.DbConnection connection;
 
@@ -209,7 +273,7 @@ namespace CodeArts.Db
             private ConnectionState connectionState = ConnectionState.Closed;
             private Thread isActiveThread = Thread.CurrentThread;
 
-            public DispatchConnection(System.Data.Common.DbConnection connection, double connectionHeartbeat, bool useCache)
+            public DispatchDbConnection(System.Data.Common.DbConnection connection, double connectionHeartbeat, bool useCache)
             {
                 this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 this.connectionHeartbeat = connectionHeartbeat;
@@ -256,12 +320,22 @@ namespace CodeArts.Db
                     return;
                 }
 
-                if (connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
+                if (useCache && connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
                 {
                     return;
                 }
 
-                connection.Close();
+                if (useCache)
+                {
+                    connection.Close();
+                }
+                else
+                {
+                    if (System.Transactions.Transaction.Current is null)
+                    {
+                        connection.Close();
+                    }
+                }
             }
 
             public override void Open()
@@ -378,7 +452,7 @@ namespace CodeArts.Db
             public bool IsActive { get; private set; } = true;
 
             protected override System.Data.Common.DbTransaction BeginDbTransaction(IsolationLevel isolationLevel) => connection.BeginTransaction(isolationLevel);
-            protected override System.Data.Common.DbCommand CreateDbCommand() => connection.CreateCommand();
+            protected override System.Data.Common.DbCommand CreateDbCommand() => new DbCommand(connection.CreateCommand(), useCache);
 
             void IDisposable.Dispose()
             {
@@ -390,7 +464,10 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    Destroy();
+                    if (System.Transactions.Transaction.Current is null)
+                    {
+                        Dispose(true);
+                    }
                 }
             }
 
@@ -427,6 +504,75 @@ namespace CodeArts.Db
 
                     base.Dispose(disposing);
                 }
+            }
+
+            private class DbCommand : System.Data.Common.DbCommand, IDbCommand
+            {
+                private readonly System.Data.Common.DbCommand command;
+                private readonly bool useCache;
+
+                public DbCommand(System.Data.Common.DbCommand command, bool useCache)
+                {
+                    this.command = command;
+                    this.useCache = useCache;
+                }
+
+                public override string CommandText { get => command.CommandText; set => command.CommandText = value; }
+                public override int CommandTimeout { get => command.CommandTimeout; set => command.CommandTimeout = value; }
+                public override CommandType CommandType { get => command.CommandType; set => command.CommandType = value; }
+                public override bool DesignTimeVisible { get => command.DesignTimeVisible; set => command.DesignTimeVisible = value; }
+                public override UpdateRowSource UpdatedRowSource { get => command.UpdatedRowSource; set => command.UpdatedRowSource = value; }
+                protected override System.Data.Common.DbConnection DbConnection { get => command.Connection; set => command.Connection = value; }
+                protected override System.Data.Common.DbParameterCollection DbParameterCollection => command.Parameters;
+
+                protected override System.Data.Common.DbTransaction DbTransaction { get => command.Transaction; set => command.Transaction = value; }
+
+                public override void Cancel() => command.Cancel();
+
+                public override int ExecuteNonQuery() => command.ExecuteNonQuery();
+
+                public override object ExecuteScalar() => command.ExecuteScalar();
+
+                public override void Prepare() => command.Prepare();
+                public override object InitializeLifetimeService() => command.InitializeLifetimeService();
+
+                protected override System.Data.Common.DbParameter CreateDbParameter() => command.CreateParameter();
+
+                protected override System.Data.Common.DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
+                {
+                    if (useCache)
+                    {
+                        return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
+                    }
+
+                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default || System.Transactions.Transaction.Current is null)
+                    {
+                        return command.ExecuteReader(behavior);
+                    }
+
+                    return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
+                }
+
+#if NET451_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+                protected override Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+                {
+                    if (useCache)
+                    {
+                        return command.ExecuteReaderAsync(behavior & ~CommandBehavior.CloseConnection, cancellationToken);
+                    }
+
+                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default || System.Transactions.Transaction.Current is null)
+                    {
+                        return command.ExecuteReaderAsync(behavior, cancellationToken);
+                    }
+
+                    return command.ExecuteReaderAsync(behavior & ~CommandBehavior.CloseConnection, cancellationToken);
+                }
+
+                public override Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken) => command.ExecuteNonQueryAsync(cancellationToken);
+
+                public override Task<object> ExecuteScalarAsync(CancellationToken cancellationToken) => command.ExecuteScalarAsync(cancellationToken);
+#endif
             }
         }
 
@@ -538,11 +684,11 @@ namespace CodeArts.Db
 
                 if (conn is System.Data.Common.DbConnection dbConnection)
                 {
-                    connection = new DispatchConnection(dbConnection, adapter.ConnectionHeartbeat, useCache);
+                    connection = new DispatchDbConnection(dbConnection, adapter.ConnectionHeartbeat, useCache);
                 }
                 else
                 {
-                    connection = new DbConnection(conn, adapter.ConnectionHeartbeat, useCache);
+                    connection = new DispatchConnection(conn, adapter.ConnectionHeartbeat, useCache);
                 }
 
                 lock (connections)
