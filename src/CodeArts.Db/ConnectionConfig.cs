@@ -18,6 +18,11 @@ namespace CodeArts.Db
         public string ConnectionString { get; set; }
 
         /// <summary>
+        /// 权重。
+        /// </summary>
+        public int Weight { get; set; }
+
+        /// <summary>
         /// 监听到变更后的新数据。
         /// </summary>
         /// <param name="changedValue">变更后的数据。</param>

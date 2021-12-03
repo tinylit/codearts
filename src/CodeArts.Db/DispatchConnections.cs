@@ -143,9 +143,21 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    if (System.Transactions.Transaction.Current is null)
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
                     {
                         connection.Close();
+                    }
+                    else
+                    {
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            if (connection.State != ConnectionState.Closed)
+                            {
+                                connection.Close();
+                            }
+                        };
                     }
                 }
             }
@@ -172,9 +184,18 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    if (System.Transactions.Transaction.Current is null)
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
                     {
                         Dispose(true);
+                    }
+                    else
+                    {
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            Dispose(true);
+                        };
                     }
                 }
             }
@@ -198,15 +219,19 @@ namespace CodeArts.Db
             {
                 if (disposing)
                 {
+                    if (connection?.State != ConnectionState.Closed)
+                    {
+                        connection?.Close();
+                    }
+
+                    connection?.Dispose();
+
                     if (IsReleased)
                     {
                         return;
                     }
 
                     IsReleased = true;
-
-                    connection?.Close();
-                    connection?.Dispose();
 
                     GC.SuppressFinalize(this);
                 }
@@ -250,9 +275,28 @@ namespace CodeArts.Db
                         return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
                     }
 
-                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default || System.Transactions.Transaction.Current is null)
+                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default)
                     {
                         return command.ExecuteReader(behavior);
+                    }
+
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
+                    {
+                        return command.ExecuteReader(behavior);
+                    }
+                    else
+                    {
+                        var connection = command.Connection;
+
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            if (connection.State != ConnectionState.Closed)
+                            {
+                                connection.Close();
+                            }
+                        };
                     }
 
                     return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
@@ -331,9 +375,21 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    if (System.Transactions.Transaction.Current is null)
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
                     {
                         connection.Close();
+                    }
+                    else
+                    {
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            if (connection.State != ConnectionState.Closed)
+                            {
+                                connection.Close();
+                            }
+                        };
                     }
                 }
             }
@@ -409,34 +465,86 @@ namespace CodeArts.Db
 
             protected override ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken) => connection.BeginTransactionAsync(isolationLevel, cancellationToken);
 
-            public override Task CloseAsync() => connection.CloseAsync();
+            public override Task CloseAsync()
+            {
+                connectionState = ConnectionState.Closed;
+
+                if (connection.State == ConnectionState.Closed)
+                {
+                    return Task.CompletedTask;
+                }
+
+                if (useCache && connectionHeartbeat > 0D && DateTime.Now <= ActiveTime.AddMinutes(connectionHeartbeat))
+                {
+                    return Task.CompletedTask;
+                }
+
+                if (useCache)
+                {
+                    return connection.CloseAsync();
+                }
+
+                var current = System.Transactions.Transaction.Current;
+
+                if (current is null)
+                {
+                    return connection.CloseAsync();
+                }
+
+                current.TransactionCompleted += (sender, e) =>
+                {
+                    if (connection.State != ConnectionState.Closed)
+                    {
+                        connection.Close();
+                    }
+                };
+
+                return Task.CompletedTask;
+            }
 
             public override ValueTask DisposeAsync()
             {
                 IsActive = false;
 
-                var task1 = connection
-                    .DisposeAsync();
+                if (useCache)
+                {
+                    return new ValueTask(CloseAsync());
+                }
 
-                var task2 = base.DisposeAsync();
+                var current = System.Transactions.Transaction.Current;
 
-                var task = Task.WhenAll(task1.AsTask(), task2.AsTask());
+                if (current is null)
+                {
+                    var task1 = connection
+                        .DisposeAsync();
 
-                task.ConfigureAwait(false)
-                    .GetAwaiter()
-                    .OnCompleted(() =>
-                    {
-                        if (IsReleased)
+                    var task2 = base.DisposeAsync();
+
+                    var task = Task.WhenAll(task1.AsTask(), task2.AsTask());
+
+                    task.ConfigureAwait(false)
+                        .GetAwaiter()
+                        .OnCompleted(() =>
                         {
-                            return;
-                        }
+                            if (IsReleased)
+                            {
+                                return;
+                            }
 
-                        IsReleased = true;
+                            IsReleased = true;
 
-                        GC.SuppressFinalize(this);
-                    });
+                            GC.SuppressFinalize(this);
+                        });
 
-                return new ValueTask(task);
+                    return new ValueTask(task);
+                }
+
+                current.TransactionCompleted += (sender, e) =>
+                {
+                    Dispose(true);
+                };
+
+                return new ValueTask(Task.CompletedTask);
             }
 
 #endif
@@ -464,9 +572,18 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    if (System.Transactions.Transaction.Current is null)
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
                     {
                         Dispose(true);
+                    }
+                    else
+                    {
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            Dispose(true);
+                        };
                     }
                 }
             }
@@ -490,15 +607,19 @@ namespace CodeArts.Db
             {
                 if (disposing)
                 {
+                    if (connection?.State != ConnectionState.Closed)
+                    {
+                        connection?.Close();
+                    }
+
+                    connection?.Dispose();
+
                     if (IsReleased)
                     {
                         return;
                     }
 
                     IsReleased = true;
-
-                    connection?.Close();
-                    connection?.Dispose();
 
                     GC.SuppressFinalize(this);
 
@@ -524,20 +645,13 @@ namespace CodeArts.Db
                 public override UpdateRowSource UpdatedRowSource { get => command.UpdatedRowSource; set => command.UpdatedRowSource = value; }
                 protected override System.Data.Common.DbConnection DbConnection { get => command.Connection; set => command.Connection = value; }
                 protected override System.Data.Common.DbParameterCollection DbParameterCollection => command.Parameters;
-
                 protected override System.Data.Common.DbTransaction DbTransaction { get => command.Transaction; set => command.Transaction = value; }
-
                 public override void Cancel() => command.Cancel();
-
                 public override int ExecuteNonQuery() => command.ExecuteNonQuery();
-
                 public override object ExecuteScalar() => command.ExecuteScalar();
-
                 public override void Prepare() => command.Prepare();
                 public override object InitializeLifetimeService() => command.InitializeLifetimeService();
-
                 protected override System.Data.Common.DbParameter CreateDbParameter() => command.CreateParameter();
-
                 protected override System.Data.Common.DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
                 {
                     if (useCache)
@@ -545,9 +659,28 @@ namespace CodeArts.Db
                         return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
                     }
 
-                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default || System.Transactions.Transaction.Current is null)
+                    if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default)
                     {
                         return command.ExecuteReader(behavior);
+                    }
+
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
+                    {
+                        return command.ExecuteReader(behavior);
+                    }
+                    else
+                    {
+                        var connection = command.Connection;
+
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            if (connection.State != ConnectionState.Closed)
+                            {
+                                connection.Close();
+                            }
+                        };
                     }
 
                     return command.ExecuteReader(behavior & ~CommandBehavior.CloseConnection);
@@ -564,6 +697,25 @@ namespace CodeArts.Db
                     if ((behavior & CommandBehavior.CloseConnection) == CommandBehavior.Default || System.Transactions.Transaction.Current is null)
                     {
                         return command.ExecuteReaderAsync(behavior, cancellationToken);
+                    }
+
+                    var current = System.Transactions.Transaction.Current;
+
+                    if (current is null)
+                    {
+                        return command.ExecuteReaderAsync(behavior, cancellationToken);
+                    }
+                    else
+                    {
+                        var connection = command.Connection;
+
+                        current.TransactionCompleted += (sender, e) =>
+                        {
+                            if (connection.State != ConnectionState.Closed)
+                            {
+                                connection.Close();
+                            }
+                        };
                     }
 
                     return command.ExecuteReaderAsync(behavior & ~CommandBehavior.CloseConnection, cancellationToken);

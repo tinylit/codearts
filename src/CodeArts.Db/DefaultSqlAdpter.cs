@@ -123,6 +123,11 @@ namespace CodeArts.Db
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<distinct>distinct[\x20\t\r\n\f]+)?(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
+        /// 查询别名。
+        /// </summary>
+        private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+[^\x20\t\r\n\f]+[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
         /// 查询语句排序内容。
         /// </summary>
         private static readonly Regex PatternOrderBy = new Regex(@"[\x20\t\r\n\f]+order[\x20\t\r\n\f]+by[\x20\t\r\n\f]+((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Compiled);
@@ -980,6 +985,18 @@ label_false:
         {
             var formatSql = Format(sql);
 
+            var withAsMt = PatternWithAs.Match(formatSql);
+
+            if (withAsMt.Success)
+            {
+                //TODO: WITH AS
+            }
+
+            return Aw_ToCountSQL_Simple(formatSql);
+        }
+
+        private string Aw_ToCountSQL_Simple(string formatSql)
+        {
             var sb = new StringBuilder();
 
             var colsMt = PatternColumn.Match(formatSql);
