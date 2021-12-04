@@ -16,10 +16,11 @@ namespace CodeArts.Db
     ///     条件创建：CREATE TABLE IF NOT EXIXSTS [yep_users] ([Id] int not null,[name] varchar(100));
     /// 说明：会自动去除代码注解和多余的换行符压缩语句。
     /// </summary>
-    [DebuggerDisplay("{ToString()}")]
+    [DebuggerDisplay("{sql}")]
     public sealed class SQL
     {
         private readonly string sql;
+        private readonly string originalSql;
         private static readonly ISqlAdpter adpter;
 
         /// <summary>
@@ -31,7 +32,7 @@ namespace CodeArts.Db
         /// 构造函数。
         /// </summary>
         /// <param name="sql">原始SQL语句。</param>
-        public SQL(string sql) => this.sql = adpter.Analyze(sql);
+        public SQL(string sql) => this.sql = adpter.Analyze(this.originalSql = sql);
 
         /// <summary>
         /// 添加语句。
@@ -45,7 +46,7 @@ namespace CodeArts.Db
                 return this;
             }
 
-            return new SQL(string.Concat(ToString(), ";", sql));
+            return new SQL(string.Concat(originalSql, ";", sql));
         }
 
         /// <summary>
@@ -59,7 +60,7 @@ namespace CodeArts.Db
                 return this;
             }
 
-            return Add(sql.ToString());
+            return Add(sql.originalSql);
         }
 
         private IReadOnlyList<TableToken> tables;
@@ -87,7 +88,7 @@ namespace CodeArts.Db
         /// 获取总行数。
         /// </summary>
         /// <returns></returns>
-        public SQL ToCountSQL() => new SQL(adpter.ToCountSQL(sql));
+        public SQL ToCountSQL() => new SQL(adpter.ToCountSQL(originalSql));
 
         /// <summary>
         /// 获取分页数据。
@@ -95,7 +96,7 @@ namespace CodeArts.Db
         /// <param name="pageIndex">页码（从“0”开始）</param>
         /// <param name="pageSize">分页条数。</param>
         /// <returns></returns>
-        public SQL ToSQL(int pageIndex, int pageSize) => new SQL(adpter.ToSQL(sql, pageIndex, pageSize));
+        public SQL ToSQL(int pageIndex, int pageSize) => new SQL(adpter.ToSQL(originalSql, pageIndex, pageSize));
 
         /// <summary>
         /// 转为实际数据库的SQL语句。
@@ -108,7 +109,7 @@ namespace CodeArts.Db
         /// 返回分析的SQL结果。
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => adpter.Format(sql);
+        public override string ToString() => originalSql;
 
         /// <summary>
         /// 追加sql。

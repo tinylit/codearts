@@ -754,7 +754,7 @@ VALUES
             CLOSE cursor_name --关闭游标
             DEALLOCATE cursor_name --释放游标";
 
-            _ = new SQL(sqlstr);
+            var sql = new SQL(sqlstr);
 
             /**
              * DECLARE {username} varchar(20),{UserId} varchar(100)
@@ -1035,6 +1035,81 @@ group by  a.str_out_bill_id";
                  .Append(';')
                  .Append("SELECT FOUND_ROWS()")
                  .ToString();
+        }
+
+        [TestMethod]
+        public void TestWithAs()
+        {
+            string sqlStr = @"with cte1 as
+                (
+                    select * from table1 where name like 'abc%'
+                ),
+                cte2 as
+                (
+                    select * from table2 where id > 20
+                ),
+                cte3 as
+                (
+                    select * from table3 where price < 100
+                )
+                select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id";
+
+            var sql = new SQL(sqlStr);
+
+            var countSql = sql.ToCountSQL();
+
+            var pagedSql = sql.ToSQL(0, 10);
+        }
+
+        [TestMethod]
+        public void TestWithAs2()
+        {
+            string sqlStr = @"with cte1 as
+                (
+                    select * from table1 where name like 'abc%'
+                ),
+                cte2 as
+                (
+                    select * from table2 where id > 20
+                ),
+                cte3 as
+                (
+                    select * from table3 where price < 100
+                )
+                select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id
+
+                select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id";
+
+            var sql = new SQL(sqlStr);
+
+            var countSql = sql.ToCountSQL();
+
+            var pagedSql = sql.ToSQL(0, 10);
+        }
+
+        [TestMethod]
+        public void TestWithAs3()
+        {
+            string sqlStr = @"with cte1 as
+                (
+                    select * from table1 where name like 'abc%'
+                ),
+                cte2 as
+                (
+                    select * from ct3 where id > 20
+                ),
+                cte3 as
+                (
+                    select * from cte1 where price < 100
+                )
+
+                select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id";
+
+            var sql = new SQL(sqlStr);
+
+            var countSql = sql.ToCountSQL();
+
+            var pagedSql = sql.ToSQL(0, 10);
         }
     }
 }

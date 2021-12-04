@@ -57,13 +57,6 @@ namespace CodeArts.Db
         /// SQL 格式化（格式化为数据库可执行的语句）。
         /// </summary>
         /// <param name="sql">语句。</param>
-        /// <returns></returns>
-        string Format(string sql);
-
-        /// <summary>
-        /// SQL 格式化（格式化为数据库可执行的语句）。
-        /// </summary>
-        /// <param name="sql">语句。</param>
         /// <param name="settings">配置。</param>
         /// <returns></returns>
         string Format(string sql, ISQLCorrectSettings settings);

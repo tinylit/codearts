@@ -23,14 +23,9 @@ namespace CodeArts.Db
         private static readonly Regex PatternCharacter = new Regex("(['\"])(?:\\\\.|[^\\\\])*?\\1", RegexOptions.Compiled);
 
         /// <summary>
-        /// 多余的换行符。
-        /// </summary>
-        private static readonly Regex PatternLineBreak = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\r\n]{2})[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=[\r\n]{2})|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
-
-        /// <summary>
         /// 空白符。
         /// </summary>
-        private static readonly Regex PatternWhitespace = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\x20\t\f])[\x20\t\r\n\f]+|(?<=\()[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=\))|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
+        private static readonly Regex PatternWhitespace = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\x20\t\f])[\x20\t\f]+|(?<=\()[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=\))|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
 
         /// <summary>
         /// 移除所有前导空白字符和尾部空白字符函数修复。
@@ -70,12 +65,12 @@ namespace CodeArts.Db
         /// <summary>
         /// 表命令。
         /// </summary>
-        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])[\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|having|select|into|limit|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+))?(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|select|into|limit|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+)))?[\x20\t\r\n\f]*(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 连表命令。
         /// </summary>
-        private static readonly Regex PatternFormFollow = new Regex(@",[\x20\t\r\n\f]*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+)?(?<alias>\w+))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternFormFollow = new Regex(@",[\x20\t\r\n\f]*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+)?(?<alias>(?!\bas\b)\w+))?[\x20\t\r\n\f]*(?=,|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 参数。
@@ -113,11 +108,6 @@ namespace CodeArts.Db
         private static readonly Regex PatternAsField = new Regex(@"\[\w+\][\x20\t\r\n\f]+as[\x20\t\r\n\f]+(?<name>[\p{L}\p{N}@_]+)|\bas[\x20\t\r\n\f]+(?<name>(?!\bselect\b)[\p{L}\p{N}@_]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         /// <summary>
-        /// 声明别量。
-        /// </summary>
-        private static readonly Regex PatternDeclare = new Regex(@"\bdeclare[\x20\t\r\n\f]+((?!\b(select|insert|update|delete|create|drop|alter|truncate|use|set|declare|exec|execute|sp_executesql)\b)[^;])+;?", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
-
-        /// <summary>
         /// 查询语句所有字段。
         /// </summary>
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<distinct>distinct[\x20\t\r\n\f]+)?(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -125,7 +115,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 查询别名。
         /// </summary>
-        private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+[^\x20\t\r\n\f]+[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\)([\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\))*[\x20\t\r\n\f]*(?=select|insert|update|delete[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
 
         /// <summary>
         /// 查询语句排序内容。
@@ -136,6 +126,7 @@ namespace CodeArts.Db
         /// 分页。
         /// </summary>
         private static readonly Regex PatternPaging = new Regex("PAGING\\(`(?<main>(?:\\\\.|[^\\\\])*?)`,(?<index>\\d+),(?<size>\\d+)(,`(?<orderby>(?:\\\\.|[^\\\\])*?)`)?\\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         #region UseSettings
 
         /// <summary>
@@ -411,430 +402,14 @@ namespace CodeArts.Db
             return Tuple.Create(rightIndex, list.ToArray());
         }
 
-        #endregion
-
         /// <summary>
-        /// SQL 分析。
+        /// 是空白符。
         /// </summary>
-        /// <param name="sql">语句。</param>
+        /// <param name="c">符号。</param>
         /// <returns></returns>
-        public string Analyze(string sql)
+        private static bool IsWhitespace(char c)
         {
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                throw new ArgumentException("语句不能为空或空字符串!");
-            }
-
-            return SqlCache.GetOrAdd(sql, Aw_Analyze);
-        }
-
-        private static string Aw_Analyze(string sql)
-        {
-            //? 注解
-            sql = PatternAnnotate.Replace(sql, string.Empty);
-
-            if (string.IsNullOrWhiteSpace(sql))
-            {
-                throw new DSyntaxErrorException("未检测到可执行的语句!");
-            }
-
-            List<TableToken> tables = new List<TableToken>();
-
-            void AddTableToken(UppercaseString commandType, string name)
-            {
-                if (!tables.Exists(x => x.CommandType == commandType && string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
-                {
-                    tables.Add(new TableToken(commandType, name));
-                }
-            }
-
-            List<string> characters = new List<string>();
-
-            //? 提取字符串
-            sql = PatternCharacter.Replace(sql, item =>
-            {
-                string value = item.Value;
-
-                if (value.Length > 2)
-                {
-                    characters.Add(value.Substring(1, item.Value.Length - 2));
-
-                    var charStr = char.ToString(value[0]);
-
-                    return string.Concat(charStr, "?", charStr);
-                }
-
-                return value;
-            });
-
-            //? 去除多余的换行。
-            sql = PatternLineBreak.Replace(sql, string.Empty);
-
-            //? 去除多余的空白符。
-            sql = PatternWhitespace.Replace(sql, string.Empty);
-
-            //? Trim
-            sql = PatternTrim.Replace(sql, item =>
-            {
-                Group nameGrp = item.Groups["name"];
-
-                string name = nameGrp.Value;
-
-                return string.Concat("L", name, "(R", name,
-#if NETSTANDARD2_1_OR_GREATER
-                    item.Value[nameGrp.Length..],
-#else
-                    item.Value.Substring(nameGrp.Length),
-#endif
-                    ")");
-            });
-
-            //? 创建表指令。
-            sql = PatternCreate.Replace(sql, item =>
-            {
-                var nameGrp = item.Groups["name"];
-                var tableGrp = item.Groups["table"];
-
-                var sb = new StringBuilder();
-
-                AddTableToken(CommandTypes.Create, tableGrp.Value);
-
-                return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
-                 .Append("[")
-                 .Append(nameGrp.Value)
-                 .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                 .Append(PatternFieldCreate.Replace(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..], match =>
-#else
-                 .Append(PatternFieldCreate.Replace(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length), match =>
-#endif
-                 {
-                     Group nameGrp2 = match.Groups["name"];
-
-                     string value2 = string.Concat("[", nameGrp2.Value, "]");
-
-                     if (nameGrp2.Index == item.Index && nameGrp2.Length == match.Length)
-                         return value2;
-
-                     return string.Concat(match.Value.Substring(0, nameGrp2.Index - match.Index), value2,
-#if NETSTANDARD2_1_OR_GREATER
-                         match.Value[(nameGrp2.Index - match.Index + nameGrp2.Length)..]
-#else
-                         match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length)
-#endif
-                         );
-                 }))
-                 .ToString();
-            });
-
-            //? 删除表指令。
-            sql = PatternDrop.Replace(sql, item =>
-            {
-                var nameGrp = item.Groups["name"];
-                var tableGrp = item.Groups["table"];
-
-                var sb = new StringBuilder();
-
-                AddTableToken(CommandTypes.Drop, tableGrp.Value);
-
-                return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
-                 .Append("[")
-                 .Append(nameGrp.Value)
-                 .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                 .Append(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..])
-#else
-                 .Append(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length))
-#endif
-                 .ToString();
-            });
-
-            //? 修改表指令。
-            sql = PatternAlter.Replace(sql, item =>
-            {
-                var nameGrp = item.Groups["name"];
-
-                AddTableToken(CommandTypes.Alter, nameGrp.Value);
-
-                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
-            });
-
-            //? 插入表指令。
-            sql = PatternInsert.Replace(sql, item =>
-            {
-                var nameGrp = item.Groups["name"];
-
-                AddTableToken(CommandTypes.Insert, nameGrp.Value);
-
-                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
-            });
-
-            //? 复杂结构表名称处理
-            sql = PatternChangeComplex.Replace(sql, item =>
-            {
-                var value = item.Value;
-
-                var typeGrp = item.Groups["type"];
-                var nameGrp = item.Groups["name"];
-                var tableGrp = item.Groups["table"];
-                var aliasGrp = item.Groups["alias"];
-
-                var type = typeGrp.Value.ToUpper();
-
-                var sb = new StringBuilder();
-
-                AddTableToken(type, nameGrp.Value);
-
-                sb.Append(value.Substring(0, aliasGrp.Index))
-                .Append("[")
-                .Append(aliasGrp.Value)
-                .Append("]")
-                .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, tableGrp.Index - aliasGrp.Index))
-                .Append("[")
-                .Append(nameGrp.Value)
-                .Append("]");
-
-#if NETSTANDARD2_1_OR_GREATER
-                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
-#else
-                value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
-#endif
-
-                var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
-
-                return sb.Append(PatternForm.Replace(value, match => Form(match, type), indexOf > -1 ? indexOf : value.Length)).ToString();
-            });
-
-            //? 表名称处理(表别名作为名称处理)
-            sql = PatternChange.Replace(sql, item =>
-            {
-                var value = item.Value;
-
-                var typeGrp = item.Groups["type"];
-                var nameGrp = item.Groups["name"];
-                var tableGrp = item.Groups["table"];
-
-                var type = typeGrp.Value.ToUpper();
-
-                var sb = new StringBuilder();
-
-                AddTableToken(type, nameGrp.Value);
-
-                sb.Append(value.Substring(0, tableGrp.Index - item.Index))
-                .Append("[")
-                .Append(nameGrp.Value)
-                .Append("]");
-
-#if NETSTANDARD2_1_OR_GREATER
-                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
-#else
-                value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
-#endif
-
-                var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
-
-                return sb.Append(PatternForm.Replace(value, match => Form(match, type), indexOf > -1 ? indexOf : value.Length)).ToString();
-            });
-
-            string Form(Match item, string type)
-            {
-                var value = item.Value;
-
-                var nameGrp = item.Groups["name"];
-                var tableGrp = item.Groups["table"];
-                var aliasGrp = item.Groups["alias"];
-                var followGrp = item.Groups["follow"];
-
-                var sb = new StringBuilder();
-
-                AddTableToken(type, nameGrp.Value);
-
-                sb.Append(value.Substring(0, tableGrp.Index - item.Index))
-                    .Append("[")
-                    .Append(nameGrp.Value)
-                    .Append("]");
-
-                if (aliasGrp.Success)
-                {
-                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length))
-                        .Append("[")
-                        .Append(aliasGrp.Value)
-                        .Append("]");
-                }
-                else if (followGrp.Success)
-                {
-                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, followGrp.Index - tableGrp.Index - tableGrp.Length));
-                }
-                else
-                {
-#if NETSTANDARD2_1_OR_GREATER
-                    sb.Append(value[(tableGrp.Index + tableGrp.Length - item.Index)..]);
-#else
-                    sb.Append(value.Substring(tableGrp.Index + tableGrp.Length - item.Index));
-#endif
-                }
-
-                if (followGrp.Success)
-                {
-#if NETSTANDARD2_1_OR_GREATER
-                    sb.Append(PatternFormFollow.Replace(value[(followGrp.Index - item.Index)..], match => Form(match, type)));
-#else
-                    sb.Append(PatternFormFollow.Replace(value.Substring(followGrp.Index - item.Index), match => Form(match, type)));
-#endif
-                }
-
-                return sb.ToString();
-            }
-
-            //? 查询语句。
-            sql = PatternForm.Replace(sql, item => Form(item, "SELECT"));
-
-            //? 参数处理。
-            sql = PatternParameter.Replace(sql, item => string.Concat("{", item.Groups["name"].Value, "}"));
-
-            //? 声明变量
-            sql = PatternDeclare.Replace(sql, item =>
-            {
-                string value = string.Concat("--#", characters.Count.ToString());
-
-                characters.Add(item.Value);
-
-                return value;
-            });
-
-            //? 字段和别名处理。
-            sql = PatternAliasField.Replace(sql, item =>
-            {
-                var sb = new StringBuilder();
-
-                Group nameGrp = item.Groups["name"];
-                Group aliasGrp = item.Groups["alias"];
-
-                return sb.Append("[")
-                      .Append(aliasGrp.Value)
-                      .Append("].[")
-                      .Append(nameGrp.Value)
-                      .Append("]")
-                      .ToString();
-            });
-
-            //? 独立参数字段处理
-            sql = PatternSingleArgField.Replace(sql, item =>
-            {
-                var sb = new StringBuilder();
-                Group nameGrp = item.Groups["name"];
-
-                return sb
-                    .Append(item.Value.Substring(0, nameGrp.Index - item.Index))
-                    .Append("[")
-                    .Append(nameGrp.Value)
-                    .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                    .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
-#else
-                    .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
-#endif
-                    .ToString();
-            });
-
-            //? 字段处理。
-            sql = PatternField.Replace(sql, item =>
-            {
-                var sb = new StringBuilder();
-
-                Group nameGrp = item.Groups["name"];
-
-                return sb.Append(item.Value.Substring(0, nameGrp.Index - item.Index))
-                        .Append("[")
-                        .Append(nameGrp.Value)
-                        .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                        .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
-#else
-                        .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
-#endif
-                        .ToString();
-            });
-
-            //? 字段处理。
-            sql = PatternFieldEmbody.Replace(sql, item =>
-            {
-                Group nameGrp = item.Groups["name"];
-
-                string value = string.Concat("[", nameGrp.Value, "]");
-
-                if (nameGrp.Index == item.Index && nameGrp.Length == item.Length)
-                    return value;
-
-                return item.Value.Substring(0, nameGrp.Index - item.Index) +
-                value +
-#if NETSTANDARD2_1_OR_GREATER
-                item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..];
-#else
-                item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
-#endif
-            });
-
-            //? 字段别名。
-            sql = PatternAsField.Replace(sql, item =>
-            {
-                Group nameGrp = item.Groups["name"];
-
-                return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
-            });
-
-            if (tables.Count > 0)
-            {
-#if NET40
-                TableCache.TryAdd(sql, tables.ToReadOnlyList());
-#else
-                TableCache.TryAdd(sql, tables);
-#endif
-            }
-
-            if (characters.Count > 0)
-            {
-                CharacterCache.GetOrAdd(sql, characters);
-            }
-
-            return sql;
-        }
-
-        /// <summary>
-        /// SQL 分析（表名称）。
-        /// </summary>
-        /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
-        /// <returns></returns>
-        public IReadOnlyList<TableToken> AnalyzeTables(string sql)
-            => TableCache.GetOrAdd(sql, TableToken.None);
-
-        /// <summary>
-        /// SQL 分析（参数）。
-        /// </summary>
-        /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
-        /// <returns></returns>
-        public IReadOnlyList<string> AnalyzeParameters(string sql)
-        {
-            Match match = PatternParameterToken.Match(sql);
-
-            List<string> parameters = new List<string>();
-
-            while (match.Success)
-            {
-                string name = match.Groups["name"].Value;
-
-                if (!parameters.Contains(name))
-                {
-                    parameters.Add(name);
-                }
-
-                match = match.NextMatch();
-            }
-#if NET40
-            return parameters.ToReadOnlyList();
-#else
-            return parameters;
-#endif
+            return c == '\x20' || c == '\t' || c == '\r' || c == '\n' || c == '\f';
         }
 
         private static bool TryDistinctField(string cols, out string col)
@@ -847,13 +422,13 @@ namespace CodeArts.Db
             int startIndex = -1;
             int i = 0, length = cols.Length;
 
-label_core:
+        label_core:
 
             for (; i < length; i++)
             {
                 char c = cols[i];
 
-                if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+                if (IsWhitespace(c))
                 {
                     if (startIndex == -1)
                     {
@@ -899,7 +474,7 @@ label_core:
                             goto label_core;
                         }
 
-                        if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+                        if (IsWhitespace(c))
                         {
                             break;
                         }
@@ -920,7 +495,7 @@ label_core:
                 return true;
             }
 
-label_false:
+        label_false:
 
             col = null;
 
@@ -937,7 +512,7 @@ label_false:
             {
                 char c = cols[i];
 
-                if (c == ' ' || c == '\r' || c == '\n' || c == '\t')
+                if (IsWhitespace(c))
                 {
                     if (nonfirstWordsFlag) //? 首个字母。
                     {
@@ -972,6 +547,671 @@ label_false:
             return true;
         }
 
+
+        /// <summary>
+        /// 独立SQL分析。
+        /// </summary>
+        /// <param name="value">内容。</param>
+        /// <param name="startIndex">开始位置。</param>
+        /// <returns></returns>
+        private static int IndependentSqlAnalysis(string value, int startIndex)
+        {
+            int length = value.Length;
+
+            for (; startIndex < length; startIndex++) //? 空白符处理。
+            {
+                char c = value[startIndex];
+
+                if (IsWhitespace(c))
+                {
+                    continue;
+                }
+
+                break;
+            }
+
+            int indexOfCemicolon = value.IndexOf(';', startIndex);
+
+            if (indexOfCemicolon > -1) //? 分号分割。
+            {
+                length = indexOfCemicolon;
+            }
+
+            bool flag = true;
+            bool quotesFlag = false;
+
+            int letterStart = 0;
+
+            int bracketLeft = 0;
+            int bracketRight = 0;
+
+            for (int i = startIndex + 6/* 关键字 */; i < length; i++) //? 空白符处理。
+            {
+                char c = value[i];
+
+                if (c == '\'')
+                {
+                    if (quotesFlag) //? 右引号。
+                    {
+                        quotesFlag = false;
+
+                        continue;
+                    }
+
+                    quotesFlag = true;
+                }
+
+                if (quotesFlag) //? 占位符。
+                {
+                    continue;
+                }
+
+                if (char.IsLetter(c))
+                {
+                    if (flag)
+                    {
+                        flag = false;
+
+                        letterStart = i;
+                    }
+
+                    continue;
+                }
+
+                if (!flag)
+                {
+                    flag = true;
+                }
+
+                if (bracketLeft == bracketRight && letterStart > 0)
+                {
+                    if (IsSelect(value, letterStart)
+                        || IsDelete(value, letterStart)
+                        || IsInsert(value, letterStart)
+                        || IsUpdate(value, letterStart)
+                        || IsWith(value, letterStart))
+                    {
+                        return letterStart - 1;
+                    }
+                }
+
+                if (c == '(')
+                {
+                    bracketLeft++;
+                }
+                else if (c == ')')
+                {
+                    bracketRight++;
+                }
+            }
+
+            return length;
+        }
+
+        private static readonly char[] SelectChars = new char[] { 's', 'e', 'l', 'e', 'c', 't' };
+
+        private static bool IsSelect(string value, int startIndex)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                if (SelectChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static readonly char[] InsertChars = new char[] { 'i', 'n', 's', 'e', 'r', 't' };
+
+        private static bool IsInsert(string value, int startIndex)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                if (InsertChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static readonly char[] UpdateChars = new char[] { 'u', 'p', 'd', 'a', 't', 'e' };
+
+        private static bool IsUpdate(string value, int startIndex)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                if (UpdateChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static readonly char[] DeleteChars = new char[] { 'd', 'e', 'l', 'e', 't', 'e' };
+
+        private static bool IsDelete(string value, int startIndex)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                if (DeleteChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static readonly char[] WithChars = new char[] { 'w', 'i', 't', 'h' };
+
+        private static bool IsWith(string value, int startIndex)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (WithChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+        #endregion
+
+        /// <summary>
+        /// SQL 分析。
+        /// </summary>
+        /// <param name="sql">语句。</param>
+        /// <returns></returns>
+        public string Analyze(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                throw new ArgumentException("语句不能为空或空字符串!");
+            }
+
+            return SqlCache.GetOrAdd(sql, Aw_Analyze);
+        }
+
+        private static string Aw_Analyze(string sql)
+        {
+            //? 注解
+            sql = PatternAnnotate.Replace(sql, string.Empty);
+
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                throw new DSyntaxErrorException("未检测到可执行的语句!");
+            }
+
+            List<string> characters = new List<string>();
+
+            //? 提取字符串
+            sql = PatternCharacter.Replace(sql, item =>
+            {
+                string value = item.Value;
+
+                if (value.Length > 2)
+                {
+                    characters.Add(value.Substring(1, item.Value.Length - 2));
+
+                    var charStr = char.ToString(value[0]);
+
+                    return string.Concat(charStr, "?", charStr);
+                }
+
+                return value;
+            });
+
+            //? 去除多余的空白符。
+            sql = PatternWhitespace.Replace(sql, string.Empty);
+
+            //? Trim
+            sql = PatternTrim.Replace(sql, item =>
+            {
+                Group nameGrp = item.Groups["name"];
+
+                string name = nameGrp.Value;
+
+                return string.Concat("L", name, "(R", name,
+#if NETSTANDARD2_1_OR_GREATER
+                    item.Value[nameGrp.Length..],
+#else
+                    item.Value.Substring(nameGrp.Length),
+#endif
+                    ")");
+            });
+
+            int offset = 0;
+
+            StringBuilder sbSql = new StringBuilder();
+
+            List<TableToken> tables = new List<TableToken>();
+
+            HashSet<string> withAs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var withAsMt = PatternWithAs.Match(sql);
+
+            while (withAsMt.Success)
+            {
+                if (withAsMt.Index > offset) //? 前部分。
+                {
+                    sbSql.Append(Done(sql.Substring(offset, withAsMt.Index - offset)));
+                }
+
+                var nameGrp = withAsMt.Groups["name"];
+                var sqlGrp = withAsMt.Groups["sql"];
+
+                for (int i = 0, length = nameGrp.Captures.Count; i < length; i++)
+                {
+                    var nameCap = nameGrp.Captures[i];
+                    var sqlCap = sqlGrp.Captures[i];
+
+                    if (i == 0)
+                    {
+                        sbSql.Append(sql.Substring(withAsMt.Index, nameCap.Index - withAsMt.Index));
+                    }
+                    else
+                    {
+                        sbSql.Append(',');
+                    }
+
+                    sbSql.Append('[')
+                        .Append(nameCap.Value)
+                        .Append(']')
+                        .Append(sql.Substring(nameCap.Index + nameCap.Length, sqlCap.Index - nameCap.Index - nameCap.Length))
+                        .Append(Done(sqlCap.Value))
+                        .Append(')');
+
+                    withAs.Add(nameCap.Value);
+                }
+
+                offset = IndependentSqlAnalysis(sql, withAsMt.Index + withAsMt.Length);
+
+                sbSql.Append(Done(sql.Substring(withAsMt.Index + withAsMt.Length, offset - withAsMt.Index - withAsMt.Length)));
+
+                withAsMt = withAsMt.NextMatch();
+
+                withAs.Clear(); //? 清空别名集合。
+            }
+
+            if (sql.Length > offset)
+            {
+                sbSql.Append(Done(sql.Substring(offset)));
+            }
+
+            string result = sbSql.ToString();
+
+            if (tables.Count > 0)
+            {
+#if NET40
+                TableCache.TryAdd(result, tables.ToReadOnlyList());
+#else
+                TableCache.TryAdd(result, tables);
+#endif
+            }
+
+            if (characters.Count > 0)
+            {
+                CharacterCache.GetOrAdd(result, characters);
+            }
+
+            return result;
+
+            string Done(string sqlStr)
+            {
+                //? 创建表指令。
+                sqlStr = PatternCreate.Replace(sqlStr, item =>
+                {
+                    var nameGrp = item.Groups["name"];
+                    var tableGrp = item.Groups["table"];
+
+                    var sb = new StringBuilder();
+
+                    AddTableToken(CommandTypes.Create, tableGrp.Value);
+
+                    return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
+                     .Append("[")
+                     .Append(nameGrp.Value)
+                     .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                 .Append(PatternFieldCreate.Replace(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..], match =>
+#else
+                 .Append(PatternFieldCreate.Replace(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length), match =>
+#endif
+                 {
+                     Group nameGrp2 = match.Groups["name"];
+
+                     string value2 = string.Concat("[", nameGrp2.Value, "]");
+
+                     if (nameGrp2.Index == item.Index && nameGrp2.Length == match.Length)
+                         return value2;
+
+                     return string.Concat(match.Value.Substring(0, nameGrp2.Index - match.Index), value2,
+#if NETSTANDARD2_1_OR_GREATER
+                         match.Value[(nameGrp2.Index - match.Index + nameGrp2.Length)..]
+#else
+                         match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length)
+#endif
+                         );
+                 }))
+                     .ToString();
+                });
+
+                //? 删除表指令。
+                sqlStr = PatternDrop.Replace(sqlStr, item =>
+                {
+                    var nameGrp = item.Groups["name"];
+                    var tableGrp = item.Groups["table"];
+
+                    var sb = new StringBuilder();
+
+                    AddTableToken(CommandTypes.Drop, tableGrp.Value);
+
+                    return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
+                     .Append("[")
+                     .Append(nameGrp.Value)
+                     .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                 .Append(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..])
+#else
+                 .Append(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length))
+#endif
+                 .ToString();
+                });
+
+                //? 修改表指令。
+                sqlStr = PatternAlter.Replace(sqlStr, item =>
+                {
+                    var nameGrp = item.Groups["name"];
+
+                    AddTableToken(CommandTypes.Alter, nameGrp.Value);
+
+                    return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
+                });
+
+                //? 插入表指令。
+                sqlStr = PatternInsert.Replace(sqlStr, item =>
+                {
+                    var nameGrp = item.Groups["name"];
+
+                    AddTableToken(CommandTypes.Insert, nameGrp.Value);
+
+                    return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
+                });
+
+                //? 复杂结构表名称处理
+                sqlStr = PatternChangeComplex.Replace(sqlStr, item =>
+                {
+                    var value = item.Value;
+
+                    var typeGrp = item.Groups["type"];
+                    var nameGrp = item.Groups["name"];
+                    var tableGrp = item.Groups["table"];
+                    var aliasGrp = item.Groups["alias"];
+
+                    var type = typeGrp.Value.ToUpper();
+
+                    var sb = new StringBuilder();
+
+                    AddTableToken(type, nameGrp.Value);
+
+                    sb.Append(value.Substring(0, aliasGrp.Index))
+                    .Append("[")
+                    .Append(aliasGrp.Value)
+                    .Append("]")
+                    .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, tableGrp.Index - aliasGrp.Index))
+                    .Append("[")
+                    .Append(nameGrp.Value)
+                    .Append("]");
+
+#if NETSTANDARD2_1_OR_GREATER
+                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
+#else
+                    value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
+#endif
+
+                    var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
+
+                    return sb.Append(PatternForm.Replace(value, match => Form(match, type), indexOf > -1 ? indexOf : value.Length)).ToString();
+                });
+
+                //? 表名称处理(表别名作为名称处理)
+                sqlStr = PatternChange.Replace(sqlStr, item =>
+                {
+                    var value = item.Value;
+
+                    var typeGrp = item.Groups["type"];
+                    var nameGrp = item.Groups["name"];
+                    var tableGrp = item.Groups["table"];
+
+                    var type = typeGrp.Value.ToUpper();
+
+                    var sb = new StringBuilder();
+
+                    AddTableToken(type, nameGrp.Value);
+
+                    sb.Append(value.Substring(0, tableGrp.Index - item.Index))
+                    .Append("[")
+                    .Append(nameGrp.Value)
+                    .Append("]");
+
+#if NETSTANDARD2_1_OR_GREATER
+                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
+#else
+                    value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
+#endif
+
+                    var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
+
+                    return sb.Append(PatternForm.Replace(value, match => Form(match, type), indexOf > -1 ? indexOf : value.Length)).ToString();
+                });
+
+                //? 查询语句。
+                sqlStr = PatternForm.Replace(sqlStr, item => Form(item, "SELECT"));
+
+                //? 参数处理。
+                sqlStr = PatternParameter.Replace(sqlStr, item => string.Concat("{", item.Groups["name"].Value, "}"));
+
+                //? 字段和别名处理。
+                sqlStr = PatternAliasField.Replace(sqlStr, item =>
+                {
+                    var sb = new StringBuilder();
+
+                    Group nameGrp = item.Groups["name"];
+                    Group aliasGrp = item.Groups["alias"];
+
+                    return sb.Append("[")
+                          .Append(aliasGrp.Value)
+                          .Append("].[")
+                          .Append(nameGrp.Value)
+                          .Append("]")
+                          .ToString();
+                });
+
+                //? 独立参数字段处理
+                sqlStr = PatternSingleArgField.Replace(sqlStr, item =>
+                {
+                    var sb = new StringBuilder();
+                    Group nameGrp = item.Groups["name"];
+
+                    return sb
+                        .Append(item.Value.Substring(0, nameGrp.Index - item.Index))
+                        .Append("[")
+                        .Append(nameGrp.Value)
+                        .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                    .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
+#else
+                    .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
+#endif
+                    .ToString();
+                });
+
+                //? 字段处理。
+                sqlStr = PatternField.Replace(sqlStr, item =>
+                {
+                    var sb = new StringBuilder();
+
+                    Group nameGrp = item.Groups["name"];
+
+                    return sb.Append(item.Value.Substring(0, nameGrp.Index - item.Index))
+                            .Append("[")
+                            .Append(nameGrp.Value)
+                            .Append("]")
+#if NETSTANDARD2_1_OR_GREATER
+                        .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
+#else
+                        .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
+#endif
+                        .ToString();
+                });
+
+                //? 字段处理。
+                sqlStr = PatternFieldEmbody.Replace(sqlStr, item =>
+                {
+                    Group nameGrp = item.Groups["name"];
+
+                    string value = string.Concat("[", nameGrp.Value, "]");
+
+                    if (nameGrp.Index == item.Index && nameGrp.Length == item.Length)
+                        return value;
+
+                    return item.Value.Substring(0, nameGrp.Index - item.Index) +
+                    value +
+#if NETSTANDARD2_1_OR_GREATER
+                    item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..];
+#else
+                    item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
+#endif
+                });
+
+                //? 字段别名。
+                sqlStr = PatternAsField.Replace(sqlStr, item =>
+                {
+                    Group nameGrp = item.Groups["name"];
+
+                    return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
+                });
+
+                return sqlStr;
+            }
+
+            string Form(Match item, string type)
+            {
+                var value = item.Value;
+
+                var nameGrp = item.Groups["name"];
+
+                var tableGrp = item.Groups["table"];
+                var aliasGrp = item.Groups["alias"];
+                var followGrp = item.Groups["follow"];
+
+                var sb = new StringBuilder();
+
+                if (!withAs.Contains(nameGrp.Value))
+                {
+                    AddTableToken(type, nameGrp.Value);
+                }
+
+                sb.Append(value.Substring(0, tableGrp.Index - item.Index))
+                    .Append("[")
+                    .Append(nameGrp.Value)
+                    .Append("]");
+
+                if (aliasGrp.Success)
+                {
+                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length))
+                        .Append("[")
+                        .Append(aliasGrp.Value)
+                        .Append("]");
+                }
+                else if (followGrp.Success)
+                {
+                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, followGrp.Index - tableGrp.Index - tableGrp.Length));
+                }
+                else
+                {
+#if NETSTANDARD2_1_OR_GREATER
+                    sb.Append(value[(tableGrp.Index + tableGrp.Length - item.Index)..]);
+#else
+                    sb.Append(value.Substring(tableGrp.Index + tableGrp.Length - item.Index));
+#endif
+                }
+
+                if (followGrp.Success)
+                {
+#if NETSTANDARD2_1_OR_GREATER
+                    sb.Append(PatternFormFollow.Replace(value[(followGrp.Index - item.Index)..], match => Form(match, type)));
+#else
+                    sb.Append(PatternFormFollow.Replace(value.Substring(followGrp.Index - item.Index), match => Form(match, type)));
+#endif
+                }
+
+                return sb.ToString();
+            }
+
+            void AddTableToken(UppercaseString commandType, string name)
+            {
+                if (!tables.Exists(x => x.CommandType == commandType && string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    tables.Add(new TableToken(commandType, name));
+                }
+            }
+        }
+
+        /// <summary>
+        /// SQL 分析（表名称）。
+        /// </summary>
+        /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
+        /// <returns></returns>
+        public IReadOnlyList<TableToken> AnalyzeTables(string sql)
+            => TableCache.GetOrAdd(sql, TableToken.None);
+
+        /// <summary>
+        /// SQL 分析（参数）。
+        /// </summary>
+        /// <param name="sql">来源于【<see cref="Analyze(string)"/>】的结果。</param>
+        /// <returns></returns>
+        public IReadOnlyList<string> AnalyzeParameters(string sql)
+        {
+            Match match = PatternParameterToken.Match(sql);
+
+            List<string> parameters = new List<string>();
+
+            while (match.Success)
+            {
+                string name = match.Groups["name"].Value;
+
+                if (!parameters.Contains(name))
+                {
+                    parameters.Add(name);
+                }
+
+                match = match.NextMatch();
+            }
+#if NET40
+            return parameters.ToReadOnlyList();
+#else
+            return parameters;
+#endif
+        }
+
         /// <summary>
         /// 获取符合条件的条数。
         /// </summary>
@@ -983,19 +1223,18 @@ label_false:
 
         private string Aw_ToCountSQL(string sql)
         {
-            var formatSql = Format(sql);
-
-            var withAsMt = PatternWithAs.Match(formatSql);
+            var withAsMt = PatternWithAs.Match(sql);
 
             if (withAsMt.Success)
             {
-                //TODO: WITH AS
+                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
+                    Aw_ToCountSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
             }
 
-            return Aw_ToCountSQL_Simple(formatSql);
+            return Aw_ToCountSQL_Simple(sql);
         }
 
-        private string Aw_ToCountSQL_Simple(string formatSql)
+        private static string Aw_ToCountSQL_Simple(string formatSql)
         {
             var sb = new StringBuilder();
 
@@ -1079,9 +1318,20 @@ label_false:
 
         private string Aw_ToSQL(string sql)
         {
-            var sb = new StringBuilder();
+            var withAsMt = PatternWithAs.Match(sql);
 
-            var formatSql = Format(sql);
+            if (withAsMt.Success)
+            {
+                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
+                    Aw_ToSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
+            }
+
+            return Aw_ToSQL_Simple(sql);
+        }
+
+        private static string Aw_ToSQL_Simple(string formatSql)
+        {
+            var sb = new StringBuilder();
 
             var match = PatternPaging.Match(formatSql);
 
@@ -1166,36 +1416,6 @@ label_false:
 
             return sb.Append(')')
                 .ToString();
-        }
-
-        /// <summary>
-        /// SQL 格式化。
-        /// </summary>
-        /// <param name="sql">语句。</param>
-        /// <returns></returns>
-        public string Format(string sql)
-        {
-            if (CharacterCache.TryGetValue(sql, out List<string> characters))
-            {
-                int offset = 0;
-
-                //? 还原字符串。
-                sql = PatternCharacter.Replace(sql, item =>
-                {
-                    string value = item.Value;
-
-                    if (value.Length > 2)
-                    {
-                        var charStr = char.ToString(value[0]);
-
-                        return string.Concat(charStr, characters[offset++], charStr);
-                    }
-
-                    return value;
-                });
-            }
-
-            return sql;
         }
 
         /// <summary>

@@ -11,6 +11,7 @@ using System.Runtime.Remoting;
 using System.Threading;
 using System.Threading.Tasks;
 using Timer = System.Timers.Timer;
+using Transaction = System.Transactions.Transaction;
 
 namespace CodeArts.Db
 {
@@ -143,7 +144,7 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    var current = System.Transactions.Transaction.Current;
+                    var current = Transaction.Current;
 
                     if (current is null)
                     {
@@ -184,7 +185,7 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    var current = System.Transactions.Transaction.Current;
+                    var current = Transaction.Current;
 
                     if (current is null)
                     {
@@ -353,7 +354,7 @@ namespace CodeArts.Db
             public override ConnectionState State => connectionState == ConnectionState.Closed ? connectionState : connection.State;
 
             public override void ChangeDatabase(string databaseName) => connection.ChangeDatabase(databaseName);
-            public override void EnlistTransaction(System.Transactions.Transaction transaction) => connection.EnlistTransaction(transaction);
+            public override void EnlistTransaction(Transaction transaction) => connection.EnlistTransaction(transaction);
 
             public override void Close()
             {
@@ -375,7 +376,7 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    var current = System.Transactions.Transaction.Current;
+                    var current = Transaction.Current;
 
                     if (current is null)
                     {
@@ -484,7 +485,7 @@ namespace CodeArts.Db
                     return connection.CloseAsync();
                 }
 
-                var current = System.Transactions.Transaction.Current;
+                var current = Transaction.Current;
 
                 if (current is null)
                 {
@@ -511,7 +512,7 @@ namespace CodeArts.Db
                     return new ValueTask(CloseAsync());
                 }
 
-                var current = System.Transactions.Transaction.Current;
+                var current = Transaction.Current;
 
                 if (current is null)
                 {
@@ -572,7 +573,7 @@ namespace CodeArts.Db
                 }
                 else
                 {
-                    var current = System.Transactions.Transaction.Current;
+                    var current = Transaction.Current;
 
                     if (current is null)
                     {
@@ -865,6 +866,15 @@ namespace CodeArts.Db
         /// <param name="adapter">数据库适配器。</param>
         /// <param name="useCache">使用缓存。</param>
         /// <returns></returns>
-        public IDbConnection GetConnection(string connectionString, IDbConnectionFactory adapter, bool useCache = true) => _connections.Create(connectionString, adapter, useCache);
+        public IDbConnection GetConnection(string connectionString, IDbConnectionFactory adapter, bool useCache = true)
+        {
+            if (!useCache //? 不复用链接。
+                || Transaction.Current is null) //? 不在事务范围中。
+            {
+                return _connections.Create(connectionString, adapter, useCache);
+            }
+
+            return TransactionConnections.GetConnection(connectionString, adapter);
+        }
     }
 }
