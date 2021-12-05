@@ -623,16 +623,20 @@ namespace CodeArts.Db
                     flag = true;
                 }
 
-                if (bracketLeft == bracketRight && letterStart > 0)
+                if (bracketLeft == bracketRight && letterStart > 0 && IsWhitespace(c))
                 {
-                    if (IsSelect(value, letterStart)
+                    int offset = i - letterStart;
+
+                    if (offset == 4 && IsWith(value, letterStart) ||
+                        offset == 6 && (IsSelect(value, letterStart)
                         || IsDelete(value, letterStart)
                         || IsInsert(value, letterStart)
-                        || IsUpdate(value, letterStart)
-                        || IsWith(value, letterStart))
+                        || IsUpdate(value, letterStart)))
                     {
                         return letterStart - 1;
                     }
+
+                    continue;
                 }
 
                 if (c == '(')
