@@ -1081,10 +1081,6 @@ group by  a.str_out_bill_id";
                 select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id";
 
             var sql = new SQL(sqlStr);
-
-            var countSql = sql.ToCountSQL();
-
-            var pagedSql = sql.ToSQL(0, 10);
         }
 
         [TestMethod]

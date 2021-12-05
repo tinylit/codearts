@@ -70,7 +70,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 连表命令。
         /// </summary>
-        private static readonly Regex PatternFormFollow = new Regex(@",[\x20\t\r\n\f]*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+)?(?<alias>(?!\bas\b)\w+))?[\x20\t\r\n\f]*(?=,|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternFormFollow = new Regex(@",[\x20\t\r\n\f]*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+)?(?<alias>(?!\bas\b)\w+))?(?=[\x20\t\r\n\f]*(,|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 参数。
@@ -618,26 +618,33 @@ namespace CodeArts.Db
                     continue;
                 }
 
-                if (!flag)
+                if (flag)
+                {
+                    goto label_bracket;
+                }
+
+                if (IsWhitespace(c))
                 {
                     flag = true;
-                }
 
-                if (bracketLeft == bracketRight && letterStart > 0 && IsWhitespace(c))
-                {
-                    int offset = i - letterStart;
-
-                    if (offset == 4 && IsWith(value, letterStart) ||
-                        offset == 6 && (IsSelect(value, letterStart)
-                        || IsDelete(value, letterStart)
-                        || IsInsert(value, letterStart)
-                        || IsUpdate(value, letterStart)))
+                    if (bracketLeft == bracketRight && letterStart > 0)
                     {
-                        return letterStart - 1;
-                    }
+                        int offset = i - letterStart;
 
-                    continue;
+                        if (offset == 4 && IsWith(value, letterStart) ||
+                            offset == 6 && (IsSelect(value, letterStart)
+                            || IsDelete(value, letterStart)
+                            || IsInsert(value, letterStart)
+                            || IsUpdate(value, letterStart)))
+                        {
+                            return letterStart - 1;
+                        }
+
+                        continue;
+                    }
                 }
+
+            label_bracket:
 
                 if (c == '(')
                 {
@@ -1231,7 +1238,8 @@ namespace CodeArts.Db
 
             if (withAsMt.Success)
             {
-                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
+                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length), 
+                    Environment.NewLine,
                     Aw_ToCountSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
             }
 
@@ -1327,6 +1335,7 @@ namespace CodeArts.Db
             if (withAsMt.Success)
             {
                 return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
+                    Environment.NewLine,
                     Aw_ToSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
             }
 
