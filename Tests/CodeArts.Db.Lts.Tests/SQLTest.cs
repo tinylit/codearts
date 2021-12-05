@@ -936,10 +936,6 @@ order by a.str_out_bill_id desc";
             var pagedSql = sql.ToSQL(0, 10);
 
             _ = countSql.ToString(settings);
-
-            _ = pagedSql.ToSQL(1, 20).ToString(settings);
-
-            _ = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
         }
 
         [TestMethod]
@@ -998,10 +994,6 @@ group by  a.str_out_bill_id";
             var pagedSql = sql.ToSQL(0, 10);
 
             _ = countSql.ToString(settings);
-
-            _ = pagedSql.ToSQL(1, 20).ToString(settings);
-
-            _ = pagedSql.Add(countSql).ToSQL(1, 20).ToString(settings);
         }
 
         [TestMethod]
@@ -1100,6 +1092,34 @@ group by  a.str_out_bill_id";
                 )
 
                 select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id";
+
+            var sql = new SQL(sqlStr);
+
+            var countSql = sql.ToCountSQL();
+
+            var pagedSql = sql.ToSQL(0, 10);
+        }
+
+        [TestMethod]
+        public void TestWithAsUnionAll()
+        {
+            string sqlStr = @"with cte1 as
+                (
+                    select * from table1 where name like 'abc%'
+                ),
+                cte2 as
+                (
+                    select * from ct3 where id > 20
+                ),
+                cte3 as
+                (
+                    select * from cte1 where price < 100
+                )
+
+                select a.* from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id
+                union all
+                select a.* from cte1 a where a.id > 100
+                ";
 
             var sql = new SQL(sqlStr);
 

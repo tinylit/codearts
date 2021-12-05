@@ -46,7 +46,25 @@ namespace CodeArts.Db
                 return this;
             }
 
-            return new SQL(string.Concat(originalSql, ";", sql));
+            bool flag = false;
+
+            for (int i = originalSql.Length - 1; i > 0; i--)
+            {
+                char c = originalSql[i];
+
+                if (c == '\x20' || c == '\t' || c == '\r' || c == '\n' || c == '\f')
+                {
+                    continue;
+                }
+
+                flag = c == ';';
+
+                break;
+            }
+
+            return new SQL(flag
+                ? string.Concat(originalSql, sql)
+                : string.Concat(originalSql, ";", sql));
         }
 
         /// <summary>

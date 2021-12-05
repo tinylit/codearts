@@ -25,7 +25,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 空白符。
         /// </summary>
-        private static readonly Regex PatternWhitespace = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\x20\t\f])[\x20\t\f]+|(?<=\()[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=\))|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
+        private static readonly Regex PatternWhitespace = new Regex(@"^[\x20\t\r\n\f]+|(?<=[\r\n]{2})[\r\n]+|(?<=[\x20\t\f])[\x20\t\f]+|(?<=\()[\x20\t\r\n\f]+|[\x20\t\r\n\f]+(?=\))|[\x20\t\r\n\f]+$", RegexOptions.Compiled);
 
         /// <summary>
         /// 移除所有前导空白字符和尾部空白字符函数修复。
@@ -65,7 +65,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 表命令。
         /// </summary>
-        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|select|into|limit|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+)))?[\x20\t\r\n\f]*(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternForm = new Regex(@"\b(from|join)[\x20\t\r\n\f]+([\w+\[\]]\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])([\x20\t\r\n\f]+(as[\x20\t\r\n\f]+(?<alias>\w+)|(?<alias>(?!\b(where|on|join|group|order|select|into|limit|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+)))?(?<follow>((?!\b(where|on|join|order|group|having|select|insert|update|delete|create|drop|alter|truncate|use|set|(left|right|inner|outer|full)[\x20\t\r\n\f]+join)\b)[^;])+)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 连表命令。
@@ -111,12 +111,6 @@ namespace CodeArts.Db
         /// 查询语句所有字段。
         /// </summary>
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<distinct>distinct[\x20\t\r\n\f]+)?(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        /// <summary>
-        /// 查询别名。
-        /// </summary>
-        private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\)([\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\))*[\x20\t\r\n\f]*(?=select|insert|update|delete[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-
         /// <summary>
         /// 查询语句排序内容。
         /// </summary>
@@ -126,6 +120,16 @@ namespace CodeArts.Db
         /// 分页。
         /// </summary>
         private static readonly Regex PatternPaging = new Regex("PAGING\\(`(?<main>(?:\\\\.|[^\\\\])*?)`,(?<index>\\d+),(?<size>\\d+)(,`(?<orderby>(?:\\\\.|[^\\\\])*?)`)?\\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// 查询别名。
+        /// </summary>
+        private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\)([\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\))*[\x20\t\r\n\f]*(?=select|insert|update|delete[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
+
+        /// <summary>
+        /// UNION/UNION ALL/EXCEPT/INTERSECT
+        /// </summary>
+        private static readonly Regex PatternJoint = new Regex(@"\b(union([\x20\t\r\n\f]+all)|except|intersect)[\x20\t\r\n\f]+select$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Compiled);
 
         #region UseSettings
 
@@ -407,10 +411,7 @@ namespace CodeArts.Db
         /// </summary>
         /// <param name="c">符号。</param>
         /// <returns></returns>
-        private static bool IsWhitespace(char c)
-        {
-            return c == '\x20' || c == '\t' || c == '\r' || c == '\n' || c == '\f';
-        }
+        private static bool IsWhitespace(char c) => c == '\x20' || c == '\t' || c == '\r' || c == '\n' || c == '\f';
 
         private static bool TryDistinctField(string cols, out string col)
         {
@@ -551,16 +552,16 @@ namespace CodeArts.Db
         /// <summary>
         /// 独立SQL分析。
         /// </summary>
-        /// <param name="value">内容。</param>
+        /// <param name="sql">内容。</param>
         /// <param name="startIndex">开始位置。</param>
         /// <returns></returns>
-        private static int IndependentSqlAnalysis(string value, int startIndex)
+        private static int IndependentSqlAnalysis(string sql, int startIndex)
         {
-            int length = value.Length;
+            int length = sql.Length;
 
             for (; startIndex < length; startIndex++) //? 空白符处理。
             {
-                char c = value[startIndex];
+                char c = sql[startIndex];
 
                 if (IsWhitespace(c))
                 {
@@ -570,7 +571,7 @@ namespace CodeArts.Db
                 break;
             }
 
-            int indexOfCemicolon = value.IndexOf(';', startIndex);
+            int indexOfCemicolon = sql.IndexOf(';', startIndex);
 
             if (indexOfCemicolon > -1) //? 分号分割。
             {
@@ -587,7 +588,7 @@ namespace CodeArts.Db
 
             for (int i = startIndex + 6/* 关键字 */; i < length; i++) //? 空白符处理。
             {
-                char c = value[i];
+                char c = sql[i];
 
                 if (c == '\'')
                 {
@@ -631,12 +632,32 @@ namespace CodeArts.Db
                     {
                         int offset = i - letterStart;
 
-                        if (offset == 4 && IsWith(value, letterStart) ||
-                            offset == 6 && (IsSelect(value, letterStart)
-                            || IsDelete(value, letterStart)
-                            || IsInsert(value, letterStart)
-                            || IsUpdate(value, letterStart)))
+                        if (offset == 4 && IsWith(sql, letterStart)) //? with
                         {
+                            return letterStart - 1;
+                        }
+
+                        if (offset == 6 && (IsDelete(sql, letterStart)
+                            || IsInsert(sql, letterStart)
+                            || IsUpdate(sql, letterStart)))
+                        {
+                            return letterStart - 1;
+                        }
+
+                        if (offset == 6 && IsSelect(sql, letterStart))
+                        {
+                            int j = letterStart - 1;
+
+                            while (IsWhitespace(sql[j])) //? 去空格。
+                            {
+                                j--;
+                            }
+
+                            if (IsUnion(sql, j) || IsUnionAll(sql, j) || IsExcept(sql, j) || IsIntersect(sql, j))
+                            {
+                                continue;
+                            }
+
                             return letterStart - 1;
                         }
 
@@ -659,13 +680,189 @@ namespace CodeArts.Db
             return length;
         }
 
-        private static readonly char[] SelectChars = new char[] { 's', 'e', 'l', 'e', 'c', 't' };
+        /// <summary>
+        /// 独立查询SQL类型。
+        /// </summary>
+        private enum IndependentSelectSqlType
+        {
+            None = 0, //? 未知。
+            Normal = 1, //? 常规。
+            HorizontalCombination = 2 //? 平级组合。
+        }
 
-        private static bool IsSelect(string value, int startIndex)
+        /// <summary>
+        /// 是独立的查询SQL语句。
+        /// </summary>
+        /// <param name="sql">内容。</param>
+        /// <returns></returns>
+        private static IndependentSelectSqlType IndependentSelectSqlAnalysis(string sql)
+        {
+            int i = 0;
+
+            int length = sql.Length;
+
+            for (; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (IsWhitespace(c))
+                {
+                    continue;
+                }
+
+                break;
+            }
+
+            for (int j = 0; j < 6; j++) //? 不是查询语句。
+            {
+                if (SelectChars[j].Equals(char.ToLower(sql[i++])))
+                {
+                    continue;
+                }
+
+                return IndependentSelectSqlType.None;
+            }
+
+            if (!IsWhitespace(sql[i])) //? 单词界限。
+            {
+                return IndependentSelectSqlType.None;
+            }
+
+            int indexOfCemicolon = sql.IndexOf(';', i);
+
+            if (indexOfCemicolon > -1) //? 分号分割。
+            {
+                for (int j = indexOfCemicolon; j < length; j++)
+                {
+                    char c = sql[j];
+
+                    if (IsWhitespace(c))
+                    {
+                        continue;
+                    }
+
+                    return IndependentSelectSqlType.None;
+                }
+            }
+
+            bool flag = true;
+            bool quotesFlag = false;
+            bool isHorizontalCombination = false;
+
+            int letterStart = 0;
+
+            int bracketLeft = 0;
+            int bracketRight = 0;
+
+            for (; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (c == '\'')
+                {
+                    if (quotesFlag) //? 右引号。
+                    {
+                        quotesFlag = false;
+
+                        continue;
+                    }
+
+                    quotesFlag = true;
+                }
+
+                if (quotesFlag) //? 占位符。
+                {
+                    continue;
+                }
+
+                if (char.IsLetter(c))
+                {
+                    if (flag)
+                    {
+                        flag = false;
+
+                        letterStart = i;
+                    }
+
+                    continue;
+                }
+
+                if (flag)
+                {
+                    goto label_bracket;
+                }
+
+                if (IsWhitespace(c))
+                {
+                    flag = true;
+
+                    if (letterStart == 0)
+                    {
+                        continue;
+                    }
+
+                    if (bracketLeft == bracketRight)
+                    {
+                        int offset = i - letterStart;
+
+                        if (offset == 4 && IsWith(sql, letterStart)) //? with
+                        {
+                            return IndependentSelectSqlType.None;
+                        }
+
+                        if (offset == 6 && (IsDelete(sql, letterStart)
+                            || IsInsert(sql, letterStart)
+                            || IsUpdate(sql, letterStart)))
+                        {
+                            return IndependentSelectSqlType.None;
+                        }
+
+                        if (offset == 6 && IsSelect(sql, letterStart))
+                        {
+                            int j = letterStart - 1;
+
+                            while (IsWhitespace(sql[j])) //? 去空格。
+                            {
+                                j--;
+                            }
+
+                            if (IsUnion(sql, j) || IsUnionAll(sql, j) || IsExcept(sql, j) || IsIntersect(sql, j))
+                            {
+                                isHorizontalCombination = true;
+
+                                continue;
+                            }
+
+                            return IndependentSelectSqlType.None;
+                        }
+                    }
+
+                    continue;
+                }
+
+            label_bracket:
+
+                if (c == '(')
+                {
+                    bracketLeft++;
+                }
+                else if (c == ')')
+                {
+                    bracketRight++;
+                }
+            }
+
+            return isHorizontalCombination
+                ? IndependentSelectSqlType.HorizontalCombination
+                : IndependentSelectSqlType.Normal;
+        }
+
+        private static readonly char[] SelectChars = new char[] { 's', 'e', 'l', 'e', 'c', 't' };
+        private static bool IsSelect(string sql, int startIndex)
         {
             for (int i = 0; i < 6; i++)
             {
-                if (SelectChars[i].Equals(char.ToLower(value[startIndex + i])))
+                if (SelectChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
                     continue;
                 }
@@ -678,11 +875,11 @@ namespace CodeArts.Db
 
         private static readonly char[] InsertChars = new char[] { 'i', 'n', 's', 'e', 'r', 't' };
 
-        private static bool IsInsert(string value, int startIndex)
+        private static bool IsInsert(string sql, int startIndex)
         {
             for (int i = 0; i < 6; i++)
             {
-                if (InsertChars[i].Equals(char.ToLower(value[startIndex + i])))
+                if (InsertChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
                     continue;
                 }
@@ -694,12 +891,11 @@ namespace CodeArts.Db
         }
 
         private static readonly char[] UpdateChars = new char[] { 'u', 'p', 'd', 'a', 't', 'e' };
-
-        private static bool IsUpdate(string value, int startIndex)
+        private static bool IsUpdate(string sql, int startIndex)
         {
             for (int i = 0; i < 6; i++)
             {
-                if (UpdateChars[i].Equals(char.ToLower(value[startIndex + i])))
+                if (UpdateChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
                     continue;
                 }
@@ -711,12 +907,11 @@ namespace CodeArts.Db
         }
 
         private static readonly char[] DeleteChars = new char[] { 'd', 'e', 'l', 'e', 't', 'e' };
-
-        private static bool IsDelete(string value, int startIndex)
+        private static bool IsDelete(string sql, int startIndex)
         {
             for (int i = 0; i < 6; i++)
             {
-                if (DeleteChars[i].Equals(char.ToLower(value[startIndex + i])))
+                if (DeleteChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
                     continue;
                 }
@@ -728,12 +923,11 @@ namespace CodeArts.Db
         }
 
         private static readonly char[] WithChars = new char[] { 'w', 'i', 't', 'h' };
-
-        private static bool IsWith(string value, int startIndex)
+        private static bool IsWith(string sql, int startIndex)
         {
             for (int i = 0; i < 4; i++)
             {
-                if (WithChars[i].Equals(char.ToLower(value[startIndex + i])))
+                if (WithChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
                     continue;
                 }
@@ -743,6 +937,107 @@ namespace CodeArts.Db
 
             return true;
         }
+
+        private static readonly char[] AllChars = new char[] { 'a', 'l', 'l' };
+        private static readonly char[] UnionChars = new char[] { 'u', 'n', 'i', 'o', 'n' };
+
+        private static bool IsUnion(string sql, int endIndex)
+        {
+            if (endIndex < 5)
+            {
+                return false;
+            }
+
+            int startIndex = endIndex - 4;
+
+            for (int i = 0; i < 5; i++)
+            {
+                if (UnionChars[i].Equals(char.ToLower(sql[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return startIndex == 0 || IsWhitespace(sql[startIndex - 1]);
+        }
+        private static bool IsUnionAll(string sql, int endIndex)
+        {
+            if (endIndex < 9)
+            {
+                return false;
+            }
+            int startIndex = endIndex - 2;
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (AllChars[i].Equals(char.ToLower(sql[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            int j = startIndex - 1;
+
+            while (IsWhitespace(sql[j])) //? 去空格。
+            {
+                j--;
+            }
+
+            return IsUnion(sql, j);
+        }
+
+        private static readonly char[] IntersectChars = new char[] { 'i', 'n', 't', 'e', 'r', 's', 'e', 'c', 't' };
+
+        private static bool IsIntersect(string value, int endIndex)
+        {
+            if (endIndex < 9)
+            {
+                return false;
+            }
+
+            int startIndex = endIndex - 8;
+
+            for (int i = 0; i < 9; i++)
+            {
+                if (IntersectChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return startIndex == 0 || IsWhitespace(value[startIndex - 1]);
+        }
+
+        private static readonly char[] ExceptChars = new char[] { 'e', 'x', 'c', 'e', 'p', 't' };
+
+        private static bool IsExcept(string value, int endIndex)
+        {
+            if (endIndex < 6)
+            {
+                return false;
+            }
+
+            int startIndex = endIndex - 5;
+
+            for (int i = 0; i < 6; i++)
+            {
+                if (ExceptChars[i].Equals(char.ToLower(value[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return startIndex == 0 || IsWhitespace(value[startIndex - 1]);
+        }
+
         #endregion
 
         /// <summary>
@@ -839,7 +1134,8 @@ namespace CodeArts.Db
                     }
                     else
                     {
-                        sbSql.Append(',');
+                        sbSql.Append('\x20')
+                            .Append(',');
                     }
 
                     sbSql.Append('[')
@@ -847,7 +1143,8 @@ namespace CodeArts.Db
                         .Append(']')
                         .Append(sql.Substring(nameCap.Index + nameCap.Length, sqlCap.Index - nameCap.Index - nameCap.Length))
                         .Append(Done(sqlCap.Value))
-                        .Append(')');
+                        .Append(')')
+                        .Append(Environment.NewLine);
 
                     withAs.Add(nameCap.Value);
                 }
@@ -1238,7 +1535,7 @@ namespace CodeArts.Db
 
             if (withAsMt.Success)
             {
-                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length), 
+                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
                     Environment.NewLine,
                     Aw_ToCountSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
             }
@@ -1246,16 +1543,31 @@ namespace CodeArts.Db
             return Aw_ToCountSQL_Simple(sql);
         }
 
-        private static string Aw_ToCountSQL_Simple(string formatSql)
+        private static string Aw_ToCountSQL_Simple(string sql)
         {
+            IndependentSelectSqlType independentType = IndependentSelectSqlAnalysis(sql);
+
+            if (independentType == IndependentSelectSqlType.None)
+            {
+                throw new NotSupportedException($"不支持({sql})语句的行数统计!");
+            }
+
             var sb = new StringBuilder();
 
-            var colsMt = PatternColumn.Match(formatSql);
+            if (independentType == IndependentSelectSqlType.HorizontalCombination)
+            {
+                return sb.Append("SELECT COUNT(1) FROM (")
+                    .Append(sql)
+                    .Append(") AS xRows")
+                    .ToString();
+            }
+
+            var colsMt = PatternColumn.Match(sql);
 
             if (!colsMt.Success)
             {
                 return sb.Append("SELECT COUNT(1) FROM (")
-                    .Append(formatSql)
+                    .Append(sql)
                     .Append(") AS xRows")
                     .ToString();
             }
@@ -1268,28 +1580,29 @@ namespace CodeArts.Db
                 if (!TryDistinctField(colsGrp.Value, out string col))
                 {
                     return sb.Append("SELECT COUNT(1) FROM (")
-                       .Append(formatSql)
+                       .Append(sql)
                        .Append(") AS xRows")
                        .ToString();
                 }
 
-                sb.Append(formatSql.Substring(0, distinctGrp.Index))
-                    .Append("COUNT(DISTINCT ")
+                sb.Append(sql.Substring(0, distinctGrp.Index))
+                    .Append("COUNT(")
+                    .Append(distinctGrp.Value)
                     .Append(col)
                     .Append(')');
             }
             else
             {
-                sb.Append(formatSql.Substring(0, colsGrp.Index))
+                sb.Append(sql.Substring(0, colsGrp.Index))
                     .Append("COUNT(1)");
             }
 
-            var orderByMt = PatternOrderBy.Match(formatSql);
+            var orderByMt = PatternOrderBy.Match(sql);
 
             int subIndex = colsGrp.Index + colsGrp.Length;
 
             //? 补充 \r\n 换行符处理。
-            while (formatSql[subIndex] == '\n' || formatSql[subIndex] == '\r')
+            while (sql[subIndex] == '\n' || sql[subIndex] == '\r')
             {
                 subIndex--;
             }
@@ -1297,17 +1610,17 @@ namespace CodeArts.Db
             if (orderByMt.Success)
             {
 #if NETSTANDARD2_1_OR_GREATER
-                sb.Append(formatSql[subIndex..orderByMt.Index]);
+                sb.Append(sql[subIndex..orderByMt.Index]);
 #else
-                sb.Append(formatSql.Substring(subIndex, orderByMt.Index - subIndex));
+                sb.Append(sql.Substring(subIndex, orderByMt.Index - subIndex));
 #endif
             }
             else
             {
 #if NETSTANDARD2_1_OR_GREATER
-                sb.Append(formatSql[subIndex..]);
+                sb.Append(sql[subIndex..]);
 #else
-                sb.Append(formatSql.Substring(subIndex));
+                sb.Append(sql.Substring(subIndex));
 #endif
             }
 
@@ -1334,75 +1647,55 @@ namespace CodeArts.Db
 
             if (withAsMt.Success)
             {
-                return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
-                    Environment.NewLine,
-                    Aw_ToSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
-            }
+                string mainSql = Aw_ToSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length));
 
-            return Aw_ToSQL_Simple(sql);
+                return string.Concat("PAGING(`", sql.Substring(0, withAsMt.Index + withAsMt.Length),
+                    Environment.NewLine,
+                    mainSql);
+            }
+            else
+            {
+                string mainSql = Aw_ToSQL_Simple(sql);
+
+                return string.Concat("PAGING(`", mainSql);
+            }
         }
 
-        private static string Aw_ToSQL_Simple(string formatSql)
+        private static string Aw_ToSQL_Simple(string sql)
         {
+            if (PatternPaging.IsMatch(sql))
+            {
+                throw new NotSupportedException("请勿重复分页!");
+            }
+
+            IndependentSelectSqlType independentType = IndependentSelectSqlAnalysis(sql);
+
+            if (independentType == IndependentSelectSqlType.None)
+            {
+                throw new NotSupportedException($"不支持({sql})语句的分页!");
+            }
+
             var sb = new StringBuilder();
 
-            var match = PatternPaging.Match(formatSql);
-
-            if (match.Success)
+            if (independentType == IndependentSelectSqlType.HorizontalCombination)
             {
-                var mainSql = match.Groups["main"].Value;
-                var orderBySql = match.Groups["orderby"];
-
-                sb.Append(formatSql.Substring(0, match.Index))
-                    .Append("PAGING(`")
-                    .Append(mainSql)
-                    .Append('`')
-                    .Append(',')
-                    .Append("{=index}")
-                    .Append(',')
-                    .Append("{=size}");
-
-                if (orderBySql.Success)
-                {
-                    sb.Append(',')
-                        .Append('`')
-                        .Append(orderBySql.Value)
-                        .Append('`');
-                }
-
-                sb.Append(')')
-#if NETSTANDARD2_1_OR_GREATER
-                    .Append(formatSql[(match.Index + match.Length)..]);
-#else
-                    .Append(formatSql.Substring(match.Index + match.Length));
-#endif
-
-                match = match.NextMatch();
-
-                if (match.Success)
-                {
-                    throw new NotSupportedException("一条语句中不支持多个“PAGING”函数！");
-                }
-
-                return sb.ToString();
+                return sb.Append("SELECT * FROM (")
+                         .Append(sql)
+                         .Append(") AS xRows")
+                         .Append('`')
+                         .Append(',')
+                         .Append("{=index}")
+                         .Append(',')
+                         .Append("{=size}")
+                         .Append(')')
+                         .ToString();
             }
 
-            var colsMt = PatternColumn.Match(formatSql);
-
-            if (!colsMt.Success)
-            {
-                throw new NotSupportedException();
-            }
-
-            var colsGrp = colsMt.Groups["cols"];
-
-            var orderByMt = PatternOrderBy.Match(formatSql);
-
-            sb.Append("PAGING(`");
+            var orderByMt = PatternOrderBy.Match(sql);
 
             if (orderByMt.Success)
             {
-                sb.Append(formatSql.Substring(0, orderByMt.Index))
+                sb.Append(sql.Substring(0, orderByMt.Index))
                     .Append('`')
                     .Append(',')
                     .Append("{=index}")
@@ -1411,15 +1704,15 @@ namespace CodeArts.Db
                     .Append(',')
                     .Append('`')
 #if NETSTANDARD2_1_OR_GREATER
-                    .Append(formatSql[orderByMt.Index..])
+                    .Append(sql[orderByMt.Index..])
 #else
-                    .Append(formatSql.Substring(orderByMt.Index))
+                    .Append(sql.Substring(orderByMt.Index))
 #endif
                     .Append('`');
             }
             else
             {
-                sb.Append(formatSql)
+                sb.Append(sql)
                     .Append('`')
                     .Append(',')
                     .Append("{=index}")
