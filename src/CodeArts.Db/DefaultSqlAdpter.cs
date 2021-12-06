@@ -157,6 +157,11 @@ namespace CodeArts.Db
         /// 聚合函数。
         /// </summary>
         private static readonly Regex PatternAggregationFn = new Regex(@"\b(sum|max|min|avg|count)[\x20\t\r\n\f]*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        /// <summary>
+        /// 字段名。
+        /// </summary>
+        private static readonly Regex PatternSingleColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
         #endregion
 
         private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
@@ -423,7 +428,7 @@ namespace CodeArts.Db
             int startIndex = -1;
             int i = 0, length = cols.Length;
 
-        label_core:
+label_core:
 
             for (; i < length; i++)
             {
@@ -496,7 +501,7 @@ namespace CodeArts.Db
                 return true;
             }
 
-        label_false:
+label_false:
 
             col = null;
 
@@ -665,7 +670,7 @@ namespace CodeArts.Db
                     }
                 }
 
-            label_bracket:
+label_bracket:
 
                 if (c == '(')
                 {
@@ -840,7 +845,7 @@ namespace CodeArts.Db
                     continue;
                 }
 
-            label_bracket:
+label_bracket:
 
                 if (c == '(')
                 {
@@ -1679,6 +1684,20 @@ namespace CodeArts.Db
 
             if (independentType == IndependentSelectSqlType.HorizontalCombination)
             {
+                var colsMt = PatternColumn.Match(sql);
+
+                if (!colsMt.Success)
+                {
+                    throw new DException($"无法分析到({sql})语句的查询字段!");
+                }
+
+                string cols = colsMt.Groups[0].Value;
+
+                if (CommonSettings.IsSingleColumnCodeBlock(cols))
+                {
+                    throw new NotSupportedException($"不支持首层使用组合函数（Union/Union All/Except/Intersect）且为独立字段的({sql})语句分页!");
+                }
+
                 return sb.Append("SELECT * FROM (")
                          .Append(sql)
                          .Append(") AS xRows")

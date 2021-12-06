@@ -48,7 +48,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 格式化集合。
         /// </summary>
-        #if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER
         public ICollection<IFormatter> Formatters => formatters ??= new List<IFormatter>();
 #else
         public ICollection<IFormatter> Formatters => formatters ?? (formatters = new List<IFormatter>());
@@ -74,11 +74,18 @@ namespace CodeArts.Db
 
             if (list.Count == 1)
             {
-                var match = PatternSingleAsColumn.Match(list.First());
+                string col = list[0];
+
+                var match = PatternSingleAsColumn.Match(col);
 
                 if (match.Success)
                 {
                     return Tuple.Create(match.Groups["name"].Value, false);
+                }
+
+                if (col.IndexOf('*') >= 0)
+                {
+                    return Tuple.Create(col, false);
                 }
 
                 return Tuple.Create(Name("__sql_server_col"), true);

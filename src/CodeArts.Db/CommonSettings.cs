@@ -10,6 +10,7 @@ namespace CodeArts.Db
     /// </summary>
     public static class CommonSettings
     {
+        private static readonly Regex PatternAny = new Regex(@"(^|,)[\x20\t\r\n\f]*(\w+\.)*\*", RegexOptions.Compiled);
         private static readonly Regex PatternColumn = new Regex(@"\bselect[\x20\t\r\n\f]+(?<cols>((?!\b(select|where)\b)[\s\S])+(select((?!\b(from|select)\b)[\s\S])+from((?!\b(from|select)\b)[\s\S])+)*((?!\b(from|select)\b)[\s\S])*)[\x20\t\r\n\f]+from[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
@@ -144,6 +145,43 @@ namespace CodeArts.Db
         }
 
         /// <summary>
+        /// 是否为独列。
+        /// </summary>
+        /// <example>substring([x].[value],[x].[index],[x].[len]) as [total] => true</example>
+        /// <example>[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => false</example>
+        /// <param name="columns">以“,”分割的列集合。</param>
+        /// <returns></returns>
+        public static bool IsSingleColumnCodeBlock(string columns)
+        {
+            if (PatternAny.IsMatch(columns))
+            {
+                return false;
+            }
+
+            int offset = 0;
+
+            int startIndex = 0, nextIndex = 0, length = columns.Length;
+
+            while (nextIndex > -1 && startIndex < length)
+            {
+                nextIndex = ParameterAnalysis(columns, startIndex);
+
+                startIndex = nextIndex + 1;
+
+                offset++;
+
+                if (offset == 1)
+                {
+                    continue;
+                }
+
+                break;
+            }
+
+            return offset == 1;
+        }
+
+        /// <summary>
         /// 查询字段。
         /// </summary>
         /// <param name="sql">SQL。</param>
@@ -154,7 +192,7 @@ namespace CodeArts.Db
 
             if (!match.Success)
             {
-                throw new DException("无法分析的SQL语句!");
+                throw new DException($"无法分析到({sql})语句的查询字段!");
             }
 
             Group group = match.Groups["cols"];
