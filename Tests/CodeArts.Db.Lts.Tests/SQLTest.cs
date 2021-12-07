@@ -953,9 +953,11 @@ group by  a.str_out_bill_id";
 
             SQL sql = new SQL(sqlstr);
 
+            sql.ToString(settings);
+
             var countSql = sql.ToCountSQL();
 
-            string sqlstr2 = @"select distinct REPLACE(c.customer_name, 'a', 'A') as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
+            string sqlstr2 = @"select distinct REPLACE(c.customer_name, 'a', 'A') as gmfmc, indexOf(c.customer_name, 'A'), indexOf(c.customer_name, 'A', 15) from  str_out_bill a  join customer c on a.come_to = c.customer_id,
  str_out_bill_detail d join goods on d.goods_id = goods.goods_id
 where  a.str_out_type_id in('4','B')
 and a.str_out_bill_id = d.str_out_bill_id
@@ -964,6 +966,8 @@ and  a.str_out_bill_id=@ddbh
 group by  a.str_out_bill_id";
 
             sql = new SQL(sqlstr2);
+
+            sql.ToString(settings);
 
             var countSql2 = sql.ToCountSQL();
 
@@ -1126,6 +1130,34 @@ group by  a.str_out_bill_id";
             var countSql = sql.ToCountSQL();
 
             var pagedSql = sql.ToSQL(0, 10);
+        }
+
+        [TestMethod]
+        public void TestNamelessField()
+        {
+            var settings = new SqlServerCorrectSettings();
+
+            string sqlStr = @"with cte1 as
+                (
+                    select * from table1 where name like 'abc%'
+                ),
+                cte2 as
+                (
+                    select * from ct3 where id > 20
+                ),
+                cte3 as
+                (
+                    select * from cte1 where price < 100
+                )
+
+                select count(1), sum(x.value), avg(x.age) as age, max(x.age) from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id
+                ";
+
+            var sql = new SQL(sqlStr);
+
+            var pagedSql = sql.ToSQL(1, 10);
+
+            string sqlStr2 = pagedSql.ToString(settings);
         }
     }
 }

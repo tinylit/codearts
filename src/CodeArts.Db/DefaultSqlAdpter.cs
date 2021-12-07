@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -12,6 +13,8 @@ namespace CodeArts.Db
     /// </summary>
     public class DefaultSqlAdpter : ISqlAdpter
     {
+        const char LeftBracket = '[';
+        const char RightBracket = ']';
         /// <summary>
         /// 注解。
         /// </summary>
@@ -119,17 +122,12 @@ namespace CodeArts.Db
         /// <summary>
         /// 分页。
         /// </summary>
-        private static readonly Regex PatternPaging = new Regex("PAGING\\(`(?<main>(?:\\\\.|[^\\\\])*?)`,(?<index>\\d+),(?<size>\\d+)(,`(?<orderby>(?:\\\\.|[^\\\\])*?)`)?\\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternPaging = new Regex("P\\(`(?<main>(?:\\\\.|[^\\\\])*?)`,(?<index>\\d+),(?<size>\\d+)(,`(?<orderby>(?:\\\\.|[^\\\\])*?)`)?\\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 查询别名。
         /// </summary>
         private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\)([\x20\t\r\n\f]*,[\x20\t\r\n\f]*(?<name>[^\x20\t\r\n\f]+)[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\((?<sql>.+?)\))*[\x20\t\r\n\f]*(?=select|insert|update|delete[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-
-        /// <summary>
-        /// UNION/UNION ALL/EXCEPT/INTERSECT
-        /// </summary>
-        private static readonly Regex PatternJoint = new Regex(@"\b(union([\x20\t\r\n\f]+all)|except|intersect)[\x20\t\r\n\f]+select$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Compiled);
 
         #region UseSettings
 
@@ -161,7 +159,12 @@ namespace CodeArts.Db
         /// <summary>
         /// 字段名。
         /// </summary>
-        private static readonly Regex PatternSingleColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
+        private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
+
+        /// <summary>
+        /// * 字段。
+        /// </summary>
+        private static readonly Regex PatternAnyField = new Regex(@"\*[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
         #endregion
 
         private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
@@ -341,10 +344,94 @@ namespace CodeArts.Db
         /// <summary>
         /// 分析参数。
         /// </summary>
+        /// <param name="sql">内容。</param>
+        /// <param name="startIndex">开始位置。</param>
+        /// <param name="matches">匹配参数结果。</param>
+        /// <returns></returns>
+        private static int ParameterAnalysis(string sql, int startIndex, out List<RangeMatch> matches)
+        {
+            matches = new List<RangeMatch>();
+
+            bool quotesFlag = false;
+
+            int letterStart = 0;
+            int bracketLeft = 0;
+            int bracketRight = 0;
+
+            //? 字段初始。
+            int parameterStart = startIndex;
+
+            for (int i = startIndex, length = sql.Length; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (c == '\\') //? 转义。
+                {
+                    i++;
+
+                    continue;
+                }
+
+                if (c == '\'')
+                {
+                    if (quotesFlag) //? 右引号。
+                    {
+                        quotesFlag = false;
+
+                        continue;
+                    }
+
+                    quotesFlag = true;
+                }
+
+                if (quotesFlag) //? 占位符。
+                {
+                    continue;
+                }
+
+                if (c == '(')
+                {
+                    bracketLeft++;
+                }
+                else if (c == ')')
+                {
+                    if (bracketRight == bracketLeft)
+                    {
+                        letterStart = i;
+
+                        break;
+                    }
+
+                    bracketRight++;
+                }
+                else if (bracketLeft == bracketRight && c == ',') //? 字段。
+                {
+                    matches.Add(new RangeMatch
+                    {
+                        Index = parameterStart,
+                        Length = i - parameterStart
+                    });
+
+                    parameterStart = i + 1;
+                }
+            }
+
+            matches.Add(new RangeMatch
+            {
+                Index = parameterStart,
+                Length = letterStart - parameterStart
+            });
+
+            return letterStart;
+        }
+
+        /// <summary>
+        /// 分析参数。
+        /// </summary>
         /// <param name="value">内容。</param>
         /// <param name="startIndex">开始位置。</param>
         /// <returns></returns>
-        private static Tuple<int, string[]> ParameterAnalysis(string value, int startIndex)
+        private static Tuple<int, string[]> ParameterAnalysisBak(string value, int startIndex)
         {
             var list = new List<string>();
             int leftCount = 1;
@@ -466,7 +553,7 @@ label_core:
                             continue;
                         }
 
-                        if (c == ']' || c == '`' || c == '"')//? 字段标识。
+                        if (c == RightBracket || c == '`' || c == '"')//? 字段标识。
                         {
                             i = j + 1;
 
@@ -552,7 +639,6 @@ label_false:
 
             return true;
         }
-
 
         /// <summary>
         /// 独立SQL分析。
@@ -666,8 +752,13 @@ label_false:
                             return letterStart - 1;
                         }
 
-                        continue;
+                        if (offset == 7 && IsDeclare(sql, letterStart))
+                        {
+                            return letterStart - 1;
+                        }
                     }
+
+                    continue;
                 }
 
 label_bracket:
@@ -763,6 +854,13 @@ label_bracket:
             {
                 char c = sql[i];
 
+                if (c == '\\') //? 转义。
+                {
+                    i++;
+
+                    continue;
+                }
+
                 if (c == '\'')
                 {
                     if (quotesFlag) //? 右引号。
@@ -838,6 +936,11 @@ label_bracket:
                                 continue;
                             }
 
+                            return IndependentSelectSqlType.None;
+                        }
+
+                        if (offset == 7 && IsDeclare(sql, letterStart))
+                        {
                             return IndependentSelectSqlType.None;
                         }
                     }
@@ -917,6 +1020,22 @@ label_bracket:
             for (int i = 0; i < 6; i++)
             {
                 if (DeleteChars[i].Equals(char.ToLower(sql[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static readonly char[] DeclareChars = new char[] { 'd', 'e', 'c', 'l', 'a', 'r', 'e' };
+        private static bool IsDeclare(string sql, int startIndex)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                if (DeclareChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
                     continue;
                 }
@@ -1043,6 +1162,178 @@ label_bracket:
             return startIndex == 0 || IsWhitespace(value[startIndex - 1]);
         }
 
+        private static readonly char[] FromChars = new char[] { 'f', 'r', 'o', 'm' };
+
+        private static bool IsFrom(string sql, int startIndex)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (FromChars[i].Equals(char.ToLower(sql[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static readonly char[] DistinctChars = new char[] { 'd', 'i', 's', 't', 'i', 'n', 'c', 't' };
+
+        private static bool IsDistinct(string sql, int startIndex)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                if (DistinctChars[i].Equals(char.ToLower(sql[startIndex + i])))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private class RangeMatch
+        {
+            public int Index { get; set; }
+
+            public int Length { get; set; }
+        }
+
+        private static Tuple<int, int> AnalysisFields(string sql, out List<RangeMatch> matches)
+        {
+            int i = 0;
+            int length = sql.Length;
+
+            matches = new List<RangeMatch>();
+
+            for (; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (IsWhitespace(c))
+                {
+                    continue;
+                }
+
+                break;
+            }
+
+            bool flag = true;
+            bool distinctFlag = true;
+            bool quotesFlag = false;
+
+            i += 6; //? 跳过第一个关键字。
+
+            //? 字段初始。
+            int fieldStart = i;
+
+            int startIndex = 0;
+
+            int letterStart = 0;
+            int bracketLeft = 0;
+            int bracketRight = 0;
+
+            for (; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (c == '\\') //? 转义。
+                {
+                    i++;
+
+                    continue;
+                }
+
+                if (c == '\'')
+                {
+                    if (quotesFlag) //? 右引号。
+                    {
+                        quotesFlag = false;
+
+                        continue;
+                    }
+
+                    quotesFlag = true;
+                }
+
+                if (quotesFlag) //? 占位符。
+                {
+                    continue;
+                }
+
+                if (char.IsLetter(c))
+                {
+                    if (flag)
+                    {
+                        flag = false;
+
+                        letterStart = i;
+                    }
+
+                    continue;
+                }
+
+                if (bracketLeft == bracketRight && c == ',') //? 字段。
+                {
+                    matches.Add(new RangeMatch
+                    {
+                        Index = fieldStart,
+                        Length = i - fieldStart
+                    });
+
+                    fieldStart = i + 1;
+                }
+                else if (c == '(')
+                {
+                    bracketLeft++;
+                }
+                else if (c == ')')
+                {
+                    bracketRight++;
+                }
+                else if (IsWhitespace(c))
+                {
+                    flag = true;
+
+                    if (bracketLeft == bracketRight && letterStart > 0)
+                    {
+                        int offset = i - letterStart;
+
+                        if (offset == 4 && IsFrom(sql, letterStart)) //? from
+                        {
+                            break;
+                        }
+
+                        if (distinctFlag && offset == 8 && IsDistinct(sql, letterStart))
+                        {
+                            fieldStart = startIndex = i;
+
+                            distinctFlag = false;
+                        }
+                    }
+                    else if (startIndex == 0)
+                    {
+                        startIndex = i;
+                    }
+
+                    continue;
+                }
+            }
+
+            matches.Add(new RangeMatch
+            {
+                Index = fieldStart,
+                Length = letterStart - fieldStart
+            });
+
+            return Tuple.Create(startIndex, letterStart - 1);
+        }
+
+        private static string MakeName(string str) => Regex.Replace(str, "[^\\w]", "_");
         #endregion
 
         /// <summary>
@@ -1079,7 +1370,7 @@ label_bracket:
 
                 if (value.Length > 2)
                 {
-                    characters.Add(value.Substring(1, item.Value.Length - 2));
+                    characters.Add(value.Substring(1, item.Length - 2));
 
                     var charStr = char.ToString(value[0]);
 
@@ -1099,18 +1390,21 @@ label_bracket:
 
                 string name = nameGrp.Value;
 
-                return string.Concat("L", name, "(R", name,
-#if NETSTANDARD2_1_OR_GREATER
-                    item.Value[nameGrp.Length..],
-#else
-                    item.Value.Substring(nameGrp.Length),
-#endif
-                    ")");
+                StringBuilder sb = new StringBuilder(item.Length + nameGrp.Length + 4);
+
+                return sb.Append('L')
+                        .Append(name)
+                        .Append('(')
+                        .Append('R')
+                        .Append(name)
+                        .Append(item.Value, nameGrp.Length, item.Length - nameGrp.Length)
+                        .Append(')')
+                        .ToString();
             });
 
             int offset = 0;
 
-            StringBuilder sbSql = new StringBuilder();
+            StringBuilder sbSql = new StringBuilder(sql.Length + 50);
 
             List<TableToken> tables = new List<TableToken>();
 
@@ -1135,7 +1429,7 @@ label_bracket:
 
                     if (i == 0)
                     {
-                        sbSql.Append(sql.Substring(withAsMt.Index, nameCap.Index - withAsMt.Index));
+                        sbSql.Append(sql, withAsMt.Index, nameCap.Index - withAsMt.Index);
                     }
                     else
                     {
@@ -1143,15 +1437,15 @@ label_bracket:
                             .Append(',');
                     }
 
-                    sbSql.Append('[')
+                    withAs.Add(nameCap.Value); //? 递归查询。
+
+                    sbSql.Append(LeftBracket)
                         .Append(nameCap.Value)
-                        .Append(']')
-                        .Append(sql.Substring(nameCap.Index + nameCap.Length, sqlCap.Index - nameCap.Index - nameCap.Length))
+                        .Append(RightBracket)
+                        .Append(sql, nameCap.Index + nameCap.Length, sqlCap.Index - nameCap.Index - nameCap.Length)
                         .Append(Done(sqlCap.Value))
                         .Append(')')
                         .Append(Environment.NewLine);
-
-                    withAs.Add(nameCap.Value);
                 }
 
                 offset = IndependentSqlAnalysis(sql, withAsMt.Index + withAsMt.Length);
@@ -1194,35 +1488,38 @@ label_bracket:
                     var nameGrp = item.Groups["name"];
                     var tableGrp = item.Groups["table"];
 
-                    var sb = new StringBuilder();
+                    var sb = new StringBuilder(item.Length + 10);
 
                     AddTableToken(CommandTypes.Create, tableGrp.Value);
 
-                    return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
-                     .Append("[")
+                    int startIndex = tableGrp.Index - item.Index + tableGrp.Length;
+
+                    return sb.Append(item.Value, 0, tableGrp.Index - item.Index)
+                     .Append(LeftBracket)
                      .Append(nameGrp.Value)
-                     .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                 .Append(PatternFieldCreate.Replace(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..], match =>
-#else
-                 .Append(PatternFieldCreate.Replace(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length), match =>
-#endif
-                 {
-                     Group nameGrp2 = match.Groups["name"];
+                     .Append(RightBracket)
+                     .Append(PatternFieldCreate.Replace(item.Value, match =>
+                     {
+                         Group nameSubGrp = match.Groups["name"];
 
-                     string value2 = string.Concat("[", nameGrp2.Value, "]");
+                         StringBuilder sbSub = new StringBuilder();
 
-                     if (nameGrp2.Index == item.Index && nameGrp2.Length == match.Length)
-                         return value2;
+                         if (nameSubGrp.Index == item.Index && nameSubGrp.Length == match.Length)
+                             return sbSub.Append(LeftBracket)
+                                     .Append(nameSubGrp.Value)
+                                     .Append(RightBracket)
+                                     .ToString();
 
-                     return string.Concat(match.Value.Substring(0, nameGrp2.Index - match.Index), value2,
-#if NETSTANDARD2_1_OR_GREATER
-                         match.Value[(nameGrp2.Index - match.Index + nameGrp2.Length)..]
-#else
-                         match.Value.Substring(nameGrp2.Index - match.Index + nameGrp2.Length)
-#endif
-                         );
-                 }))
+                         int index = nameSubGrp.Index - match.Index + nameSubGrp.Length;
+
+                         return sbSub.Append(match.Value, 0, nameSubGrp.Index - match.Index)
+                                    .Append(LeftBracket)
+                                    .Append(nameSubGrp.Value)
+                                    .Append(RightBracket)
+                                    .Append(match.Value, match.Length - index, index)
+                                    .ToString();
+
+                     }, item.Length - startIndex, startIndex))
                      .ToString();
                 });
 
@@ -1232,20 +1529,18 @@ label_bracket:
                     var nameGrp = item.Groups["name"];
                     var tableGrp = item.Groups["table"];
 
-                    var sb = new StringBuilder();
+                    var sb = new StringBuilder(item.Length + 2);
 
                     AddTableToken(CommandTypes.Drop, tableGrp.Value);
 
-                    return sb.Append(item.Value.Substring(0, tableGrp.Index - item.Index))
-                     .Append("[")
-                     .Append(nameGrp.Value)
-                     .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                 .Append(item.Value[(tableGrp.Index - item.Index + tableGrp.Length)..])
-#else
-                 .Append(item.Value.Substring(tableGrp.Index - item.Index + tableGrp.Length))
-#endif
-                 .ToString();
+                    int startIndex = tableGrp.Index - item.Index + tableGrp.Length;
+
+                    return sb.Append(item.Value, 0, tableGrp.Index - item.Index)
+                             .Append(LeftBracket)
+                             .Append(nameGrp.Value)
+                             .Append(RightBracket)
+                             .Append(item.Value, startIndex, item.Length - startIndex)
+                             .ToString();
                 });
 
                 //? 修改表指令。
@@ -1255,7 +1550,13 @@ label_bracket:
 
                     AddTableToken(CommandTypes.Alter, nameGrp.Value);
 
-                    return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
+                    var sb = new StringBuilder(item.Length + 2);
+
+                    return sb.Append(item.Value, 0, nameGrp.Index - item.Index)
+                             .Append(LeftBracket)
+                             .Append(nameGrp.Value)
+                             .Append(RightBracket)
+                             .ToString();
                 });
 
                 //? 插入表指令。
@@ -1265,7 +1566,13 @@ label_bracket:
 
                     AddTableToken(CommandTypes.Insert, nameGrp.Value);
 
-                    return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
+                    var sb = new StringBuilder(item.Length + 2);
+
+                    return sb.Append(item.Value, 0, nameGrp.Index - item.Index)
+                             .Append(LeftBracket)
+                             .Append(nameGrp.Value)
+                             .Append(RightBracket)
+                             .ToString();
                 });
 
                 //? 复杂结构表名称处理
@@ -1280,28 +1587,34 @@ label_bracket:
 
                     var type = typeGrp.Value.ToUpper();
 
-                    var sb = new StringBuilder();
-
                     AddTableToken(type, nameGrp.Value);
 
-                    sb.Append(value.Substring(0, aliasGrp.Index))
-                    .Append("[")
-                    .Append(aliasGrp.Value)
-                    .Append("]")
-                    .Append(value.Substring(aliasGrp.Index + aliasGrp.Length, tableGrp.Index - aliasGrp.Index))
-                    .Append("[")
-                    .Append(nameGrp.Value)
-                    .Append("]");
+                    int length = value.Length;
 
-#if NETSTANDARD2_1_OR_GREATER
-                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
-#else
-                    value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
-#endif
+                    int startIndex = tableGrp.Index - item.Index + tableGrp.Length;
 
-                    var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
+                    var indexOf = value.IndexOf("SELECT", startIndex, StringComparison.OrdinalIgnoreCase);
 
-                    return sb.Append(PatternForm.Replace(value, match => Form(match, type), indexOf > -1 ? indexOf : value.Length)).ToString();
+                    if (indexOf > -1)
+                    {
+                        length = indexOf;
+                    }
+
+                    var sb = new StringBuilder(item.Length + 10);
+
+                    return sb.Append(value, 0, aliasGrp.Index)
+                             .Append(LeftBracket)
+                             .Append(aliasGrp.Value)
+                             .Append(RightBracket)
+                             .Append(value, aliasGrp.Index + aliasGrp.Length, tableGrp.Index - aliasGrp.Index)
+                             .Append(LeftBracket)
+                             .Append(nameGrp.Value)
+                             .Append(RightBracket)
+                             .Append(PatternForm.Replace(value,
+                                  match => Form(match, type),
+                                  length - startIndex,
+                                  startIndex))
+                             .ToString();
                 });
 
                 //? 表名称处理(表别名作为名称处理)
@@ -1315,24 +1628,30 @@ label_bracket:
 
                     var type = typeGrp.Value.ToUpper();
 
-                    var sb = new StringBuilder();
-
                     AddTableToken(type, nameGrp.Value);
 
-                    sb.Append(value.Substring(0, tableGrp.Index - item.Index))
-                    .Append("[")
-                    .Append(nameGrp.Value)
-                    .Append("]");
+                    int length = value.Length;
 
-#if NETSTANDARD2_1_OR_GREATER
-                value = value[(tableGrp.Index - item.Index + tableGrp.Length)..];
-#else
-                    value = value.Substring(tableGrp.Index - item.Index + tableGrp.Length);
-#endif
+                    int startIndex = tableGrp.Index - item.Index + tableGrp.Length;
 
-                    var indexOf = value.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
+                    var indexOf = value.IndexOf("SELECT", startIndex, StringComparison.OrdinalIgnoreCase);
 
-                    return sb.Append(PatternForm.Replace(value, match => Form(match, type), indexOf > -1 ? indexOf : value.Length)).ToString();
+                    if (indexOf > -1)
+                    {
+                        length = indexOf;
+                    }
+
+                    var sb = new StringBuilder(item.Length + 10);
+
+                    return sb.Append(value, 0, tableGrp.Index - item.Index)
+                             .Append(LeftBracket)
+                             .Append(nameGrp.Value)
+                             .Append(RightBracket)
+                             .Append(PatternForm.Replace(value,
+                                match => Form(match, type),
+                                length - startIndex,
+                                startIndex))
+                             .ToString();
                 });
 
                 //? 查询语句。
@@ -1344,55 +1663,51 @@ label_bracket:
                 //? 字段和别名处理。
                 sqlStr = PatternAliasField.Replace(sqlStr, item =>
                 {
-                    var sb = new StringBuilder();
+                    var sb = new StringBuilder(item.Length + 4);
 
                     Group nameGrp = item.Groups["name"];
                     Group aliasGrp = item.Groups["alias"];
 
-                    return sb.Append("[")
+                    return sb.Append(LeftBracket)
                           .Append(aliasGrp.Value)
                           .Append("].[")
                           .Append(nameGrp.Value)
-                          .Append("]")
+                          .Append(RightBracket)
                           .ToString();
                 });
 
                 //? 独立参数字段处理
                 sqlStr = PatternSingleArgField.Replace(sqlStr, item =>
                 {
-                    var sb = new StringBuilder();
+                    var sb = new StringBuilder(item.Length + 2);
+
                     Group nameGrp = item.Groups["name"];
 
-                    return sb
-                        .Append(item.Value.Substring(0, nameGrp.Index - item.Index))
-                        .Append("[")
-                        .Append(nameGrp.Value)
-                        .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                    .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
-#else
-                    .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
-#endif
-                    .ToString();
+                    int startIndex = nameGrp.Index - item.Index + nameGrp.Length;
+
+                    return sb.Append(item.Value, 0, nameGrp.Index - item.Index)
+                            .Append(LeftBracket)
+                            .Append(nameGrp.Value)
+                            .Append(RightBracket)
+                            .Append(item.Value, startIndex, item.Length - startIndex)
+                            .ToString();
                 });
 
                 //? 字段处理。
                 sqlStr = PatternField.Replace(sqlStr, item =>
                 {
-                    var sb = new StringBuilder();
+                    var sb = new StringBuilder(item.Length + 2);
 
                     Group nameGrp = item.Groups["name"];
 
-                    return sb.Append(item.Value.Substring(0, nameGrp.Index - item.Index))
-                            .Append("[")
+                    int startIndex = nameGrp.Index - item.Index + nameGrp.Length;
+
+                    return sb.Append(item.Value, 0, nameGrp.Index - item.Index)
+                            .Append(LeftBracket)
                             .Append(nameGrp.Value)
-                            .Append("]")
-#if NETSTANDARD2_1_OR_GREATER
-                        .Append(item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..])
-#else
-                        .Append(item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length))
-#endif
-                        .ToString();
+                            .Append(RightBracket)
+                            .Append(item.Value, startIndex, item.Length - startIndex)
+                            .ToString();
                 });
 
                 //? 字段处理。
@@ -1400,18 +1715,22 @@ label_bracket:
                 {
                     Group nameGrp = item.Groups["name"];
 
-                    string value = string.Concat("[", nameGrp.Value, "]");
+                    var sb = new StringBuilder(item.Length + 2);
 
                     if (nameGrp.Index == item.Index && nameGrp.Length == item.Length)
-                        return value;
+                        return sb.Append(LeftBracket)
+                                .Append(nameGrp.Value)
+                                .Append(RightBracket)
+                                .ToString();
 
-                    return item.Value.Substring(0, nameGrp.Index - item.Index) +
-                    value +
-#if NETSTANDARD2_1_OR_GREATER
-                    item.Value[(nameGrp.Index - item.Index + nameGrp.Length)..];
-#else
-                    item.Value.Substring(nameGrp.Index - item.Index + nameGrp.Length);
-#endif
+                    int startIndex = nameGrp.Index - item.Index + nameGrp.Length;
+
+                    return sb.Append(item.Value, 0, nameGrp.Index - item.Index)
+                             .Append(LeftBracket)
+                             .Append(nameGrp.Value)
+                             .Append(RightBracket)
+                             .Append(item.Value, startIndex, item.Length - startIndex)
+                             .ToString();
                 });
 
                 //? 字段别名。
@@ -1419,7 +1738,13 @@ label_bracket:
                 {
                     Group nameGrp = item.Groups["name"];
 
-                    return string.Concat(item.Value.Substring(0, nameGrp.Index - item.Index), "[", nameGrp.Value, "]");
+                    var sb = new StringBuilder(nameGrp.Length + 2);
+
+                    return sb.Append(item.Value, 0, nameGrp.Index - item.Index)
+                            .Append(LeftBracket)
+                            .Append(nameGrp.Value)
+                            .Append(RightBracket)
+                            .ToString();
                 });
 
                 return sqlStr;
@@ -1435,7 +1760,7 @@ label_bracket:
                 var aliasGrp = item.Groups["alias"];
                 var followGrp = item.Groups["follow"];
 
-                var sb = new StringBuilder();
+                var sb = new StringBuilder(item.Length + 10);
 
                 if (!withAs.Contains(nameGrp.Value))
                 {
@@ -1443,37 +1768,36 @@ label_bracket:
                 }
 
                 sb.Append(value.Substring(0, tableGrp.Index - item.Index))
-                    .Append("[")
+                    .Append(LeftBracket)
                     .Append(nameGrp.Value)
-                    .Append("]");
+                    .Append(RightBracket);
 
                 if (aliasGrp.Success)
                 {
-                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length))
-                        .Append("[")
+                    sb.Append(value, tableGrp.Index - item.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length)
+                        .Append(LeftBracket)
                         .Append(aliasGrp.Value)
-                        .Append("]");
+                        .Append(RightBracket);
                 }
                 else if (followGrp.Success)
                 {
-                    sb.Append(value.Substring(tableGrp.Index - item.Index + tableGrp.Length, followGrp.Index - tableGrp.Index - tableGrp.Length));
+                    sb.Append(value, tableGrp.Index - item.Index + tableGrp.Length, followGrp.Index - tableGrp.Index - tableGrp.Length);
                 }
                 else
                 {
-#if NETSTANDARD2_1_OR_GREATER
-                    sb.Append(value[(tableGrp.Index + tableGrp.Length - item.Index)..]);
-#else
-                    sb.Append(value.Substring(tableGrp.Index + tableGrp.Length - item.Index));
-#endif
+                    int startIndex = tableGrp.Index + tableGrp.Length - item.Index;
+
+                    sb.Append(value, startIndex, value.Length - startIndex);
                 }
 
                 if (followGrp.Success)
                 {
-#if NETSTANDARD2_1_OR_GREATER
-                    sb.Append(PatternFormFollow.Replace(value[(followGrp.Index - item.Index)..], match => Form(match, type)));
-#else
-                    sb.Append(PatternFormFollow.Replace(value.Substring(followGrp.Index - item.Index), match => Form(match, type)));
-#endif
+                    int startIndex = followGrp.Index - item.Index;
+
+                    sb.Append(PatternFormFollow.Replace(value,
+                        match => Form(match, type),
+                        value.Length - startIndex,
+                        startIndex));
                 }
 
                 return sb.ToString();
@@ -1590,7 +1914,7 @@ label_bracket:
                        .ToString();
                 }
 
-                sb.Append(sql.Substring(0, distinctGrp.Index))
+                sb.Append(sql, 0, distinctGrp.Index)
                     .Append("COUNT(")
                     .Append(distinctGrp.Value)
                     .Append(col)
@@ -1598,7 +1922,7 @@ label_bracket:
             }
             else
             {
-                sb.Append(sql.Substring(0, colsGrp.Index))
+                sb.Append(sql, 0, colsGrp.Index)
                     .Append("COUNT(1)");
             }
 
@@ -1614,19 +1938,11 @@ label_bracket:
 
             if (orderByMt.Success)
             {
-#if NETSTANDARD2_1_OR_GREATER
-                sb.Append(sql[subIndex..orderByMt.Index]);
-#else
-                sb.Append(sql.Substring(subIndex, orderByMt.Index - subIndex));
-#endif
+                sb.Append(sql, subIndex, orderByMt.Index - subIndex);
             }
             else
             {
-#if NETSTANDARD2_1_OR_GREATER
-                sb.Append(sql[subIndex..]);
-#else
-                sb.Append(sql.Substring(subIndex));
-#endif
+                sb.Append(sql, subIndex, sql.Length - subIndex);
             }
 
             return sb.ToString();
@@ -1654,7 +1970,7 @@ label_bracket:
             {
                 string mainSql = Aw_ToSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length));
 
-                return string.Concat("PAGING(`", sql.Substring(0, withAsMt.Index + withAsMt.Length),
+                return string.Concat("P(`", sql.Substring(0, withAsMt.Index + withAsMt.Length),
                     Environment.NewLine,
                     mainSql);
             }
@@ -1662,7 +1978,7 @@ label_bracket:
             {
                 string mainSql = Aw_ToSQL_Simple(sql);
 
-                return string.Concat("PAGING(`", mainSql);
+                return string.Concat("P(`", mainSql);
             }
         }
 
@@ -1684,23 +2000,66 @@ label_bracket:
 
             if (independentType == IndependentSelectSqlType.HorizontalCombination)
             {
-                var colsMt = PatternColumn.Match(sql);
+                var tuple = AnalysisFields(sql, out List<RangeMatch> matches);
 
-                if (!colsMt.Success)
+                if (matches.Count > 1)
                 {
-                    throw new DException($"无法分析到({sql})语句的查询字段!");
+                    StringBuilder sbFields = new StringBuilder();
+
+                    sb.Append("SELECT ");
+
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        var item = matches[i];
+
+                        var match = PatternSingleAsColumn.Match(sql, item.Index, item.Length);
+
+                        if (i > 0)
+                        {
+                            sb.Append(',');
+                            sbFields.Append(',');
+                        }
+
+                        sbFields.Append(sql, item.Index, item.Length);
+
+                        if (match.Success)
+                        {
+                            sb.Append(sql, match.Index, match.Length);
+                        }
+                        else if (PatternAnyField.Match(sql, item.Index, item.Length).Success)
+                        {
+                            sb.Length = 0;
+
+                            sb.Append("SELECT * FROM (")
+                                .Append(sql);
+
+                            goto label_core;
+                        }
+                        else
+                        {
+                            string name = MakeName(sql.Substring(item.Index, item.Length));
+
+                            sb.Append(name);
+
+                            sbFields.Append(" AS ")
+                                .Append(name);
+                        }
+                    }
+
+                    sb.Append("FROM (")
+                        .Append(sql, 0, tuple.Item1)
+                        .Append(sbFields.ToString())
+                        .Append(sql, tuple.Item2, sql.Length - tuple.Item2);
+                }
+                else
+                {
+                    sb.Append("SELECT * FROM (")
+                        .Append(sql);
                 }
 
-                string cols = colsMt.Groups[0].Value;
+label_core:
 
-                if (CommonSettings.IsSingleColumnCodeBlock(cols))
-                {
-                    throw new NotSupportedException($"不支持首层使用组合函数（Union/Union All/Except/Intersect）且为独立字段的({sql})语句分页!");
-                }
-
-                return sb.Append("SELECT * FROM (")
-                         .Append(sql)
-                         .Append(") AS xRows")
+                return sb.Append(") AS xRows")
                          .Append('`')
                          .Append(',')
                          .Append("{=index}")
@@ -1722,11 +2081,7 @@ label_bracket:
                     .Append("{=size}")
                     .Append(',')
                     .Append('`')
-#if NETSTANDARD2_1_OR_GREATER
-                    .Append(sql[orderByMt.Index..])
-#else
-                    .Append(sql.Substring(orderByMt.Index))
-#endif
+                    .Append(sql, orderByMt.Index, sql.Length - orderByMt.Index)
                     .Append('`');
             }
             else
@@ -1739,8 +2094,7 @@ label_bracket:
                     .Append("{=size}");
             }
 
-            return sb.Append(')')
-                .ToString();
+            return sb.Append(')').ToString();
         }
 
         /// <summary>
@@ -1761,12 +2115,10 @@ label_bracket:
             //? 分页。
             sql = PatternPaging.Replace(sql, match =>
             {
-                var mainSql = match.Groups["main"].Value;
                 var pageIndex = Convert.ToInt32(match.Groups["index"].Value);
                 var pageSize = Convert.ToInt32(match.Groups["size"].Value);
-                var orderBySql = match.Groups["orderby"].Value;
 
-                return settings.ToSQL(mainSql, pageSize, pageIndex * pageSize, orderBySql);
+                return settings.ToSQL(match.Groups["main"].Value, pageSize, pageIndex * pageSize, match.Groups["orderby"].Value);
             });
 
             //? 检查 IndexOf 函数，参数处理。
@@ -1774,25 +2126,47 @@ label_bracket:
             {
                 Match match = PatternIndexOf.Match(sql);
 
-                while (match.Success)
+                if (match.Success)
                 {
-                    int startIndex = match.Index + match.Length;
+                    int offset = 0;
 
-                    var tuple = ParameterAnalysis(sql, startIndex);
+                    StringBuilder sb = new StringBuilder();
 
-                    sql = sql.Substring(0, startIndex) +
-                     (
-                         tuple.Item2.Length > 2 ?
-                         string.Concat(tuple.Item2[1], ",", tuple.Item2[0], ",", tuple.Item2[2]) :
-                         string.Concat(tuple.Item2[1], ",", tuple.Item2[0])
-                     ) +
-#if NETSTANDARD2_1_OR_GREATER
-                     sql[tuple.Item1..];
-#else
-                     sql.Substring(tuple.Item1);
-#endif
+                    do
+                    {
+                        bool commaFlag = false;
 
-                    match = PatternIndexOf.Match(sql, match.Index + 7);
+                        int startIndex = match.Index + match.Length;
+
+                        sb.Append(sql, offset, startIndex - offset);
+
+                        offset = ParameterAnalysis(sql, startIndex, out var matches);
+
+                        foreach (var item in matches.Take(2).Reverse())
+                        {
+                            if (commaFlag)
+                            {
+                                sb.Append(',');
+                            }
+                            else
+                            {
+                                commaFlag = true;
+                            }
+
+                            sb.Append(sql, item.Index, item.Length);
+                        }
+
+                        foreach (var item in matches.Skip(2))
+                        {
+                            sb.Append(',')
+                                .Append(sql, item.Index, item.Length);
+                        }
+
+                        match = match.NextMatch();
+
+                    } while (match.Success);
+
+                    sql = string.Concat(sb.ToString(), sql.Substring(offset));
                 }
             }
 

@@ -13,11 +13,13 @@ namespace CodeArts.Db
     /// </summary>
     public class SqlServerCorrectSettings : ISQLCorrectSettings
     {
-        private static readonly ConcurrentDictionary<string, Tuple<string, bool>> mapperCache = new ConcurrentDictionary<string, Tuple<string, bool>>();
+        private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+[^\x20\t\r\n\f]+[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\(.+?\)([\x20\t\r\n\f]*,[\x20\t\r\n\f]*[^\x20\t\r\n\f]+[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\(.+?\))*[\x20\t\r\n\f]*(?=select|insert|update|delete[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
 
         private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select(([\x20\t\r\n\f]+distinct)+)?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        private static readonly Regex PatternSingleAsColumn = new Regex(@"([\x20\t\r\n\f]+as[\x20\t\r\n\f]+)?(\[\w+\]\.)*(?<name>(\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft);
+        private static readonly Regex PatternAnyField = new Regex(@"\*[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
+
+        private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
 
         /// <summary>
         /// 字符串截取。 SUBSTRING。
@@ -68,55 +70,180 @@ namespace CodeArts.Db
         /// <returns></returns>
         public string ParamterName(string name) => string.Concat("@", name);
 
-        private Tuple<string, bool> GetColumns(string columns) => mapperCache.GetOrAdd(columns, _ =>
+        private static bool IsWhitespace(char c) => c == '\x20' || c == '\t' || c == '\r' || c == '\n' || c == '\f';
+
+        private static readonly char[] FromChars = new char[] { 'f', 'r', 'o', 'm' };
+
+        private static bool IsFrom(string sql, int startIndex)
         {
-            var list = ToSingleColumnCodeBlock(columns);
-
-            if (list.Count == 1)
+            for (int i = 0; i < 4; i++)
             {
-                string col = list[0];
-
-                var match = PatternSingleAsColumn.Match(col);
-
-                if (match.Success)
+                if (FromChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
-                    return Tuple.Create(match.Groups["name"].Value, false);
+                    continue;
                 }
 
-                if (col.IndexOf('*') >= 0)
-                {
-                    return Tuple.Create(col, false);
-                }
-
-                return Tuple.Create(Name("__sql_server_col"), true);
+                return false;
             }
 
-            return Tuple.Create(string.Join(",", list.ConvertAll(item =>
-            {
-                var match = PatternSingleAsColumn.Match(item);
+            return true;
+        }
 
-                if (match.Success)
+        private static readonly char[] DistinctChars = new char[] { 'd', 'i', 's', 't', 'i', 'n', 'c', 't' };
+
+        private static bool IsDistinct(string sql, int startIndex)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                if (DistinctChars[i].Equals(char.ToLower(sql[startIndex + i])))
                 {
-                    return match.Groups["name"].Value;
+                    continue;
                 }
 
-                throw new DException("分页且多字段时,必须指定字段名!");
-            })), false);
-        });
+                return false;
+            }
 
-        /// <summary>
-        /// 每列代码块（如:[x].[id],substring([x].[value],[x].[index],[x].[len]) as [total] => new List&lt;string&gt;{ "[x].[id]","substring([x].[value],[x].[index],[x].[len]) as [total]" }）。
-        /// </summary>
-        /// <param name="columns">以“,”分割的列集合。</param>
-        /// <returns></returns>
-        protected virtual List<string> ToSingleColumnCodeBlock(string columns) => CommonSettings.ToSingleColumnCodeBlock(columns);
+            return true;
+        }
 
-        /// <summary>
-        /// 查询字段。
-        /// </summary>
-        /// <param name="sql">SQL。</param>
-        /// <returns></returns>
-        protected virtual Tuple<string, int> QueryFields(string sql) => CommonSettings.QueryFields(sql);
+        private class RangeMatch
+        {
+            public int Index { get; set; }
+
+            public int Length { get; set; }
+        }
+
+        private static Tuple<int, int> AnalysisFields(string sql, out List<RangeMatch> matches)
+        {
+            int i = 0;
+            int length = sql.Length;
+
+            matches = new List<RangeMatch>();
+
+            for (; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (IsWhitespace(c))
+                {
+                    continue;
+                }
+
+                break;
+            }
+
+            bool flag = true;
+            bool distinctFlag = true;
+            bool quotesFlag = false;
+
+            i += 6; //? 跳过第一个关键字。
+
+            //? 字段初始。
+            int fieldStart = i;
+
+            int startIndex = 0;
+
+            int letterStart = 0;
+            int bracketLeft = 0;
+            int bracketRight = 0;
+
+            for (; i < length; i++) //? 空白符处理。
+            {
+                char c = sql[i];
+
+                if (c == '\\') //? 转义。
+                {
+                    i++;
+
+                    continue;
+                }
+
+                if (c == '\'')
+                {
+                    if (quotesFlag) //? 右引号。
+                    {
+                        quotesFlag = false;
+
+                        continue;
+                    }
+
+                    quotesFlag = true;
+                }
+
+                if (quotesFlag) //? 占位符。
+                {
+                    continue;
+                }
+
+                if (char.IsLetter(c))
+                {
+                    if (flag)
+                    {
+                        flag = false;
+
+                        letterStart = i;
+                    }
+
+                    continue;
+                }
+
+                if (bracketLeft == bracketRight && c == ',') //? 字段。
+                {
+                    matches.Add(new RangeMatch
+                    {
+                        Index = fieldStart,
+                        Length = i - fieldStart
+                    });
+
+                    fieldStart = i + 1;
+                }
+                else if (c == '(')
+                {
+                    bracketLeft++;
+                }
+                else if (c == ')')
+                {
+                    bracketRight++;
+                }
+                else if (IsWhitespace(c))
+                {
+                    flag = true;
+
+                    if (bracketLeft == bracketRight && letterStart > 0)
+                    {
+                        int offset = i - letterStart;
+
+                        if (offset == 4 && IsFrom(sql, letterStart)) //? from
+                        {
+                            break;
+                        }
+
+                        if (distinctFlag && offset == 8 && IsDistinct(sql, letterStart))
+                        {
+                            fieldStart = startIndex = i;
+
+                            distinctFlag = false;
+                        }
+                    }
+                    else if (startIndex == 0)
+                    {
+                        startIndex = i;
+                    }
+
+                    continue;
+                }
+            }
+
+            matches.Add(new RangeMatch
+            {
+                Index = fieldStart,
+                Length = letterStart - fieldStart
+            });
+
+            return Tuple.Create(startIndex, letterStart - 1);
+        }
+
+        private static string MakeName(string str) => Regex.Replace(str, "[^\\w]", "_");
 
         /// <summary>
         /// SQL。
@@ -128,70 +255,125 @@ namespace CodeArts.Db
         /// <returns></returns>
         public virtual string ToSQL(string sql, int take, int skip, string orderBy)
         {
+            var withAsMt = PatternWithAs.Match(sql);
+
             if (skip < 1)
             {
+                if (withAsMt.Success)
+                {
+                    int startIndex = withAsMt.Index + withAsMt.Length;
+
+                    return string.Concat(PatternSelect.Replace(sql, x =>
+                    {
+                        return string.Concat(x.Value, "TOP (", take.ToString(), ") ");
+                    }, sql.Length - startIndex, startIndex));
+                }
+
                 return string.Concat(PatternSelect.Replace(sql, x =>
                 {
                     return string.Concat(x.Value, "TOP (", take.ToString(), ") ");
                 }), orderBy);
             }
 
-            Tuple<string, int> fields = QueryFields(sql);
+            var sb = new StringBuilder();
 
-            Tuple<string, bool> tuple = GetColumns(fields.Item1);
+            if (withAsMt.Success)
+            {
+                int startIndex = withAsMt.Index + withAsMt.Length;
+
+                sb.Append(sql, 0, startIndex);
+
+                sql = sql.Substring(startIndex);
+            }
+
+            var tuple = AnalysisFields(sql, out List<RangeMatch> matches);
 
             string row_name = Name("__Row_Number_");
-
-            var sb = new StringBuilder();
 
             if (orderBy.IsEmpty())
             {
                 orderBy = " ORDER BY 1";
             }
 
-            sb.Append("SELECT ")
-                .Append(tuple.Item1)
-                .Append(" FROM (");
-
-            if (tuple.Item2)
+            if (matches.Count > 1)
             {
-                int startIndex = fields.Item2 + fields.Item1.Length;
+                StringBuilder sbFields = new StringBuilder();
 
-                sb.Append(sql.Substring(0, startIndex))
-                 .Append(" AS ")
-                 .Append(tuple.Item1)
-                 .Append(", ")
-                 .Append("ROW_NUMBER() OVER(")
-                 .Append(orderBy)
-                 .Append(") AS ")
-                 .Append(row_name)
-#if NETSTANDARD2_1_OR_GREATER
-                 .Append(sql[startIndex..]);
-#else
-                 .Append(sql.Substring(startIndex));
-#endif
+                sb.Append("SELECT ");
+
+                for (int i = 0; i < matches.Count; i++)
+                {
+                    var item = matches[i];
+
+                    var match = PatternSingleAsColumn.Match(sql, item.Index, item.Length);
+
+                    if (i > 0)
+                    {
+                        sb.Append(',');
+                        sbFields.Append(',');
+                    }
+
+                    sbFields.Append(sql, item.Index, item.Length);
+
+                    if (match.Success)
+                    {
+                        sb.Append(sql, match.Index, match.Length);
+                    }
+                    else if (PatternAnyField.Match(sql, item.Index, item.Length).Success)
+                    {
+                        sb.Length = 0;
+
+                        sb.Append("SELECT * FROM (")
+                            .Append(sql, 0, tuple.Item2);
+
+                        goto label_core;
+                    }
+                    else
+                    {
+                        string name = Name(MakeName(sql.Substring(item.Index, item.Length)));
+
+                        sb.Append(name);
+
+                        sbFields.Append(" AS ")
+                            .Append(name);
+                    }
+                }
+
+                sb.Append("FROM (")
+                    .Append(sql, 0, tuple.Item1)
+                    .Append(sbFields.ToString());
             }
             else
             {
-                sb.Append(PatternSelect.Replace(sql, x =>
-                {
-                    return string.Concat(x.Value, "ROW_NUMBER() OVER(", orderBy, ") AS ", row_name, " ,");
-                }));
+                sb.Append("SELECT * FROM (")
+                    .Append(sql, 0, tuple.Item2);
             }
 
-            sb.Append(") ")
-                 .Append(Name("x"))
-                 .Append(" WHERE ")
-                 .Append(row_name)
-                 .Append(" > ")
-                 .Append(skip);
+label_core:
+
+            sb.Append(',')
+            .Append("ROW_NUMBER() OVER(")
+            .Append(orderBy)
+            .Append(") AS ")
+            .Append(row_name)
+#if NETSTANDARD2_1_OR_GREATER
+            .Append(sql[tuple.Item2..])
+#else
+            .Append(sql.Substring(tuple.Item2))
+#endif
+            .Append(") ")
+            .Append(Name("xTables"))
+            .Append(" WHERE ")
+            .Append(row_name)
+            .Append(" > ")
+            .Append(skip);
 
             if (take > 0)
             {
                 sb.Append(" AND ")
-                .Append(row_name)
-                .Append(" <= ")
-                .Append(skip + take);
+                    .Append(row_name)
+                    .Append(" <= ")
+                    .Append(skip + take);
             }
 
             return sb.ToString();
