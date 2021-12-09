@@ -15,7 +15,7 @@ namespace CodeArts.Db
     {
         private static readonly Regex PatternWithAs = new Regex(@"\bwith[\x20\t\r\n\f]+[^\x20\t\r\n\f]+[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\(.+?\)([\x20\t\r\n\f]*,[\x20\t\r\n\f]*[^\x20\t\r\n\f]+[\x20\t\r\n\f]+as[\x20\t\r\n\f]*\(.+?\))*[\x20\t\r\n\f]*(?=select|insert|update|delete[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
 
-        private static readonly Regex PatternSelect = new Regex(@"^[\x20\t\r\n\f]*select(([\x20\t\r\n\f]+distinct)+)?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternSelect = new Regex(@"\bselect(([\x20\t\r\n\f]+distinct)+)?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Regex PatternAnyField = new Regex(@"\*[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
 
@@ -136,10 +136,8 @@ namespace CodeArts.Db
             bool distinctFlag = true;
             bool quotesFlag = false;
 
-            i += 6; //? 跳过第一个关键字。
-
             //? 字段初始。
-            int fieldStart = i;
+            int fieldStart = 0;
 
             int startIndex = 0;
 
@@ -147,7 +145,7 @@ namespace CodeArts.Db
             int bracketLeft = 0;
             int bracketRight = 0;
 
-            for (; i < length; i++) //? 空白符处理。
+            for (i += 6; i < length; i++) //? 跳过第一个关键字。
             {
                 char c = sql[i];
 
@@ -175,18 +173,6 @@ namespace CodeArts.Db
                     continue;
                 }
 
-                if (char.IsLetter(c))
-                {
-                    if (flag)
-                    {
-                        flag = false;
-
-                        letterStart = i;
-                    }
-
-                    continue;
-                }
-
                 if (bracketLeft == bracketRight && c == ',') //? 字段。
                 {
                     matches.Add(new RangeMatch
@@ -204,35 +190,48 @@ namespace CodeArts.Db
                 else if (c == ')')
                 {
                     bracketRight++;
+
+                    goto label_check;
                 }
                 else if (IsWhitespace(c))
                 {
                     flag = true;
 
-                    if (bracketLeft == bracketRight && letterStart > 0)
+                    goto label_check;
+                }
+                else if (flag)
+                {
+                    flag = false;
+
+                    letterStart = i;
+                }
+
+                continue;
+
+label_check:
+                if (bracketLeft == bracketRight && letterStart > 0)
+                {
+                    int offset = i - letterStart;
+
+                    if (offset == 4 && IsFrom(sql, letterStart)) //? from
                     {
-                        int offset = i - letterStart;
-
-                        if (offset == 4 && IsFrom(sql, letterStart)) //? from
-                        {
-                            break;
-                        }
-
-                        if (distinctFlag && offset == 8 && IsDistinct(sql, letterStart))
-                        {
-                            fieldStart = startIndex = i;
-
-                            distinctFlag = false;
-                        }
+                        break;
                     }
-                    else if (startIndex == 0)
+
+                    if (distinctFlag && offset == 8 && IsDistinct(sql, letterStart))
                     {
-                        startIndex = i;
-                    }
+                        fieldStart = startIndex = i;
 
-                    continue;
+                        distinctFlag = false;
+                    }
+                }
+                else if (startIndex == 0)
+                {
+                    startIndex = i;
                 }
             }
+
+            letterStart -= 1;//? 去除最后一个占位符。
 
             matches.Add(new RangeMatch
             {
@@ -240,7 +239,7 @@ namespace CodeArts.Db
                 Length = letterStart - fieldStart
             });
 
-            return Tuple.Create(startIndex, letterStart - 1);
+            return Tuple.Create(startIndex, letterStart);
         }
 
         private static string MakeName(string str) => Regex.Replace(str, "[^\\w]", "_");
@@ -266,7 +265,7 @@ namespace CodeArts.Db
                     return string.Concat(PatternSelect.Replace(sql, x =>
                     {
                         return string.Concat(x.Value, "TOP (", take.ToString(), ") ");
-                    }, sql.Length - startIndex, startIndex));
+                    }, sql.Length - startIndex, startIndex), orderBy);
                 }
 
                 return string.Concat(PatternSelect.Replace(sql, x =>
@@ -339,7 +338,7 @@ namespace CodeArts.Db
                     }
                 }
 
-                sb.Append("FROM (")
+                sb.Append(" FROM (")
                     .Append(sql, 0, tuple.Item1)
                     .Append(sbFields.ToString());
             }
@@ -352,21 +351,21 @@ namespace CodeArts.Db
 label_core:
 
             sb.Append(',')
-            .Append("ROW_NUMBER() OVER(")
-            .Append(orderBy)
-            .Append(") AS ")
-            .Append(row_name)
+                .Append("ROW_NUMBER() OVER(")
+                .Append(orderBy)
+                .Append(") AS ")
+                .Append(row_name)
 #if NETSTANDARD2_1_OR_GREATER
-            .Append(sql[tuple.Item2..])
+                .Append(sql[tuple.Item2..])
 #else
-            .Append(sql.Substring(tuple.Item2))
+                .Append(sql.Substring(tuple.Item2))
 #endif
-            .Append(") ")
-            .Append(Name("xTables"))
-            .Append(" WHERE ")
-            .Append(row_name)
-            .Append(" > ")
-            .Append(skip);
+                .Append(") ")
+                .Append(Name("xTables"))
+                .Append(" WHERE ")
+                .Append(row_name)
+                .Append(" > ")
+                .Append(skip);
 
             if (take > 0)
             {

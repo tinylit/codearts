@@ -914,7 +914,7 @@ WHERE
  sum(d.qty * d.price) as jshj,
 '661568807294' AS machineCode,
  isnull(max(c.tel),'') as sprsjh,
- (select isnull(dd.zdw_erpRawPreOrderId,replace(bill_id,'YS','YSB' )) from sls_quotation_bill dd with(readpast),str_out_bill aa with(readpast)
+ (select isnull(dd.zdw_erpRawPreOrderId,replace(bill_id,'YS','YSB' )) from sls_quotation_bill dd with(readpast), str_out_bill [aa] with(readpast)
          where aa.xsdd_id = dd.bill_id and aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as dsddh,
  max(a.remark) as bz,
  (select aa.sls_tax_id from str_out_bill aa where aa.str_out_bill_id = isnull(max(d.remark),max(a.str_out_bill_id)) ) as invoicecode,
@@ -944,7 +944,7 @@ order by a.str_out_bill_id desc";
             var settings = new SqlServerCorrectSettings();
 
             string sqlstr = @"select distinct Max(c.customer_name)  as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
- str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+ str_out_bill_detail d outer join goods on d.goods_id = goods.goods_id
 where  a.str_out_type_id in('4','B')
 and a.str_out_bill_id = d.str_out_bill_id
 and    djlx_id in ('02','03')
@@ -958,7 +958,7 @@ group by  a.str_out_bill_id";
             var countSql = sql.ToCountSQL();
 
             string sqlstr2 = @"select distinct REPLACE(c.customer_name, 'a', 'A') as gmfmc, indexOf(c.customer_name, 'A'), indexOf(c.customer_name, 'A', 15) from  str_out_bill a  join customer c on a.come_to = c.customer_id,
- str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+ str_out_bill_detail d right join goods on d.goods_id = goods.goods_id
 where  a.str_out_type_id in('4','B')
 and a.str_out_bill_id = d.str_out_bill_id
 and    djlx_id in ('02','03')
@@ -972,7 +972,7 @@ group by  a.str_out_bill_id";
             var countSql2 = sql.ToCountSQL();
 
             string sqlstr3 = @"select distinct c.customer_name + c.tel as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
- str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+ str_out_bill_detail d left join goods on d.goods_id = goods.goods_id
 where  a.str_out_type_id in('4','B')
 and a.str_out_bill_id = d.str_out_bill_id
 and    djlx_id in ('02','03')
@@ -984,7 +984,7 @@ group by  a.str_out_bill_id";
             var countSql3 = sql.ToCountSQL();
 
             string sqlstr4 = @"select distinct REPLACE(c.customer_name + c.tel, 'a', 'A') as gmfmc from  str_out_bill a  join customer c on a.come_to = c.customer_id,
- str_out_bill_detail d join goods on d.goods_id = goods.goods_id
+ str_out_bill_detail d inner join goods on d.goods_id = goods.goods_id
 where  a.str_out_type_id in('4','B')
 and a.str_out_bill_id = d.str_out_bill_id
 and    djlx_id in ('02','03')
@@ -1150,14 +1150,39 @@ group by  a.str_out_bill_id";
                     select * from cte1 where price < 100
                 )
 
-                select count(1), sum(x.value), avg(x.age) as age, max(x.age) from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id
-                ";
+                select count(1), sum(x.value), avg(x.age) as age, max(x.age) from cte1 a, cte2 b, cte3 c where a.id = b.id and a.id = c.id";
 
             var sql = new SQL(sqlStr);
 
             var pagedSql = sql.ToSQL(1, 10);
 
             string sqlStr2 = pagedSql.ToString(settings);
+        }
+        [TestMethod]
+        public void UpdateFromTest()
+        {
+            string sqlStr = @"UPDATE x SET x.PlanName='融资计划' FROM StaffUnion 
+INNER JOIN Staff ON Staff.StaffUnionID=StaffUnion.ID
+INNER JOIN StaffPlan x ON StaffPlan.StaffID=Staff.ID WHERE StaffPlan.ID=1
+AND StaffPlan.remark=1";
+
+            var sql = new SQL(sqlStr);
+        }
+
+        [TestMethod]
+        public void UpdateWhereTest()
+        {
+            string sqlStr = @"UPDATE product p, product_price pp SET pp.price = p.price * 0.8 WHERE p.productid= pp.productId";
+
+            var sql = new SQL(sqlStr);
+        }
+
+        [TestMethod]
+        public void DeleteFromTest()
+        {
+            string sqlStr = @"DELETE t1,t2 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t1.id=25 ";
+
+            var sql = new SQL(sqlStr);
         }
     }
 }
