@@ -18,11 +18,6 @@ namespace CodeArts.Db
         /// <returns></returns>
         public override string ToSQL(string sql, int take, int skip, string orderBy)
         {
-            if (skip < 1)
-            {
-                return base.ToSQL(sql, take, skip, orderBy);
-            }
-
             if (orderBy.IsEmpty())
             {
                 orderBy = " ORDER BY 1";
