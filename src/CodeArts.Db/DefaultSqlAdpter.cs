@@ -48,18 +48,18 @@ namespace CodeArts.Db
         /// <summary>
         /// 简单删除命令。
         /// </summary>
-        private static readonly Regex PatternDelete = new Regex(@"\bdelete[\x20\t\r\n\f]+from[\x20\t\r\n\f]+((\w+|\[\w+\])\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternDelete = new Regex(@"\bdelete[\x20\t\r\n\f]+from[\x20\t\r\n\f]+((\w+|\[\w+\])\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])(?<nickname>[\x20\t\r\n\f]+(\[\w+\]|as[\x20\t\r\n\f]+(?<alias>\w+)|as[\x20\t\r\n\f]+\[\w+\]|(?<alias>(?!\b(where|on|join|group|order|select|into|limit|(left|right|inner|outer)[\x20\t\r\n\f]+join)\b)\w+)))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 连表删除命令。
         /// </summary>
-        private static readonly Regex PatternDeleteMulti = new Regex(@"\bdelete[\x20\t\r\n\f]+((\w+|\[\w+\])\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])((?!\bfrom\b)[\s\S]+?)?(?=[\x20\t\r\n\f]+from[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternDeleteMulti = new Regex(@"\bdelete[\x20\t\r\n\f]+((\w+|\[\w+\])\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])(?<nickname>[\x20\t\r\n\f]+(\[\w+\]|as[\x20\t\r\n\f]+(?<alias>\w+)|as[\x20\t\r\n\f]+\[\w+\]|(?<alias>(?!\bfrom\b)\w+)))?((?!\bfrom\b)[\s\S]+?)?(?=[\x20\t\r\n\f]+from[\x20\t\r\n\f]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 更新指令。
         /// </summary>
 
-        private static readonly Regex PatternUpdate = new Regex(@"\bupdate[\x20\t\r\n\f]+((\w+|\[\w+\])\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])((?!\bset\b)[\s\S]+?)?[\x20\t\r\n\f]+set[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex PatternUpdate = new Regex(@"\bupdate[\x20\t\r\n\f]+((\w+|\[\w+\])\.)*(?<table>(?<name>\w+)|\[(?<name>\w+)\])(?<nickname>[\x20\t\r\n\f]+(\[\w+\]|as[\x20\t\r\n\f]+(?<alias>\w+)|as[\x20\t\r\n\f]+\[\w+\]|(?<alias>(?!\bset\b)\w+)))?((?!\bset\b)[\s\S]+?)?[\x20\t\r\n\f]+set[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
         /// 创建表命令。
@@ -193,7 +193,7 @@ namespace CodeArts.Db
                     .Append(whitespace)
                     .Append(@"*(?<name>(?!\d+)\w+)")
                     .Append(whitespace)
-                    .Append("*(?=,)")
+                    .Append("*(?=,)")   //? [name] alias,
                 .Append(@"|\bcolumn")
                     .Append(whitespace)
                     .Append(@"+(?<name>(?!\d+)\w+)") //? 字段 column [name]
@@ -456,7 +456,7 @@ namespace CodeArts.Db
             int startIndex = -1;
             int i = 0, length = cols.Length;
 
-label_core:
+        label_core:
 
             for (; i < length; i++)
             {
@@ -529,7 +529,7 @@ label_core:
                 return true;
             }
 
-label_false:
+        label_false:
 
             col = null;
 
@@ -667,7 +667,7 @@ label_false:
 
                 continue;
 
-label_check:
+            label_check:
 
                 if (letterStart == 0 || bracketLeft != bracketRight)
                 {
@@ -773,7 +773,7 @@ label_check:
 
                 continue;
 
-label_check:
+            label_check:
 
                 if (letterStart == 0 || bracketLeft != bracketRight)
                 {
@@ -924,7 +924,7 @@ label_check:
                 }
 
                 continue;
-label_check:
+            label_check:
 
                 if (letterStart == 0 || bracketLeft != bracketRight)
                 {
@@ -1537,7 +1537,7 @@ label_check:
 
                 continue;
 
-label_check:
+            label_check:
                 if (bracketLeft == bracketRight && letterStart > 0)
                 {
                     int offset = i - letterStart;
@@ -1668,7 +1668,7 @@ label_check:
                 }
 
                 continue;
-label_check:
+            label_check:
 
                 switch (i - letterStart)
                 {
@@ -1695,7 +1695,7 @@ label_check:
 
             return startIndex;
 
-label_table_as: //? 表和别名计算。
+        label_table_as: //? 表和别名计算。
 
             flag = true;
             quotesFlag = false;
@@ -1839,7 +1839,7 @@ label_table_as: //? 表和别名计算。
 
                 continue;
 
-label_check:
+            label_check:
                 if (asFlag || firstFlag)
                 {
                     matches.Add(new RangeMatch
@@ -1923,16 +1923,11 @@ label_check:
             {
                 string value = item.Value;
 
-                if (value.Length > 2)
-                {
-                    characters.Add(value.Substring(1, item.Length - 2));
+                var c = value[0];
 
-                    var charStr = char.ToString(value[0]);
+                characters.Add(value);
 
-                    return string.Concat(charStr, "?", charStr);
-                }
-
-                return value;
+                return new string(new char[3] { c, '?', c });
             });
 
             //? 去除多余的空白符。
@@ -2301,13 +2296,30 @@ label_check:
                 {
                     var tableGrp = match.Groups["table"];
                     var nameGrp = match.Groups["name"];
+                    var nicknameGrp = match.Groups["nickname"];
+                    var aliasGrp = match.Groups["alias"];
 
-                    AddTableToken(CommandTypes.Delete, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
+                    AddTableToken(commandType = CommandTypes.Delete, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
 
                     sbEx.Append(sqlStr, 0, tableGrp.Index)
                         .Append(LeftBracket)
                         .Append(nameGrp.Value)
                         .Append(RightBracket);
+
+                    if (nicknameGrp.Success)
+                    {
+                        if (aliasGrp.Success)
+                        {
+                            sbEx.Append(sqlStr, tableGrp.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length)
+                                    .Append(LeftBracket)
+                                    .Append(aliasGrp.Value)
+                                    .Append(RightBracket);
+                        }
+                        else
+                        {
+                            sbEx.Append(sqlStr, tableGrp.Index + tableGrp.Length, nicknameGrp.Index + nicknameGrp.Length - tableGrp.Index - tableGrp.Length);
+                        }
+                    }
 
                     goto label_commandType;
                 }
@@ -2319,6 +2331,8 @@ label_check:
                 {
                     var tableGrp = match.Groups["table"];
                     var nameGrp = match.Groups["name"];
+                    var nicknameGrp = match.Groups["nickname"];
+                    var aliasGrp = match.Groups["alias"];
 
                     sbEx.Append(sqlStr, 0, tableGrp.Index)
                         .Append(LeftBracket)
@@ -2327,22 +2341,47 @@ label_check:
 
                     commandType = CommandTypes.Delete;
 
-                    StringBuilder tableEx = new StringBuilder();
-
-                    int tableAt = DoneFormOut(tableEx, sqlStr, match.Index + match.Length, commandType, out List<string> nameAlias);
-
-                    if (!nameAlias.Contains(nameGrp.Value))
+                    if (nicknameGrp.Success)
                     {
                         AddTableToken(commandType, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
+
+                        if (aliasGrp.Success)
+                        {
+                            sbEx.Append(sqlStr, tableGrp.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length)
+                                .Append(LeftBracket)
+                                .Append(aliasGrp.Value)
+                                .Append(RightBracket);
+                        }
+                        else
+                        {
+                            sbEx.Append(sqlStr, tableGrp.Index + tableGrp.Length, nicknameGrp.Index + nicknameGrp.Length - tableGrp.Index - tableGrp.Length);
+                        }
+
+                        //? 如：DELETE table1 t1, table2 t2 WHERE t1.id=t2.id AND t1.id=25
+
+                        startAt = DoneForm(sbEx, sqlStr, nicknameGrp.Index + nicknameGrp.Length, commandType);
                     }
+                    else
+                    {
+                        StringBuilder tableEx = new StringBuilder();
 
-                    startAt = DoneFormExcept(sbEx, sqlStr, tableGrp.Index + tableGrp.Length, commandType, nameAlias);
+                        int tableAt = DoneFormOut(tableEx, sqlStr, match.Index + match.Length, commandType, out List<string> nameAlias);
 
-                    sbEx.Append(tableEx.ToString());
+                        if (!nameAlias.Contains(nameGrp.Value))
+                        {
+                            AddTableToken(commandType, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
+                        }
 
-                    startAt = tableAt;
+                        //? 如：DELETE t1,t2 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t1.id=25
 
-                    followFlag = false;
+                        startAt = DoneFormExcept(sbEx, sqlStr, tableGrp.Index + tableGrp.Length, commandType, nameAlias);
+
+                        sbEx.Append(tableEx.ToString());
+
+                        startAt = tableAt;
+
+                        followFlag = false;
+                    }
 
                     goto label_commandType;
                 }
@@ -2354,6 +2393,8 @@ label_check:
                 {
                     var tableGrp = match.Groups["table"];
                     var nameGrp = match.Groups["name"];
+                    var nicknameGrp = match.Groups["nickname"];
+                    var aliasGrp = match.Groups["alias"];
 
                     sbEx.Append(sqlStr, 0, tableGrp.Index)
                         .Append(LeftBracket)
@@ -2364,7 +2405,31 @@ label_check:
 
                     int setEndAt = IndependentSetRangeAnalysis(sqlStr, match.Index + match.Length);
 
-                    if (IsFrom(sqlStr, setEndAt))
+                    if (nicknameGrp.Success)
+                    {
+                        if (aliasGrp.Success)
+                        {
+                            sbEx.Append(sqlStr, tableGrp.Index + tableGrp.Length, aliasGrp.Index - tableGrp.Index - tableGrp.Length)
+                                .Append(LeftBracket)
+                                .Append(aliasGrp.Value)
+                                .Append(RightBracket);
+                        }
+                        else
+                        {
+                            sbEx.Append(sqlStr, tableGrp.Index + tableGrp.Length, nicknameGrp.Index + nicknameGrp.Length - tableGrp.Index - tableGrp.Length);
+                        }
+
+                        AddTableToken(commandType, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
+
+                        //? 如： UPDATE db_shop.t_student s JOIN db_shop.t_class c SET s.class_name=c.name,c.stu_name=s.name
+                        startAt = DoneForm(sbEx, sqlStr, nicknameGrp.Index + nicknameGrp.Length, commandType);
+
+                        sbEx.Append(sqlStr, startAt, match.Index + match.Length - startAt)
+                            .Append(DoneSelectSql(sqlStr.Substring(match.Index + match.Length, setEndAt - match.Index - match.Length)));
+
+                        startAt = setEndAt;
+                    }
+                    else if (IsFrom(sqlStr, setEndAt))
                     {
                         StringBuilder tableEx = new StringBuilder();
 
@@ -2375,6 +2440,7 @@ label_check:
                             AddTableToken(commandType, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
                         }
 
+                        //? 如： UPDATE c SET c.stu_name='main' FROM db_shop.t_student c
                         startAt = DoneFormExcept(sbEx, sqlStr, tableGrp.Index + tableGrp.Length, commandType, nameAlias);
 
                         sbEx.Append(sqlStr, startAt, match.Index + match.Length - startAt)
@@ -2382,12 +2448,14 @@ label_check:
                             .Append(tableEx.ToString());
 
                         startAt = tableAt;
+
+                        followFlag = false;
                     }
                     else
                     {
                         AddTableToken(commandType, nameGrp.Value);  //? 不需要分析追随表，按照普通分析。
 
-                        //? 如： UPDATE db_shop.t_student s JOIN db_shop.t_class c SET s.class_name=c.name,c.stu_name=s.name
+                        //? 如： UPDATE db_shop.t_student SET class_name='main'
                         startAt = DoneForm(sbEx, sqlStr, tableGrp.Index + tableGrp.Length, commandType);
 
                         sbEx.Append(sqlStr, startAt, match.Index + match.Length - startAt)
@@ -2396,7 +2464,7 @@ label_check:
                         startAt = setEndAt;
                     }
 
-                    followFlag = false;
+                    goto label_commandType;
                 }
 
                 //? 修改表。
@@ -2435,7 +2503,7 @@ label_check:
                     goto label_commandType;
                 }
 
-label_commandType:
+            label_commandType:
 
                 if (length == startAt)
                 {
@@ -2447,11 +2515,14 @@ label_commandType:
                     startAt = match.Index + match.Length;
                 }
 
-                if (followFlag && match.Success)
+                if (match.Success)
                 {
-                    startAt = DoneForm(sbEx, sqlStr, startAt, commandType);
-
                     commandType = CommandTypes.Select; //? 非主SQL按照查询语句翻译。
+
+                    if (followFlag)
+                    {
+                        startAt = DoneForm(sbEx, sqlStr, startAt, commandType);
+                    }
                 }
 
                 match = PatternForm.Match(sqlStr, startAt);
@@ -2936,7 +3007,7 @@ label_commandType:
                         .Append(sql);
                 }
 
-label_core:
+            label_core:
 
                 return sb.Append(") AS xRows")
                          .Append('`')
@@ -3090,19 +3161,7 @@ label_core:
                 int offset = 0;
 
                 //? 还原字符串。
-                sql = PatternCharacter.Replace(sql, item =>
-                {
-                    string value = item.Value;
-
-                    if (value.Length > 2)
-                    {
-                        var charStr = char.ToString(value[0]);
-
-                        return string.Concat(charStr, characters[offset++], charStr);
-                    }
-
-                    return value;
-                });
+                sql = PatternCharacter.Replace(sql, item => characters[offset++]);
             }
 
             return sql;

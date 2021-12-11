@@ -151,9 +151,36 @@ namespace CodeArts.Db
         }
 
         /// <summary>
-        /// 运算符。
+        /// 追加sql。
+        /// </summary>
+        /// <param name="left">原SQL。</param>
+        /// <param name="right">需要追加的SQL。</param>
+        /// <returns></returns>
+        public static SQL operator +(SQL left, string right)
+        {
+            if (left is null)
+            {
+                return new SQL(right);
+            }
+
+            if (right is null)
+            {
+                return left;
+            }
+
+            return left.Add(right);
+        }
+
+        /// <summary>
+        /// 隐式转换。
         /// </summary>
         /// <param name="sql">SQL。</param>
         public static implicit operator SQL(string sql) => new SQL(sql);
+
+        /// <summary>
+        /// 隐式转换。
+        /// </summary>
+        /// <param name="sql">SQL。</param>
+        public static implicit operator string(SQL sql) => sql?.ToString();
     }
 }

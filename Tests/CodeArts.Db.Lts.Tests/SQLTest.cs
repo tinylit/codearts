@@ -953,7 +953,7 @@ group by  a.str_out_bill_id";
 
             SQL sql = new SQL(sqlstr);
 
-            sql.ToString(settings);
+            var va = sql.ToString(settings);
 
             var countSql = sql.ToCountSQL();
 
@@ -967,7 +967,7 @@ group by  a.str_out_bill_id";
 
             sql = new SQL(sqlstr2);
 
-            sql.ToString(settings);
+            var value = sql.ToString(settings);
 
             var countSql2 = sql.ToCountSQL();
 
@@ -1181,6 +1181,14 @@ AND StaffPlan.remark=1";
         public void DeleteFromTest()
         {
             string sqlStr = @"DELETE t1,t2 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t1.id=25 ";
+
+            var sql = new SQL(sqlStr);
+        }
+
+        [TestMethod]
+        public void DeleteWhereTest()
+        {
+            string sqlStr = @"DELETE FROM table as t1 WHERE t1.id=25 ";
 
             var sql = new SQL(sqlStr);
         }
