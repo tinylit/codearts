@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using CodeArts.Db.Exceptions;
+using Dapper;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace CodeArts.Db.Dapper
         /// </summary>
         protected DbContext()
         {
-            connectionConfig = GetDbConfig() ?? throw new NullReferenceException();
+            connectionConfig = GetDbConfig() ?? throw new DException("未找到数据库链接!");
         }
 
         /// <summary>
@@ -45,7 +46,7 @@ namespace CodeArts.Db.Dapper
                 return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), true);
             });
 
-            return attr.GetConfig();
+            return attr?.GetConfig() ?? throw new DException("未找到数据库链接!");
         }
 
         /// <summary> 连接名称。 </summary>
@@ -223,8 +224,6 @@ namespace CodeArts.Db.Dapper
                     }
                 }
 
-                // TODO: 释放未托管的资源(未托管的对象)并重写终结器
-                // TODO: 将大型字段设置为 null
                 disposedValue = true;
             }
         }

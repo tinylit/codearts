@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace CodeArts.Db.Lts
+namespace CodeArts.Db
 {
     /// <summary>
     /// 验证器。

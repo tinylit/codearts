@@ -3,12 +3,12 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace CodeArts.Db.Lts
+namespace CodeArts.Db
 {
     /// <summary>
     /// 路由执行器。
     /// </summary>
-    public sealed class DbRouter<TEntity> where TEntity : class, IEntiy
+    public static class DbRouter<TEntity> where TEntity : class, IEntiy
     {
         /// <summary>
         /// 单例。

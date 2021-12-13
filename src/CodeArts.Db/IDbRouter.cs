@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace CodeArts.Db.Lts
+namespace CodeArts.Db
 {
     /// <summary>
     /// 路由执行提供者。

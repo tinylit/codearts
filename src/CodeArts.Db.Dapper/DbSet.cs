@@ -1,8 +1,7 @@
 ﻿using CodeArts.Db.Exceptions;
-using CodeArts.Db.Lts.Routes;
+using CodeArts.Db.Routes;
 using CodeArts.Runtime;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -14,17 +13,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CodeArts.Db.Lts
+namespace CodeArts.Db.Dapper
 {
     /// <summary>
-    /// 数据写入器。
+    /// 数据操作。
     /// </summary>
     /// <typeparam name="TEntity">实体类型。</typeparam>
-    public class DbWriter<TEntity> where TEntity : class, IEntiy
+    public class DbSet<TEntity> where TEntity : class, IEntiy
     {
         private static readonly ITableInfo tableInfo;
 
-        static DbWriter() => tableInfo = TableRegions.Resolve<TEntity>();
+        static DbSet() => tableInfo = TableRegions.Resolve<TEntity>();
 
         /// <summary>
         /// 最大参数长度。
@@ -68,7 +67,8 @@ namespace CodeArts.Db.Lts
 
             private Action<CommandSql> watchSql;
             private IsolationLevel? isolationLevel;
-            private readonly IDatabase database;
+            private readonly IDbConnectionAdapter connectionAdapter;
+            private readonly string connectionString;
             private readonly ICollection<TEntity> entries;
 
             protected DbRouteExecuter(DbRouteExecuter executer)
@@ -77,18 +77,21 @@ namespace CodeArts.Db.Lts
                 isolationLevel = executer.isolationLevel;
 
                 entries = executer.entries;
-                database = executer.database;
+                connectionString = executer.connectionString;
+                connectionAdapter = executer.connectionAdapter;
             }
 
-            protected DbRouteExecuter(IDatabase database, ICollection<TEntity> entries)
+            protected DbRouteExecuter(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
             {
                 this.entries = entries ?? throw new ArgumentNullException(nameof(entries));
-                this.database = database ?? throw new ArgumentNullException(nameof(database));
+                this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+                this.connectionAdapter = connectionAdapter ?? throw new ArgumentNullException(nameof(connectionAdapter));
             }
 
             public IDbRouter<TEntity> DbRouter => DbRouter<TEntity>.Instance;
 
-            public ISQLCorrectSettings Settings => database.Settings;
+            public ISQLCorrectSettings Settings => connectionAdapter.Settings;
+            private IDbConnection CreateDb(bool useCache = true) => TransactionConnections.GetConnection(connectionString, connectionAdapter) ?? DispatchConnections.Instance.GetConnection(connectionString, connectionAdapter, useCache);
 
             public int ExecuteCommand(int? commandTimeout = null)
             {
@@ -109,33 +112,7 @@ namespace CodeArts.Db.Lts
                     throw new NotSupportedException();
                 }
 
-                var isCloseConnection = database.State == ConnectionState.Closed;
-
-                if (isCloseConnection)
-                {
-                    database.Open();
-                }
-
-                try
-                {
-
-                    if (isolationLevel.HasValue)
-                    {
-                        using (database.BeginTransaction(isolationLevel.Value))
-                        {
-                            return Execute(results, commandTimeout);
-                        }
-                    }
-
-                    return Execute(results, commandTimeout);
-                }
-                finally
-                {
-                    if (isCloseConnection)
-                    {
-                        database.Close();
-                    }
-                }
+                return Execute(results, commandTimeout);
             }
 
             private int Execute(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout = null)
@@ -204,7 +181,7 @@ namespace CodeArts.Db.Lts
 
                 if (results.Count == 0)
                 {
-                    throw new NotSupportedException();
+                    return Task.FromResult(0);
                 }
 
                 return ExecutedAsync(results, commandTimeout, cancellationToken);
@@ -248,8 +225,19 @@ namespace CodeArts.Db.Lts
                 return influenceLine;
             }
 
+
             private async Task<int> ExecutedAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken)
             {
+                using (var connection = CreateDb())
+                {
+#if NETSTANDARD2_1_OR_GREATER
+                    if (connection is DbConnection dbConnection)
+                    {
+                        await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    }
+#endif
+                }
+
                 var isCloseConnection = database.State == ConnectionState.Closed;
 
 #if NETSTANDARD2_1_OR_GREATER
@@ -355,19 +343,15 @@ namespace CodeArts.Db.Lts
                 }
             }
 
-            private readonly IDatabase database;
             protected readonly Dictionary<string, string> insertColumns;
 
             protected Insertable(Insertable insertable) : base(insertable)
             {
-                database = insertable.database;
                 insertColumns = insertable.insertColumns;
             }
 
-            public Insertable(IDatabase database, ICollection<TEntity> entries) : base(database, entries)
+            public Insertable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries) : base(connectionAdapter, connectionString, entries)
             {
-                this.database = database;
-
                 insertColumns = new Dictionary<string, string>(inserts, StringComparer.OrdinalIgnoreCase);
             }
 
@@ -721,18 +705,15 @@ namespace CodeArts.Db.Lts
                 }
             }
 
-            private readonly IDatabase database;
             protected readonly Dictionary<string, string> whereColumns;
 
             protected Deleteable(Deleteable deleteable) : base(deleteable)
             {
-                database = deleteable.database;
                 whereColumns = deleteable.whereColumns;
             }
 
-            public Deleteable(IDatabase database, ICollection<TEntity> entries) : base(database, entries)
+            public Deleteable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries) : base(connectionAdapter, connectionString, entries)
             {
-                this.database = database ?? throw new ArgumentNullException(nameof(database));
                 whereColumns = new Dictionary<string, string>(deletes);
             }
 
@@ -1108,21 +1089,17 @@ namespace CodeArts.Db.Lts
                 }
             }
 
-            private readonly IDatabase database;
             protected readonly Dictionary<string, string> whereColumns;
             protected readonly Dictionary<string, string> updateSetColumns;
 
             protected Updateable(Updateable updateable) : base(updateable)
             {
-                database = updateable.database;
                 whereColumns = updateable.whereColumns;
                 updateSetColumns = updateable.updateSetColumns;
             }
 
-            public Updateable(IDatabase database, ICollection<TEntity> entries) : base(database, entries)
+            public Updateable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries) : base(connectionAdapter, connectionString, entries)
             {
-                this.database = database;
-
                 whereColumns = new Dictionary<string, string>(updates);
                 updateSetColumns = new Dictionary<string, string>(updateSets);
 
@@ -1491,28 +1468,31 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// 赋予插入能力。
         /// </summary>
-        /// <param name="executeable">分析器。</param>
+        /// <param name="connectionAdapter">数据库适配器。</param>
+        /// <param name="connectionString">数据库链接。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IInsertable<TEntity> AsInsertable(IDatabase executeable, ICollection<TEntity> entries)
-            => new Insertable(executeable, entries);
+        public static IInsertable<TEntity> AsInsertable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
+            => new Insertable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予更新能力。
         /// </summary>
-        /// <param name="executeable">分析器。</param>
+        /// <param name="connectionAdapter">数据库适配器。</param>
+        /// <param name="connectionString">数据库链接。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IUpdateable<TEntity> AsUpdateable(IDatabase executeable, ICollection<TEntity> entries)
-            => new Updateable(executeable, entries);
+        public static IUpdateable<TEntity> AsUpdateable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
+            => new Updateable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予删除能力。
         /// </summary>
-        /// <param name="executeable">分析器。</param>
+        /// <param name="connectionAdapter">数据库适配器。</param>
+        /// <param name="connectionString">数据库链接。</param>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IDeleteable<TEntity> AsDeleteable(IDatabase executeable, ICollection<TEntity> entries)
-            => new Deleteable(executeable, entries);
+        public static IDeleteable<TEntity> AsDeleteable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
+            => new Deleteable(connectionAdapter, connectionString, entries);
     }
 }

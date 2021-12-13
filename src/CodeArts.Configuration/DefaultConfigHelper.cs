@@ -11,8 +11,6 @@ namespace CodeArts.Config
     /// </summary>
     public class DefaultConfigHelper : IConfigHelper
     {
-        private static IConfigurationBuilder _builder;
-
         /// <summary>
         /// 获取默认配置。
         /// </summary>
@@ -58,18 +56,57 @@ namespace CodeArts.Config
             return builder;
         }
 
+        private static IConfigurationBuilder MakeConfigurationBuilder(string[] configPaths)
+        {
+            var builder = ConfigurationBuilder();
+
+            if (configPaths is null || configPaths.Length == 0)
+            {
+                return builder;
+            }
+
+            string dir = Directory.GetCurrentDirectory();
+
+            foreach (var path in configPaths)
+            {
+                if (File.Exists(path))
+                {
+                    builder.AddJsonFile(path, false, true);
+
+                    continue;
+                }
+
+                string absolutePath = Path.Combine(dir, path);
+
+                if (File.Exists(absolutePath))
+                {
+                    builder.AddJsonFile(absolutePath, false, true);
+
+                    continue;
+                }
+
+                throw new FileNotFoundException($"文件“{path}”未找到!");
+            }
+
+            return builder;
+        }
+
         private readonly ConcurrentDictionary<string, IConfiguration> _cache = new ConcurrentDictionary<string, IConfiguration>();
 
         /// <summary>
         /// 构造函数。
         /// </summary>
-#if NETSTANDARD2_1_OR_GREATER
-        public DefaultConfigHelper() : this(_builder ??= ConfigurationBuilder())
-#else
-        public DefaultConfigHelper() : this(_builder ?? (_builder = ConfigurationBuilder()))
-#endif
+        public DefaultConfigHelper() : this(ConfigurationBuilder())
         {
 
+        }
+
+        /// <summary>
+        /// 构造函数（除默认文件，添加额外的配置文件）。
+        /// </summary>
+        /// <param name="configPaths">配置地址。</param>
+        public DefaultConfigHelper(params string[] configPaths) : this(MakeConfigurationBuilder(configPaths))
+        {
         }
 
         /// <summary>
