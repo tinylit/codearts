@@ -17,8 +17,6 @@ namespace CodeArts.Db
 
         private static readonly Regex PatternSelect = new Regex(@"\bselect(([\x20\t\r\n\f]+distinct)+)?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        private static readonly Regex PatternAnyField = new Regex(@"\*[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
-
         private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
 
         /// <summary>
@@ -71,6 +69,23 @@ namespace CodeArts.Db
         public string ParamterName(string name) => string.Concat("@", name);
 
         private static bool IsWhitespace(char c) => c == '\x20' || c == '\t' || c == '\r' || c == '\n' || c == '\f';
+
+        private static bool IsAny(string sql, int startIndex, int count)
+        {
+            for (int i = startIndex + count - 1; i >= startIndex; i--)
+            {
+                char c = sql[i];
+
+                if (IsWhitespace(c))
+                {
+                    continue;
+                }
+
+                return c == '*';
+            }
+
+            return false;
+        }
 
         private static readonly char[] FromChars = new char[] { 'f', 'r', 'o', 'm' };
 
@@ -282,7 +297,11 @@ label_check:
 
                 sb.Append(sql, 0, startIndex);
 
+#if NETSTANDARD2_1_OR_GREATER
+                sql = sql[startIndex..];
+#else
                 sql = sql.Substring(startIndex);
+#endif
             }
 
             var tuple = AnalysisFields(sql, out List<RangeMatch> matches);
@@ -318,7 +337,7 @@ label_check:
                     {
                         sb.Append(sql, match.Index, match.Length);
                     }
-                    else if (PatternAnyField.Match(sql, item.Index, item.Length).Success)
+                    else if (IsAny(sql, item.Index, item.Length))
                     {
                         sb.Length = 0;
 
@@ -355,11 +374,7 @@ label_core:
                 .Append(orderBy)
                 .Append(") AS ")
                 .Append(row_name)
-#if NETSTANDARD2_1_OR_GREATER
-                .Append(sql[tuple.Item2..])
-#else
-                .Append(sql.Substring(tuple.Item2))
-#endif
+                .Append(sql, tuple.Item2, sql.Length - tuple.Item2)
                 .Append(") ")
                 .Append(Name("xTables"))
                 .Append(" WHERE ")

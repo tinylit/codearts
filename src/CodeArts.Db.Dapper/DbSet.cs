@@ -1,7 +1,9 @@
 ﻿using CodeArts.Db.Exceptions;
 using CodeArts.Db.Routes;
 using CodeArts.Runtime;
+using Dapper;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -22,8 +24,65 @@ namespace CodeArts.Db.Dapper
     public class DbSet<TEntity> where TEntity : class, IEntiy
     {
         private static readonly ITableInfo tableInfo;
+        private readonly IReadOnlyConnectionConfig connectionConfig;
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
 
         static DbSet() => tableInfo = TableRegions.Resolve<TEntity>();
+
+        /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        /// <summary>
+        /// inheritdoc
+        /// </summary>
+        public DbSet()
+        {
+            connectionConfig = GetDbConfig() ?? throw new DException("未找到数据库链接!");
+        }
+
+        /// <summary>
+        /// inheritdoc
+        /// </summary>
+        public DbSet(IReadOnlyConnectionConfig connectionConfig)
+        {
+            this.connectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
+        }
+
+        private static object FixParameters(Dictionary<string, ParameterValue> parameters)
+        {
+            var results = new DynamicParameters();
+
+            foreach (var kv in parameters)
+            {
+                if (kv.Value.IsNull)
+                {
+                    results.Add(kv.Key, DBNull.Value, LookupDb.For(kv.Value.ValueType));
+                }
+                else
+                {
+                    results.Add(kv.Key, kv.Value.Value);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// 获取数据库配置。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IReadOnlyConnectionConfig GetDbConfig()
+        {
+            var attr = DbConfigCache.GetOrAdd(GetType(), type =>
+            {
+                return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), true);
+            }) ?? DbConfigCache.GetOrAdd(typeof(TEntity), type =>
+            {
+                return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), true);
+            });
+
+            return attr?.GetConfig() ?? throw new DException("未找到数据库链接!");
+        }
 
         /// <summary>
         /// 最大参数长度。
@@ -53,6 +112,30 @@ namespace CodeArts.Db.Dapper
 
             DbValidator.ValidateValue(value, validationContext, validationAttributes);
         }
+
+        private IDbConnectionAdapter connectionAdapter;
+
+        /// <summary>
+        /// 适配器。
+        /// </summary>
+        protected IDbConnectionAdapter DbAdapter
+        {
+            get
+            {
+                if (connectionAdapter is null || !string.Equals(connectionAdapter.ProviderName, connectionConfig.ProviderName))
+                {
+                    connectionAdapter = CreateDbAdapter(connectionConfig.ProviderName);
+                }
+
+                return connectionAdapter;
+            }
+        }
+
+        /// <summary>
+        /// 创建适配器。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IDbConnectionAdapter CreateDbAdapter(string providerName) => DapperConnectionManager.Get(providerName);
 
         /// <summary>
         /// 路由执行力。
@@ -123,31 +206,91 @@ namespace CodeArts.Db.Dapper
                 {
                     Stopwatch stopwatch = new Stopwatch();
 
-                    results.ForEach(x =>
+                    if (isolationLevel.HasValue)
                     {
-                        int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+                        using (var connection = CreateDb())
+                        {
+                            connection.Open();
 
-                        var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
+                            using (var transaction = connection.BeginTransaction(isolationLevel.Value))
+                            {
+                                results.ForEach(x =>
+                                {
+                                    int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
 
-                        watchSql?.Invoke(commandSql);
+                                    watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, timeOut));
 
-                        stopwatch.Start();
+                                    stopwatch.Start();
 
-                        influenceLine += database.Execute(commandSql);
+                                    influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2), transaction, timeOut);
 
-                        stopwatch.Stop();
-                    });
+                                    stopwatch.Stop();
+                                });
+                            }
+
+                            connection.Close();
+                        }
+
+                        return influenceLine;
+                    }
+
+                    using (var connection = CreateDb())
+                    {
+                        connection.Open();
+
+                        results.ForEach(x =>
+                        {
+                            int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                            watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, timeOut));
+
+                            stopwatch.Start();
+
+                            influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2), null, timeOut);
+
+                            stopwatch.Stop();
+                        });
+
+                        connection.Close();
+                    }
+
+                    return influenceLine;
                 }
-                else
+
+                if (isolationLevel.HasValue)
                 {
+                    using (var connection = CreateDb())
+                    {
+                        connection.Open();
+
+                        using (var transaction = connection.BeginTransaction(isolationLevel.Value))
+                        {
+                            results.ForEach(x =>
+                            {
+                                watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                                influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2), transaction);
+                            });
+                        }
+
+                        connection.Close();
+                    }
+
+                    return influenceLine;
+                }
+
+                using (var connection = CreateDb())
+                {
+                    connection.Open();
+
                     results.ForEach(x =>
                     {
-                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
+                        watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, commandTimeout));
 
-                        watchSql?.Invoke(commandSql);
-
-                        influenceLine += database.Execute(commandSql);
+                        influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2));
                     });
+
+                    connection.Close();
                 }
 
                 return influenceLine;
@@ -187,7 +330,7 @@ namespace CodeArts.Db.Dapper
                 return ExecutedAsync(results, commandTimeout, cancellationToken);
             }
 
-            private async Task<int> ExecutedCoreAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken)
+            private async Task<int> ExecutedAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken)
             {
                 int influenceLine = 0;
 
@@ -195,115 +338,148 @@ namespace CodeArts.Db.Dapper
                 {
                     Stopwatch stopwatch = new Stopwatch();
 
-                    foreach (var x in results)
-                    {
-                        int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
-
-                        var commandSql = new CommandSql(x.Item1, x.Item2, timeOut);
-
-                        watchSql?.Invoke(commandSql);
-
-                        stopwatch.Start();
-
-                        influenceLine += await database.ExecuteAsync(commandSql, cancellationToken);
-
-                        stopwatch.Stop();
-                    }
-                }
-                else
-                {
-                    foreach (var x in results)
-                    {
-                        var commandSql = new CommandSql(x.Item1, x.Item2, commandTimeout);
-
-                        watchSql?.Invoke(commandSql);
-
-                        influenceLine += await database.ExecuteAsync(commandSql, cancellationToken);
-                    }
-                }
-
-                return influenceLine;
-            }
-
-
-            private async Task<int> ExecutedAsync(List<Tuple<string, Dictionary<string, ParameterValue>>> results, int? commandTimeout, CancellationToken cancellationToken)
-            {
-                using (var connection = CreateDb())
-                {
-#if NETSTANDARD2_1_OR_GREATER
-                    if (connection is DbConnection dbConnection)
-                    {
-                        await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                    }
-#endif
-                }
-
-                var isCloseConnection = database.State == ConnectionState.Closed;
-
-#if NETSTANDARD2_1_OR_GREATER
-                if (database is DbConnection connection)
-                {
-                    if (isCloseConnection)
-                    {
-                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                    }
-
-                    try
-                    {
-                        if (isolationLevel.HasValue)
-                        {
-                            await using (await connection.BeginTransactionAsync(isolationLevel.Value))
-                            {
-                                return await ExecutedCoreAsync(results, commandTimeout, cancellationToken);
-                            }
-                        }
-
-                        return await ExecutedCoreAsync(results, commandTimeout, cancellationToken);
-                    }
-                    finally
-                    {
-                        if (isCloseConnection)
-                        {
-                            await connection.CloseAsync();
-                        }
-                    }
-                }
-                else if (isCloseConnection)
-                {
-                    database.Open();
-                }
-#else
-                if (isCloseConnection)
-                {
-                    if (database is DbConnection connection)
-                    {
-                        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        database.Open();
-                    }
-                }
-#endif
-
-                try
-                {
                     if (isolationLevel.HasValue)
                     {
-                        using (database.BeginTransaction(isolationLevel.Value))
+                        using (var connection = CreateDb())
                         {
-                            return await ExecutedCoreAsync(results, commandTimeout, cancellationToken);
+                            if (connection is DbConnection dbConnection)
+                            {
+                                await dbConnection.OpenAsync(cancellationToken)
+                                    .ConfigureAwait(false);
+
+#if NETSTANDARD2_1_OR_GREATER
+                                using (var transaction = await dbConnection.BeginTransactionAsync(isolationLevel.Value)
+                                    .ConfigureAwait(false))
+                                {
+                                    foreach (var x in results)
+                                    {
+                                        int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                        watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, timeOut));
+
+                                        stopwatch.Start();
+
+                                        influenceLine += await connection.ExecuteAsync(new CommandDefinition(x.Item1, FixParameters(x.Item2), transaction, timeOut, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+
+                                        stopwatch.Stop();
+                                    }
+                                }
+
+                                await dbConnection.CloseAsync()
+                                    .ConfigureAwait(false);
+#else
+                                using (var transaction = dbConnection.BeginTransaction(isolationLevel.Value))
+                                {
+                                    foreach (var x in results)
+                                    {
+                                        int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                        watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, timeOut));
+
+                                        stopwatch.Start();
+
+                                        influenceLine += await connection.ExecuteAsync(new CommandDefinition(x.Item1, FixParameters(x.Item2), transaction, timeOut, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+
+                                        stopwatch.Stop();
+                                    }
+                                }
+
+                                dbConnection.Close();
+#endif
+
+                                return influenceLine;
+                            }
+
+                            connection.Open();
+
+                            using (var transaction = connection.BeginTransaction(isolationLevel.Value))
+                            {
+                                results.ForEach(x =>
+                               {
+                                   int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                                   watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, timeOut));
+
+                                   stopwatch.Start();
+
+                                   influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2), transaction, timeOut);
+
+                                   stopwatch.Stop();
+                               });
+                            }
+
+                            connection.Close();
+
+                            return influenceLine;
                         }
                     }
 
-                    return await ExecutedCoreAsync(results, commandTimeout, cancellationToken);
-                }
-                finally
-                {
-                    if (isCloseConnection)
+                    using (var connection = CreateDb())
                     {
-                        database.Close();
+                        connection.Open();
+
+                        results.ForEach(x =>
+                        {
+                            int? timeOut = commandTimeout - (int)(stopwatch.ElapsedMilliseconds / 1000L);
+
+                            watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, timeOut));
+
+                            stopwatch.Start();
+
+                            influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2), null, timeOut);
+
+                            stopwatch.Stop();
+                        });
+
+                        connection.Close();
                     }
+
+                    return influenceLine;
+                }
+
+                using (var connection = CreateDb())
+                {
+                    if (connection is DbConnection dbConnection)
+                    {
+                        await dbConnection.OpenAsync(cancellationToken)
+                            .ConfigureAwait(false);
+
+#if NETSTANDARD2_1_OR_GREATER
+                        foreach (var x in results)
+                        {
+                            watchSql?.Invoke(new CommandSql(x.Item1, x.Item2));
+
+                            influenceLine += await connection.ExecuteAsync(new CommandDefinition(x.Item1, FixParameters(x.Item2), null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+                        }
+
+                        await dbConnection.CloseAsync()
+                            .ConfigureAwait(false);
+#else
+                        foreach (var x in results)
+                        {
+                            watchSql?.Invoke(new CommandSql(x.Item1, x.Item2, commandTimeout));
+
+                            influenceLine += await connection.ExecuteAsync(new CommandDefinition(x.Item1, FixParameters(x.Item2), null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+                        }
+
+                        dbConnection.Close();
+#endif
+
+                        return influenceLine;
+                    }
+
+                    connection.Open();
+
+                    results.ForEach(x =>
+                    {
+                        watchSql?.Invoke(new CommandSql(x.Item1, x.Item2));
+
+                        influenceLine += connection.Execute(x.Item1, FixParameters(x.Item2));
+                    });
+
+                    connection.Close();
+
+                    return influenceLine;
                 }
             }
 #endif
@@ -416,7 +592,7 @@ namespace CodeArts.Db.Dapper
                                 storeItem.Member.SetValue(item, value, null); //? 刷新数据。
                             }
 
-                        label_valid:
+label_valid:
 
                             context.MemberName = storeItem.Member.Name;
 
@@ -1468,31 +1644,94 @@ namespace CodeArts.Db.Dapper
         /// <summary>
         /// 赋予插入能力。
         /// </summary>
-        /// <param name="connectionAdapter">数据库适配器。</param>
-        /// <param name="connectionString">数据库链接。</param>
+        /// <param name="entry">实体。</param>
+        /// <returns></returns>
+        public IInsertable<TEntity> AsInsertable(TEntity entry)
+        {
+            if (entry is null)
+            {
+                throw new ArgumentNullException(nameof(entry));
+            }
+
+            return new Insertable(DbAdapter, connectionConfig.ConnectionString, new TEntity[] { entry });
+        }
+
+        /// <summary>
+        /// 赋予插入能力。
+        /// </summary>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IInsertable<TEntity> AsInsertable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
-            => new Insertable(connectionAdapter, connectionString, entries);
+        public IInsertable<TEntity> AsInsertable(TEntity[] entries)
+            => new Insertable(DbAdapter, connectionConfig.ConnectionString, entries);
+
+        /// <summary>
+        /// 赋予插入能力。
+        /// </summary>
+        /// <param name="entries">集合。</param>
+        /// <returns></returns>
+        public IInsertable<TEntity> AsInsertable(List<TEntity> entries)
+            => new Insertable(DbAdapter, connectionConfig.ConnectionString, entries);
 
         /// <summary>
         /// 赋予更新能力。
         /// </summary>
-        /// <param name="connectionAdapter">数据库适配器。</param>
-        /// <param name="connectionString">数据库链接。</param>
+        /// <param name="entry">集合。</param>
+        /// <returns></returns>
+        public IUpdateable<TEntity> AsUpdateable(TEntity entry)
+        {
+            if (entry is null)
+            {
+                throw new ArgumentNullException(nameof(entry));
+            }
+
+            return new Updateable(DbAdapter, connectionConfig.ConnectionString, new TEntity[] { entry });
+        }
+
+        /// <summary>
+        /// 赋予更新能力。
+        /// </summary>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IUpdateable<TEntity> AsUpdateable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
-            => new Updateable(connectionAdapter, connectionString, entries);
+        public IUpdateable<TEntity> AsUpdateable(TEntity[] entries)
+            => new Updateable(DbAdapter, connectionConfig.ConnectionString, entries);
+
+        /// <summary>
+        /// 赋予更新能力。
+        /// </summary>
+        /// <param name="entries">集合。</param>
+        /// <returns></returns>
+        public IUpdateable<TEntity> AsUpdateable(List<TEntity> entries)
+            => new Updateable(DbAdapter, connectionConfig.ConnectionString, entries);
 
         /// <summary>
         /// 赋予删除能力。
         /// </summary>
-        /// <param name="connectionAdapter">数据库适配器。</param>
-        /// <param name="connectionString">数据库链接。</param>
+        /// <param name="entry">实体。</param>
+        /// <returns></returns>
+        public IDeleteable<TEntity> AsDeleteable(TEntity entry)
+        {
+            if (entry is null)
+            {
+                throw new ArgumentNullException(nameof(entry));
+            }
+
+            return new Deleteable(DbAdapter, connectionConfig.ConnectionString, new TEntity[] { entry });
+        }
+
+        /// <summary>
+        /// 赋予删除能力。
+        /// </summary>
         /// <param name="entries">集合。</param>
         /// <returns></returns>
-        public static IDeleteable<TEntity> AsDeleteable(IDbConnectionAdapter connectionAdapter, string connectionString, ICollection<TEntity> entries)
-            => new Deleteable(connectionAdapter, connectionString, entries);
+        public IDeleteable<TEntity> AsDeleteable(TEntity[] entries)
+            => new Deleteable(DbAdapter, connectionConfig.ConnectionString, entries);
+
+        /// <summary>
+        /// 赋予删除能力。
+        /// </summary>
+        /// <param name="entries">集合。</param>
+        /// <returns></returns>
+        public IDeleteable<TEntity> AsDeleteable(List<TEntity> entries)
+            => new Deleteable(DbAdapter, connectionConfig.ConnectionString, entries);
     }
 }

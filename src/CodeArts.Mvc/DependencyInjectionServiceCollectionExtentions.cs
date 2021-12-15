@@ -43,6 +43,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(options));
             }
 
+            string variable = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            bool isDevelopment = string.Equals(variable, "Development", StringComparison.OrdinalIgnoreCase);
+
             string pattern = options.Pattern;
 
             var assemblys = AssemblyFinder.Find(pattern);
@@ -80,7 +84,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     foreach (var parameterInfo in constructorInfo.GetParameters())
                     {
-                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 0, maxDepth, lifetime))
+                        if (parameterInfo.IsOptional || Di(services, parameterInfo.ParameterType, assemblyTypes, 0, maxDepth, lifetime, isDevelopment))
                         {
                             continue;
                         }
@@ -107,7 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, ServiceLifetime lifetime)
+        private static bool Di(IServiceCollection services, Type serviceType, List<Type> assemblyTypes, int depth, int maxDepth, ServiceLifetime lifetime, bool isDevelopment)
         {
             if (serviceType == typeof(IServiceProvider) || serviceType == typeof(IServiceScopeFactory))
             {
@@ -149,6 +153,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             foreach (var implementationType in implementationTypes)
             {
+                if (!isDevelopment && implementationType.IsDefined(typeof(DevelopAttribute), false))
+                {
+                    continue;
+                }
+
                 foreach (var constructorInfo in implementationType.GetConstructors())
                 {
                     if (!constructorInfo.IsPublic)
@@ -172,7 +181,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             break;
                         }
 
-                        if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, lifetime))
+                        if (Di(services, parameterInfo.ParameterType, assemblyTypes, depth + 1, maxDepth, lifetime, isDevelopment))
                         {
                             continue;
                         }

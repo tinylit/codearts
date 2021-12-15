@@ -163,10 +163,6 @@ namespace CodeArts.Db
         /// </summary>
         private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
 
-        /// <summary>
-        /// * 字段。
-        /// </summary>
-        private static readonly Regex PatternAnyField = new Regex(@"\*[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
         #endregion
 
         private static readonly ConcurrentDictionary<string, string> SqlCache = new ConcurrentDictionary<string, string>();
@@ -456,7 +452,7 @@ namespace CodeArts.Db
             int startIndex = -1;
             int i = 0, length = cols.Length;
 
-        label_core:
+label_core:
 
             for (; i < length; i++)
             {
@@ -524,12 +520,16 @@ namespace CodeArts.Db
 
             if (startIndex > -1 && LikeAs(cols, i))
             {
+#if NETSTANDARD2_1_OR_GREATER
+                col = cols[startIndex..i];
+#else
                 col = cols.Substring(startIndex, i - startIndex);
+#endif
 
                 return true;
             }
 
-        label_false:
+label_false:
 
             col = null;
 
@@ -667,7 +667,7 @@ namespace CodeArts.Db
 
                 continue;
 
-            label_check:
+label_check:
 
                 if (letterStart == 0 || bracketLeft != bracketRight)
                 {
@@ -773,7 +773,7 @@ namespace CodeArts.Db
 
                 continue;
 
-            label_check:
+label_check:
 
                 if (letterStart == 0 || bracketLeft != bracketRight)
                 {
@@ -924,7 +924,7 @@ namespace CodeArts.Db
                 }
 
                 continue;
-            label_check:
+label_check:
 
                 if (letterStart == 0 || bracketLeft != bracketRight)
                 {
@@ -1435,6 +1435,23 @@ namespace CodeArts.Db
 
             return true;
         }
+        private static bool IsAny(string sql, int startIndex, int count)
+        {
+            for (int i = startIndex + count - 1; i >= startIndex; i--)
+            {
+                char c = sql[i];
+
+                if (IsWhitespace(c))
+                {
+                    continue;
+                }
+
+                return c == '*';
+            }
+
+            return false;
+        }
+
         private class RangeMatch
         {
             public int Index { get; set; }
@@ -1537,7 +1554,7 @@ namespace CodeArts.Db
 
                 continue;
 
-            label_check:
+label_check:
                 if (bracketLeft == bracketRight && letterStart > 0)
                 {
                     int offset = i - letterStart;
@@ -1668,7 +1685,7 @@ namespace CodeArts.Db
                 }
 
                 continue;
-            label_check:
+label_check:
 
                 switch (i - letterStart)
                 {
@@ -1695,7 +1712,7 @@ namespace CodeArts.Db
 
             return startIndex;
 
-        label_table_as: //? 表和别名计算。
+label_table_as: //? 表和别名计算。
 
             flag = true;
             quotesFlag = false;
@@ -1839,7 +1856,7 @@ namespace CodeArts.Db
 
                 continue;
 
-            label_check:
+label_check:
                 if (asFlag || firstFlag)
                 {
                     matches.Add(new RangeMatch
@@ -1971,7 +1988,11 @@ namespace CodeArts.Db
 
                 if (withAsMt.Index > offset) //? 前部分。
                 {
+#if NETSTANDARD2_1_OR_GREATER
+                    sbSql.Append(Done(sql[offset..withAsMt.Index], false));
+#else
                     sbSql.Append(Done(sql.Substring(offset, withAsMt.Index - offset), false));
+#endif
                 }
 
                 var nameGrp = withAsMt.Groups["name"];
@@ -2023,7 +2044,11 @@ namespace CodeArts.Db
                 if (sql.Length > offset)
                 {
                     sbSql.Append(Environment.NewLine)
+#if NETSTANDARD2_1_OR_GREATER
+                            .Append(Done(sql[offset..], false));
+#else
                             .Append(Done(sql.Substring(offset), false));
+#endif
                 }
 
                 wrapSql = sbSql.ToString();
@@ -2073,8 +2098,11 @@ namespace CodeArts.Db
                         sbEx.Append(Environment.NewLine);
                     }
 
+#if NETSTANDARD2_1_OR_GREATER
+                    string independentSql = sqlStr[startAt..endIndex];
+#else
                     string independentSql = sqlStr.Substring(startAt, endIndex - startAt);
-
+#endif
                     sbEx.Append(DoneIndependentSql(independentSql));
 
                     startAt = endIndex;
@@ -2503,7 +2531,7 @@ namespace CodeArts.Db
                     goto label_commandType;
                 }
 
-            label_commandType:
+label_commandType:
 
                 if (length == startAt)
                 {
@@ -2808,9 +2836,15 @@ namespace CodeArts.Db
 
             if (withAsMt.Success)
             {
+#if NETSTANDARD2_1_OR_GREATER
+                return string.Concat(sql[..(withAsMt.Index + withAsMt.Length)],
+                    Environment.NewLine,
+                    Aw_ToCountSQL_Simple(sql[(withAsMt.Index + withAsMt.Length)..]));
+#else
                 return string.Concat(sql.Substring(0, withAsMt.Index + withAsMt.Length),
                     Environment.NewLine,
                     Aw_ToCountSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length)));
+#endif
             }
 
             return Aw_ToCountSQL_Simple(sql);
@@ -2918,11 +2952,19 @@ namespace CodeArts.Db
 
             if (withAsMt.Success)
             {
+#if NETSTANDARD2_1_OR_GREATER
+                string mainSql = Aw_ToSQL_Simple(sql[(withAsMt.Index + withAsMt.Length)..]);
+
+                return string.Concat("P(`", sql[..(withAsMt.Index + withAsMt.Length)],
+                    Environment.NewLine,
+                    mainSql);
+#else
                 string mainSql = Aw_ToSQL_Simple(sql.Substring(withAsMt.Index + withAsMt.Length));
 
                 return string.Concat("P(`", sql.Substring(0, withAsMt.Index + withAsMt.Length),
                     Environment.NewLine,
                     mainSql);
+#endif
             }
             else
             {
@@ -2976,7 +3018,7 @@ namespace CodeArts.Db
                         {
                             sb.Append(sql, match.Index, match.Length);
                         }
-                        else if (PatternAnyField.Match(sql, item.Index, item.Length).Success)
+                        else if (IsAny(sql, item.Index, item.Length))
                         {
                             sb.Length = 0;
 
@@ -3007,7 +3049,7 @@ namespace CodeArts.Db
                         .Append(sql);
                 }
 
-            label_core:
+label_core:
 
                 return sb.Append(") AS xRows")
                          .Append('`')
@@ -3023,7 +3065,7 @@ namespace CodeArts.Db
 
             if (orderByMt.Success)
             {
-                sb.Append(sql.Substring(0, orderByMt.Index))
+                sb.Append(sql, 0, orderByMt.Index)
                     .Append('`')
                     .Append(',')
                     .Append("{=index}")
@@ -3116,7 +3158,11 @@ namespace CodeArts.Db
 
                     } while (match.Success);
 
+#if NETSTANDARD2_1_OR_GREATER
+                    sql = string.Concat(sb.ToString(), sql[offset..]);
+#else
                     sql = string.Concat(sb.ToString(), sql.Substring(offset));
+#endif
                 }
             }
 

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CodeArts.Db.Dapper
@@ -55,11 +56,6 @@ namespace CodeArts.Db.Dapper
         /// <summary> 数据库驱动名称。 </summary>
         public string ProviderName => connectionConfig.ProviderName;
 
-        /// <summary>
-        /// SQL 矫正。
-        /// </summary>
-        protected ISQLCorrectSettings Settings => DbAdapter.Settings;
-
         private IDbConnectionAdapter connectionAdapter;
         private bool disposedValue;
 
@@ -90,7 +86,7 @@ namespace CodeArts.Db.Dapper
         /// </summary>
         /// <param name="useCache">优先复用链接池，否则：始终创建新链接。</param>
         /// <returns></returns>
-        public virtual IDbConnection CreateDb(bool useCache = true)
+        protected virtual IDbConnection CreateDb(bool useCache = true)
         {
             var connection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, useCache);
 
@@ -108,10 +104,9 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         protected virtual string ToPagedSql(SQL sql, int pageIndex, int pageSize)
         {
-            string mainSql = sql.ToSQL(pageIndex, pageSize)
-                                .ToString(Settings);
+            string mainSql = Format(sql.ToSQL(pageIndex, pageSize));
 
-            if (Settings.Engine == DatabaseEngine.MySQL)
+            if (DbAdapter.Settings.Engine == DatabaseEngine.MySQL)
             {
                 int i = 6;/* 跳过 SELECT 的计算 */
 
@@ -127,17 +122,16 @@ namespace CodeArts.Db.Dapper
 
                 var sb = new StringBuilder();
 
-                return sb.Append(mainSql.Substring(0, i))
+                return sb.Append(mainSql, 0, i)
                      .Append(' ')
                      .Append("SQL_CALC_FOUND_ROWS")
-                     .Append(mainSql.Substring(i))
+                     .Append(mainSql, i, mainSql.Length - i)
                      .Append(';')
                      .Append("SELECT FOUND_ROWS()")
                      .ToString();
             }
 
-            string countSql = sql.ToCountSQL()
-                                .ToString(Settings);
+            string countSql = Format(sql.ToCountSQL());
 
             return string.Concat(mainSql, ";", countSql);
         }
@@ -147,7 +141,87 @@ namespace CodeArts.Db.Dapper
         /// </summary>
         /// <param name="sql">语句。</param>
         /// <returns></returns>
-        public string FormatSql(SQL sql) => sql?.ToString(Settings);
+        protected virtual string Format(SQL sql)
+        {
+            if (sql is null)
+            {
+                throw new ArgumentNullException(nameof(sql));
+            }
+
+            return sql.ToString(DbAdapter.Settings);
+        }
+
+        /// <summary>
+        /// 查询唯一的数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        public T QuerySingle<T>(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return connection.QuerySingle<T>(sqlStr, param, null, commandTimeout);
+            }
+        }
+
+        /// <summary>
+        /// 查询唯一的数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        public T QuerySingleOrDefault<T>(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return connection.QuerySingleOrDefault<T>(sqlStr, param, null, commandTimeout);
+            }
+        }
+
+        /// <summary>
+        /// 查询第一条数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        public T QueryFirst<T>(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return connection.QueryFirst<T>(sqlStr, param, null, commandTimeout);
+            }
+        }
+
+        /// <summary>
+        /// 查询第一条数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        public T QueryFirstOrDefault<T>(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return connection.QueryFirstOrDefault<T>(sqlStr, param, null, commandTimeout);
+            }
+        }
 
         /// <summary>
         /// 查询分页数据。
@@ -179,6 +253,82 @@ namespace CodeArts.Db.Dapper
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
 
         /// <summary>
+        /// 查询唯一的数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
+        /// <returns></returns>
+        public async Task<T> QuerySingleAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return await connection.QuerySingleAsync<T>(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+            }
+        }
+
+        /// <summary>
+        /// 查询唯一的数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
+        /// <returns></returns>
+        public async Task<T> QuerySingleOrDefaultAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return await connection.QuerySingleOrDefaultAsync<T>(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+            }
+        }
+
+        /// <summary>
+        /// 查询第一条数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
+        /// <returns></returns>
+        public async Task<T> QueryFirstAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return await connection.QueryFirstAsync<T>(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+            }
+        }
+
+        /// <summary>
+        /// 查询第一条数据。
+        /// </summary>
+        /// <typeparam name="T">元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
+        /// <returns></returns>
+        public async Task<T> QueryFirstOrDefaultAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return await connection.QueryFirstOrDefaultAsync<T>(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+            }
+        }
+
+        /// <summary>
         /// 查询分页数据。
         /// </summary>
         /// <typeparam name="T">集合元素类型。</typeparam>
@@ -187,14 +337,15 @@ namespace CodeArts.Db.Dapper
         /// <param name="pageSize">一页显示多少条。</param>
         /// <param name="param">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
         /// <returns></returns>
-        public async Task<PagedList<T>> QueryAsync<T>(SQL sql, int pageIndex, int pageSize, object param = null, int? commandTimeout = null)
+        public async Task<PagedList<T>> QueryAsync<T>(SQL sql, int pageIndex, int pageSize, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
         {
             var sqlStr = ToPagedSql(sql, pageIndex, pageSize);
 
             using (IDbConnection connection = CreateDb())
             {
-                using (var reader = await connection.QueryMultipleAsync(sqlStr, param, commandTimeout: commandTimeout).ConfigureAwait(false))
+                using (var reader = await connection.QueryMultipleAsync(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken)).ConfigureAwait(false))
                 {
                     var results = await reader.ReadAsync<T>().ConfigureAwait(false);
 
@@ -202,6 +353,43 @@ namespace CodeArts.Db.Dapper
 
                     return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
                 }
+            }
+        }
+#endif
+
+        /// <summary>
+        /// 执行指令。
+        /// </summary>
+        /// <param name="sql">语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        public int Execute(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return connection.Execute(sqlStr, param, null, commandTimeout);
+            }
+        }
+
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+        /// <summary>
+        /// 执行指令。
+        /// </summary>
+        /// <param name="sql">语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
+        /// <returns></returns>
+        public async Task<int> ExecuteAsync(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+        {
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateDb())
+            {
+                return await connection.ExecuteAsync(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
             }
         }
 #endif

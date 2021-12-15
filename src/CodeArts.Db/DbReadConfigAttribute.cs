@@ -6,7 +6,7 @@ namespace CodeArts.Db
     /// <summary>
     /// 只读连接。
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
     public class DbReadConfigAttribute : DbConfigAttribute
     {
         /// <summary>
