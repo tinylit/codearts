@@ -24,28 +24,19 @@ namespace CodeArts.Db.Dapper
     public class DbSet<TEntity> where TEntity : class, IEntiy
     {
         private static readonly ITableInfo tableInfo;
-        private readonly IReadOnlyConnectionConfig connectionConfig;
-        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+
+        private readonly string connectionString;
+        private readonly IDbConnectionAdapter connectionAdapter;
 
         static DbSet() => tableInfo = TableRegions.Resolve<TEntity>();
 
         /// <summary>
-        /// <inheritdoc/>
-        /// </summary>
-        /// <summary>
         /// inheritdoc
         /// </summary>
-        public DbSet()
+        public DbSet(IDbConnectionAdapter connectionAdapter, string connectionString)
         {
-            connectionConfig = GetDbConfig() ?? throw new DException("未找到数据库链接!");
-        }
-
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        public DbSet(IReadOnlyConnectionConfig connectionConfig)
-        {
-            this.connectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
+            this.connectionAdapter = connectionAdapter ?? throw new ArgumentNullException(nameof(connectionAdapter));
+            this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
         private static object FixParameters(Dictionary<string, ParameterValue> parameters)
@@ -65,23 +56,6 @@ namespace CodeArts.Db.Dapper
             }
 
             return results;
-        }
-
-        /// <summary>
-        /// 获取数据库配置。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual IReadOnlyConnectionConfig GetDbConfig()
-        {
-            var attr = DbConfigCache.GetOrAdd(GetType(), type =>
-            {
-                return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), true);
-            }) ?? DbConfigCache.GetOrAdd(typeof(TEntity), type =>
-            {
-                return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), true);
-            });
-
-            return attr?.GetConfig() ?? throw new DException("未找到数据库链接!");
         }
 
         /// <summary>
@@ -112,30 +86,6 @@ namespace CodeArts.Db.Dapper
 
             DbValidator.ValidateValue(value, validationContext, validationAttributes);
         }
-
-        private IDbConnectionAdapter connectionAdapter;
-
-        /// <summary>
-        /// 适配器。
-        /// </summary>
-        protected IDbConnectionAdapter DbAdapter
-        {
-            get
-            {
-                if (connectionAdapter is null || !string.Equals(connectionAdapter.ProviderName, connectionConfig.ProviderName))
-                {
-                    connectionAdapter = CreateDbAdapter(connectionConfig.ProviderName);
-                }
-
-                return connectionAdapter;
-            }
-        }
-
-        /// <summary>
-        /// 创建适配器。
-        /// </summary>
-        /// <returns></returns>
-        protected virtual IDbConnectionAdapter CreateDbAdapter(string providerName) => DapperConnectionManager.Get(providerName);
 
         /// <summary>
         /// 路由执行力。
@@ -1653,7 +1603,7 @@ label_valid:
                 throw new ArgumentNullException(nameof(entry));
             }
 
-            return new Insertable(DbAdapter, connectionConfig.ConnectionString, new TEntity[] { entry });
+            return new Insertable(connectionAdapter, connectionString, new TEntity[] { entry });
         }
 
         /// <summary>
@@ -1662,7 +1612,7 @@ label_valid:
         /// <param name="entries">集合。</param>
         /// <returns></returns>
         public IInsertable<TEntity> AsInsertable(TEntity[] entries)
-            => new Insertable(DbAdapter, connectionConfig.ConnectionString, entries);
+            => new Insertable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予插入能力。
@@ -1670,7 +1620,7 @@ label_valid:
         /// <param name="entries">集合。</param>
         /// <returns></returns>
         public IInsertable<TEntity> AsInsertable(List<TEntity> entries)
-            => new Insertable(DbAdapter, connectionConfig.ConnectionString, entries);
+            => new Insertable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予更新能力。
@@ -1684,7 +1634,7 @@ label_valid:
                 throw new ArgumentNullException(nameof(entry));
             }
 
-            return new Updateable(DbAdapter, connectionConfig.ConnectionString, new TEntity[] { entry });
+            return new Updateable(connectionAdapter, connectionString, new TEntity[] { entry });
         }
 
         /// <summary>
@@ -1693,7 +1643,7 @@ label_valid:
         /// <param name="entries">集合。</param>
         /// <returns></returns>
         public IUpdateable<TEntity> AsUpdateable(TEntity[] entries)
-            => new Updateable(DbAdapter, connectionConfig.ConnectionString, entries);
+            => new Updateable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予更新能力。
@@ -1701,7 +1651,7 @@ label_valid:
         /// <param name="entries">集合。</param>
         /// <returns></returns>
         public IUpdateable<TEntity> AsUpdateable(List<TEntity> entries)
-            => new Updateable(DbAdapter, connectionConfig.ConnectionString, entries);
+            => new Updateable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予删除能力。
@@ -1715,7 +1665,7 @@ label_valid:
                 throw new ArgumentNullException(nameof(entry));
             }
 
-            return new Deleteable(DbAdapter, connectionConfig.ConnectionString, new TEntity[] { entry });
+            return new Deleteable(connectionAdapter, connectionString, new TEntity[] { entry });
         }
 
         /// <summary>
@@ -1724,7 +1674,7 @@ label_valid:
         /// <param name="entries">集合。</param>
         /// <returns></returns>
         public IDeleteable<TEntity> AsDeleteable(TEntity[] entries)
-            => new Deleteable(DbAdapter, connectionConfig.ConnectionString, entries);
+            => new Deleteable(connectionAdapter, connectionString, entries);
 
         /// <summary>
         /// 赋予删除能力。
@@ -1732,6 +1682,6 @@ label_valid:
         /// <param name="entries">集合。</param>
         /// <returns></returns>
         public IDeleteable<TEntity> AsDeleteable(List<TEntity> entries)
-            => new Deleteable(DbAdapter, connectionConfig.ConnectionString, entries);
+            => new Deleteable(connectionAdapter, connectionString, entries);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CodeArts.Db.Exceptions;
+using CodeArts.Runtime;
 using Dapper;
 using System;
 using System.Collections.Concurrent;
@@ -8,46 +9,261 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
+using static System.Linq.Expressions.Expression;
 
 namespace CodeArts.Db.Dapper
 {
+    /// <summary>
+    /// 数据库访问。
+    /// </summary>
+    public enum DbAccess
+    {
+        /// <summary>
+        /// 自动。
+        /// </summary>
+        Automatic,
+        /// <summary>
+        /// 只读库。
+        /// </summary>
+        Read,
+        /// <summary>
+        /// 可读写库。
+        /// </summary>
+        ReadWrite
+    }
+
     /// <summary>
     /// 数据上下文。
     /// </summary>
     public class DbContext : IDisposable
     {
+        const string TransgressionError = "部分操作表不在上下文中!";
+        const string IllegalReadError = "只允许查询操作!";
+        const string IllegalWriteError = "未识别到写操作!";
+
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbMasterConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbSlaveConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+        private static readonly ConcurrentDictionary<Type, DbTablesEngine> DbTables = new ConcurrentDictionary<Type, DbTablesEngine>();
+
+        private readonly bool initialized;
+        private readonly DbAccess dbAccess;
+        private readonly TablesEngine tablesEngine;
         private readonly IReadOnlyConnectionConfig connectionConfig;
-        private readonly List<IDbConnection> connections = new List<IDbConnection>();
-        private static readonly ConcurrentDictionary<Type, DbConfigAttribute> DbConfigCache = new ConcurrentDictionary<Type, DbConfigAttribute>();
+        private readonly IReadOnlyConnectionConfig connectionSlaveConfig;
 
-        /// <summary>
-        /// inheritdoc
-        /// </summary>
-        protected DbContext()
+        private class TablesEngine
         {
-            connectionConfig = GetDbConfig() ?? throw new DException("未找到数据库链接!");
+            private readonly HashSet<string> tables;
+
+            public TablesEngine(HashSet<string> tables)
+            {
+                this.tables = tables;
+            }
+
+            public bool IsValid(string table) => tables.Contains(table);
+        }
+
+        private class DbTablesEngine
+        {
+            private readonly HashSet<string> tables;
+            private readonly Action<DbContext> initialize;
+
+            public DbTablesEngine(Action<DbContext> initialize, HashSet<string> tables)
+            {
+                this.initialize = initialize;
+                this.tables = tables;
+            }
+
+            public TablesEngine Initialize(DbContext context)
+            {
+                initialize.Invoke(context);
+
+                return new TablesEngine(tables);
+            }
         }
 
         /// <summary>
         /// inheritdoc
         /// </summary>
-        public DbContext(IReadOnlyConnectionConfig connectionConfig)
+        protected DbContext(DbAccess dbAccess = DbAccess.Automatic)
         {
-            this.connectionConfig = connectionConfig ?? throw new ArgumentNullException(nameof(connectionConfig));
+            this.dbAccess = dbAccess;
+
+            if (dbAccess == DbAccess.Read)
+            {
+                connectionConfig = GetDbSlaveConfig() ?? throw new DException("未找到数据库链接!");
+            }
+            else
+            {
+                connectionConfig = GetDbMasterConfig() ?? throw new DException("未找到数据库链接!");
+                connectionSlaveConfig = GetDbSlaveConfig() ?? throw new DException("未找到数据库链接!");
+            }
+
+            tablesEngine = DbTables.GetOrAdd(GetType(), type =>
+            {
+                var tables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                var propertyInfos = type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+
+                var paramterExp = Parameter(typeof(DbContext), "context");
+
+                var variableExp = Variable(type, "variable");
+
+                var setGenericFn = type.GetMethod(nameof(Set), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+
+                var expressions = new List<Expression>(propertyInfos.Length)
+                {
+                    Assign(variableExp, Convert(paramterExp, type))
+                };
+
+                foreach (var propertyInfo in propertyInfos.Where(x => x.PropertyType.IsGenericType && typeof(DbSet<>).IsAssignableFrom(x.PropertyType.GetGenericTypeDefinition())))
+                {
+                    var tableType = propertyInfo.PropertyType.GetGenericArguments()[0];
+
+                    var tableInfo = TableRegions.Resolve(tableType);
+
+                    string name = tableInfo.TableName;
+
+                    int indexOf = name.IndexOf('.');
+
+                    if (indexOf > 0)
+                    {
+                        name.Contains(name.Substring(indexOf + 1));
+                    }
+
+                    tables.Add(name);
+
+                    if (!propertyInfo.CanWrite)
+                    {
+                        continue;
+                    }
+
+                    var setFn = setGenericFn.MakeGenericMethod(tableType);
+
+                    if (setFn.ReturnType == propertyInfo.PropertyType)
+                    {
+                        expressions.Add(Assign(Property(variableExp, propertyInfo), Call(variableExp, setFn)));
+                    }
+                    else
+                    {
+                        expressions.Add(Assign(Property(variableExp, propertyInfo), Convert(Call(variableExp, setFn), propertyInfo.PropertyType)));
+                    }
+                }
+
+                var lambdaEx = Lambda<Action<DbContext>>(Block(new ParameterExpression[1] { variableExp }, expressions), paramterExp);
+
+                return new DbTablesEngine(lambdaEx.Compile(), tables);
+
+            }).Initialize(this);
+
+            initialized = true;
         }
 
         /// <summary>
-        /// 获取数据库配置。
+        /// 获取数据操作器。
+        /// </summary>
+        /// <typeparam name="TEntity">实体。</typeparam>
+        /// <returns></returns>
+        public virtual DbSet<TEntity> Set<TEntity>() where TEntity : class, IEntiy
+        {
+            if (initialized)
+            {
+                var tableInfo = TableRegions.Resolve<TEntity>();
+
+                string name = tableInfo.TableName;
+
+                int indexOf = name.IndexOf('.');
+
+                if (indexOf > 0)
+                {
+                    name.Contains(name.Substring(indexOf + 1));
+                }
+
+                if (!tablesEngine.IsValid(name))
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            return new DbSet<TEntity>(DbAdapter, connectionSlaveConfig.ConnectionString);
+        }
+
+        /// <summary>
+        /// 获取数据库主库配置。
         /// </summary>
         /// <returns></returns>
-        protected virtual IReadOnlyConnectionConfig GetDbConfig()
+        protected virtual IReadOnlyConnectionConfig GetDbMasterConfig()
         {
-            var attr = DbConfigCache.GetOrAdd(GetType(), type =>
-            {
-                return (DbConfigAttribute)Attribute.GetCustomAttribute(type, typeof(DbConfigAttribute), true);
-            });
+            var attr = DbMasterConfigCache.GetOrAdd(GetType(), Aw_GetDbMasterConfig);
 
             return attr?.GetConfig() ?? throw new DException("未找到数据库链接!");
+        }
+
+        /// <summary>
+        /// 获取数据库从库配置。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IReadOnlyConnectionConfig GetDbSlaveConfig()
+        {
+            var attr = DbSlaveConfigCache.GetOrAdd(GetType(), Aw_GetDbConfig);
+
+            if (attr is null)
+            {
+                return GetDbMasterConfig();
+            }
+
+            return attr.GetConfig() ?? throw new DException("未找到数据库链接!");
+        }
+
+        private static DbConfigAttribute Aw_GetDbMasterConfig(Type type)
+        {
+            var attributes = Attribute.GetCustomAttributes(type, typeof(DbConfigAttribute));
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbWriteConfigAttribute writeConfigAttribute)
+                {
+                    return writeConfigAttribute;
+                }
+            }
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbReadConfigAttribute)
+                {
+                    continue;
+                }
+
+                return (DbConfigAttribute)attribute;
+            }
+
+            return null;
+        }
+
+        private static DbConfigAttribute Aw_GetDbConfig(Type type)
+        {
+            var attributes = Attribute.GetCustomAttributes(type, typeof(DbConfigAttribute));
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbReadConfigAttribute readConfigAttribute)
+                {
+                    return readConfigAttribute;
+                }
+            }
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute is DbWriteConfigAttribute)
+                {
+                    continue;
+                }
+
+                return (DbConfigAttribute)attribute;
+            }
+
+            return null;
         }
 
         /// <summary> 连接名称。 </summary>
@@ -86,14 +302,7 @@ namespace CodeArts.Db.Dapper
         /// </summary>
         /// <param name="useCache">优先复用链接池，否则：始终创建新链接。</param>
         /// <returns></returns>
-        protected virtual IDbConnection CreateDb(bool useCache = true)
-        {
-            var connection = TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, useCache);
-
-            connections.Add(connection);
-
-            return connection;
-        }
+        protected virtual IDbConnection CreateDb(bool useCache = true) => TransactionConnections.GetConnection(connectionConfig.ConnectionString, DbAdapter) ?? DispatchConnections.Instance.GetConnection(connectionConfig.ConnectionString, DbAdapter, useCache);
 
         /// <summary>
         /// 转分页SQL（listSql;countSql;）。
@@ -151,6 +360,39 @@ namespace CodeArts.Db.Dapper
             return sql.ToString(DbAdapter.Settings);
         }
 
+        private bool IsValid(SQL sql)
+        {
+            for (int i = 0; i < sql.Tables.Count; i++)
+            {
+                TableToken token = sql.Tables[i];
+
+                if (tablesEngine.IsValid(token.Name))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 有效读。
+        /// </summary>
+        /// <param name="sql">语句。</param>
+        /// <returns></returns>
+        protected virtual bool IsReadValid(SQL sql)
+            => sql.Tables.All(x => x.CommandType == CommandTypes.Select);
+
+        /// <summary>
+        /// 有效写。
+        /// </summary>
+        /// <param name="sql">语句。</param>
+        /// <returns></returns>
+        protected virtual bool IsWriteValid(SQL sql)
+            => sql.Tables.Count > 0 && !sql.Tables.All(x => x.CommandType == CommandTypes.Select);
+
         /// <summary>
         /// 查询唯一的数据。
         /// </summary>
@@ -161,6 +403,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public T QuerySingle<T>(SQL sql, object param = null, int? commandTimeout = null)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -179,6 +431,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public T QuerySingleOrDefault<T>(SQL sql, object param = null, int? commandTimeout = null)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -197,6 +459,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public T QueryFirst<T>(SQL sql, object param = null, int? commandTimeout = null)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -215,6 +487,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public T QueryFirstOrDefault<T>(SQL sql, object param = null, int? commandTimeout = null)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -235,6 +517,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public PagedList<T> Query<T>(SQL sql, int pageIndex, int pageSize, object param = null, int? commandTimeout = null)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = ToPagedSql(sql, pageIndex, pageSize);
 
             using (IDbConnection connection = CreateDb())
@@ -263,6 +555,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public async Task<T> QuerySingleAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -282,6 +584,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public async Task<T> QuerySingleOrDefaultAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -301,6 +613,16 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public async Task<T> QueryFirstAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
         {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -366,6 +688,21 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public int Execute(SQL sql, object param = null, int? commandTimeout = null)
         {
+            if (dbAccess == DbAccess.Read)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsWriteValid(sql))
+            {
+                throw new InvalidOperationException(IllegalWriteError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -385,6 +722,21 @@ namespace CodeArts.Db.Dapper
         /// <returns></returns>
         public async Task<int> ExecuteAsync(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
         {
+            if (dbAccess == DbAccess.Read)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsWriteValid(sql))
+            {
+                throw new InvalidOperationException(IllegalWriteError);
+            }
+
             var sqlStr = Format(sql);
 
             using (IDbConnection connection = CreateDb())
@@ -400,20 +752,6 @@ namespace CodeArts.Db.Dapper
         /// <param name="disposing">释放。</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: 释放托管状态(托管对象)
-
-                    foreach (var connection in connections)
-                    {
-                        connection.Dispose();
-                    }
-                }
-
-                disposedValue = true;
-            }
         }
 
         /// <summary>
@@ -426,8 +764,17 @@ namespace CodeArts.Db.Dapper
         /// </summary>
         public void Dispose()
         {
-            // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
-            Dispose(disposing: true);
+            if (!disposedValue)
+            {
+                disposedValue = true;
+
+                // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+                Dispose(disposing: true);
+            }
+            else
+            {
+                Dispose(false);
+            }
 
             GC.SuppressFinalize(this);
         }
