@@ -151,7 +151,7 @@ namespace CodeArts.Db.Lts
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
         public Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken)
-        => connection.ExecuteAsync(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+        => connection.ExecuteAsync(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
 #endif
         /// <summary>
         /// 读取数据。
@@ -319,11 +319,11 @@ namespace CodeArts.Db.Lts
                 case RowStyle.None:
                 case RowStyle.First:
                 case RowStyle.FirstOrDefault:
-                    value = await connection.QueryFirstOrDefaultAsync(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+                    value = await connection.QueryFirstOrDefaultAsync(conversionType, new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
                     break;
                 case RowStyle.Single:
                 case RowStyle.SingleOrDefault:
-                    value = await connection.QuerySingleOrDefaultAsync(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+                    value = await connection.QuerySingleOrDefaultAsync(conversionType, new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
                     break;
                 default:
                     throw new NotSupportedException();
