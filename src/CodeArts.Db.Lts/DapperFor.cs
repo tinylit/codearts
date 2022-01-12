@@ -6,72 +6,16 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace CodeArts.Db.Lts
 {
     /// <summary>
     /// Dapper for Lts。
     /// </summary>
-    public class DapperFor : DatabaseFor
+    public class DapperFor : DatabaseFor, IDatabaseFor
     {
-        private static readonly Dictionary<Type, DbType> typeMap;
-
-        private static DbType LookupDbType(Type dataType)
-        {
-            if (dataType.IsNullable())
-            {
-                dataType = Nullable.GetUnderlyingType(dataType);
-            }
-
-            if (dataType.IsEnum)
-            {
-                dataType = Enum.GetUnderlyingType(dataType);
-            }
-
-            if (typeMap.TryGetValue(dataType, out DbType dbType))
-            {
-                return dbType;
-            }
-
-            if (dataType.FullName == "System.Data.Linq.Binary")
-            {
-                return DbType.Binary;
-            }
-
-            return DbType.Object;
-        }
-        static DapperFor()
-        {
-            //? linq Average 函数。
-            SqlMapper.AddTypeHandler(typeof(double?), new DoubleNullableHandler());
-            SqlMapper.AddTypeHandler(typeof(double), new DoubleHandler());
-            //? MySQL 动态字段，没有行数据时，bool识别为长整型的问题。
-            SqlMapper.AddTypeHandler(typeof(bool), new BooleanHandler());
-
-            typeMap = new Dictionary<Type, DbType>
-            {
-                [typeof(byte)] = DbType.Byte,
-                [typeof(sbyte)] = DbType.SByte,
-                [typeof(short)] = DbType.Int16,
-                [typeof(ushort)] = DbType.UInt16,
-                [typeof(int)] = DbType.Int32,
-                [typeof(uint)] = DbType.UInt32,
-                [typeof(long)] = DbType.Int64,
-                [typeof(ulong)] = DbType.UInt64,
-                [typeof(float)] = DbType.Single,
-                [typeof(double)] = DbType.Double,
-                [typeof(decimal)] = DbType.Decimal,
-                [typeof(bool)] = DbType.Boolean,
-                [typeof(string)] = DbType.String,
-                [typeof(char)] = DbType.StringFixedLength,
-                [typeof(Guid)] = DbType.Guid,
-                [typeof(DateTime)] = DbType.DateTime,
-                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                [typeof(TimeSpan)] = DbType.Time,
-                [typeof(byte[])] = DbType.Binary,
-                [typeof(object)] = DbType.Object
-            };
-        }
+        private readonly IDbConnectionLtsAdapter adapter;
 
         private class BooleanHandler : SqlMapper.ITypeHandler
         {
@@ -134,7 +78,7 @@ namespace CodeArts.Db.Lts
                         {
                             if (kv.Value.IsNull)
                             {
-                                results.Add(kv.Key, DBNull.Value, LookupDbType(kv.Value.ValueType));
+                                results.Add(kv.Key, DBNull.Value, LookupDb.For(kv.Value.ValueType));
                             }
                             else
                             {
@@ -153,7 +97,7 @@ namespace CodeArts.Db.Lts
                             {
                                 if (parameterValue.IsNull)
                                 {
-                                    results.Add(kv.Key, DBNull.Value, LookupDbType(parameterValue.ValueType));
+                                    results.Add(kv.Key, DBNull.Value, LookupDb.For(parameterValue.ValueType));
                                 }
                                 else
                                 {
@@ -176,9 +120,18 @@ namespace CodeArts.Db.Lts
         /// <summary>
         /// <inheritdoc/>
         /// </summary>
-        public DapperFor(ISQLCorrectSettings settings, ICustomVisitorList visitors) : base(settings, visitors)
+        public DapperFor(IDbConnectionLtsAdapter adapter) : base(adapter.Settings, adapter.Visitors)
         {
+            this.adapter = adapter;
         }
+
+        /// <summary>
+        /// 创建数据库查询器。
+        /// </summary>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="useCache">优先复用链接池，否则：始终创建新链接。</param>
+        /// <returns></returns>
+        protected virtual IDbConnection CreateDb(string connectionString, bool useCache = true) => TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter, useCache);
 
         /// <summary>
         /// 执行命令。
@@ -186,7 +139,7 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        public override int Execute(IDbConnection connection, CommandSql commandSql)
+        public int Execute(IDbConnection connection, CommandSql commandSql)
         => connection.Execute(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
@@ -197,7 +150,7 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public override Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken)
+        public Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken)
         => connection.ExecuteAsync(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
 #endif
         /// <summary>
@@ -207,7 +160,7 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        public override IEnumerable<T> Query<T>(IDbConnection connection, CommandSql commandSql)
+        public IEnumerable<T> Query<T>(IDbConnection connection, CommandSql commandSql)
         => connection.Query<T>(commandSql.Sql, FixParameters(commandSql.Parameters), null, true, commandSql.CommandTimeout);
 
 
@@ -216,30 +169,32 @@ namespace CodeArts.Db.Lts
         /// 读取数据。
         /// </summary>
         /// <typeparam name="T">返回类型。</typeparam>
-        /// <param name="connection">数据库链接。</param>
+        /// <param name="connectionString">连接字符串。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        public override IAsyncEnumerable<T> QueryAsync<T>(IDbConnection connection, CommandSql commandSql)
-        => new AsyncEnumerable<T>(connection, commandSql);
+        public IAsyncEnumerable<T> QueryAsync<T>(string connectionString, CommandSql commandSql)
+        => new AsyncEnumerable<T>(connectionString, adapter, commandSql);
 
         private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
         {
-            private readonly IDbConnection connection;
+            private readonly string connectionString;
+            private readonly IDbConnectionLtsAdapter adapter;
             private readonly CommandSql commandSql;
 
             private IAsyncEnumerator<T> enumerator;
 
-            public AsyncEnumerable(IDbConnection connection, CommandSql commandSql)
+            public AsyncEnumerable(string connectionString, IDbConnectionLtsAdapter adapter, CommandSql commandSql)
             {
-                this.connection = connection;
+                this.connectionString = connectionString;
+                this.adapter = adapter;
                 this.commandSql = commandSql;
             }
 
             public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
 #if NETSTANDARD2_1_OR_GREATER
-                => enumerator ??= new AsyncEnumerator<T>(connection, commandSql, cancellationToken);
+                => enumerator ??= new AsyncEnumerator<T>(connectionString, adapter, commandSql, cancellationToken);
 #else
-                => enumerator ?? (enumerator = new AsyncEnumerator<T>(connection, commandSql, cancellationToken));
+                => enumerator ?? (enumerator = new AsyncEnumerator<T>(connectionString, adapter, commandSql, cancellationToken));
 #endif
         }
 
@@ -247,14 +202,16 @@ namespace CodeArts.Db.Lts
         {
             private IEnumerator<T> enumerator;
 
-            private readonly IDbConnection connection;
+            private readonly string connectionString;
+            private readonly IDbConnectionLtsAdapter adapter;
             private readonly CommandSql commandSql;
 
             private readonly CancellationToken cancellationToken;
 
-            public AsyncEnumerator(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken)
+            public AsyncEnumerator(string connectionString, IDbConnectionLtsAdapter adapter, CommandSql commandSql, CancellationToken cancellationToken)
             {
-                this.connection = connection;
+                this.connectionString = connectionString;
+                this.adapter = adapter;
                 this.commandSql = commandSql;
                 this.cancellationToken = cancellationToken;
             }
@@ -269,9 +226,12 @@ namespace CodeArts.Db.Lts
             {
                 if (enumerator is null)
                 {
-                    var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+                    using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter, true))
+                    {
+                        var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
 
-                    enumerator = results.GetEnumerator();
+                        enumerator = results.GetEnumerator();
+                    }
                 }
                 else
                 {
@@ -295,7 +255,7 @@ namespace CodeArts.Db.Lts
         /// <param name="connection">数据库链接。</param>
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
-        public override T Read<T>(IDbConnection connection, CommandSql<T> commandSql)
+        public T Read<T>(IDbConnection connection, CommandSql<T> commandSql)
         {
             object value;
             var type = typeof(T);
@@ -346,7 +306,7 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public override async Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken)
+        public async Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken)
         {
             object value;
             var type = typeof(T);
@@ -385,6 +345,95 @@ namespace CodeArts.Db.Lts
             }
 
             return (T)value;
+        }
+#endif
+
+
+        /// <summary>
+        /// 分析读取SQL。
+        /// </summary>
+        /// <typeparam name="T">返回类型。</typeparam>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="expression">表达式。</param>
+        /// <returns></returns>
+        public T Read<T>(string connectionString, Expression expression)
+        {
+            using (var connection = CreateDb(connectionString))
+            {
+                return Read<T>(connection, Read<T>(expression));
+            }
+        }
+
+        /// <summary>
+        /// 读取数据。
+        /// </summary>
+        /// <typeparam name="T">返回元素类型。</typeparam>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="expression">表达式。</param>
+        /// <returns></returns>
+        public IEnumerable<T> Query<T>(string connectionString, Expression expression)
+        {
+            using (var connection = CreateDb(connectionString))
+            {
+                return Query<T>(connection, Read<T>(expression));
+            }
+        }
+
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+        /// <summary>
+        /// 读取数据。
+        /// </summary>
+        /// <typeparam name="T">返回类型。</typeparam>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="expression">表达式。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public async Task<T> ReadAsync<T>(string connectionString, Expression expression, CancellationToken cancellationToken = default)
+        {
+            using (var connection = CreateDb(connectionString))
+            {
+                return await ReadAsync<T>(connection, Read<T>(expression), cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// 读取数据。
+        /// </summary>
+        /// <typeparam name="T">返回元素类型。</typeparam>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="expression">表达式。</param>
+        /// <returns></returns>
+        public IAsyncEnumerable<T> QueryAsync<T>(string connectionString, Expression expression) => QueryAsync<T>(connectionString, Read<T>(expression));
+#endif
+
+        /// <summary>
+        /// 执行命令。
+        /// </summary>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="expression">表达式。</param>
+        /// <returns></returns>
+        public int Execute(string connectionString, Expression expression)
+        {
+            using (var connection = CreateDb(connectionString))
+            {
+                return Execute(connection, Execute(expression));
+            }
+        }
+
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
+        /// <summary>
+        /// 执行命令。
+        /// </summary>
+        /// <param name="connectionString">数据库连接。</param>
+        /// <param name="expression">表达式。</param>
+        /// <param name="cancellationToken">取消。</param>
+        /// <returns></returns>
+        public async Task<int> ExecuteAsync(string connectionString, Expression expression, CancellationToken cancellationToken = default)
+        {
+            using (var connection = CreateDb(connectionString))
+            {
+                return await ExecuteAsync(connection, Execute(expression), cancellationToken);
+            }
         }
 #endif
     }

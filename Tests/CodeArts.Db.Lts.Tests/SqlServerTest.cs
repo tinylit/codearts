@@ -1328,7 +1328,7 @@ namespace UnitTest
         public void AnyWhere()
         {
             var user = new UserRepository();
-            var expression = ExpressionSplicing.True<FeiUsers>();
+            var expression = ExpressionCombine.True<FeiUsers>();
             var userdetails = new UserDetailsRepository();
 
             var results = userdetails
@@ -1836,7 +1836,7 @@ namespace UnitTest
         {
             var y = 100;
             var user = new UserRepository();
-            var expression = ExpressionSplicing.True<FeiUsers>();
+            var expression = ExpressionCombine.True<FeiUsers>();
 
             expression = expression.And(x => x.Id > 0);
 
@@ -1855,7 +1855,7 @@ namespace UnitTest
         {
             var y = 100;
             var user = new UserRepository();
-            var expression = ExpressionSplicing.True<FeiUsers>();
+            var expression = ExpressionCombine.True<FeiUsers>();
 
             var result = user.Where(x => x.Id > 0 && x.Id < y).Where(expression);
 

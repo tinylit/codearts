@@ -81,6 +81,40 @@ namespace CodeArts.Db.Lts
         /// </summary>
         protected IDatabase Database { get; }
 
+        /// <summary> 连接名称。 </summary>
+        public string Name => Database.Name;
+
+        /// <summary> 数据库驱动名称。 </summary>
+        public string ProviderName => Database.ProviderName;
+
+        /// <summary> 连接字符串。 </summary>
+        [System.Diagnostics.DebuggerHidden]
+        public string ConnectionString => Database.ConnectionString;
+
+        private IDbConnectionLtsAdapter connectionAdapter;
+
+        /// <summary>
+        /// 适配器。
+        /// </summary>
+        protected IDbConnectionLtsAdapter DbAdapter
+        {
+            get
+            {
+                if (connectionAdapter is null || !string.Equals(connectionAdapter.ProviderName, Database.ProviderName))
+                {
+                    connectionAdapter = CreateDbAdapter(Database.ProviderName);
+                }
+
+                return connectionAdapter;
+            }
+        }
+
+        /// <summary>
+        /// 创建适配器。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IDbConnectionLtsAdapter CreateDbAdapter(string providerName) => DbConnectionManager.Get(providerName);
+
         /// <summary>
         /// 获取数据库配置。
         /// </summary>

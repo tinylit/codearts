@@ -5,7 +5,7 @@ namespace CodeArts.Db
     /// <summary>
     /// 数据。
     /// </summary>
-    public struct ParameterValue : IEquatable<ParameterValue>
+    public sealed class ParameterValue : IEquatable<ParameterValue>
     {
         /// <summary>
         /// 构造函数。

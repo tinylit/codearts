@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CodeArts.Db
 {
@@ -13,7 +14,7 @@ namespace CodeArts.Db
         /// <param name="sql">SQL。</param>
         /// <param name="parameters">参数。</param>
         /// <param name="commandTimeout">超时时间。</param>
-        public CommandSql(string sql, object parameters = null, int? commandTimeout = null)
+        public CommandSql(string sql, IDictionary<string, object> parameters = null, int? commandTimeout = null)
         {
             if (string.IsNullOrEmpty(sql))
             {
@@ -33,7 +34,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 参数。
         /// </summary>
-        public object Parameters { get; }
+        public IDictionary<string, object> Parameters { get; }
 
         /// <summary>
         /// 超时时间。
@@ -81,7 +82,7 @@ namespace CodeArts.Db
         /// <param name="rowStyle">数据风格。</param>
         /// <param name="missingMsg">异常信息。</param>
         /// <param name="commandTimeout">超时时间。</param>
-        public CommandSql(string sql, object param, RowStyle rowStyle = RowStyle.None, string missingMsg = null, int? commandTimeout = null)
+        public CommandSql(string sql, IDictionary<string, object> param, RowStyle rowStyle = RowStyle.None, string missingMsg = null, int? commandTimeout = null)
             : this(sql, param, rowStyle, false, default, commandTimeout, missingMsg)
         {
         }
@@ -94,7 +95,7 @@ namespace CodeArts.Db
         /// <param name="rowStyle">数据风格。</param>
         /// <param name="defaultValue">默认值。</param>
         /// <param name="commandTimeout">超时时间。</param>
-        public CommandSql(string sql, object param, RowStyle rowStyle, T defaultValue, int? commandTimeout = null)
+        public CommandSql(string sql, IDictionary<string, object> param, RowStyle rowStyle, T defaultValue, int? commandTimeout = null)
             : this(sql, param, rowStyle, true, defaultValue, commandTimeout, null)
         {
         }
@@ -109,7 +110,7 @@ namespace CodeArts.Db
         /// <param name="commandTimeout">超时时间。</param>
         /// <param name="defaultValue">默认值。</param>
         /// <param name="missingMsg">未找到数据异常消息。</param>
-        public CommandSql(string sql, object param, RowStyle rowStyle, bool hasDefaultValue, T defaultValue = default, int? commandTimeout = null, string missingMsg = null) : base(sql, param, commandTimeout)
+        public CommandSql(string sql, IDictionary<string, object> param, RowStyle rowStyle, bool hasDefaultValue, T defaultValue = default, int? commandTimeout = null, string missingMsg = null) : base(sql, param, commandTimeout)
         {
             HasDefaultValue = hasDefaultValue;
             DefaultValue = defaultValue;

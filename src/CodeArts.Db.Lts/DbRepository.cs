@@ -1,4 +1,4 @@
-﻿using CodeArts.Db.Lts.Routes;
+﻿using CodeArts.Db.Routes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -40,86 +40,71 @@ namespace CodeArts.Db.Lts
         /// </summary>
         /// <param name="entry">项目。</param>
         /// <returns></returns>
-        public IInsertable<TEntity> AsInsertable(TEntity entry)
-        {
-            if (entry is null)
-            {
-                throw new ArgumentNullException(nameof(entry));
-            }
-
-            return AsInsertable(new TEntity[] { entry });
-        }
+        public virtual IInsertable<TEntity> AsInsertable(TEntity entry)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsInsertable(entry);
 
         /// <summary>
         /// 插入路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IInsertable<TEntity> AsInsertable(List<TEntity> entries) => DbWriter<TEntity>.AsInsertable(Database, entries);
+        public virtual IInsertable<TEntity> AsInsertable(List<TEntity> entries)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsInsertable(entries);
 
         /// <summary>
         /// 插入路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IInsertable<TEntity> AsInsertable(TEntity[] entries) => DbWriter<TEntity>.AsInsertable(Database, entries);
+        public virtual IInsertable<TEntity> AsInsertable(TEntity[] entries)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsInsertable(entries);
 
         /// <summary>
         /// 更新路由执行器。
         /// </summary>
         /// <param name="entry">项目。</param>
         /// <returns></returns>
-        public IUpdateable<TEntity> AsUpdateable(TEntity entry)
-        {
-            if (entry is null)
-            {
-                throw new ArgumentNullException(nameof(entry));
-            }
-
-            return AsUpdateable(new TEntity[] { entry });
-        }
+        public virtual IUpdateable<TEntity> AsUpdateable(TEntity entry)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsUpdateable(entry);
 
         /// <summary>
         /// 更新路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IUpdateable<TEntity> AsUpdateable(List<TEntity> entries) => DbWriter<TEntity>.AsUpdateable(Database, entries);
+        public virtual IUpdateable<TEntity> AsUpdateable(List<TEntity> entries)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsUpdateable(entries);
 
         /// <summary>
         /// 更新路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IUpdateable<TEntity> AsUpdateable(TEntity[] entries) => DbWriter<TEntity>.AsUpdateable(Database, entries);
+        public virtual IUpdateable<TEntity> AsUpdateable(TEntity[] entries)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsUpdateable(entries);
 
         /// <summary>
         /// 删除路由执行器。
         /// </summary>
         /// <param name="entry">项目。</param>
         /// <returns></returns>
-        public IDeleteable<TEntity> AsDeleteable(TEntity entry)
-        {
-            if (entry is null)
-            {
-                throw new ArgumentNullException(nameof(entry));
-            }
-
-            return AsDeleteable(new TEntity[] { entry });
-        }
+        public virtual IDeleteable<TEntity> AsDeleteable(TEntity entry)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsDeleteable(entry);
 
         /// <summary>
         /// 删除路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IDeleteable<TEntity> AsDeleteable(List<TEntity> entries) => DbWriter<TEntity>.AsDeleteable(Database, entries);
+        public virtual IDeleteable<TEntity> AsDeleteable(List<TEntity> entries)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsDeleteable(entries);
 
         /// <summary>
         /// 删除路由执行器。
         /// </summary>
         /// <param name="entries">项目集合。</param>
         /// <returns></returns>
-        public IDeleteable<TEntity> AsDeleteable(TEntity[] entries) => DbWriter<TEntity>.AsDeleteable(Database, entries);
+        public virtual IDeleteable<TEntity> AsDeleteable(TEntity[] entries)
+            => new DbServiceSet<TEntity>(DbAdapter, ConnectionString).AsDeleteable(entries);
     }
 }

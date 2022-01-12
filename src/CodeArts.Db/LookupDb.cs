@@ -70,5 +70,80 @@ namespace CodeArts.Db
 
             return DbType.Object;
         }
+
+        /// <summary>
+        /// 参数适配。
+        /// </summary>
+        /// <param name="command">命令。</param>
+        /// <param name="name">参数名称。</param>
+        /// <param name="value">参数值。</param>
+        public static void AddParameterAuto(IDbCommand command, string name, ParameterValue value)
+        {
+            var dbParameter = command.CreateParameter();
+
+            dbParameter.Value = value.IsNull ? DBNull.Value : value.Value;
+            dbParameter.ParameterName = name;
+            dbParameter.Direction = ParameterDirection.Input;
+            dbParameter.DbType = For(value.ValueType);
+
+            command.Parameters.Add(dbParameter);
+        }
+
+        /// <summary>
+        /// 参数适配。
+        /// </summary>
+        /// <param name="command">命令。</param>
+        /// <param name="name">参数名称。</param>
+        /// <param name="value">参数值。</param>
+        public static void AddParameterAuto(IDbCommand command, string name, object value)
+        {
+            var dbParameter = command.CreateParameter();
+
+            switch (value)
+            {
+                case IDbDataParameter dbDataParameter when dbParameter is IDbDataParameter parameter:
+
+                    parameter.Value = dbDataParameter.Value;
+                    parameter.ParameterName = name;
+                    parameter.Direction = dbDataParameter.Direction;
+                    parameter.DbType = dbDataParameter.DbType;
+                    parameter.SourceColumn = dbDataParameter.SourceColumn;
+                    parameter.SourceVersion = dbDataParameter.SourceVersion;
+
+                    if (dbParameter is System.Data.Common.DbParameter myParameter)
+                    {
+                        myParameter.IsNullable = dbDataParameter.IsNullable;
+                    }
+
+                    parameter.Scale = dbDataParameter.Scale;
+                    parameter.Size = dbDataParameter.Size;
+                    parameter.Precision = dbDataParameter.Precision;
+
+                    command.Parameters.Add(dbParameter);
+                    break;
+                case IDataParameter dataParameter:
+                    dbParameter.Value = dataParameter.Value;
+                    dbParameter.ParameterName = name;
+                    dbParameter.Direction = dataParameter.Direction;
+                    dbParameter.DbType = dataParameter.DbType;
+                    dbParameter.SourceColumn = dataParameter.SourceColumn;
+                    dbParameter.SourceVersion = dataParameter.SourceVersion;
+                    break;
+                case ParameterValue parameterValue:
+                    dbParameter.Value = parameterValue.IsNull ? DBNull.Value : parameterValue.Value;
+                    dbParameter.ParameterName = name;
+                    dbParameter.Direction = ParameterDirection.Input;
+                    dbParameter.DbType = For(parameterValue.ValueType);
+                    break;
+                default:
+                    dbParameter.Value = value ?? DBNull.Value;
+                    dbParameter.ParameterName = name;
+                    dbParameter.Direction = ParameterDirection.Input;
+                    dbParameter.DbType = value is null ? DbType.Object : For(value.GetType());
+                    break;
+            }
+
+            command.Parameters.Add(dbParameter);
+        }
     }
 }
