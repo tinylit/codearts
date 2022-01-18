@@ -607,9 +607,12 @@ namespace CodeArts.Db
         {
             if (name.IndexOf('.') == -1)
             {
-                Name("dbo");
+                if (settings.Engine == DatabaseEngine.SqlServer)
+                {
+                    Name("dbo");
 
-                Write(".");
+                    Write(".");
+                }
 
                 Name(name);
             }
