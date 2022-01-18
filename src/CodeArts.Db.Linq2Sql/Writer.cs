@@ -607,6 +607,10 @@ namespace CodeArts.Db
         {
             if (name.IndexOf('.') == -1)
             {
+                Name("dbo");
+
+                Write(".");
+
                 Name(name);
             }
             else
