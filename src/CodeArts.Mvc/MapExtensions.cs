@@ -66,6 +66,42 @@ namespace CodeArts.Mvc
         public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, PathString destinationPath)
             => app.Map(path, HttpVerbs.GET | HttpVerbs.POST | HttpVerbs.PUT | HttpVerbs.DELETE | HttpVerbs.HEAD | HttpVerbs.PATCH | HttpVerbs.OPTIONS, destinationPath);
 
+        /// <summary>
+        /// 路由。
+        /// </summary>
+        /// <param name="app">app。</param>
+        /// <param name="path">路由地址。</param>
+        /// <param name="httpVerbs">请求方式。</param>
+        /// <param name="destinationPath">目标地址。</param>
+        /// <returns></returns>
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
+        {
+#if NETCOREAPP2_1_OR_GREATER
+            return app.Map(path, x => x.Use(next => context =>
+            {
+                if (!Enum.TryParse(context.Request.Method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
+                {
+                    return next.Invoke(context);
+                }
+
+                PathString absolutePath = context.Request.PathBase.Add(context.Request.Path);
+
+                if (absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase, out PathString segments) && !segments.HasValue)
+                {
+                    context.Request.Path = destinationPath;
+                    context.Request.PathBase = new PathString("/");
+                }
+
+                return next.Invoke(context);
+            }));
+        }
+#else
+            return app.Map(path, httpVerbs, context => Map(context, new Uri(destinationPath.HasValue
+                        ? $"{context.Request.Url.Scheme}://{context.Request.Url.Host}{destinationPath.Value}"
+                        : $"{context.Request.Url.Scheme}://{context.Request.Url.Host}/"
+                    )));
+        }
+
 #if NET40
         private static void Map(HttpContext context, Uri destinationUri)
 #else
@@ -153,43 +189,7 @@ namespace CodeArts.Mvc
             }
 #endif
         }
-
-        /// <summary>
-        /// 路由。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="httpVerbs">请求方式。</param>
-        /// <param name="destinationPath">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
-        {
-#if NETCOREAPP2_1_OR_GREATER
-            return app.Map(path, x => x.Use(next => context =>
-            {
-                if (!Enum.TryParse(context.Request.Method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
-                {
-                    return next.Invoke(context);
-                }
-
-                PathString absolutePath = context.Request.PathBase.Add(context.Request.Path);
-
-                if (absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase, out PathString segments) && !segments.HasValue)
-                {
-                    context.Request.Path = destinationPath;
-                    context.Request.PathBase = new PathString("/");
-                }
-
-                return next.Invoke(context);
-            }));
-#else
-
-            return app.Map(path, httpVerbs, context => Map(context, new Uri(destinationPath.HasValue
-                        ? $"{context.Request.Url.Scheme}://{context.Request.Url.Host}{destinationPath.Value}"
-                        : $"{context.Request.Url.Scheme}://{context.Request.Url.Host}/"
-                    )));
 #endif
-        }
 
         /// <summary>
         /// 路由。
