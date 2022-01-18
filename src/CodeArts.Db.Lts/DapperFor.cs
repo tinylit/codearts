@@ -1,12 +1,16 @@
 ﻿using CodeArts.Db.Exceptions;
-using Dapper;
+using CodeArts.Runtime;
 using System;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq.Expressions;
+using static System.Linq.Expressions.Expression;
 
 namespace CodeArts.Db.Lts
 {
@@ -16,106 +20,6 @@ namespace CodeArts.Db.Lts
     public class DapperFor : DatabaseFor, IDatabaseFor
     {
         private readonly IDbConnectionLtsAdapter adapter;
-
-        private class BooleanHandler : SqlMapper.ITypeHandler
-        {
-            public object Parse(Type destinationType, object value) => Convert.ChangeType(value, typeof(bool));
-
-            public void SetValue(IDbDataParameter parameter, object value)
-            {
-                parameter.Value = Convert.ChangeType(value, typeof(bool));
-                parameter.DbType = DbType.Boolean;
-            }
-        }
-
-        private sealed class DoubleHandler : SqlMapper.ITypeHandler
-        {
-            public object Parse(Type destinationType, object value) => Convert.ChangeType(value, typeof(double));
-
-            public void SetValue(IDbDataParameter parameter, object value)
-            {
-                parameter.Value = Convert.ChangeType(value, typeof(double));
-                parameter.DbType = DbType.Double;
-            }
-        }
-
-        private sealed class DoubleNullableHandler : SqlMapper.ITypeHandler
-        {
-            public object Parse(Type destinationType, object value)
-            {
-                if (value is null)
-                {
-                    return null;
-                }
-
-                return Convert.ChangeType(value, typeof(double));
-            }
-
-            public void SetValue(IDbDataParameter parameter, object value)
-            {
-                if (value is null)
-                {
-                    parameter.Value = DBNull.Value;
-                }
-                else
-                {
-                    parameter.Value = Convert.ChangeType(value, typeof(double));
-                }
-
-                parameter.DbType = DbType.Double;
-            }
-        }
-
-        private static object FixParameters(object parameters)
-        {
-            switch (parameters)
-            {
-                case IEnumerable<KeyValuePair<string, ParameterValue>> parameterValues:
-                    {
-                        var results = new DynamicParameters();
-
-                        foreach (var kv in parameterValues)
-                        {
-                            if (kv.Value.IsNull)
-                            {
-                                results.Add(kv.Key, DBNull.Value, LookupDb.For(kv.Value.ValueType));
-                            }
-                            else
-                            {
-                                results.Add(kv.Key, kv.Value.Value);
-                            }
-                        }
-                        return results;
-                    }
-                case IEnumerable<KeyValuePair<string, object>> keyValuePairs when keyValuePairs.Any(x => x.Value is ParameterValue):
-                    {
-                        var results = new DynamicParameters();
-
-                        foreach (var kv in keyValuePairs)
-                        {
-                            if (kv.Value is ParameterValue parameterValue)
-                            {
-                                if (parameterValue.IsNull)
-                                {
-                                    results.Add(kv.Key, DBNull.Value, LookupDb.For(parameterValue.ValueType));
-                                }
-                                else
-                                {
-                                    results.Add(kv.Key, parameterValue.Value);
-                                }
-                            }
-                            else
-                            {
-                                results.Add(kv.Key, kv.Value);
-                            }
-                        }
-
-                        return results;
-                    }
-                default:
-                    return parameters;
-            }
-        }
 
         /// <summary>
         /// <inheritdoc/>
@@ -140,7 +44,42 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
         public int Execute(IDbConnection connection, CommandSql commandSql)
-        => connection.Execute(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
+        {
+            bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+            if (isClosedConnection)
+            {
+                connection.Open();
+            }
+
+            try
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = commandSql.Sql;
+                    command.CommandType = CommandType.Text;
+
+                    if (commandSql.CommandTimeout.HasValue)
+                    {
+                        command.CommandTimeout = commandSql.CommandTimeout.Value;
+                    }
+
+                    foreach (var item in commandSql.Parameters)
+                    {
+                        LookupDb.AddParameterAuto(command, item.Key, item.Value);
+                    }
+
+                    return command.ExecuteNonQuery();
+                }
+            }
+            finally
+            {
+                if (isClosedConnection)
+                {
+                    connection.Close();
+                }
+            }
+        }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
         /// <summary>
@@ -150,8 +89,53 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <param name="cancellationToken">取消。</param>
         /// <returns></returns>
-        public Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken)
-        => connection.ExecuteAsync(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
+        public async Task<int> ExecuteAsync(IDbConnection connection, CommandSql commandSql, CancellationToken cancellationToken)
+        {
+            if (!(connection is DbConnection dbConnection))
+            {
+                throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection");
+            }
+
+            bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+            if (isClosedConnection)
+            {
+                await dbConnection.OpenAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            try
+            {
+                using (var command = dbConnection.CreateCommand())
+                {
+                    command.CommandText = commandSql.Sql;
+                    command.CommandType = CommandType.Text;
+
+                    if (commandSql.CommandTimeout.HasValue)
+                    {
+                        command.CommandTimeout = commandSql.CommandTimeout.Value;
+                    }
+
+                    foreach (var item in commandSql.Parameters)
+                    {
+                        LookupDb.AddParameterAuto(command, item.Key, item.Value);
+                    }
+
+                    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                if (isClosedConnection)
+                {
+#if NETSTANDARD2_1_OR_GREATER
+                    await dbConnection.CloseAsync().ConfigureAwait(false);
+#else
+                    dbConnection.Close();
+#endif
+                }
+            }
+        }
 #endif
         /// <summary>
         /// 读取数据。
@@ -161,7 +145,53 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
         public IEnumerable<T> Query<T>(IDbConnection connection, CommandSql commandSql)
-        => connection.Query<T>(commandSql.Sql, FixParameters(commandSql.Parameters), null, true, commandSql.CommandTimeout);
+        {
+            bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+            if (isClosedConnection)
+            {
+                connection.Open();
+            }
+
+            List<T> results = new List<T>();
+
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult;
+
+            if (isClosedConnection)
+            {
+                behavior |= CommandBehavior.CloseConnection;
+            }
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = commandSql.Sql;
+                command.CommandType = CommandType.Text;
+
+                if (commandSql.CommandTimeout.HasValue)
+                {
+                    command.CommandTimeout = commandSql.CommandTimeout.Value;
+                }
+
+                foreach (var item in commandSql.Parameters)
+                {
+                    LookupDb.AddParameterAuto(command, item.Key, item.Value);
+                }
+
+                using (var reader = command.ExecuteReader(behavior))
+                {
+                    var adaper = Adapters.GetOrAdd(reader.GetType(), type => new MapAdaper(type));
+
+                    var map = adaper.CreateMap<T>();
+
+                    while (reader.Read())
+                    {
+                        results.Add(map.Map(reader));
+                    }
+                }
+            }
+
+            return results;
+        }
 
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
@@ -173,8 +203,71 @@ namespace CodeArts.Db.Lts
         /// <param name="commandSql">命令。</param>
         /// <returns></returns>
         public IAsyncEnumerable<T> QueryAsync<T>(string connectionString, CommandSql commandSql)
-        => new AsyncEnumerable<T>(connectionString, adapter, commandSql);
+            => new AsyncEnumerable<T>(connectionString, adapter, commandSql);
 
+
+#if NETSTANDARD2_1_OR_GREATER
+        private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
+        {
+            private readonly string connectionString;
+            private readonly IDbConnectionLtsAdapter adapter;
+            private readonly CommandSql commandSql;
+
+            public AsyncEnumerable(string connectionString, IDbConnectionLtsAdapter adapter, CommandSql commandSql)
+            {
+                this.connectionString = connectionString;
+                this.adapter = adapter;
+                this.commandSql = commandSql;
+            }
+
+            public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            {
+                using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter, true))
+                {
+                    if (!(connection is DbConnection dbConnection))
+                    {
+                        throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection");
+                    }
+
+                    await dbConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+                    CommandBehavior behavior = CommandBehavior.SequentialAccess
+                        | CommandBehavior.SingleResult
+                        | CommandBehavior.CloseConnection;
+
+                    using (var command = dbConnection.CreateCommand())
+                    {
+                        command.CommandText = commandSql.Sql;
+                        command.CommandType = CommandType.Text;
+
+                        if (commandSql.CommandTimeout.HasValue)
+                        {
+                            command.CommandTimeout = commandSql.CommandTimeout.Value;
+                        }
+
+                        foreach (var item in commandSql.Parameters)
+                        {
+                            LookupDb.AddParameterAuto(command, item.Key, item.Value);
+                        }
+
+                        using (var reader = await command.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false))
+                        {
+                            var adaper = Adapters.GetOrAdd(reader.GetType(), type => new MapAdaper(type));
+
+                            var map = adaper.CreateMap<T>();
+
+                            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                            {
+                                yield return map.Map(reader);
+                            }
+                        }
+                    }
+                }
+
+                yield break;
+            }
+        }
+#else
         private sealed class AsyncEnumerable<T> : IAsyncEnumerable<T>
         {
             private readonly string connectionString;
@@ -200,7 +293,11 @@ namespace CodeArts.Db.Lts
 
         private sealed class AsyncEnumerator<T> : IAsyncEnumerator<T>
         {
-            private IEnumerator<T> enumerator;
+            private DbConnection dbConnection;
+            private DbDataReader dbReader;
+            private DbCommand dbCommand;
+            private DbMapper<T> dbMapper;
+            private bool isClosed = false;
 
             private readonly string connectionString;
             private readonly IDbConnectionLtsAdapter adapter;
@@ -216,7 +313,7 @@ namespace CodeArts.Db.Lts
                 this.cancellationToken = cancellationToken;
             }
 
-            public T Current => enumerator.Current;
+            public T Current => dbReader.IsClosed ? default : dbMapper.Map(dbReader);
 
 #if NETSTANDARD2_1_OR_GREATER
             public async ValueTask<bool> MoveNextAsync()
@@ -224,29 +321,82 @@ namespace CodeArts.Db.Lts
             public async Task<bool> MoveNextAsync()
 #endif
             {
-                if (enumerator is null)
+                if (dbReader is null)
                 {
-                    using (var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter, true))
+                    var connection = TransactionConnections.GetConnection(connectionString, adapter) ?? DispatchConnections.Instance.GetConnection(connectionString, adapter, true);
+
+                    if (!(connection is DbConnection dbConnection))
                     {
-                        var results = await connection.QueryAsync<T>(new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
-
-                        enumerator = results.GetEnumerator();
+                        throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection");
                     }
-                }
-                else
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
+
+                    this.dbConnection = dbConnection;
+
+                    await dbConnection.OpenAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                    CommandBehavior behavior = CommandBehavior.SequentialAccess
+                        | CommandBehavior.SingleResult
+                        | CommandBehavior.CloseConnection;
+
+                    dbCommand = dbConnection.CreateCommand();
+
+                    dbCommand.CommandText = commandSql.Sql;
+                    dbCommand.CommandType = CommandType.Text;
+
+                    if (commandSql.CommandTimeout.HasValue)
+                    {
+                        dbCommand.CommandTimeout = commandSql.CommandTimeout.Value;
+                    }
+
+                    foreach (var item in commandSql.Parameters)
+                    {
+                        LookupDb.AddParameterAuto(dbCommand, item.Key, item.Value);
+                    }
+
+                    dbReader = await dbCommand.ExecuteReaderAsync(behavior, cancellationToken).ConfigureAwait(false);
+
+                    var adaper = Adapters.GetOrAdd(dbReader.GetType(), type => new MapAdaper(type));
+
+                    dbMapper = adaper.CreateMap<T>();
                 }
 
-                return enumerator.MoveNext();
+                if (await dbReader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    return true;
+                }
+
+                if (!isClosed)
+                {
+                    dbReader.Close();
+                    dbCommand.Dispose();
+                    dbConnection.Close();
+                    dbConnection.Dispose();
+
+                    isClosed = true;
+                }
+
+                return false;
             }
 
 #if NETSTANDARD2_1_OR_GREATER
             public ValueTask DisposeAsync() => new ValueTask(Task.Run(enumerator.Dispose));
 #endif
 
-            public void Dispose() => enumerator.Dispose();
+            public void Dispose()
+            {
+                if (!isClosed)
+                {
+                    dbReader.Close();
+                    dbCommand.Dispose();
+                    dbConnection.Close();
+                    dbConnection.Dispose();
+
+                    isClosed = true;
+                }
+            }
         }
+#endif
 #endif
         /// <summary>
         /// 读取数据。
@@ -257,44 +407,59 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public T Read<T>(IDbConnection connection, CommandSql<T> commandSql)
         {
-            object value;
-            var type = typeof(T);
+            bool isClosedConnection = connection.State == ConnectionState.Closed;
 
-            var conversionType = type.IsValueType && !type.IsNullable()
-                ? typeof(Nullable<>).MakeGenericType(type)
-                : type;
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
 
-            switch (commandSql.RowStyle)
+            if (isClosedConnection)
             {
-                case RowStyle.None:
-                case RowStyle.First:
-                case RowStyle.FirstOrDefault:
-                    value = connection.QueryFirstOrDefault(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
-                    break;
-                case RowStyle.Single:
-                case RowStyle.SingleOrDefault:
-                    value = connection.QuerySingleOrDefault(conversionType, commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout);
-                    break;
-                default:
-                    throw new NotSupportedException();
+                behavior |= CommandBehavior.CloseConnection;
             }
 
-            if (value is null)
+            if (isClosedConnection)
             {
-                if (commandSql.HasDefaultValue)
-                {
-                    return commandSql.DefaultValue;
-                }
-
-                if ((commandSql.RowStyle & RowStyle.FirstOrDefault) == RowStyle.FirstOrDefault)
-                {
-                    return default;
-                }
-
-                throw new DRequiredException(commandSql.MissingMsg);
+                connection.Open();
             }
 
-            return (T)value;
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = commandSql.Sql;
+                command.CommandType = CommandType.Text;
+
+                if (commandSql.CommandTimeout.HasValue)
+                {
+                    command.CommandTimeout = commandSql.CommandTimeout.Value;
+                }
+
+                foreach (var item in commandSql.Parameters)
+                {
+                    LookupDb.AddParameterAuto(command, item.Key, item.Value);
+                }
+
+                using (var reader = command.ExecuteReader(behavior))
+                {
+                    if (reader.Read())
+                    {
+                        var adaper = Adapters.GetOrAdd(reader.GetType(), type => new MapAdaper(type));
+
+                        var map = adaper.CreateMap<T>();
+
+                        return map.Map(reader);
+                    }
+                }
+            }
+
+            if (commandSql.HasDefaultValue)
+            {
+                return commandSql.DefaultValue;
+            }
+
+            if ((commandSql.RowStyle & RowStyle.FirstOrDefault) == RowStyle.FirstOrDefault)
+            {
+                return default;
+            }
+
+            throw new DRequiredException(commandSql.MissingMsg);
         }
 
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER
@@ -308,43 +473,65 @@ namespace CodeArts.Db.Lts
         /// <returns></returns>
         public async Task<T> ReadAsync<T>(IDbConnection connection, CommandSql<T> commandSql, CancellationToken cancellationToken)
         {
-            object value;
-            var type = typeof(T);
-            var conversionType = type.IsValueType && !type.IsNullable()
-                ? typeof(Nullable<>).MakeGenericType(type)
-                : type;
-
-            switch (commandSql.RowStyle)
+            if (!(connection is DbConnection dbConnection))
             {
-                case RowStyle.None:
-                case RowStyle.First:
-                case RowStyle.FirstOrDefault:
-                    value = await connection.QueryFirstOrDefaultAsync(conversionType, new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
-                    break;
-                case RowStyle.Single:
-                case RowStyle.SingleOrDefault:
-                    value = await connection.QuerySingleOrDefaultAsync(conversionType, new CommandDefinition(commandSql.Sql, FixParameters(commandSql.Parameters), null, commandSql.CommandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken));
-                    break;
-                default:
-                    throw new NotSupportedException();
+                throw new InvalidOperationException("Async operations require use of a DbConnection or an already-open IDbConnection");
             }
 
-            if (value is null)
+            bool isClosedConnection = connection.State == ConnectionState.Closed;
+
+            CommandBehavior behavior = CommandBehavior.SequentialAccess | CommandBehavior.SingleResult | CommandBehavior.SingleRow;
+
+            if (isClosedConnection)
             {
-                if (commandSql.HasDefaultValue)
-                {
-                    return commandSql.DefaultValue;
-                }
-
-                if ((commandSql.RowStyle & RowStyle.FirstOrDefault) == RowStyle.FirstOrDefault)
-                {
-                    return default;
-                }
-
-                throw new DRequiredException(commandSql.MissingMsg);
+                behavior |= CommandBehavior.CloseConnection;
             }
 
-            return (T)value;
+            if (isClosedConnection)
+            {
+                await dbConnection.OpenAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            using (var command = dbConnection.CreateCommand())
+            {
+                command.CommandText = commandSql.Sql;
+                command.CommandType = CommandType.Text;
+
+                if (commandSql.CommandTimeout.HasValue)
+                {
+                    command.CommandTimeout = commandSql.CommandTimeout.Value;
+                }
+
+                foreach (var item in commandSql.Parameters)
+                {
+                    LookupDb.AddParameterAuto(command, item.Key, item.Value);
+                }
+
+                using (var reader = await command.ExecuteReaderAsync(behavior).ConfigureAwait(false))
+                {
+                    if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        var adaper = Adapters.GetOrAdd(reader.GetType(), type => new MapAdaper(type));
+
+                        var map = adaper.CreateMap<T>();
+
+                        return map.Map(reader);
+                    }
+                }
+            }
+
+            if (commandSql.HasDefaultValue)
+            {
+                return commandSql.DefaultValue;
+            }
+
+            if ((commandSql.RowStyle & RowStyle.FirstOrDefault) == RowStyle.FirstOrDefault)
+            {
+                return default;
+            }
+
+            throw new DRequiredException(commandSql.MissingMsg);
         }
 #endif
 
@@ -436,5 +623,345 @@ namespace CodeArts.Db.Lts
             }
         }
 #endif
+
+        private static readonly MethodInfo Map;
+        private static readonly MethodInfo MapGeneric;
+        private static readonly ConcurrentDictionary<Type, MapAdaper> Adapters = new ConcurrentDictionary<Type, MapAdaper>();
+
+        static DapperFor()
+        {
+            var methodInfos = typeof(Mapper).GetMethods();
+
+            Map = methodInfos.Single(x => x.Name == nameof(Mapper.Map) && !x.IsGenericMethod);
+            MapGeneric = methodInfos.Single(x => x.Name == nameof(Mapper.Map) && x.IsGenericMethod);
+        }
+
+        private class MapAdaper
+        {
+            private readonly Type type;
+            private readonly MethodInfo isDbNull;
+            private readonly MethodInfo getName;
+            private readonly MethodInfo getValue;
+            private readonly MethodInfo getFieldType;
+            private readonly Dictionary<Type, MethodInfo> typeMap;
+
+            public MethodInfo EqualMethod { get; }
+
+            private static bool Equals(string a, string b)
+            {
+                return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public MapAdaper(Type type)
+            {
+                var types = new Type[] { typeof(int) };
+
+                this.type = type;
+
+                getName = type.GetMethod("GetName", types);
+
+                getValue = type.GetMethod("GetValue", types);
+
+                isDbNull = type.GetMethod("IsDBNull", types);
+
+                getFieldType = type.GetMethod("GetFieldType", types);
+
+                typeMap = new Dictionary<Type, MethodInfo>
+                {
+                    [typeof(bool)] = type.GetMethod("GetBoolean", types),
+                    [typeof(byte)] = type.GetMethod("GetByte", types),
+                    [typeof(char)] = type.GetMethod("GetChar", types),
+                    [typeof(short)] = type.GetMethod("GetInt16", types),
+                    [typeof(int)] = type.GetMethod("GetInt32", types),
+                    [typeof(long)] = type.GetMethod("GetInt64", types),
+                    [typeof(float)] = type.GetMethod("GetFloat", types),
+                    [typeof(double)] = type.GetMethod("GetDouble", types),
+                    [typeof(decimal)] = type.GetMethod("GetDecimal", types),
+                    [typeof(Guid)] = type.GetMethod("GetGuid", types),
+                    [typeof(DateTime)] = type.GetMethod("GetDateTime", types),
+                    [typeof(string)] = type.GetMethod("GetString", types),
+                    [typeof(object)] = type.GetMethod("GetValue", types)
+                };
+
+                EqualMethod = typeof(MapAdaper).GetMethod(nameof(Equals), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            }
+
+            public ParameterExpression DbVariable() => Parameter(type);
+
+            public UnaryExpression Convert(ParameterExpression parameterExp) => Expression.Convert(parameterExp, type);
+
+            public Expression ToSolve(Type propertyType, ParameterExpression dbVar, Expression iVar)
+            {
+                if (typeMap.TryGetValue(propertyType, out MethodInfo methodInfo))
+                {
+                    return Condition(Equal(Call(dbVar, getFieldType, iVar), Constant(propertyType))
+                            , Call(dbVar, methodInfo, iVar)
+                            , Call(MapGeneric.MakeGenericMethod(propertyType), Call(dbVar, getValue, iVar), Default(propertyType)));
+                }
+
+                return Call(MapGeneric.MakeGenericMethod(propertyType), Call(dbVar, getValue, iVar), Default(propertyType));
+            }
+
+            public Expression IsDbNull(ParameterExpression dbVar, Expression iVar) => Call(dbVar, isDbNull, iVar);
+
+            public Expression GetName(ParameterExpression dbVar, Expression iVar) => Call(dbVar, getName, iVar);
+
+            public DbMapper<T> CreateMap<T>() => DbEngine<T>.CreateMap(this);
+        }
+
+        private class DbEngine<T>
+        {
+            private static readonly ConcurrentDictionary<MapAdaper, DbMapper<T>> Mappers = new ConcurrentDictionary<MapAdaper, DbMapper<T>>();
+
+            public static DbMapper<T> CreateMap(MapAdaper adaper)
+                => Mappers.GetOrAdd(adaper, db => new DbMapperGen<T>(db).CreateMap());
+        }
+
+        private class DbMapperGen<T>
+        {
+            private readonly MapAdaper adaper;
+
+            public DbMapperGen(MapAdaper adaper)
+            {
+                this.adaper = adaper;
+            }
+
+            private Func<IDataReader, T> MakeSimple(Type type)
+            {
+                var paramterExp = Parameter(typeof(IDataReader));
+
+                var iVar = Constant(0);
+
+                var dbVar = adaper.DbVariable();
+
+                var bodyExp = UncheckedValue(type, dbVar, iVar);
+
+                var lambdaExp = Lambda<Func<IDataReader, T>>(Block(new ParameterExpression[] { dbVar }, Assign(dbVar, adaper.Convert(paramterExp)), Condition(adaper.IsDbNull(dbVar, iVar), Default(type), bodyExp)), paramterExp);
+
+                return lambdaExp.Compile();
+            }
+
+            private Func<IDataReader, T> MakeSimpleNull(Type type, Type nullableType)
+            {
+                var paramterExp = Parameter(typeof(IDataReader));
+
+                var iVar = Constant(0);
+
+                var dbVar = adaper.DbVariable();
+
+                var bodyExp = UncheckedValue(type, dbVar, iVar);
+
+                var lambdaExp = Lambda<Func<IDataReader, T>>(Block(new ParameterExpression[] { dbVar }, Assign(dbVar, adaper.Convert(paramterExp)), Condition(adaper.IsDbNull(dbVar, iVar), New(nullableType.GetConstructor(Type.EmptyTypes)), bodyExp)), paramterExp);
+
+                return lambdaExp.Compile();
+            }
+
+            private Func<IDataReader, T> MakeNull(Type type, Type nullableType)
+            {
+                var nullCtor = nullableType.GetConstructor(new Type[] { type });
+
+                //? 无参构造函数。
+                var nonCtor = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+
+                if (nonCtor is null)
+                {
+                    var constructorInfos = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+                    foreach (var constructorInfo in constructorInfos)
+                    {
+                        return MakeFor(constructorInfo, newExp => New(nullCtor, newExp));
+                    }
+                }
+
+                return MakeFor(type, nonCtor, instanceExp => New(nullCtor, instanceExp));
+            }
+
+            private Func<IDataReader, T> MakeFor(Type type, ConstructorInfo constructorInfo, Func<ParameterExpression, Expression> convert)
+            {
+                var instanceExp = Variable(type);
+
+                var paramterExp = Parameter(typeof(IDataReader));
+
+                var dbVar = adaper.DbVariable();
+
+                var iVar = Parameter(typeof(int));
+
+                var lenVar = Property(dbVar, "FieldCount");
+
+                var list = new List<Expression>
+                {
+                    Assign(iVar, Constant(0)),
+                    Assign(dbVar, adaper.Convert(paramterExp)),
+                    Assign(instanceExp, New(constructorInfo))
+                };
+
+                var listCases = new List<SwitchCase>();
+
+                foreach (var propertyInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    if (!propertyInfo.CanWrite)
+                    {
+                        continue;
+                    }
+
+                    var propertyItem = PropertyItem.Get(propertyInfo);
+
+                    if (propertyItem.Ignore)
+                    {
+                        continue;
+                    }
+
+                    listCases.Add(SwitchCaseAssign(instanceExp, propertyItem, dbVar, iVar));
+                }
+
+                LabelTarget break_label = Label(typeof(void));
+                LabelTarget continue_label = Label(typeof(void));
+
+                var body = Switch(adaper.GetName(dbVar, iVar), null, adaper.EqualMethod, listCases);
+
+                list.Add(Loop(IfThenElse(
+                     LessThan(iVar, lenVar),
+                     Block(
+                         body,
+                         AddAssign(iVar, Constant(1)),
+                         Continue(continue_label, typeof(void))
+                     ),
+                     Break(break_label, typeof(void)))
+                    , break_label, continue_label));
+
+                list.Add(convert.Invoke(instanceExp));
+
+                var lambdaExp = Lambda<Func<IDataReader, T>>(Block(new ParameterExpression[] { iVar, dbVar, instanceExp }, list), paramterExp);
+
+                return lambdaExp.Compile();
+            }
+
+            private Func<IDataReader, T> MakeNoArgumentsCtor(Type type, ConstructorInfo constructorInfo)
+                => MakeFor(type, constructorInfo, instanceExp => instanceExp);
+
+            private Func<IDataReader, T> MakeFor(ConstructorInfo constructorInfo, Func<NewExpression, Expression> convert)
+            {
+                var paramterExp = Parameter(typeof(IDataReader));
+
+                var dbVar = adaper.DbVariable();
+
+                var parameterInfos = constructorInfo.GetParameters();
+
+                var arguments = new List<Expression>(parameterInfos.Length);
+
+                for (int i = 0; i < parameterInfos.Length; i++)
+                {
+                    var parameterInfo = parameterInfos[i];
+
+                    var iVar = Constant(i);
+
+                    var uncheckedValue = UncheckedValue(parameterInfo.ParameterType, dbVar, iVar);
+
+                    arguments.Add(Condition(adaper.IsDbNull(dbVar, iVar), Default(parameterInfo.ParameterType), uncheckedValue));
+                }
+
+                var lambdaExp = Lambda<Func<IDataReader, T>>(Block(new ParameterExpression[] { dbVar }, Assign(dbVar, adaper.Convert(paramterExp)), convert.Invoke(New(constructorInfo, arguments))), paramterExp);
+
+                return lambdaExp.Compile();
+            }
+
+            private Func<IDataReader, T> MakeCtor(ConstructorInfo constructorInfo)
+                => MakeFor(constructorInfo, newExp => newExp);
+
+            private Expression UncheckedValue(Type type, ParameterExpression dbVar, Expression iVar)
+            {
+                bool isEnum = false;
+                bool isNullable = false;
+
+                Type propertyType = type;
+                Type nonullableType = type;
+
+                if (propertyType.IsValueType)
+                {
+                    if (propertyType.IsNullable())
+                    {
+                        isNullable = true;
+
+                        propertyType = nonullableType = Nullable.GetUnderlyingType(propertyType);
+                    }
+
+                    if (propertyType.IsEnum)
+                    {
+                        isEnum = true;
+
+                        propertyType = Enum.GetUnderlyingType(propertyType);
+                    }
+                }
+
+                Expression body = adaper.ToSolve(propertyType, dbVar, iVar);
+
+                if (isEnum)
+                {
+                    body = Convert(body, nonullableType);
+                }
+
+                if (isNullable)
+                {
+                    body = New(type.GetConstructor(new Type[] { nonullableType }), body);
+                }
+
+                return body;
+            }
+
+            private SwitchCase SwitchCaseAssign(Expression instanceExp, PropertyItem propertyItem, ParameterExpression dbVar, ParameterExpression iVar)
+            {
+                Expression body = UncheckedValue(propertyItem.MemberType, dbVar, iVar);
+
+                return SwitchCase(IfThen(Not(adaper.IsDbNull(dbVar, iVar)), Assign(Property(instanceExp, propertyItem.Member), body)), Constant(propertyItem.Naming), Constant(propertyItem.Name));
+            }
+
+            public DbMapper<T> CreateMap()
+            {
+                var type = typeof(T);
+
+                if (type.IsSimpleType())
+                {
+                    return new DbMapper<T>(MakeSimple(type));
+                }
+
+                if (type.IsNullable())
+                {
+                    var conversionType = Enum.GetUnderlyingType(type);
+
+                    if (conversionType.IsSimpleType())
+                    {
+                        return new DbMapper<T>(MakeSimpleNull(conversionType, type));
+                    }
+
+                    return new DbMapper<T>(MakeNull(conversionType, type));
+                }
+
+                //? 无参构造函数。
+                var nonCtor = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+
+                if (nonCtor is null)
+                {
+                    var constructorInfos = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+                    foreach (var constructorInfo in constructorInfos)
+                    {
+                        return new DbMapper<T>(MakeCtor(constructorInfo));
+                    }
+                }
+
+                return new DbMapper<T>(MakeNoArgumentsCtor(type, nonCtor));
+            }
+        }
+        private class DbMapper<T>
+        {
+            private readonly Func<IDataReader, T> read;
+
+            public DbMapper(Func<IDataReader, T> read)
+            {
+                this.read = read;
+            }
+
+            public T Map(IDataReader reader) => read.Invoke(reader);
+        }
     }
 }

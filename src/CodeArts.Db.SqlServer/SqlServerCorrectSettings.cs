@@ -17,7 +17,7 @@ namespace CodeArts.Db
 
         private static readonly Regex PatternSelect = new Regex(@"\bselect(([\x20\t\r\n\f]+distinct)+)?[\x20\t\r\n\f]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
+        private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<=[\.\x20\t\r\n\f])(?<name>(\[\w+\]|((?!(end)))\w+))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.RightToLeft);
 
         /// <summary>
         /// 字符串截取。 SUBSTRING。
@@ -257,8 +257,6 @@ label_check:
             return Tuple.Create(startIndex, letterStart);
         }
 
-        private static string MakeName(string str) => Regex.Replace(str, "[^\\w]", "_");
-
         /// <summary>
         /// SQL。
         /// </summary>
@@ -313,59 +311,50 @@ label_check:
                 orderBy = " ORDER BY 1";
             }
 
-            if (matches.Count > 1)
+            sb.Append("SELECT ");
+
+            StringBuilder sbFields = new StringBuilder();
+
+            for (int i = 0; i < matches.Count; i++)
             {
-                StringBuilder sbFields = new StringBuilder();
+                var item = matches[i];
 
-                sb.Append("SELECT ");
+                var match = PatternSingleAsColumn.Match(sql, item.Index, item.Length);
 
-                for (int i = 0; i < matches.Count; i++)
+                if (i > 0)
                 {
-                    var item = matches[i];
-
-                    var match = PatternSingleAsColumn.Match(sql, item.Index, item.Length);
-
-                    if (i > 0)
-                    {
-                        sb.Append(',');
-                        sbFields.Append(',');
-                    }
-
-                    sbFields.Append(sql, item.Index, item.Length);
-
-                    if (match.Success)
-                    {
-                        sb.Append(sql, match.Index, match.Length);
-                    }
-                    else if (IsAny(sql, item.Index, item.Length))
-                    {
-                        sb.Length = 0;
-
-                        sb.Append("SELECT * FROM (")
-                            .Append(sql, 0, tuple.Item2);
-
-                        goto label_core;
-                    }
-                    else
-                    {
-                        string name = Name(MakeName(sql.Substring(item.Index, item.Length)));
-
-                        sb.Append(name);
-
-                        sbFields.Append(" AS ")
-                            .Append(name);
-                    }
+                    sb.Append(',');
+                    sbFields.Append(',');
                 }
 
-                sb.Append(" FROM (")
-                    .Append(sql, 0, tuple.Item1)
-                    .Append(sbFields.ToString());
+                sbFields.Append(sql, item.Index, item.Length);
+
+                if (match.Success)
+                {
+                    sb.Append(sql, match.Index, match.Length);
+                }
+                else if (IsAny(sql, item.Index, item.Length))
+                {
+                    sb.Length = 0;
+
+                    sb.Append("SELECT * FROM (")
+                        .Append(sql, 0, tuple.Item2);
+
+                    goto label_core;
+                }
+                else
+                {
+                    string name = Name($"rowsCol_{i}");
+
+                    sb.Append(name);
+
+                    sbFields.Append(" AS ")
+                        .Append(name);
+                }
             }
-            else
-            {
-                sb.Append("SELECT * FROM (")
-                    .Append(sql, 0, tuple.Item2);
-            }
+
+            sb.Append(" FROM (")
+                .Append(sbFields.ToString());
 
 label_core:
 

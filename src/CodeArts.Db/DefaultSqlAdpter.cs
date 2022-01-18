@@ -161,7 +161,7 @@ namespace CodeArts.Db
         /// <summary>
         /// 字段名。
         /// </summary>
-        private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<name>(\w+|\[\w+\]))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.RightToLeft);
+        private static readonly Regex PatternSingleAsColumn = new Regex(@"(?<=[\.\x20\t\r\n\f])(?<name>(\[\w+\]|((?!(end)))\w+))[\x20\t\r\n\f]*$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.RightToLeft);
 
         #endregion
 
@@ -2994,60 +2994,51 @@ label_commandType:
             {
                 var tuple = AnalysisFields(sql, out List<RangeMatch> matches);
 
-                if (matches.Count > 1)
+                StringBuilder sbFields = new StringBuilder();
+
+                sb.Append("SELECT ");
+
+                for (int i = 0; i < matches.Count; i++)
                 {
-                    StringBuilder sbFields = new StringBuilder();
+                    var item = matches[i];
 
-                    sb.Append("SELECT ");
+                    var match = PatternSingleAsColumn.Match(sql, item.Index, item.Length);
 
-                    for (int i = 0; i < matches.Count; i++)
+                    if (i > 0)
                     {
-                        var item = matches[i];
-
-                        var match = PatternSingleAsColumn.Match(sql, item.Index, item.Length);
-
-                        if (i > 0)
-                        {
-                            sb.Append(',');
-                            sbFields.Append(',');
-                        }
-
-                        sbFields.Append(sql, item.Index, item.Length);
-
-                        if (match.Success)
-                        {
-                            sb.Append(sql, match.Index, match.Length);
-                        }
-                        else if (IsAny(sql, item.Index, item.Length))
-                        {
-                            sb.Length = 0;
-
-                            sb.Append("SELECT * FROM (")
-                                .Append(sql);
-
-                            goto label_core;
-                        }
-                        else
-                        {
-                            string name = MakeName(sql.Substring(item.Index, item.Length));
-
-                            sb.Append(name);
-
-                            sbFields.Append(" AS ")
-                                .Append(name);
-                        }
+                        sb.Append(',');
+                        sbFields.Append(',');
                     }
 
-                    sb.Append(" FROM (")
-                        .Append(sql, 0, tuple.Item1)
-                        .Append(sbFields.ToString())
-                        .Append(sql, tuple.Item2, sql.Length - tuple.Item2);
+                    sbFields.Append(sql, item.Index, item.Length);
+
+                    if (match.Success)
+                    {
+                        sb.Append(sql, match.Index, match.Length);
+                    }
+                    else if (IsAny(sql, item.Index, item.Length))
+                    {
+                        sb.Length = 0;
+
+                        sb.Append("SELECT * FROM (")
+                            .Append(sql);
+
+                        goto label_core;
+                    }
+                    else
+                    {
+                        string name = MakeName(sql.Substring(item.Index, item.Length));
+
+                        sb.Append(name);
+
+                        sbFields.Append(" AS ")
+                            .Append(name);
+                    }
                 }
-                else
-                {
-                    sb.Append("SELECT * FROM (")
-                        .Append(sql);
-                }
+
+                sb.Append(" FROM (")
+                    .Append(sbFields.ToString())
+                    .Append(sql, tuple.Item2, sql.Length - tuple.Item2);
 
 label_core:
 

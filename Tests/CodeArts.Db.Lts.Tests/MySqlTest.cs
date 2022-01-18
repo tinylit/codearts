@@ -40,6 +40,11 @@ namespace UnitTest
 
             if (isCompleted) return;
 
+            using (var startup = new XStartup())
+            {
+                startup.DoStartup();
+            }
+
             var connectionString = string.Format("server={0};port=3306;user=root;password={1};database=mysql;"
                 , MySqlConsts.Domain
                 , MySqlConsts.Password);
@@ -174,8 +179,17 @@ namespace UnitTest
                 Modified = modified
             };
 
-            _ = UserSingleton.AsInsertable(entry)
+            int insertCount = UserSingleton.AsInsertable(entry)
                   .ExecuteCommand();
+
+            int deleteCount = UserSingleton.AsDeleteable(new Domain.Entities.User
+            {
+                Id = entry.Id
+            })
+            .SkipIdempotentValid()
+            .ExecuteCommand();
+
+            Assert.AreEqual(deleteCount, insertCount);
         }
 
         [TestMethod]
@@ -282,13 +296,15 @@ namespace UnitTest
                 });
             }
 
-            _ = ormTest.AsInsertable(list).ExecuteCommand();
+            int insertCount = ormTest.AsInsertable(list).ExecuteCommand();
 
-            _ = ormTest.ToList();
+            var results = ormTest.ToList();
 
-            _ = ormTest.AsDeleteable(list)
+            int deleteCount = ormTest.AsDeleteable(results)
                 .SkipIdempotentValid()
                 .ExecuteCommand();
+
+            Assert.AreEqual(insertCount, deleteCount);
         }
 
         [TestMethod]

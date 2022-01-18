@@ -2,9 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-#if !NET40
-using System.ComponentModel.DataAnnotations.Schema;
-#endif
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -79,13 +76,6 @@ namespace CodeArts.Db
                  }
 
                  var readOnly = item.GetCustomAttribute<ReadOnlyAttribute>();
-#if NET40
-                 string colName = item.Naming;
-#else
-                 var colAttr = item.GetCustomAttribute<ColumnAttribute>();
-
-                 string colName = colAttr is null ? item.Naming : colAttr.Name;
-#endif
 
                  if (readOnly?.IsReadOnly ?? false)
                  {
@@ -93,33 +83,13 @@ namespace CodeArts.Db
                  }
                  else
                  {
-                     readWrites.Add(item.Name, colName);
+                     readWrites.Add(item.Name, item.Naming);
                  }
 
-                 readOrWrites.Add(item.Name, colName);
+                 readOrWrites.Add(item.Name, item.Naming);
              }
 
-#if NET40
-             var tableName = typeStore.Naming;
-#else
-             string tableName;
-             var tableAttr = typeStore.GetCustomAttribute<TableAttribute>();
-
-             if (tableAttr is null)
-             {
-                 tableName = typeStore.Naming;
-             }
-             else if (string.IsNullOrEmpty(tableAttr.Schema))
-             {
-                 tableName = tableAttr.Name;
-             }
-             else
-             {
-                 tableName = string.Concat(tableAttr.Schema, ".", tableAttr.Name);
-             }
-#endif
-
-             return new TableInfo(tableType, tableName, keys, readOnlys, tokens, readWrites, readOrWrites);
+             return new TableInfo(tableType, typeStore.Naming, keys, readOnlys, tokens, readWrites, readOrWrites);
          });
 
         /// <summary>
