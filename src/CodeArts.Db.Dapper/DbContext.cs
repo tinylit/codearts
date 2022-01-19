@@ -154,9 +154,7 @@ namespace CodeArts.Db.Dapper
                     expressions.Add(Assign(Property(variableExp, propertyInfo), Call(variableExp, setGenericFn.MakeGenericMethod(tableType))));
                 }
 
-                var dbAccessField = type.GetField(nameof(dbAccess), BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
-
-                var lambdaEx = Lambda<Action<DbContext>>(IfThen(NotEqual(Field(paramterExp, dbAccessField), Constant(DbAccess.Read)), Block(new ParameterExpression[1] { variableExp }, expressions)), paramterExp);
+                var lambdaEx = Lambda<Action<DbContext>>(IfThen(NotEqual(Field(paramterExp, nameof(dbAccess)), Constant(DbAccess.Read)), Block(new ParameterExpression[1] { variableExp }, expressions)), paramterExp);
 
                 return new DbTablesEngine(lambdaEx.Compile(), tables);
 
@@ -540,6 +538,35 @@ namespace CodeArts.Db.Dapper
         /// </summary>
         /// <typeparam name="T">集合元素类型。</typeparam>
         /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <returns></returns>
+        public List<T> Query<T>(SQL sql, object param = null, int? commandTimeout = null)
+        {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateReadDb(sql))
+            {
+                return connection.Query<T>(sqlStr, param, commandTimeout: commandTimeout)
+                    .AsList();
+            }
+        }
+
+        /// <summary>
+        /// 查询分页数据。
+        /// </summary>
+        /// <typeparam name="T">集合元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
         /// <param name="pageIndex">页面，索引从“0”开始。</param>
         /// <param name="pageSize">一页显示多少条。</param>
         /// <param name="param">参数。</param>
@@ -741,6 +768,35 @@ namespace CodeArts.Db.Dapper
 #else
                 return await connection.QueryFirstOrDefaultAsync<T>(sqlStr, param, null, commandTimeout, CommandType.Text);
 #endif
+            }
+        }
+
+        /// <summary>
+        /// 查询分页数据。
+        /// </summary>
+        /// <typeparam name="T">集合元素类型。</typeparam>
+        /// <param name="sql">查询语句。</param>
+        /// <param name="param">参数。</param>
+        /// <param name="commandTimeout">超时时间。</param>
+        /// <param name="cancellationToken">取消指令。</param>
+        /// <returns></returns>
+        public async Task<List<T>> QueryAsync<T>(SQL sql, object param = null, int? commandTimeout = null, CancellationToken cancellationToken = default)
+        {
+            if (!IsValid(sql))
+            {
+                throw new InvalidOperationException(TransgressionError);
+            }
+
+            if (!IsReadValid(sql))
+            {
+                throw new InvalidOperationException(IllegalReadError);
+            }
+
+            var sqlStr = Format(sql);
+
+            using (IDbConnection connection = CreateReadDb(sql))
+            {
+                return (await connection.QueryAsync<T>(new CommandDefinition(sqlStr, param, null, commandTimeout, CommandType.Text, CommandFlags.Buffered, cancellationToken)).ConfigureAwait(false)).AsList();
             }
         }
 

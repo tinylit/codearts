@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29215.179
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9964966D-390B-47BC-9B60-CAFFCF1381B3}"
 EndProject
@@ -92,11 +92,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Middleware", "src\CodeArts.Middleware\CodeArts.Middleware.csproj", "{F05FBC01-A93E-45F0-A5D8-6777147F09A8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeArts.Db.Dapper", "src\CodeArts.Db.Dapper\CodeArts.Db.Dapper.csproj", "{607046A6-7C4C-48BB-AB54-EAF1021390CA}"
-<<<<<<< .mine
 EndProject
-=======
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeArts.Db.Dapper.Tests", "Tests\CodeArts.Db.Dapper.Tests\CodeArts.Db.Dapper.Tests.csproj", "{0FEB901F-46E4-4C0A-860A-AC3908C01955}"
 EndProject
->>>>>>> .theirs
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -251,6 +249,10 @@ Global
 		{607046A6-7C4C-48BB-AB54-EAF1021390CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{607046A6-7C4C-48BB-AB54-EAF1021390CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{607046A6-7C4C-48BB-AB54-EAF1021390CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FEB901F-46E4-4C0A-860A-AC3908C01955}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FEB901F-46E4-4C0A-860A-AC3908C01955}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FEB901F-46E4-4C0A-860A-AC3908C01955}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FEB901F-46E4-4C0A-860A-AC3908C01955}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -293,6 +295,7 @@ Global
 		{2ECC9421-A3EE-46A1-BFA7-66DDF37E9BAC} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 		{F05FBC01-A93E-45F0-A5D8-6777147F09A8} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
 		{607046A6-7C4C-48BB-AB54-EAF1021390CA} = {9964966D-390B-47BC-9B60-CAFFCF1381B3}
+		{0FEB901F-46E4-4C0A-860A-AC3908C01955} = {73F52972-A0A2-42F2-B1A5-FEDCAC330FD8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D69380D7-DEA5-4884-85A8-1049025CE2EA}
