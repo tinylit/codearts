@@ -594,7 +594,7 @@ namespace CodeArts.Db.Dapper
 
                     int count = reader.ReadSingle<int>();
 
-                    return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
+                    return new PagedList<T>(results.AsList(), pageIndex, pageSize, count);
                 }
             }
         }
@@ -833,7 +833,7 @@ namespace CodeArts.Db.Dapper
 
                     int count = await reader.ReadSingleAsync<int>().ConfigureAwait(false);
 
-                    return new PagedList<T>(results as List<T> ?? results.ToList(), pageIndex, pageSize, count);
+                    return new PagedList<T>(results.AsList(), pageIndex, pageSize, count);
                 }
             }
         }
