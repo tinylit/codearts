@@ -173,6 +173,372 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序对齐。
+        /// </summary>
+        /// <typeparam name="TKey">第一个序列元素的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        public static IEnumerable<TKey> AlignOverall<TKey>(this IEnumerable<TKey> outer, IEnumerable<TKey> inner)
+            => AlignOverall(outer, inner, null);
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序对齐。使用<see cref="IEqualityComparer{T}"/>相等比较器用于比较键。
+        /// </summary>
+        /// <typeparam name="TKey">第一个序列元素的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="comparer">一个<see cref="IEqualityComparer{T}"/>来哈希和比较键。</param>
+        public static IEnumerable<TKey> AlignOverall<TKey>(this IEnumerable<TKey> outer, IEnumerable<TKey> inner, IEqualityComparer<TKey> comparer)
+        {
+            if (outer is null)
+            {
+                throw new ArgumentNullException(nameof(outer));
+            }
+
+            if (inner is null)
+            {
+                throw new ArgumentNullException(nameof(inner));
+            }
+
+            var innerResults = inner.ToList();
+
+            int length = innerResults.Count;
+
+            if (length == 0)
+            {
+                yield break;
+            }
+
+            bool slotFlag = true;
+
+            if (comparer is null)
+            {
+                comparer = EqualityComparer<TKey>.Default;
+            }
+
+            var keySlots = new Slot<TKey>[innerResults.Count];
+
+            foreach (var xKey in outer)
+            {
+                var xHashCode = InternalGetHashCode(comparer, xKey);
+
+                for (int i = 0; i < length; i++)
+                {
+                    Slot<TKey> slot;
+
+                    if (slotFlag)
+                    {
+                        var yKey = innerResults[i];
+                        var yCode = InternalGetHashCode(comparer, yKey);
+
+                        keySlots[i] = slot = new Slot<TKey>
+                        {
+                            value = yKey,
+                            hashCode = yCode
+                        };
+                    }
+                    else
+                    {
+                        slot = keySlots[i];
+                    }
+
+                    if (slot.hashCode == xHashCode && comparer.Equals(xKey, slot.value))
+                    {
+                        yield return xKey;
+                    }
+                }
+
+                slotFlag = false;
+            }
+        }
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序对齐。
+        /// </summary>
+        /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
+        /// <typeparam name="TKey">键选择器函数返回的键的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="outerKeySelector">从第一个序列的每个元素中提取连接键的函数。</param>
+        public static IEnumerable<TOuter> Align<TOuter, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TKey> inner, Func<TOuter, TKey> outerKeySelector)
+            => Align(outer, inner, outerKeySelector, null);
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序对齐。使用<see cref="IEqualityComparer{T}"/>相等比较器用于比较键。
+        /// </summary>
+        /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
+        /// <typeparam name="TKey">键选择器函数返回的键的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="outerKeySelector">从第一个序列的每个元素中提取连接键的函数。</param>
+        /// <param name="comparer">一个<see cref="IEqualityComparer{T}"/>来哈希和比较键。</param>
+        public static IEnumerable<TOuter> Align<TOuter, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TKey> inner, Func<TOuter, TKey> outerKeySelector, IEqualityComparer<TKey> comparer)
+        {
+            if (outer is null)
+            {
+                throw new ArgumentNullException(nameof(outer));
+            }
+
+            if (inner is null)
+            {
+                throw new ArgumentNullException(nameof(inner));
+            }
+
+            if (outerKeySelector is null)
+            {
+                throw new ArgumentNullException(nameof(outerKeySelector));
+            }
+
+            var innerResults = inner.ToList();
+
+            int length = innerResults.Count;
+
+            if (length == 0)
+            {
+                yield break;
+            }
+
+            bool slotFlag = true;
+
+            if (comparer is null)
+            {
+                comparer = EqualityComparer<TKey>.Default;
+            }
+
+            var keySlots = new Slot<TKey>[innerResults.Count];
+
+            foreach (var x in outer)
+            {
+                TKey xKey = outerKeySelector.Invoke(x);
+                var xHashCode = InternalGetHashCode(comparer, xKey);
+
+                for (int i = 0; i < length; i++)
+                {
+                    Slot<TKey> slot;
+
+                    if (slotFlag)
+                    {
+                        var yKey = innerResults[i];
+                        var yCode = InternalGetHashCode(comparer, yKey);
+
+                        keySlots[i] = slot = new Slot<TKey>
+                        {
+                            value = yKey,
+                            hashCode = yCode
+                        };
+                    }
+                    else
+                    {
+                        slot = keySlots[i];
+                    }
+
+                    if (slot.hashCode == xHashCode && comparer.Equals(xKey, slot.value))
+                    {
+                        yield return x;
+                    }
+                }
+
+                slotFlag = false;
+            }
+        }
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序对齐。
+        /// </summary>
+        /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
+        /// <typeparam name="TKey">键选择器函数返回的键的类型。</typeparam>
+        /// <typeparam name="TResult">结果元素的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="outerKeySelector">从第一个序列的每个元素中提取连接键的函数。</param>
+        /// <param name="resultSelector">从序列匹配元素创建结果元素的函数。</param>
+        public static IEnumerable<TResult> Align<TOuter, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TKey> inner, Func<TOuter, TKey> outerKeySelector, Func<TOuter, TResult> resultSelector)
+            => Align(outer, inner, outerKeySelector, resultSelector, null);
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序对齐。使用<see cref="IEqualityComparer{T}"/>相等比较器用于比较键。
+        /// </summary>
+        /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
+        /// <typeparam name="TKey">键选择器函数返回的键的类型。</typeparam>
+        /// <typeparam name="TResult">结果元素的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="outerKeySelector">从第一个序列的每个元素中提取连接键的函数。</param>
+        /// <param name="resultSelector">从序列匹配元素创建结果元素的函数。</param>
+        /// <param name="comparer">一个<see cref="IEqualityComparer{T}"/>来哈希和比较键。</param>
+        public static IEnumerable<TResult> Align<TOuter, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TKey> inner, Func<TOuter, TKey> outerKeySelector, Func<TOuter, TResult> resultSelector, IEqualityComparer<TKey> comparer)
+        {
+            if (outer is null)
+            {
+                throw new ArgumentNullException(nameof(outer));
+            }
+
+            if (inner is null)
+            {
+                throw new ArgumentNullException(nameof(inner));
+            }
+
+            if (outerKeySelector is null)
+            {
+                throw new ArgumentNullException(nameof(outerKeySelector));
+            }
+
+            if (resultSelector is null)
+            {
+                throw new ArgumentNullException(nameof(resultSelector));
+            }
+
+            var innerResults = inner.ToList();
+
+            bool slotFlag = true;
+
+            int length = innerResults.Count;
+
+            if (length == 0)
+            {
+                yield break;
+            }
+
+            if (comparer is null)
+            {
+                comparer = EqualityComparer<TKey>.Default;
+            }
+
+            var keySlots = new Slot<TKey>[innerResults.Count];
+
+            foreach (var x in outer)
+            {
+                TKey xKey = outerKeySelector.Invoke(x);
+                var xHashCode = InternalGetHashCode(comparer, xKey);
+
+                for (int i = 0; i < length; i++)
+                {
+                    Slot<TKey> slot;
+
+                    if (slotFlag)
+                    {
+                        var yKey = innerResults[i];
+                        var yCode = InternalGetHashCode(comparer, yKey);
+
+                        keySlots[i] = slot = new Slot<TKey>
+                        {
+                            value = yKey,
+                            hashCode = yCode
+                        };
+                    }
+                    else
+                    {
+                        slot = keySlots[i];
+                    }
+
+                    if (slot.hashCode == xHashCode && comparer.Equals(xKey, slot.value))
+                    {
+                        yield return resultSelector.Invoke(x);
+                    }
+                }
+
+                slotFlag = false;
+            }
+        }
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序的元素迭代器。
+        /// </summary>
+        /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
+        /// <typeparam name="TKey">键选择器函数返回的键的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="outerKeySelector">从第一个序列的每个元素中提取连接键的函数。</param>
+        /// <param name="eachIterator">从两个匹配的元素使用的迭代器。</param>
+        public static void AlignEach<TOuter, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TKey> inner, Func<TOuter, TKey> outerKeySelector, Action<TOuter> eachIterator)
+            => AlignEach(outer, inner, outerKeySelector, eachIterator, null);
+
+        /// <summary>
+        /// 将<paramref name="outer"/>序列，根据匹配的键，按照<paramref name="inner"/>序列的顺序的元素迭代器。使用<see cref="IEqualityComparer{T}"/>相等比较器用于比较键。
+        /// </summary>
+        /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
+        /// <typeparam name="TKey">键选择器函数返回的键的类型。</typeparam>
+        /// <param name="outer">第一个要连接的序列。</param>
+        /// <param name="inner">要连接到第一个序列的序列。</param>
+        /// <param name="outerKeySelector">从第一个序列的每个元素中提取连接键的函数。</param>
+        /// <param name="eachIterator">从两个匹配的元素使用的迭代器。</param>
+        /// <param name="comparer">一个<see cref="IEqualityComparer{T}"/>来哈希和比较键。</param>
+        public static void AlignEach<TOuter, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TKey> inner, Func<TOuter, TKey> outerKeySelector, Action<TOuter> eachIterator, IEqualityComparer<TKey> comparer)
+        {
+            if (outer is null)
+            {
+                throw new ArgumentNullException(nameof(outer));
+            }
+
+            if (inner is null)
+            {
+                throw new ArgumentNullException(nameof(inner));
+            }
+
+            if (outerKeySelector is null)
+            {
+                throw new ArgumentNullException(nameof(outerKeySelector));
+            }
+
+            if (eachIterator is null)
+            {
+                throw new ArgumentNullException(nameof(eachIterator));
+            }
+
+            var innerResults = inner.ToList();
+
+            int length = innerResults.Count;
+
+            if (length == 0)
+            {
+                return;
+            }
+
+            bool slotFlag = true;
+
+            if (comparer is null)
+            {
+                comparer = EqualityComparer<TKey>.Default;
+            }
+
+            var keySlots = new Slot<TKey>[innerResults.Count];
+
+            foreach (var x in outer)
+            {
+                TKey xKey = outerKeySelector.Invoke(x);
+                var xHashCode = InternalGetHashCode(comparer, xKey);
+
+                for (int i = 0; i < length; i++)
+                {
+                    Slot<TKey> slot;
+
+                    if (slotFlag)
+                    {
+                        var yKey = innerResults[i];
+                        var yCode = InternalGetHashCode(comparer, yKey);
+
+                        keySlots[i] = slot = new Slot<TKey>
+                        {
+                            value = yKey,
+                            hashCode = yCode
+                        };
+                    }
+                    else
+                    {
+                        slot = keySlots[i];
+                    }
+
+                    if (slot.hashCode == xHashCode && comparer.Equals(xKey, slot.value))
+                    {
+                        eachIterator.Invoke(x);
+                    }
+                }
+
+                slotFlag = false;
+            }
+        }
+
+        /// <summary>
         /// 基于键和组的相等来关联两个序列的元素迭代器。默认的相等比较器用于比较键。
         /// </summary>
         /// <typeparam name="TOuter">第一个序列元素的类型。</typeparam>
@@ -225,16 +591,21 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(eachIterator));
             }
 
+            var innerResults = inner.ToList();
+
+            int length = innerResults.Count;
+
+            if (length == 0)
+            {
+                return;
+            }
+
+            bool slotFlag = true;
+
             if (comparer is null)
             {
                 comparer = EqualityComparer<TKey>.Default;
             }
-
-            var innerResults = inner.ToList();
-
-            bool slotFlag = true;
-
-            int length = innerResults.Count;
 
             var keySlots = new Slot<TKey>[innerResults.Count];
 
