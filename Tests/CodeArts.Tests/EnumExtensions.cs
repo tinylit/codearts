@@ -10,7 +10,7 @@ namespace CodeArts.Tests
         [TestMethod]
         public void GetText()
         {
-            var text = RoleEnum.User.GetText();
+            var text = DateTimeKind.Local.GetText();
 
             var text2 = RoleEnum.Admin.GetText();
         }
