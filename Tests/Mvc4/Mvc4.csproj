@@ -105,10 +105,6 @@
       <Project>{d32d72f4-7d45-4610-b126-a658c36ac639}</Project>
       <Name>CodeArts.Casting</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\CodeArts.Configuration\CodeArts.Configuration.csproj">
-      <Project>{2fe5dea1-f628-476b-bacf-0fa220537a29}</Project>
-      <Name>CodeArts.Configuration</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\src\CodeArts.DependencyInjection.Abstractions\CodeArts.DependencyInjection.Abstractions.csproj">
       <Project>{da18f111-40eb-4bc2-b98f-a1761aeb9935}</Project>
       <Name>CodeArts.DependencyInjection.Abstractions</Name>
@@ -124,10 +120,6 @@
     <ProjectReference Include="..\..\src\CodeArts.Net\CodeArts.Net.csproj">
       <Project>{f496a4ae-faee-4d58-8582-80b48bb1fa50}</Project>
       <Name>CodeArts.Net</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\CodeArts\CodeArts.csproj">
-      <Project>{e12dd9b0-64a0-4bca-9d4c-151f45fd5678}</Project>
-      <Name>CodeArts</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

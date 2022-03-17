@@ -1,7 +1,12 @@
 ﻿using CodeArts.Runtime;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
+using static System.Linq.Expressions.Expression;
 
 /// <summary>
 /// 枚举扩展。
@@ -24,39 +29,58 @@ public static class EnumExtensions
             throw new ArgumentException("参数类型不是枚举!");
         }
 
-        var typeStore = TypeItem.Get<TEnum>();
-
-        string enumStr = @enum.ToString();
-
-        if (typeStore.IsDefined<FlagsAttribute>())
+        if (type.IsDefined(typeof(FlagsAttribute), false))
         {
-            var values = enumStr.Split(',').Select(x => x.Trim());
+            var sb = new StringBuilder();
 
-            if (!values.All(x => typeStore.FieldStores.Any(y => string.Equals(y.Name, x, StringComparison.InvariantCultureIgnoreCase))))
+            foreach (var info in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
             {
-                return "N/A";
+                var constantValue = info.GetRawConstantValue();
+
+                if (!Nested<TEnum>.Contains(@enum, (TEnum)constantValue))
+                {
+                    continue;
+                }
+
+                if (sb.Length > 0)
+                {
+                    sb.Append('|');
+                }
+
+#if NET40
+                var attribute = (DescriptionAttribute)Attribute.GetCustomAttribute(info, typeof(DescriptionAttribute), false);
+#else
+                var attribute = info.GetCustomAttribute<DescriptionAttribute>();
+#endif
+
+                sb.Append(attribute is null ? info.Name : attribute.Description);
             }
 
-            return string.Join("|", typeStore.FieldStores
-                .Where(x => values.Any(y => string.Equals(y, x.Name, StringComparison.InvariantCultureIgnoreCase)))
-                .Select(x =>
-                {
-                    var desc2 = x.GetCustomAttribute<DescriptionAttribute>();
-
-                    return desc2 is null ? x.Name : desc2.Description;
-                }));
+            return sb.ToString();
         }
 
-        var field = typeStore.FieldStores.FirstOrDefault(x => x.Name == enumStr);
-
-        if (field is null)
+        if (Enum.IsDefined(type, @enum))
         {
-            return "N/A";
+            foreach (var info in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                var constantValue = info.GetRawConstantValue();
+
+                if (!Nested<TEnum>.Equals(@enum, (TEnum)constantValue))
+                {
+                    continue;
+                }
+
+#if NET40
+            var attribute = (DescriptionAttribute)Attribute.GetCustomAttribute(info, typeof(DescriptionAttribute), false);
+#else
+                var attribute = info.GetCustomAttribute<DescriptionAttribute>();
+#endif
+
+                return attribute is null ? info.Name : attribute.Description;
+            }
         }
 
-        var desc = field.GetCustomAttribute<DescriptionAttribute>();
-
-        return desc is null ? field.Name : desc.Description;
+        return "N/A";
     }
 
     /// <summary>
@@ -85,7 +109,7 @@ public static class EnumExtensions
             case TypeCode.Int16:
             case TypeCode.UInt16:
             case TypeCode.Int32:
-                return (int)Convert.ChangeType(@enum, conversionType);
+                return @enum.GetHashCode();
             default:
                 throw new InvalidCastException($"{@enum}的基础数据类型为“{conversionType.Name}”，不能安全转换为Int32！");
         }
@@ -117,9 +141,10 @@ public static class EnumExtensions
             case TypeCode.Int16:
             case TypeCode.UInt16:
             case TypeCode.Int32:
+                return @enum.GetHashCode();
             case TypeCode.UInt32:
             case TypeCode.Int64:
-                return (long)Convert.ChangeType(@enum, conversionType);
+                return (long)System.Convert.ChangeType(@enum, conversionType);
             default:
                 throw new InvalidCastException($"{@enum}的基础数据类型为“{conversionType.Name}”，不能安全转换为Int64！");
         }
@@ -143,9 +168,77 @@ public static class EnumExtensions
 
         var conversionType = Enum.GetUnderlyingType(type);
 
-        var value = Convert.ChangeType(@enum, conversionType);
+        var value = System.Convert.ChangeType(@enum, conversionType);
 
         return value.ToString();
+    }
+
+    /// <summary>
+    /// 获取所有枚举项，标记<see cref="FlagsAttribute"/>的枚举，会返回多个枚举项。
+    /// </summary>
+    /// <typeparam name="TEnum">枚举类型。</typeparam>
+    /// <param name="enum">值。</param>
+    /// <returns></returns>
+    public static TEnum[] ToValues<TEnum>(this TEnum @enum) where TEnum : struct
+    {
+        var type = typeof(TEnum);
+
+        if (!type.IsEnum)
+        {
+            throw new ArgumentException("参数类型不是枚举!");
+        }
+
+        if (type.IsDefined(typeof(FlagsAttribute), false))
+        {
+            var results = new List<TEnum>();
+
+            foreach (TEnum item in Enum.GetValues(type))
+            {
+                if (Nested<TEnum>.Contains(@enum, item))
+                {
+                    results.Add(item);
+                }
+            }
+
+            return results.ToArray();
+        }
+
+        if (!Enum.IsDefined(type, @enum))
+        {
+            return new TEnum[0];
+        }
+
+        return new TEnum[1] { @enum };
+    }
+    private static class Nested<TEnum> where TEnum : struct
+    {
+        private static readonly Func<TEnum, TEnum, bool> equals;
+        private static readonly Func<TEnum, TEnum, bool> contains;
+        static Nested()
+        {
+            var type = typeof(TEnum);
+
+            var leftEx = Parameter(type);
+            var rightEx = Parameter(type);
+
+            var underlyingType = Enum.GetUnderlyingType(type);
+
+            var variableLeftEx = Variable(underlyingType);
+            var variableRightEx = Variable(underlyingType);
+
+            var bodyEx = OrElse(Equal(variableLeftEx, variableRightEx), AndAlso(NotEqual(variableLeftEx, Default(underlyingType)), Equal(And(variableLeftEx, variableRightEx), variableRightEx)));
+
+            var lambdaEx = Lambda<Func<TEnum, TEnum, bool>>(Block(typeof(bool), new[] { variableLeftEx, variableRightEx }, Assign(variableLeftEx, Convert(leftEx, underlyingType)), Assign(variableRightEx, Convert(rightEx, underlyingType)), bodyEx), leftEx, rightEx);
+
+            contains = lambdaEx.Compile();
+
+            var lambdaEqualEx = Lambda<Func<TEnum, TEnum, bool>>(Equal(leftEx, rightEx), leftEx, rightEx);
+
+            equals = lambdaEqualEx.Compile();
+        }
+
+        public static bool Equals(TEnum left, TEnum right) => equals.Invoke(left, right);
+        public static bool Contains(TEnum left, TEnum right) => contains.Invoke(left, right);
     }
 }
 
