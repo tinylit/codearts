@@ -607,6 +607,13 @@ namespace CodeArts.Db
         {
             if (name.IndexOf('.') == -1)
             {
+                if (settings.Engine == DatabaseEngine.SqlServer)
+                {
+                    Name("dbo");
+
+                    Write(".");
+                }
+
                 Name(name);
             }
             else
@@ -674,7 +681,11 @@ namespace CodeArts.Db
 
             if (indexOf > 1)
             {
+#if NETSTANDARD2_1_OR_GREATER
+                names.AddRange(name[..(indexOf - 1)].Split(new char[1] { '.' }, StringSplitOptions.RemoveEmptyEntries));
+#else
                 names.AddRange(name.Substring(0, indexOf - 1).Split(new char[1] { '.' }, StringSplitOptions.RemoveEmptyEntries));
+#endif
             }
 
             int charAtIndex;

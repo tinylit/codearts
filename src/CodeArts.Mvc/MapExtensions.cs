@@ -66,6 +66,42 @@ namespace CodeArts.Mvc
         public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, PathString destinationPath)
             => app.Map(path, HttpVerbs.GET | HttpVerbs.POST | HttpVerbs.PUT | HttpVerbs.DELETE | HttpVerbs.HEAD | HttpVerbs.PATCH | HttpVerbs.OPTIONS, destinationPath);
 
+        /// <summary>
+        /// 路由。
+        /// </summary>
+        /// <param name="app">app。</param>
+        /// <param name="path">路由地址。</param>
+        /// <param name="httpVerbs">请求方式。</param>
+        /// <param name="destinationPath">目标地址。</param>
+        /// <returns></returns>
+        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
+        {
+#if NETCOREAPP2_1_OR_GREATER
+            return app.Map(path, x => x.Use(next => context =>
+            {
+                if (!Enum.TryParse(context.Request.Method ?? "GET", true, out HttpVerbs verbs) || (httpVerbs & verbs) == 0)
+                {
+                    return next.Invoke(context);
+                }
+
+                PathString absolutePath = context.Request.PathBase.Add(context.Request.Path);
+
+                if (absolutePath.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase, out PathString segments) && !segments.HasValue)
+                {
+                    context.Request.Path = destinationPath;
+                    context.Request.PathBase = new PathString("/");
+                }
+
+                return next.Invoke(context);
+            }));
+        }
+#else
+            return app.Map(path, httpVerbs, context => Map(context, new Uri(destinationPath.HasValue
+                        ? $"{context.Request.Url.Scheme}://{context.Request.Url.Host}{destinationPath.Value}"
+                        : $"{context.Request.Url.Scheme}://{context.Request.Url.Host}/"
+                    )));
+        }
+
 #if NET40
         private static void Map(HttpContext context, Uri destinationUri)
 #else
@@ -73,7 +109,7 @@ namespace CodeArts.Mvc
 #endif
         {
             var request = destinationUri.AsRequestable()
-            .AppendQueryString(context.Request.QueryString.ToString());
+                    .AppendQueryString(context.Request.QueryString.ToString());
 
             var token = context.Request.Headers["Authorization"];
 
@@ -153,91 +189,7 @@ namespace CodeArts.Mvc
             }
 #endif
         }
-
-        /// <summary>
-        /// 路由。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="httpVerbs">请求方式。</param>
-        /// <param name="destinationPath">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, PathString destinationPath)
-        {
-            return app.Map(path, httpVerbs, context => Map(context, new Uri(destinationPath.HasValue
-#if NETCOREAPP2_0_OR_GREATER
-                    ? $"{context.Request.Scheme}://{context.Request.Host}{destinationPath.Value}"
-                    : $"{context.Request.Scheme}://{context.Request.Host}/"
-#else
-                    ? $"{context.Request.Url.Scheme}://{context.Request.Url.Host}{destinationPath.Value}"
-                    : $"{context.Request.Url.Scheme}://{context.Request.Url.Host}/"
 #endif
-                    )));
-        }
-
-        /// <summary>
-        /// 路由(HttpVerbs.Get)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationUri">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapGet(this IApplicationBuilder app, PathString path, Uri destinationUri) => app.Map(path, HttpVerbs.GET, destinationUri);
-
-        /// <summary>
-        /// 路由(HttpVerbs.POST)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationUri">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapPost(this IApplicationBuilder app, PathString path, Uri destinationUri) => app.Map(path, HttpVerbs.POST, destinationUri);
-
-        /// <summary>
-        /// 路由(HttpVerbs.PUT)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationUri">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapPut(this IApplicationBuilder app, PathString path, Uri destinationUri) => app.Map(path, HttpVerbs.PUT, destinationUri);
-
-        /// <summary>
-        /// 路由(HttpVerbs.DELETE)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationUri">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder MapDelete(this IApplicationBuilder app, PathString path, Uri destinationUri) => app.Map(path, HttpVerbs.DELETE, destinationUri);
-
-        /// <summary>
-        /// 路由(HttpVerbs.Get | HttpVerbs.Post | HttpVerbs.Put | HttpVerbs.Delete | HttpVerbs.Head | HttpVerbs.Patch | HttpVerbs.Options)。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="destinationUri">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, Uri destinationUri)
-            => app.Map(path, HttpVerbs.GET | HttpVerbs.POST | HttpVerbs.PUT | HttpVerbs.DELETE | HttpVerbs.HEAD | HttpVerbs.PATCH | HttpVerbs.OPTIONS, destinationUri);
-
-        /// <summary>
-        /// 路由。
-        /// </summary>
-        /// <param name="app">app。</param>
-        /// <param name="path">路由地址。</param>
-        /// <param name="httpVerbs">请求方式。</param>
-        /// <param name="destinationUri">目标地址。</param>
-        /// <returns></returns>
-        public static IApplicationBuilder Map(this IApplicationBuilder app, PathString path, HttpVerbs httpVerbs, Uri destinationUri)
-        {
-            if (destinationUri is null)
-            {
-                throw new ArgumentNullException(nameof(destinationUri));
-            }
-
-            return app.Map(path, httpVerbs, context => Map(context, destinationUri));
-        }
 
         /// <summary>
         /// 路由。

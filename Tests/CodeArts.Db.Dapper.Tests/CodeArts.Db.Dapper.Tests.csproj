@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+	  <TargetFrameworks>netcoreapp2.1;net461;</TargetFrameworks>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
+    <DefineConstants>NETSTANDARD2_1;</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+    <PackageReference Include="NUnit" Version="3.13.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeArts.Db.Dapper\CodeArts.Db.Dapper.csproj" />
+    <ProjectReference Include="..\..\src\CodeArts.Db.Lts.SqlServer\CodeArts.Db.Lts.SqlServer.csproj" />
+  </ItemGroup>
+
+</Project>

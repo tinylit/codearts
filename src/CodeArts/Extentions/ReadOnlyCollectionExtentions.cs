@@ -154,7 +154,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(source));
             }
 
-            return new ReadOnlyList<T>(new List<T>(source));
+            return new ReadOnlyList<T>(source as List<T> ?? new List<T>(source));
         }
 
         /// <summary>
