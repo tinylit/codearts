@@ -20,9 +20,9 @@ namespace CodeArts
 
         private static class Nested
         {
-            static Nested() { }
+            static Nested() => Instance = RuntimeServPools.Singleton<T>();
 
-            public static readonly T Instance = (T)Activator.CreateInstance(typeof(T), true);
+            public static readonly T Instance;
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace CodeArts
 {
@@ -13,6 +14,8 @@ namespace CodeArts
     public class AssemblyFinder
     {
         private static readonly string assemblyPath;
+
+        private static readonly Regex PatternSni = new Regex(@"(\.|\\|\/)[\w-]*(sni|std|crypt|copyright|32|64|86)\.([\w-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly ConcurrentDictionary<string, Assembly> AassemblyLoads = new ConcurrentDictionary<string, Assembly>();
         private static readonly ConcurrentDictionary<string, IEnumerable<Assembly>> AssemblyCache = new ConcurrentDictionary<string, IEnumerable<Assembly>>();
@@ -56,32 +59,69 @@ namespace CodeArts
                 pattern += ".dll";
             }
 
+            bool flag = true;
+
+            for (int i = 0, length = pattern.Length - 4; i < length; i++)
+            {
+                char c = pattern[i];
+
+                if (c == '*' || c == '?' || c == '.')
+                {
+                    continue;
+                }
+
+                flag = false;
+
+                break;
+            }
+
             return AssemblyCache.GetOrAdd(pattern, searchPattern =>
             {
                 Assembly[] assemblies = null;
 
-                return Directory.GetFiles(assemblyPath, searchPattern).Select(x => AassemblyLoads.GetOrAdd(x, y =>
+                var files = Directory.GetFiles(assemblyPath, searchPattern);
+
+                List<Assembly> list = new List<Assembly>(files.Length);
+
+                foreach (var file in files)
                 {
-                    if (assemblies is null)
+                    if (flag && PatternSni.IsMatch(file))
                     {
-                        assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                        continue;
                     }
 
-                    foreach (var assembly in assemblies)
+                    list.Add(AassemblyLoads.GetOrAdd(file, x =>
                     {
-                        if (assembly.IsDynamic)
+                        if (assemblies is null)
                         {
-                            continue;
+                            assemblies = AppDomain.CurrentDomain.GetAssemblies();
                         }
 
-                        if (string.Equals(y, assembly.Location, StringComparison.OrdinalIgnoreCase))
+                        foreach (var assembly in assemblies)
                         {
-                            return assembly;
-                        }
-                    }
+                            if (assembly.IsDynamic)
+                            {
+                                continue;
+                            }
 
-                    return Assembly.LoadFrom(y);
-                })).ToList();
+                            if (string.Equals(file, assembly.Location, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return assembly;
+                            }
+                        }
+
+                        try
+                        {
+                            return Assembly.LoadFrom(file);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception($"尝试加载程序文件({file})异常!", e);
+                        }
+                    }));
+                }
+
+                return list;
             });
         }
     }

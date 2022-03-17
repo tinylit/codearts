@@ -69,6 +69,11 @@ namespace CodeArts.Config
 
             foreach (var path in configPaths)
             {
+                if (path is null || path.Length == 0)
+                {
+                    continue;
+                }
+
                 if (File.Exists(path))
                 {
                     builder.AddJsonFile(path, false, true);
@@ -85,7 +90,7 @@ namespace CodeArts.Config
                     continue;
                 }
 
-                throw new FileNotFoundException($"文件“{path}”未找到!");
+                throw new FileNotFoundException($"未找到“{path}”文件!");
             }
 
             return builder;
@@ -122,7 +127,7 @@ namespace CodeArts.Config
         /// 构造函数。
         /// </summary>
         /// <param name="config">配置。</param>
-        public DefaultConfigHelper(IConfigurationRoot config)
+        public DefaultConfigHelper(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -130,7 +135,7 @@ namespace CodeArts.Config
                 .RegisterChangeCallback(ConfigChanged, config);
         }
 
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private IDisposable _callbackRegistration;
 
         /// <summary> 配置文件变更事件。 </summary>
@@ -180,14 +185,6 @@ namespace CodeArts.Config
             {
                 return defaultValue;
             }
-        }
-
-        /// <summary> 重新加载配置。 </summary>
-        public void Reload()
-        {
-            _cache.Clear();
-
-            _config.Reload();
         }
     }
 }
@@ -416,7 +413,7 @@ namespace CodeArts.Config
         }
 
         /// <summary> 重新加载配置。 </summary>
-        public void Reload()
+        private void Reload()
         {
             ConnectionStrings.Clear();
 

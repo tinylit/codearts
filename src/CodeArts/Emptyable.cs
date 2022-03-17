@@ -27,36 +27,6 @@ namespace CodeArts
         /// 注册类型解决方案。
         /// </summary>
         /// <typeparam name="T">类型。</typeparam>
-        /// <param name="instance">实例。</param>
-        public static void Register<T>(T instance) where T : class
-        {
-            if (instance is null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
-            DefaultCache.TryAdd(typeof(T), instance);
-        }
-
-        /// <summary>
-        /// 注册类型解决方案。
-        /// </summary>
-        /// <typeparam name="T">类型。</typeparam>
-        /// <param name="valueFactory">生成值的工厂。</param>
-        public static void Register<T>(Func<T> valueFactory) where T : class
-        {
-            if (valueFactory is null)
-            {
-                throw new ArgumentNullException(nameof(valueFactory));
-            }
-
-            EmptyCache.TryAdd(typeof(T), () => valueFactory.Invoke());
-        }
-
-        /// <summary>
-        /// 注册类型解决方案。
-        /// </summary>
-        /// <typeparam name="T">类型。</typeparam>
         /// <typeparam name="TImplement">实现类型。</typeparam>
         public static void Register<T, TImplement>() where T : class where TImplement : T => ImplementCache.TryAdd(typeof(T), typeof(TImplement));
 
@@ -168,17 +138,19 @@ namespace CodeArts
         /// <returns></returns>
         public static object Empty(Type typeEmpty)
         {
+            if (typeEmpty.IsArray)
+            {
+                return DefaultCache.GetOrAdd(typeEmpty, type => Array.CreateInstance(type.GetElementType(), 0));
+            }
+
             if (typeEmpty.IsValueType)
             {
-                if (typeEmpty.IsNullable())
+                if (typeEmpty.IsSimpleType() || typeEmpty.IsNullable())
                 {
-                    return DefaultCache.GetOrAdd(typeEmpty, type =>
-                    {
-                        return Activator.CreateInstance(type, Empty(Nullable.GetUnderlyingType(type)));
-                    });
+                    return DefaultCache.GetOrAdd(typeEmpty, Activator.CreateInstance);
                 }
 
-                return DefaultCache.GetOrAdd(typeEmpty, Activator.CreateInstance);
+                return Activator.CreateInstance(typeEmpty);
             }
 
             if (typeEmpty == typeof(string))
@@ -280,11 +252,6 @@ namespace CodeArts
 
             if (type.IsValueType)
             {
-                if (type.IsNullable())
-                {
-                    return (T)Empty(type);
-                }
-
                 return default;
             }
 

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace CodeArts.Runtime
 {
@@ -61,7 +62,7 @@ namespace CodeArts.Runtime
                     {
                         if (propertyStores is null)
                         {
-                            propertyStores = MemberType.GetProperties()
+                            propertyStores = MemberType.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                                 .Select(info => PropertyItem.Get(info))
 #if NET40
                                 .ToReadOnlyList();
@@ -90,7 +91,7 @@ namespace CodeArts.Runtime
                     {
                         if (fieldStores is null)
                         {
-                            fieldStores = MemberType.GetFields()
+                            fieldStores = MemberType.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                                 .Select(info => FieldItem.Get(info))
 #if NET40
                                 .ToReadOnlyList();
@@ -118,7 +119,7 @@ namespace CodeArts.Runtime
                     {
                         if (methodStores is null)
                         {
-                            methodStores = MemberType.GetMethods()
+                            methodStores = MemberType.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                                 .Select(info => MethodItem.Get(info))
 #if NET40
                                 .ToReadOnlyList();
@@ -146,7 +147,7 @@ namespace CodeArts.Runtime
                     {
                         if (constructorStores is null)
                         {
-                            constructorStores = MemberType.GetConstructors()
+                            constructorStores = MemberType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                                 .Select(info => ConstructorItem.Get(info))
 #if NET40
                                 .ToReadOnlyList();

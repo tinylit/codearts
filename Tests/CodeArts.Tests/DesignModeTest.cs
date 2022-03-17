@@ -15,6 +15,26 @@ namespace CodeArts.Tests
         public int MyProperty { get; } = 8;
     }
 
+    public interface ISingletonA
+    {
+
+    }
+
+    public class SingletonA : ISingletonA
+    {
+
+    }
+
+    public class SingletonB : Singleton<SingletonB>
+    {
+        private readonly ISingletonA singleton;
+
+        private SingletonB(ISingletonA singleton)
+        {
+            this.singleton = singleton;
+        }
+    }
+
     [TestClass]
     public class DesignModeTest
     {
@@ -30,6 +50,26 @@ namespace CodeArts.Tests
             var b2 = Singleton<B>.Instance;
 
             Assert.AreEqual(b1, b2);
+        }
+
+        [TestMethod]
+        public void Test()
+        {
+            ISingletonA singletonA = new SingletonA();
+
+            RuntimeServPools.TryAddSingleton(singletonA);
+
+            ISingletonA singletonAServ = RuntimeServPools.Singleton<ISingletonA>();
+
+            Assert.AreEqual(singletonA, singletonAServ);
+
+            ISingletonA singletonASingleton = Singleton<ISingletonA>.Instance;
+
+            Assert.AreEqual(singletonA, singletonASingleton);
+
+            var singleton = SingletonB.Instance;
+
+            Assert.IsNotNull(singleton);
         }
     }
 }
