@@ -80,9 +80,18 @@ namespace CodeArts
         {
             private static Lazy<TService> _lazy = new Lazy<TService>(() => null);
 
+            private static volatile bool _uninitialized = true;
             private static volatile bool _useBaseTryAdd = true;
 
             static Nested() => ServiceCache[typeof(TService)] = typeof(Nested<TService>);
+
+            protected static void AddDefaultImpl(Func<TService> factory)
+            {
+                if (_uninitialized)
+                {
+                    TryAdd(factory, false);
+                }
+            }
 
             public static bool TryAdd(TService instance, bool defineService = false)
             {
@@ -92,6 +101,8 @@ namespace CodeArts
                     {
                         _useBaseTryAdd = false;
                     }
+
+                    _uninitialized &= false;
 
                     if (!_lazy.IsValueCreated)
                     {
@@ -117,6 +128,8 @@ namespace CodeArts
                         _useBaseTryAdd = false;
                     }
 
+                    _uninitialized &= false;
+
                     if (!_lazy.IsValueCreated)
                     {
                         _lazy = new Lazy<TService>(factory, true);
@@ -139,11 +152,11 @@ namespace CodeArts
 
                 if (type.IsInterface || type.IsAbstract)
                 {
-                    TryAdd(() => throw new NotImplementedException($"未注入{type.FullName}服务的实现，可以使用【RuntimeServPools.TryAddSingleton<{type.Name}, {type.Name}Impl>()】注入服务实现，或使用【RuntimeServPools.Singleton<{type.Name}, Default{type.Name.TrimStart('i', 'I')}Impl>】安全获取实例，若未注入实现会生成【Default{type.Name.TrimStart('i', 'I')}Impl】的实例。"));
+                    AddDefaultImpl(() => throw new NotImplementedException($"未注入{type.FullName}服务的实现，可以使用【RuntimeServPools.TryAddSingleton<{type.Name}, {type.Name}Impl>()】注入服务实现，或使用【RuntimeServPools.Singleton<{type.Name}, Default{type.Name.TrimStart('i', 'I')}Impl>】安全获取实例，若未注入实现会生成【Default{type.Name.TrimStart('i', 'I')}Impl】的实例。"));
                 }
                 else
                 {
-                    TryAdd(() => Nested<TService, TService>.Instance);
+                    AddDefaultImpl(() => Nested<TService, TService>.Instance);
                 }
             }
 
