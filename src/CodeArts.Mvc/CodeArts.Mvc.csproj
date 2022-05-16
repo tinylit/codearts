@@ -27,7 +27,7 @@
 			<Version>2.1.1</Version>
 		</PackageReference>
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer">
-			<Version>2.1.1</Version>
+			<Version>2.1.30</Version>
 		</PackageReference>
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen">
 			<Version>4.0.1</Version>
@@ -43,7 +43,7 @@
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer">
-			<Version>3.1.0</Version>
+			<Version>2.1.30</Version>
 		</PackageReference>
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen">
 			<Version>5.0.0</Version>
